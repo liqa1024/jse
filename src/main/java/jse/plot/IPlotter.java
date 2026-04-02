@@ -225,6 +225,5 @@ public interface IPlotter {
     List<? extends ILine> lines();
     ILine line(String aName);
     ILine line(int aIdx);
-    int lineNumber();
-    @VisibleForTesting default int nlines() {return lineNumber();}
+    int nlines();
 }

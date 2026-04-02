@@ -38,28 +38,28 @@ public abstract class AbstractSettableAtomDataOperation extends AbstractAtomData
     
     @Override public void map2this(int aMinTypeNum, IUnaryFullOperator<? extends IAtom, ? super IAtom> aOperator) {
         final ISettableAtomData tThis = thisAtomData_();
-        final int tAtomNum = tThis.atomNumber();
+        final int tAtomNum = tThis.natoms();
         for (int i = 0; i < tAtomNum; ++i) {
             tThis.setAtom(i, aOperator.apply(tThis.atom(i)));
         }
         // 这里不进行 try 包含，因为手动指定了 aMinTypeNum 后才会调用，此时设置失败会希望抛出错误
-        if (tThis.atomTypeNumber() < aMinTypeNum) tThis.setAtomTypeNumber(aMinTypeNum);
+        if (tThis.ntypes() < aMinTypeNum) tThis.setNtypes(aMinTypeNum);
     }
     
     @Override public void mapType2this(int aMinTypeNum, IUnaryFullOperator<Integer, ? super IAtom> aOperator) {
         final ISettableAtomData tThis = thisAtomData_();
-        final int tAtomNum = tThis.atomNumber();
+        final int tAtomNum = tThis.natoms();
         for (int i = 0; i < tAtomNum; ++i) {
             // 保存修改后的原子，现在内部会自动更新种类计数
             ISettableAtom tAtom = tThis.atom(i);
             tAtom.setType(aOperator.apply(tAtom));
         }
         // 这里不进行 try 包含，因为手动指定了 aMinTypeNum 后才会调用，此时设置失败会希望抛出错误
-        if (tThis.atomTypeNumber() < aMinTypeNum) tThis.setAtomTypeNumber(aMinTypeNum);
+        if (tThis.ntypes() < aMinTypeNum) tThis.setNtypes(aMinTypeNum);
     }
     
     @Override public void mapTypeRandom2this(IRandom aRandom, IVector aTypeWeights) {
-        int tAtomNum = thisAtomData_().atomNumber();
+        int tAtomNum = thisAtomData_().natoms();
         int tMaxType = aTypeWeights.size();
         for (int i = 0; i < tMaxType; ++i) {
             if (aTypeWeights.get(i) < 0.0) throw new RuntimeException("TypeWeights Must be Positive");
@@ -89,7 +89,7 @@ public abstract class AbstractSettableAtomDataOperation extends AbstractAtomData
     
     @Override public void perturbXYZGaussian2this(IRandom aRandom, double aSigma) {
         final ISettableAtomData tThis = thisAtomData_();
-        final int tAtomNum = tThis.atomNumber();
+        final int tAtomNum = tThis.natoms();
         for (int i = 0; i < tAtomNum; ++i) {
             ISettableAtom tAtom = tThis.atom(i);
             tAtom.setXYZ(
@@ -104,7 +104,7 @@ public abstract class AbstractSettableAtomDataOperation extends AbstractAtomData
     
     @Override public void wrapPBC2this() {
         final ISettableAtomData tThis = thisAtomData_();
-        final int tAtomNum = tThis.atomNumber();
+        final int tAtomNum = tThis.natoms();
         final IBox tBox = tThis.box();
         XYZ tBuf = new XYZ();
         for (int i = 0; i < tAtomNum; ++i) {
@@ -127,7 +127,7 @@ public abstract class AbstractSettableAtomDataOperation extends AbstractAtomData
     private ISettableAtomData refAtomData_(List<? extends ISettableAtom> aAtoms) {
         ISettableAtomData tThis = thisAtomData_();
         @Nullable List<@Nullable String> tSymbols = tThis.symbols();
-        return new SettableAtomData(aAtoms, tThis.atomTypeNumber(), tThis.box(), tThis.hasID(), tThis.hasVelocity(), tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
+        return new SettableAtomData(aAtoms, tThis.ntypes(), tThis.box(), tThis.hasID(), tThis.hasVelocity(), tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
     }
     
     /// stuff to override

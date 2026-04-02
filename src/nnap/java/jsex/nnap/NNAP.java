@@ -219,7 +219,7 @@ public class NNAP implements IPairPotential {
     private final @Nullable String mUnits;
     private boolean mDead = false;
     private final int mThreadNumber;
-    @Override public int atomTypeNumber() {return mSymbols.length;}
+    @Override public int ntypes() {return mSymbols.length;}
     public SingleNNAP model(int aType) {return mModels.get(aType-1);}
     public @Unmodifiable List<SingleNNAP> models() {return mModels;}
     @Override public boolean hasSymbol() {return true;}
@@ -333,8 +333,7 @@ public class NNAP implements IPairPotential {
         }
     }
     @Override public boolean isShutdown() {return mDead;}
-    @Override public int threadNumber() {return mThreadNumber;}
-    @VisibleForTesting public int nthreads() {return threadNumber();}
+    @Override public int nthreads() {return mThreadNumber;}
     @Override public double rcutMax() {
         double tRCut = 0.0;
         for (SingleNNAP tModel : models()) {
@@ -345,7 +344,7 @@ public class NNAP implements IPairPotential {
     
     
     private void buildNL_(IDxyzTypeIdxIterable aNL, double aRCut, DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, IntList aNlIdx) {
-        final int tTypeNum = atomTypeNumber();
+        final int tTypeNum = ntypes();
         // 缓存情况需要先清空这些
         aNlDx.clear(); aNlDy.clear(); aNlDz.clear();
         aNlType.clear(); aNlIdx.clear();
@@ -366,7 +365,7 @@ public class NNAP implements IPairPotential {
      */
     @Override public void calEnergy(int aAtomNumber, INeighborListGetter aNeighborListGetter, IEnergyAccumulator rEnergyAccumulator) throws Exception {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
-        final int tThreadNum = threadNumber();
+        final int tThreadNum = nthreads();
         aNeighborListGetter.forEachNLWithException(threadID -> {
             if (mIsTorch && tThreadNum>1) TorchModel.setSingleThread();
         }, null, (threadID, cIdx, cType, nl) -> {
@@ -396,7 +395,7 @@ public class NNAP implements IPairPotential {
      */
     @Override public void calEnergyForceVirial(int aAtomNumber, INeighborListGetter aNeighborListGetter, @Nullable IEnergyAccumulator rEnergyAccumulator, @Nullable IForceAccumulator rForceAccumulator, @Nullable IVirialAccumulator rVirialAccumulator) throws Exception {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
-        final int tThreadNum = threadNumber();
+        final int tThreadNum = nthreads();
         aNeighborListGetter.forEachNLWithException(threadID -> {
             if (mIsTorch && tThreadNum>1) TorchModel.setSingleThread();
         }, null, (threadID, cIdx, cType, nl) -> {

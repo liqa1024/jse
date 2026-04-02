@@ -3,7 +3,7 @@ package code.vasp
 import jse.vasp.XDATCAR
 
 // 读取现有的 vasp XDATCAR 文件
-def xdatcar = XDATCAR.read('vasp/xdatcar/CuFCC108.xdatcar')
+def xdatcar = XDATCAR.read('data/xdatcar/CuFCC108.xdatcar')
 
 // 获取帧数
 println('frame number: ' + xdatcar.size())
@@ -22,5 +22,5 @@ xdatcar.write('.temp/example/vasp/xdatcarFCC')
 // frame number: 21
 // atom number: 108
 // type names: [Cu, Zr]
-// atom at 10: {id: 11, type: 1, xyz: (5.211, 8.424, 1.354)}
+// atom at 10: {type: 1, xyz: (10.65, 2.333, 0.9837)}
 

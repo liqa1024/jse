@@ -5,11 +5,8 @@ import groovy.transform.stc.ClosureParams;
 import groovy.transform.stc.FromString;
 import jep.NDArray;
 import jse.code.UT;
-import jse.code.collection.ISlice;
-import jse.code.functional.IIndexFilter;
 import jse.code.iterator.IDoubleIterator;
 import jse.code.iterator.IDoubleSetIterator;
-import jse.math.SliceType;
 import jse.math.vector.IVector;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -97,14 +94,12 @@ public interface IMatrix extends IMatrixGetter {
     default void assignRow(final Closure<? extends Number> aGroovyTask) {assignRow(() -> UT.Code.doubleValue(aGroovyTask.call()));}
     
     /** 访问和修改部分，自带的接口 */
-    int rowNumber();
-    int columnNumber();
-    double get(int aRow, int aCol);
+    int nrows();
+    int ncols();
+    @Override double get(int aRow, int aCol);
     double getAndSet(int aRow, int aCol, double aValue); // 返回修改前的值
     void set(int aRow, int aCol, double aValue);
     ISize size();
-    default @VisibleForTesting int nrows() {return rowNumber();}
-    default @VisibleForTesting int ncols() {return columnNumber();}
     
     /** 附加一些额外的单元素操作，对于一般的只提供一个 update 的接口 */
     void update(int aRow, int aCol, DoubleUnaryOperator aOpt);
@@ -126,8 +121,6 @@ public interface IMatrix extends IMatrixGetter {
     /** 矩阵的运算操作，默认返回新的矩阵 */
     IMatrixOperation operation();
     @VisibleForTesting default IMatrixOperation op() {return operation();}
-    /** @deprecated use {@link #op()} */
-    @VisibleForTesting @Deprecated default IMatrixOperation opt() {return operation();}
     
     /** Groovy 的部分，增加矩阵基本的运算操作，现在也归入内部使用 */
     IMatrix plus     (double aRHS);
@@ -159,82 +152,4 @@ public interface IMatrix extends IMatrixGetter {
     void abs2this();
     IMatrix negative();
     void negative2this();
-    
-    /** Groovy 的部分，重载一些运算符方便操作 */
-    @VisibleForTesting double call(int aRow, int aCol);
-    @VisibleForTesting IMatrix call(ISlice        aSelectedRows, ISlice        aSelectedCols);
-    @VisibleForTesting IMatrix call(List<Integer> aSelectedRows, ISlice        aSelectedCols);
-    @VisibleForTesting IMatrix call(SliceType     aSelectedRows, ISlice        aSelectedCols);
-    @VisibleForTesting IMatrix call(IIndexFilter  aSelectedRows, ISlice        aSelectedCols);
-    @VisibleForTesting IMatrix call(ISlice        aSelectedRows, List<Integer> aSelectedCols);
-    @VisibleForTesting IMatrix call(List<Integer> aSelectedRows, List<Integer> aSelectedCols);
-    @VisibleForTesting IMatrix call(SliceType     aSelectedRows, List<Integer> aSelectedCols);
-    @VisibleForTesting IMatrix call(IIndexFilter  aSelectedRows, List<Integer> aSelectedCols);
-    @VisibleForTesting IMatrix call(ISlice        aSelectedRows, SliceType     aSelectedCols);
-    @VisibleForTesting IMatrix call(List<Integer> aSelectedRows, SliceType     aSelectedCols);
-    @VisibleForTesting IMatrix call(SliceType     aSelectedRows, SliceType     aSelectedCols);
-    @VisibleForTesting IMatrix call(IIndexFilter  aSelectedRows, SliceType     aSelectedCols);
-    @VisibleForTesting IMatrix call(ISlice        aSelectedRows, IIndexFilter  aSelectedCols);
-    @VisibleForTesting IMatrix call(List<Integer> aSelectedRows, IIndexFilter  aSelectedCols);
-    @VisibleForTesting IMatrix call(SliceType     aSelectedRows, IIndexFilter  aSelectedCols);
-    @VisibleForTesting IMatrix call(IIndexFilter  aSelectedRows, IIndexFilter  aSelectedCols);
-    @VisibleForTesting IVector call(int           aSelectedRow , ISlice        aSelectedCols);
-    @VisibleForTesting IVector call(int           aSelectedRow , List<Integer> aSelectedCols);
-    @VisibleForTesting IVector call(int           aSelectedRow , SliceType     aSelectedCols);
-    @VisibleForTesting IVector call(int           aSelectedRow , IIndexFilter  aSelectedCols);
-    @VisibleForTesting IVector call(ISlice        aSelectedRows, int           aSelectedCol );
-    @VisibleForTesting IVector call(List<Integer> aSelectedRows, int           aSelectedCol );
-    @VisibleForTesting IVector call(SliceType     aSelectedRows, int           aSelectedCol );
-    @VisibleForTesting IVector call(IIndexFilter  aSelectedRows, int           aSelectedCol );
-    
-    @VisibleForTesting IMatrixRow_ getAt(int aRow);
-    @VisibleForTesting IMatrixRows_ getAt(SliceType aSelectedRows);
-    @VisibleForTesting IMatrixRows_ getAt(ISlice aSelectedRows);
-    @VisibleForTesting IMatrixRows_ getAt(List<Integer> aSelectedRows);
-    @VisibleForTesting IMatrixRows_ getAt(IIndexFilter aSelectedRows);
-    
-    /** 用来实现矩阵双重方括号索引，并且约束只能使用两个括号 */
-    @ApiStatus.Internal interface IMatrixRow_ {
-        @VisibleForTesting double getAt(int aCol);
-        @VisibleForTesting void putAt(int aCol, double aValue);
-        
-        @VisibleForTesting IVector getAt(SliceType aSelectedCols);
-        @VisibleForTesting IVector getAt(ISlice aSelectedCols);
-        @VisibleForTesting IVector getAt(List<Integer> aSelectedCols);
-        @VisibleForTesting IVector getAt(IIndexFilter  aSelectedCols);
-        @VisibleForTesting void putAt(SliceType aSelectedCols, double aValue);
-        @VisibleForTesting void putAt(SliceType aSelectedCols, Iterable<? extends Number> aList);
-        @VisibleForTesting void putAt(SliceType aSelectedCols, IVector aVector);
-        @VisibleForTesting void putAt(ISlice aSelectedCols, double aValue);
-        @VisibleForTesting void putAt(ISlice aSelectedCols, Iterable<? extends Number> aList);
-        @VisibleForTesting void putAt(ISlice aSelectedCols, IVector aVector);
-        @VisibleForTesting void putAt(List<Integer> aSelectedCols, double aValue);
-        @VisibleForTesting void putAt(List<Integer> aSelectedCols, Iterable<? extends Number> aList);
-        @VisibleForTesting void putAt(List<Integer> aSelectedCols, IVector aVector);
-        @VisibleForTesting void putAt(IIndexFilter aSelectedCols, double aValue);
-        @VisibleForTesting void putAt(IIndexFilter aSelectedCols, Iterable<? extends Number> aList);
-        @VisibleForTesting void putAt(IIndexFilter aSelectedCols, IVector aVector);
-    }
-    @ApiStatus.Internal interface IMatrixRows_ {
-        @VisibleForTesting IVector getAt(int aCol);
-        @VisibleForTesting IMatrix getAt(SliceType aSelectedCols);
-        @VisibleForTesting IMatrix getAt(ISlice aSelectedCols);
-        @VisibleForTesting IMatrix getAt(List<Integer> aSelectedCols);
-        @VisibleForTesting IMatrix getAt(IIndexFilter  aSelectedCols);
-        @VisibleForTesting void putAt(int aCol, double aValue);
-        @VisibleForTesting void putAt(int aCol, Iterable<? extends Number> aList);
-        @VisibleForTesting void putAt(int aCol, IVector aVector);
-        @VisibleForTesting void putAt(SliceType aSelectedCols, double aValue);
-        @VisibleForTesting void putAt(SliceType aSelectedCols, Iterable<?> aRows);
-        @VisibleForTesting void putAt(SliceType aSelectedCols, IMatrix aMatrix);
-        @VisibleForTesting void putAt(ISlice aSelectedCols, double aValue);
-        @VisibleForTesting void putAt(ISlice aSelectedCols, Iterable<?> aRows);
-        @VisibleForTesting void putAt(ISlice aSelectedCols, IMatrix aMatrix);
-        @VisibleForTesting void putAt(List<Integer> aSelectedCols, double aValue);
-        @VisibleForTesting void putAt(List<Integer> aSelectedCols, Iterable<?> aRows);
-        @VisibleForTesting void putAt(List<Integer> aSelectedCols, IMatrix aMatrix);
-        @VisibleForTesting void putAt(IIndexFilter aSelectedCols, double aValue);
-        @VisibleForTesting void putAt(IIndexFilter aSelectedCols, Iterable<?> aRows);
-        @VisibleForTesting void putAt(IIndexFilter aSelectedCols, IMatrix aMatrix);
-    }
 }

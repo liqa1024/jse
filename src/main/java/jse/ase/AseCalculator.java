@@ -165,8 +165,7 @@ public class AseCalculator implements IPotential {
         // ase 计算器不支持 9 项压力，为了确保严谨语义要求输出时直接报错
         if (rVirialsYX!=null || rVirialsZX!=null || rVirialsZY!=null) throw new UnsupportedOperationException("ASE calculator not support 9 columns stresses");
         // 这里为了兼容性，还是采用通过 atoms 来调用计算参数的实现方法
-        AseAtoms tAtoms = AseAtoms.of(aAtomData);
-        PyObject tPyAtoms = tAtoms.toPyObject();
+        PyObject tPyAtoms = AseAtoms.of(aAtomData).toPyObject(true);
         if (mKeepLastAtoms) mLastAtoms = tPyAtoms;
         try {
             tPyAtoms.setAttr("calc", mCalc);

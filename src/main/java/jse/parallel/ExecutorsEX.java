@@ -23,7 +23,7 @@ public class ExecutorsEX {
         @Override public boolean isTerminated() {return mPool.isTerminated();}
         @SuppressWarnings("ResultOfMethodCallIgnored") @Override public void awaitTermination() throws InterruptedException {mPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);}
         @SuppressWarnings("BusyWait") @Override public void waitUntilDone() throws InterruptedException {while (mPool.getActiveCount() > 0 || !mPool.getQueue().isEmpty()) Thread.sleep(SYNC_SLEEP_TIME);}
-        @Override public int jobNumber() {return mPool.getActiveCount() + mPool.getQueue().size();}
+        @Override public int njobs() {return mPool.getActiveCount() + mPool.getQueue().size();}
     }
     
     
@@ -31,14 +31,14 @@ public class ExecutorsEX {
         ThreadPoolExecutor tPool = new ThreadPoolExecutor(nThreads, nThreads, SYNC_TIMEOUT, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
         tPool.allowCoreThreadTimeOut(true);
         return new AbstractExecutorEX(tPool) {
-            @Override public int threadNumber() {return nThreads;}
+            @Override public int nthreads() {return nThreads;}
         };
     }
     public static IExecutorEX newSingleThreadExecutor() {
         ThreadPoolExecutor tPool = new ThreadPoolExecutor(1, 1, SYNC_TIMEOUT, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
         tPool.allowCoreThreadTimeOut(true);
         return new AbstractExecutorEX(tPool) {
-            @Override public int threadNumber() {return 1;}
+            @Override public int nthreads() {return 1;}
         };
     }
 }

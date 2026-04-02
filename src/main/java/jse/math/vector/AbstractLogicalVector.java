@@ -17,10 +17,6 @@ import java.util.function.BooleanSupplier;
 
 import static jse.math.vector.AbstractVector.*;
 
-/**
- * @author liqa
- * <p> 通用的逻辑向量类，由于默认实现比较复杂，并且涉及到重写 Object 的成员，因此部分方法放入抽象类中 </p>
- */
 public abstract class AbstractLogicalVector implements ILogicalVector {
     /** print */
     @Override public String toString() {
@@ -284,10 +280,10 @@ public abstract class AbstractLogicalVector implements ILogicalVector {
     
     
     /** stuff to override */
-    public abstract boolean get(int aIdx);
-    public abstract void set(int aIdx, boolean aValue);
-    public abstract boolean getAndSet(int aIdx, boolean aValue);
-    public abstract int size();
+    @Override public abstract boolean get(int aIdx);
+    @Override public abstract void set(int aIdx, boolean aValue);
+    @Override public abstract boolean getAndSet(int aIdx, boolean aValue);
+    @Override public abstract int size();
     protected abstract ILogicalVector newZeros_(int aSize);
     
     protected String toString_(boolean aValue) {return " "+(aValue?"T":"F");}

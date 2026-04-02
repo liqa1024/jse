@@ -19,8 +19,8 @@ import static jse.code.CS.ZL_STR;
  * <pre>
  *    {@link #atom(int)}: 获取指定索引的原子引用 {@link IAtom}
  *    {@link #box()}: 获取模拟盒对象
- *    {@link #atomNumber()}: 获取原子总数
- *    {@link #atomTypeNumber()}: 获取总原子种类数目
+ *    {@link #natoms()}: 获取原子总数
+ *    {@link #ntypes()}: 获取总原子种类数目
  * </pre>
  * @see IAtomData IAtomData: 通用的原子数据接口
  * @see AtomData AtomData: 一般的原子数据实现
@@ -70,17 +70,17 @@ public abstract class AbstractAtomData implements IAtomData {
      * @return {@inheritDoc}
      * @see AtomData AtomData: 关于具体实现的例子
      */
-    public abstract int atomNumber();
+    public abstract int natoms();
     /**
      * @return {@inheritDoc}
      * @see AtomData AtomData: 关于具体实现的例子
      */
-    public abstract int atomTypeNumber();
+    public abstract int ntypes();
     /**
      * @return {@inheritDoc}
      * @see #hasBond()
      */
-    @Override public int bondTypeNumber() {return 0;}
+    @Override public int ntypesBond() {return 0;}
     
     /**
      * @return {@inheritDoc}
@@ -145,7 +145,7 @@ public abstract class AbstractAtomData implements IAtomData {
         if (!hasMass()) return null;
         return new RefVector() {
             @Override public double get(int aIdx) {return mass(aIdx+1);}
-            @Override public int size() {return atomTypeNumber();}
+            @Override public int size() {return ntypes();}
         };
     }
     
@@ -184,9 +184,9 @@ public abstract class AbstractAtomData implements IAtomData {
         }
         /**
          * 为内部 type {@link #type_()} 包装一层检测 type
-         * 是否会超过 {@link #atomTypeNumber()}，如果超过了则自动截断
+         * 是否会超过 {@link #ntypes()}，如果超过了则自动截断
          */
-        @Override public int type() {return Math.min(type_(), atomTypeNumber());}
+        @Override public int type() {return Math.min(type_(), ntypes());}
         
         /**
          * 为内部 vx {@link #vx_()} 包装一层检测是否存在确实速度
@@ -231,9 +231,9 @@ public abstract class AbstractAtomData implements IAtomData {
         @Override public boolean hasID() {return AbstractAtomData.this.hasBondID();}
         /**
          * 为内部 type {@link #type_()} 包装一层检测 type
-         * 是否会超过 {@link #bondTypeNumber()}，如果超过了则自动截断
+         * 是否会超过 {@link #ntypesBond()}，如果超过了则自动截断
          */
-        @Override public int type() {return Math.min(type_(), bondTypeNumber());}
+        @Override public int type() {return Math.min(type_(), ntypesBond());}
         /** bondAtom 可以直接通过 {@link #atom(int)} 获取 */
         @Override public IAtom bondAtom() {return atom(bondIndex());}
         
@@ -250,7 +250,7 @@ public abstract class AbstractAtomData implements IAtomData {
     @Override public List<? extends IAtom> atoms() {
         return new AbstractRandomAccessList<IAtom>() {
             @Override public IAtom get(int index) {return atom(index);}
-            @Override public int size() {return atomNumber();}
+            @Override public int size() {return natoms();}
         };
     }
     
@@ -277,7 +277,7 @@ public abstract class AbstractAtomData implements IAtomData {
      * @see CS#ATOM_DATA_KEYS
      */
     @Override public NDArray<double[]> numpy() {
-        final int tAtomNum = atomNumber();
+        final int tAtomNum = natoms();
         double[] rData = new double[tAtomNum*8];
         for (int i = 0, j = 0; i < tAtomNum; ++i) {
             IAtom tAtom = atom(i);
@@ -299,7 +299,7 @@ public abstract class AbstractAtomData implements IAtomData {
      * @see CS#ATOM_DATA_KEYS_XYZ
      */
     @Override public NDArray<double[]> numpyXYZ() {
-        final int tAtomNum = atomNumber();
+        final int tAtomNum = natoms();
         double[] rData = new double[tAtomNum*3];
         for (int i = 0, j = 0; i < tAtomNum; ++i) {
             IAtom tAtom = atom(i);
@@ -316,7 +316,7 @@ public abstract class AbstractAtomData implements IAtomData {
      * @see CS#ATOM_DATA_KEYS_XYZID
      */
     @Override public NDArray<double[]> numpyXYZID() {
-        final int tAtomNum = atomNumber();
+        final int tAtomNum = natoms();
         double[] rData = new double[tAtomNum*4];
         for (int i = 0, j = 0; i < tAtomNum; ++i) {
             IAtom tAtom = atom(i);
@@ -334,7 +334,7 @@ public abstract class AbstractAtomData implements IAtomData {
      * @see CS#STD_ATOM_DATA_KEYS
      */
     @Override public NDArray<double[]> numpySTD() {
-        final int tAtomNum = atomNumber();
+        final int tAtomNum = natoms();
         double[] rData = new double[tAtomNum*5];
         for (int i = 0, j = 0; i < tAtomNum; ++i) {
             IAtom tAtom = atom(i);
@@ -353,7 +353,7 @@ public abstract class AbstractAtomData implements IAtomData {
      * @see CS#ALL_ATOM_DATA_KEYS
      */
     @Override public NDArray<double[]> numpyAll() {
-        final int tAtomNum = atomNumber();
+        final int tAtomNum = natoms();
         double[] rData = new double[tAtomNum*8];
         for (int i = 0, j = 0; i < tAtomNum; ++i) {
             IAtom tAtom = atom(i);
@@ -375,7 +375,7 @@ public abstract class AbstractAtomData implements IAtomData {
      * @see CS#ATOM_DATA_KEYS_VELOCITY
      */
     @Override public NDArray<double[]> numpyVelocities() {
-        final int tAtomNum = atomNumber();
+        final int tAtomNum = natoms();
         double[] rData = new double[tAtomNum*3];
         for (int i = 0, j = 0; i < tAtomNum; ++i) {
             IAtom tAtom = atom(i);
@@ -395,7 +395,7 @@ public abstract class AbstractAtomData implements IAtomData {
      * @see CS#ATOM_DATA_KEYS
      */
     @Override public double[][] data() {
-        final int tAtomNum = atomNumber();
+        final int tAtomNum = natoms();
         double[][] rData = new double[tAtomNum][];
         for (int i = 0; i < tAtomNum; ++i) {
             rData[i] = atom(i).data();
@@ -409,7 +409,7 @@ public abstract class AbstractAtomData implements IAtomData {
      * @see CS#ATOM_DATA_KEYS_XYZ
      */
     @Override public double[][] dataXYZ() {
-        final int tAtomNum = atomNumber();
+        final int tAtomNum = natoms();
         double[][] rData = new double[tAtomNum][];
         for (int i = 0; i < tAtomNum; ++i) {
             rData[i] = atom(i).dataXYZ();
@@ -423,7 +423,7 @@ public abstract class AbstractAtomData implements IAtomData {
      * @see CS#ATOM_DATA_KEYS_XYZID
      */
     @Override public double[][] dataXYZID() {
-        final int tAtomNum = atomNumber();
+        final int tAtomNum = natoms();
         double[][] rData = new double[tAtomNum][];
         for (int i = 0; i < tAtomNum; ++i) {
             rData[i] = atom(i).dataXYZID();
@@ -437,7 +437,7 @@ public abstract class AbstractAtomData implements IAtomData {
      * @see CS#STD_ATOM_DATA_KEYS
      */
     @Override public double[][] dataSTD() {
-        final int tAtomNum = atomNumber();
+        final int tAtomNum = natoms();
         double[][] rData = new double[tAtomNum][];
         for (int i = 0; i < tAtomNum; ++i) {
             rData[i] = atom(i).dataSTD();
@@ -451,7 +451,7 @@ public abstract class AbstractAtomData implements IAtomData {
      * @see CS#ALL_ATOM_DATA_KEYS
      */
     @Override public double[][] dataAll() {
-        final int tAtomNum = atomNumber();
+        final int tAtomNum = natoms();
         double[][] rData = new double[tAtomNum][];
         for (int i = 0; i < tAtomNum; ++i) {
             rData[i] = atom(i).dataAll();
@@ -465,7 +465,7 @@ public abstract class AbstractAtomData implements IAtomData {
      * @see CS#ATOM_DATA_KEYS_VELOCITY
      */
     @Override public double[][] dataVelocities() {
-        final int tAtomNum = atomNumber();
+        final int tAtomNum = natoms();
         double[][] rData = new double[tAtomNum][];
         for (int i = 0; i < tAtomNum; ++i) {
             rData[i] = atom(i).dataVelocities();
@@ -484,7 +484,7 @@ public abstract class AbstractAtomData implements IAtomData {
         @Nullable List<@Nullable String> tSymbols = symbols();
         return new SettableAtomData(
             NewCollections.map(atoms(), tHasVelocities ? (AtomFull::new) : (tHasID ? (AtomID::new) : (Atom::new))),
-            atomTypeNumber(), box().copy(), tHasID, tHasVelocities,
+            ntypes(), box().copy(), tHasID, tHasVelocities,
             tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR)
         );
     }
@@ -501,7 +501,7 @@ public abstract class AbstractAtomData implements IAtomData {
         @Nullable List<@Nullable String> tSymbols = symbols();
         return new SettableAtomData(
             NewCollections.map(atoms(), tHasVelocities ? (AtomFull::new) : (tHasID ? (AtomID::new) : (Atom::new))),
-            atomTypeNumber(), box().copy(), tHasID, tHasVelocities,
+            ntypes(), box().copy(), tHasID, tHasVelocities,
             tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR)
         );
     }
@@ -520,7 +520,7 @@ public abstract class AbstractAtomData implements IAtomData {
         @Nullable List<@Nullable String> tSymbols = symbols();
         return new SettableAtomData(
             NewCollections.from(aAtomNum, tHasVelocities ? (i -> new AtomFull()) : (tHasID ? (i -> new AtomID()) : (i -> new Atom()))),
-            atomTypeNumber(), aBox, tHasID, tHasVelocities,
+            ntypes(), aBox, tHasID, tHasVelocities,
             tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR)
         );
     }

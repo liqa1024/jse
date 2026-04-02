@@ -1,9 +1,6 @@
 package jse.cptr;
 
-import jse.gpu.CudaPointer;
-import jse.gpu.FloatCudaPointer;
-import jse.gpu.Int64CudaPointer;
-import jse.gpu.IntCudaPointer;
+import jse.gpu.*;
 import org.jetbrains.annotations.ApiStatus;
 
 /**
@@ -88,4 +85,10 @@ public interface IPointer {
      * @return 双精度浮点的 cuda 指针包装类
      */
     default FloatCudaPointer asFloatCudaPointer() {return new FloatCudaPointer(ptr_());}
+    /**
+     * 将此接口转换成一个双精度浮点的 cuda 指针 {@link DoubleCudaPointer}，类似在 c
+     * 中使用 {@code (double *)ptr} 来进行强制类型转换
+     * @return 双精度浮点的 cuda 指针包装类
+     */
+    default DoubleCudaPointer asDoubleCudaPointer() {return new DoubleCudaPointer(ptr_());}
 }

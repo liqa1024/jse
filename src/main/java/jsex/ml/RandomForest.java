@@ -39,7 +39,7 @@ public class RandomForest extends AbstractThreadPool<ParforThreadPool> implement
     /** 随机森林使用略微修改的决策树来增加随机性 */
     public static DecisionTree.Builder treeBuilder(@Unmodifiable List<? extends IVector> aTrainDataInput, ILogicalVector aTrainDataOutput) {
         return new DecisionTree.Builder(aTrainDataInput, aTrainDataOutput) {
-            @Override protected int getConsiderCharaNumber(int aAllCharaNum) {
+            @Override protected int getConsiderCharaCount(int aAllCharaNum) {
                 return Math.max(1, MathEX.Code.round2int(MathEX.Fast.sqrt(aAllCharaNum)));
             }
         }.setMaxDepth(8);
@@ -55,12 +55,15 @@ public class RandomForest extends AbstractThreadPool<ParforThreadPool> implement
     
     
     /** 现在支持设置线程数 */
-    public RandomForest setThreadNumber(@Range(from=1, to=Integer.MAX_VALUE) int aThreadNum)  {if (aThreadNum != threadNumber()) setPool(new ParforThreadPool(aThreadNum, true)); return this;}
+    public RandomForest setNthreads(@Range(from=1, to=Integer.MAX_VALUE) int aNumThreads)  {
+        if (aNumThreads != nthreads()) setPool(new ParforThreadPool(aNumThreads, true));
+        return this;
+    }
     
     /** 输入 x 进行进行决策判断 */
     public double predict(final IVector aInput) {
         int tTreeNum = mTrees.size();
-        int[] rPredTrueNumPar = new int[threadNumber()];
+        int[] rPredTrueNumPar = new int[nthreads()];
         pool().parfor(tTreeNum, (i, threadID) -> {
             if (mTrees.get(i).makeDecision(aInput)) ++rPredTrueNumPar[threadID];
         });
@@ -144,7 +147,7 @@ public class RandomForest extends AbstractThreadPool<ParforThreadPool> implement
         final int tTrainSampleNum = Math.max(1, MathEX.Code.round2int(tSampleNum * aTrainRatio));
         
         // 为了并行使用随机数生成器，这里统一采用 UT.Par.splitRandoms
-        final IRandom[] tRNGs = UT.Par.splitRandoms(threadNumber(), aSeed);
+        final IRandom[] tRNGs = UT.Par.splitRandoms(nthreads(), aSeed);
         // 统一创建好 mTrees 避免并行写入的问题
         mTrees = NewCollections.nulls(aTreeNum);
         

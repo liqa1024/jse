@@ -168,9 +168,9 @@ public final class AtomData extends AbstractAtomData {
      */
     @Override public IBox box() {return mBox;}
     /** @return {@inheritDoc} */
-    @Override public int atomNumber() {return mAtoms.size();}
+    @Override public int natoms() {return mAtoms.size();}
     /** @return {@inheritDoc} */
-    @Override public int atomTypeNumber() {return mAtomTypeNum;}
+    @Override public int ntypes() {return mAtomTypeNum;}
     
     /**
      * @return {@inheritDoc}

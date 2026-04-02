@@ -12,7 +12,7 @@ int N_G = 500
 double rMax = 10.0
 
 // 导入 data 文件
-def data = Data.read('lmp/data/data-glass')
+def data = Data.read('data/lmp/data/data-glass')
 
 // 根据 data 创建参数计算器 apc 并计算 gr
 def apc = APC.of(data)

@@ -161,7 +161,7 @@ public class SystemLmpPotential extends AbstractLmpPotential {
         String tUniqueID = UT.Code.randID();
         IO.makeDir(mChecker.mWorkingDir);
         // 事先准备输入 data 文件
-        Lmpdat tData = Lmpdat.of(aAtomData, Vectors.ones(aAtomData.atomTypeNumber()));
+        Lmpdat tData = Lmpdat.of(aAtomData, Vectors.ones(aAtomData.ntypes()));
         tData.ids().fill(i -> i+1); // 清空可能存在的 id，简化排序问题
         String tDataPath = mChecker.mWorkingDir+"data-"+tUniqueID;
         tData.write(tDataPath);
@@ -275,7 +275,7 @@ public class SystemLmpPotential extends AbstractLmpPotential {
         if (!aBox.isLmpStyle()) {
             LmpBox tBox = tData.box();
             XYZ tBuf0 = new XYZ(), tBuf1 = new XYZ(), tBuf2 = new XYZ();
-            final int tAtomNum = aAtomData.atomNumber();
+            final int tAtomNum = aAtomData.natoms();
             if (tRequireForce) for (int i = 0; i < tAtomNum; ++i) {
                 assert tForcesX!=null && tForcesY!=null && tForcesZ!=null;
                 tBuf0.setXYZ(tForcesX.get(i), tForcesY.get(i), tForcesZ.get(i));

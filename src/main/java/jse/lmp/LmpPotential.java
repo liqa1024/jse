@@ -132,7 +132,7 @@ public class LmpPotential extends AbstractLmpPotential {
         mLmp.command("boundary  p p p");
         mLmp.loadData(aAtomData, true); // 统一不需要 id 信息，简化排序问题
         // 补充可能不存在的质量信息，只是例行设置，不影响结果
-        final int tAtomTypeNum = aAtomData.atomTypeNumber();
+        final int tAtomTypeNum = aAtomData.ntypes();
         for (int tType = 1; tType <= tAtomTypeNum; ++tType) {
             double tMass = aAtomData.mass(tType);
             if (Double.isNaN(tMass)) mLmp.command(String.format("mass  %d 1.0", tType));
@@ -206,7 +206,7 @@ public class LmpPotential extends AbstractLmpPotential {
         if (!aBox.isLmpStyle()) {
             LmpBox tBox = LmpBox.of(aBox);
             XYZ tBuf0 = new XYZ(), tBuf1 = new XYZ(), tBuf2 = new XYZ();
-            final int tAtomNum = aAtomData.atomNumber();
+            final int tAtomNum = aAtomData.natoms();
             if (tRequireForce) for (int i = 0; i < tAtomNum; ++i) {
                 assert tForces != null;
                 tBuf0.setXYZ(tForces.get(i, 0), tForces.get(i, 1), tForces.get(i, 2));

@@ -16,8 +16,8 @@ import static jse.math.vector.AbstractVector.*;
 
 
 /**
+ * 整数向量的一般实现
  * @author liqa
- * <p> 整数向量的一般实现 </p>
  */
 public class LongVector extends LongArrayVector {
     /** 提供默认的创建 */
@@ -43,10 +43,10 @@ public class LongVector extends LongArrayVector {
         }
         
         /** Groovy stuffs */
-        public Builder append(long aValue) {return (Builder)super.append(aValue);}
-        public Builder appendAll(ILongVector aVector) {return (Builder)super.appendAll(aVector);}
-        @VisibleForTesting public Builder leftShift(long aValue) {return (Builder)super.leftShift(aValue);}
-        @VisibleForTesting public Builder leftShift(ILongVector aVector) {return (Builder)super.leftShift(aVector);}
+        @Override public Builder append(long aValue) {return (Builder)super.append(aValue);}
+        @Override public Builder appendAll(ILongVector aVector) {return (Builder)super.appendAll(aVector);}
+        @Override @VisibleForTesting public Builder leftShift(long aValue) {return (Builder)super.leftShift(aValue);}
+        @Override @VisibleForTesting public Builder leftShift(ILongVector aVector) {return (Builder)super.leftShift(aVector);}
     }
     
     private int mSize;

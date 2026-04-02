@@ -1,21 +1,36 @@
 package jsex.nep;
 
 import jse.atom.IPairPotential;
-import jse.cache.DoubleArrayCache;
+import jse.clib.Compiler;
 import jse.code.IO;
 import jse.code.OS;
+import jse.code.UT;
 import jse.code.collection.DoubleList;
+import jse.code.collection.IntList;
+import jse.cptr.*;
+import jse.gpu.*;
+import jse.jit.IJITEngine;
+import jse.jit.IJITMethod;
+import jse.jit.SimpleJIT;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.*;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
+import static jse.code.CS.VERSION_NUMBER;
 import static jse.code.CS.ZL_STR;
-import static jse.math.MathEX.Fast.*;
+import static jse.code.Conf.VERSION_MASK;
+import static jse.code.OS.JAVA_HOME;
+import static jse.cptr.CPointer.NULL;
 
 /**
- * jse 实现的 cpu 版 nep，具体定义可以参考：
+ * jse 实现的 nep，具体定义可以参考：
  * <a href="https://pubs.aip.org/aip/jcp/article-abstract/157/11/114801/2841888/GPUMD-A-package-for-constructing-accurate-machine">
  * GPUMD: A package for constructing accurate machine-learned potentials and performing highly efficient atomistic simulations </a>
  * <p>
@@ -24,30 +39,97 @@ import static jse.math.MathEX.Fast.*;
  * brucefan1983/NEP_CPU: CPU version of NEP </a>
  * 因此同样也基于 GPL-3.0 协议
  * <p>
- * 所有命令照搬 c++ 中的实现，并且命名格式保留原本格式
+ * 所有命令照搬 c++ 中的实现，并且命名格式保留原本格式，
+ * 现在改为运行时编译并大幅增加模板使用来进一步提高效率
  * <p>
- * 更新日期：2025-04-19
+ * 更新日期：2025-05-04 (目前最新版本不够稳定)
  * <p>
- * commit SHA: 817208327506fab599f942d5cdc2bff585f34f10
+ * commit SHA: 0155fd78cdf107a2c5a8dd31da9a29f3489d203e
  *
  * @author Zheyong Fan, Junjie Wang, Eric Lindgren，liqa
  */
 public class NEP implements IPairPotential {
     
     public final static class Conf {
+        /**
+         * 自定义 nep cuda 中使用的 block_size 值，这可能会影响速度；
+         * 默认为 {@code 256}
+         */
+        public static int CUDA_BLOCKSIZE = OS.envI("JSE_NEP_CUDA_BLOCKSIZE", 256);
+        
+        /**
+         * nep 内部实现中使用查表方式计算径向函数，
+         * 应当会有更高的速度，默认关闭
+         */
         public static boolean USE_TABLE_FOR_RADIAL_FUNCTIONS = OS.envZ("JSE_NEP_USE_TABLE_FOR_RADIAL_FUNCTIONS", false);
+        
+        /**
+         * 自定义构建 nep 的 cmake 参数设置，
+         * 会在构建时使用 -D ${key}=${value} 传入
+         */
+        public final static Map<String, String> CMAKE_SETTING = OS.envMap("JSE_CMAKE_SETTING_NEP");
+        /**
+         * 自定义构建 nep 时使用的编译器，
+         * cmake 有时不能自动检测到希望使用的编译器
+         */
+        public static @Nullable String CMAKE_CXX_COMPILER = OS.env("JSE_CMAKE_CXX_COMPILER_NEP", jse.code.Conf.CMAKE_CXX_COMPILER);
+        public static @Nullable String CMAKE_CXX_FLAGS    = OS.env("JSE_CMAKE_CXX_FLAGS_NEP"   , jse.code.Conf.CMAKE_CXX_FLAGS);
+        public static @Nullable String CMAKE_CUDA_COMPILER = OS.env("JSE_CMAKE_CUDA_COMPILER_NEP");
+        public static @Nullable String CMAKE_CUDA_FLAGS    = OS.env("JSE_CMAKE_CUDA_FLAGS_NEP");
+        /**
+         * 自定义构建 nep 时的优化等级，
+         * 默认会使用 BASE 优化
+         */
+        public static int OPTIM_LEVEL = OS.envI("JSE_NEP_OPTIM_LEVEL", IJITEngine.OPTIM_BASE);
+        /**
+         * 设置 nep 内部计算的默认精度，默认为 double
+         */
+        public static String PRECISION = OS.env("JSE_NEP_PRECISION", "double");
     }
+    final static String VERSION_SHA = "0155fd78cdf107a2c5a8dd31da9a29f3489d203e";
+    
+    private static final String JIT_NAME = "nepjit";
+    private final static String INTERFACE_NAME = "nep_interface.cpp", INTERFACE_HEAD_NAME = "nep_interface.h";
+    private final static String INTERFACE_NAME_CUDA = "nep_interface_cuda.cu", INTERFACE_HEAD_NAME_CUDA = "nep_interface_cuda.h";
+    private final static String SRC_NAME = "nep_core.hpp";
     
     NEP() {}
-    public NEP(String aPotentialFileName) throws IOException {
-        init_from_file(aPotentialFileName);
+    public NEP(String aPotentialFileName) throws Exception {
+        init_from_file(aPotentialFileName, "cpu");
     }
     
-    @Override public int atomTypeNumber() {return element_list.size();}
+    @Override public int ntypes() {return element_list.size();}
     @Override public boolean hasSymbol() {return true;}
     @Override public String symbol(int aType) {return element_list.get(aType-1);}
     @Override public double rcutMax() {return Math.max(paramb.rc_radial, paramb.rc_angular);}
-    @Override public boolean neighborListChecked() {return true;}
+    
+    
+    private final DoubleList mNlDxBuf = new DoubleList(16), mNlDyBuf = new DoubleList(16), mNlDzBuf = new DoubleList(16);
+    private final IntList mNlTypeBuf = new IntList(16), mNlIdxBuf = new IntList(16);
+    
+    private int buildNL_(IDxyzTypeIdxIterable aNL, double aRCut) {
+        final int tTypeNum = this.ntypes();
+        // 缓存情况需要先清空这些
+        mNlDxBuf.clear(); mNlDyBuf.clear(); mNlDzBuf.clear();
+        mNlTypeBuf.clear(); mNlIdxBuf.clear();
+        aNL.forEachDxyzTypeIdx(aRCut, (dx, dy, dz, type, idx) -> {
+            // 为了效率这里不进行近邻检查，因此需要上层近邻列表提供时进行检查
+            if (type > tTypeNum) throw new IllegalArgumentException("Exist type ("+type+") greater than the input typeNum ("+tTypeNum+")");
+            // 简单缓存近邻列表
+            mNlDxBuf.add(dx); mNlDyBuf.add(dy); mNlDzBuf.add(dz);
+            mNlTypeBuf.add(type-1); mNlIdxBuf.add(idx);
+        });
+        int tNeiNum = mNlIdxBuf.size();
+        mNlDx.ensureCapacity(tNeiNum); mNlDx.fillD(mNlDxBuf);
+        mNlDy.ensureCapacity(tNeiNum); mNlDy.fillD(mNlDyBuf);
+        mNlDz.ensureCapacity(tNeiNum); mNlDz.fillD(mNlDzBuf);
+        mNlType.ensureCapacity(tNeiNum);
+        mNlType.fill(mNlTypeBuf);
+        mNlFx.ensureCapacity(tNeiNum);
+        mNlFy.ensureCapacity(tNeiNum);
+        mNlFz.ensureCapacity(tNeiNum);
+        return tNeiNum;
+    }
     
     /**
      * {@inheritDoc}
@@ -55,26 +137,46 @@ public class NEP implements IPairPotential {
      * @param aNeighborListGetter {@inheritDoc}
      * @param rEnergyAccumulator {@inheritDoc}
      */
-    @Override public void calEnergy(int aAtomNumber, INeighborListGetter aNeighborListGetter, IEnergyAccumulator rEnergyAccumulator) {
-        if (num_atoms < aAtomNumber) {
-            Fp.clear(); Fp.addZeros(aAtomNumber * annmb.dim);
-            sum_fxyz.clear(); sum_fxyz.addZeros(aAtomNumber * (paramb.n_max_angular+1) * NUM_OF_ABC);
-            num_atoms = aAtomNumber;
-        }
-        find_descriptor(
-            paramb, annmb, aAtomNumber, aNeighborListGetter,
-            gn_radial.internalData(), gn_angular.internalData(),
-            Fp.internalData(), sum_fxyz.internalData(), rEnergyAccumulator
-        );
-        if (zbl.enabled) {
-            find_force_ZBL(
-                paramb, zbl, aNeighborListGetter,
-                null,
-                null,
-                rEnergyAccumulator
-            );
-        }
+    @Override public void calEnergy(int aAtomNumber, INeighborListGetter aNeighborListGetter, IEnergyAccumulator rEnergyAccumulator) throws Exception {
+        if (mDead) throw new IllegalStateException("This NEP is dead");
+        if (!mInited) throw new IllegalStateException();
+        if (mCuda) throw new UnsupportedOperationException();
+        Fp.ensureCapacity(annmb.dim);
+        sum_fxyz.ensureCapacity((long) (paramb.n_max_angular + 1) * NUM_OF_ABC);
+        aNeighborListGetter.forEachNLWithException(null, null, (threadID, cIdx, cType, nl) -> {
+            // 近邻列表构建以及相关值设置
+            int tNeiNum = buildNL_(nl, rcutMax());
+            mInNums.putAt(0, tNeiNum);
+            mInNums.putAt(1, cType-1);
+            // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
+            mDataIn.putAt(0, mInNums);
+            mDataIn.putAt(1, mNlDx);
+            mDataIn.putAt(2, mNlDy);
+            mDataIn.putAt(3, mNlDz);
+            mDataIn.putAt(4, mNlType);
+            mDataIn.putAt(5, paramb.atomic_numbers);
+            mDataIn.putAt(6, paramb.q_scaler);
+            mDataIn.putAt(7, annmb.w0);
+            mDataIn.putAt(8, annmb.b0);
+            mDataIn.putAt(9, annmb.w1);
+            mDataIn.putAt(10, annmb.b1);
+            mDataIn.putAt(11, annmb.c);
+            mDataIn.putAt(12, zbl.para);
+            mDataIn.putAt(13, gn_radial);
+            mDataIn.putAt(14, gn_angular);
+            mDataOut.putAt(0, mOutEng);
+            mDataOut.putAt(1, mNlFx);
+            mDataOut.putAt(2, mNlFy);
+            mDataOut.putAt(3, mNlFz);
+            mDataOut.putAt(4, Fp);
+            mDataOut.putAt(5, sum_fxyz);
+            // 调用 jit 方法获取结果
+            mCalEnergy.invoke(mDataIn, mDataOut);
+            double tEng = mOutEng.getD();
+            rEnergyAccumulator.add(threadID, cIdx, -1, tEng);
+        });
     }
+    
     /**
      * {@inheritDoc}
      * @param aAtomNumber {@inheritDoc}
@@ -83,37 +185,335 @@ public class NEP implements IPairPotential {
      * @param rForceAccumulator {@inheritDoc}
      * @param rVirialAccumulator {@inheritDoc}
      */
-    @Override public void calEnergyForceVirial(int aAtomNumber, INeighborListGetter aNeighborListGetter, @Nullable IEnergyAccumulator rEnergyAccumulator, @Nullable IForceAccumulator rForceAccumulator, @Nullable IVirialAccumulator rVirialAccumulator) {
-        if (num_atoms < aAtomNumber) {
-            Fp.clear(); Fp.addZeros(aAtomNumber * annmb.dim);
-            sum_fxyz.clear(); sum_fxyz.addZeros(aAtomNumber * (paramb.n_max_angular + 1) * NUM_OF_ABC);
-            num_atoms = aAtomNumber;
-        }
-        find_descriptor(
-            paramb, annmb, aAtomNumber, aNeighborListGetter,
-            gn_radial.internalData(), gn_angular.internalData(),
-            Fp.internalData(), sum_fxyz.internalData(), rEnergyAccumulator
-        );
-        find_force_radial(
-            paramb, annmb, aAtomNumber, aNeighborListGetter,
-            Fp.internalData(), gnp_radial.internalData(),
-            rForceAccumulator, rVirialAccumulator
-        );
-        find_force_angular(
-            paramb, annmb, aAtomNumber, aNeighborListGetter,
-            Fp.internalData(), sum_fxyz.internalData(),
-            gn_angular.internalData(), gnp_angular.internalData(),
-            rForceAccumulator, rVirialAccumulator
-        );
-        if (zbl.enabled) {
-            find_force_ZBL(
-                paramb, zbl, aNeighborListGetter,
-                rForceAccumulator,
-                rVirialAccumulator,
-                rEnergyAccumulator
-            );
-        }
+    @Override public void calEnergyForceVirial(int aAtomNumber, INeighborListGetter aNeighborListGetter, @Nullable IEnergyAccumulator rEnergyAccumulator, @Nullable IForceAccumulator rForceAccumulator, @Nullable IVirialAccumulator rVirialAccumulator) throws Exception {
+        if (mDead) throw new IllegalStateException("This NEP is dead");
+        if (!mInited) throw new IllegalStateException();
+        if (mCuda) throw new UnsupportedOperationException();
+        Fp.ensureCapacity(annmb.dim);
+        sum_fxyz.ensureCapacity((long) (paramb.n_max_angular + 1) * NUM_OF_ABC);
+        aNeighborListGetter.forEachNLWithException(null, null, (threadID, cIdx, cType, nl) -> {
+            // 近邻列表构建以及相关值设置
+            int tNeiNum = buildNL_(nl, rcutMax());
+            mInNums.putAt(0, tNeiNum);
+            mInNums.putAt(1, cType-1);
+            // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
+            mDataIn.putAt(0, mInNums);
+            mDataIn.putAt(1, mNlDx);
+            mDataIn.putAt(2, mNlDy);
+            mDataIn.putAt(3, mNlDz);
+            mDataIn.putAt(4, mNlType);
+            mDataIn.putAt(5, paramb.atomic_numbers);
+            mDataIn.putAt(6, paramb.q_scaler);
+            mDataIn.putAt(7, annmb.w0);
+            mDataIn.putAt(8, annmb.b0);
+            mDataIn.putAt(9, annmb.w1);
+            mDataIn.putAt(10, annmb.b1);
+            mDataIn.putAt(11, annmb.c);
+            mDataIn.putAt(12, zbl.para);
+            mDataIn.putAt(13, gn_radial);
+            mDataIn.putAt(14, gn_angular);
+            mDataIn.putAt(15, gnp_radial);
+            mDataIn.putAt(16, gnp_angular);
+            mDataOut.putAt(0, mOutEng);
+            mDataOut.putAt(1, mNlFx);
+            mDataOut.putAt(2, mNlFy);
+            mDataOut.putAt(3, mNlFz);
+            mDataOut.putAt(4, Fp);
+            mDataOut.putAt(5, sum_fxyz);
+            // 调用 jit 方法获取结果
+            mCalEnergyForce.invoke(mDataIn, mDataOut);
+            double tEng = mOutEng.getD();
+            if (rEnergyAccumulator != null) {
+                rEnergyAccumulator.add(threadID, cIdx, -1, tEng);
+            }
+            // 累加交叉项到近邻
+            for (int j = 0; j < tNeiNum; ++j) {
+                double dx = mNlDxBuf.get(j);
+                double dy = mNlDyBuf.get(j);
+                double dz = mNlDzBuf.get(j);
+                int idx = mNlIdxBuf.get(j);
+                // 为了效率这里不进行近邻检查，因此需要上层近邻列表提供时进行检查；
+                // 直接遍历查询不走合并了，实测专门合并还会影响效率
+                double fx = mNlFx.getAtD(j);
+                double fy = mNlFy.getAtD(j);
+                double fz = mNlFz.getAtD(j);
+                if (rForceAccumulator != null) {
+                    rForceAccumulator.add(threadID, cIdx, idx, fx, fy, fz);
+                }
+                if (rVirialAccumulator != null) {
+                    // GPUMD 给出的更具对称性的形式要求累加到近邻的 index 上
+                    rVirialAccumulator.add(threadID, -1, idx, fx, fy, fz, dx, dy, dz);
+                }
+            }
+        });
     }
+    
+    
+    private void validNlLammps_(int aNeiNum) {
+        mNlDx.ensureCapacity(aNeiNum);
+        mNlDy.ensureCapacity(aNeiNum);
+        mNlDz.ensureCapacity(aNeiNum);
+        mNlType.ensureCapacity(aNeiNum);
+        mNlIdx.ensureCapacity(aNeiNum);
+        mNlFx.ensureCapacity(aNeiNum);
+        mNlFy.ensureCapacity(aNeiNum);
+        mNlFz.ensureCapacity(aNeiNum);
+    }
+    void computeLammps(PairNEP aPair) {
+        if (mDead) throw new IllegalStateException("This NEP is dead");
+        if (!mInited) throw new IllegalStateException();
+        if (mCuda) throw new IllegalStateException();
+        // 近邻列表大小获取和缓存合理化
+        int inum = aPair.listInum();
+        IntCPointer ilist = aPair.listIlist();
+        IntCPointer numneigh = aPair.listNumneigh();
+        mInNums.putAt(0, inum);
+        mDataIn.putAt(0, mInNums);
+        mDataIn.putAt(1, ilist);
+        mDataIn.putAt(2, numneigh);
+        mStatNeiNumLammps.invoke(mDataIn, mOutNums);
+        validNlLammps_(mOutNums.getAt(0));
+        
+        Fp.ensureCapacity(annmb.dim);
+        sum_fxyz.ensureCapacity((long) (paramb.n_max_angular + 1) * NUM_OF_ABC);
+        // compute 开始，参数设置
+        mInNums.putAt(0, inum);
+        mInNums.putAt(1, aPair.eflagEither()?1:0);
+        mInNums.putAt(2, aPair.vflagEither()?1:0);
+        mInNums.putAt(3, aPair.eflagAtom()?1:0);
+        mInNums.putAt(4, aPair.vflagAtom()?1:0);
+        mInNums.putAt(5, aPair.cvflagAtom()?1:0);
+        
+        // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
+        mDataIn.putAt(0, mInNums);
+        mDataIn.putAt(1, mNlDx);
+        mDataIn.putAt(2, mNlDy);
+        mDataIn.putAt(3, mNlDz);
+        mDataIn.putAt(4, mNlType);
+        mDataIn.putAt(5, mNlIdx);
+        mDataIn.putAt(6, paramb.atomic_numbers);
+        mDataIn.putAt(7, paramb.q_scaler);
+        mDataIn.putAt(8, annmb.w0);
+        mDataIn.putAt(9, annmb.b0);
+        mDataIn.putAt(10, annmb.w1);
+        mDataIn.putAt(11, annmb.b1);
+        mDataIn.putAt(12, annmb.c);
+        mDataIn.putAt(13, zbl.para);
+        mDataIn.putAt(14, gn_radial);
+        mDataIn.putAt(15, gn_angular);
+        mDataIn.putAt(16, gnp_radial);
+        mDataIn.putAt(17, gnp_angular);
+        mDataIn.putAt(18, aPair.atomX());
+        mDataIn.putAt(19, aPair.atomType());
+        mDataIn.putAt(20, ilist);
+        mDataIn.putAt(21, numneigh);
+        mDataIn.putAt(22, aPair.listFirstneigh());
+        mDataIn.putAt(23, aPair.mCutoffsq);
+        mDataIn.putAt(24, aPair.mTypeMap);
+        
+        mDataOut.putAt(0, aPair.atomF());
+        mDataOut.putAt(1, mNlFx);
+        mDataOut.putAt(2, mNlFy);
+        mDataOut.putAt(3, mNlFz);
+        mDataOut.putAt(4, Fp);
+        mDataOut.putAt(5, sum_fxyz);
+        mDataOut.putAt(6, aPair.engVdwl());
+        mDataOut.putAt(7, aPair.eatom());
+        mDataOut.putAt(8, aPair.virial());
+        mDataOut.putAt(9, aPair.vatom());
+        mDataOut.putAt(10, aPair.cvatom());
+        
+        // 调用 jit 方法计算
+        mComputeLammps.invoke(mDataIn, mDataOut);
+    }
+    
+    
+    private boolean mCudaParaInited = false;
+    private void initLmpParamCuda_(PairNEP aPair) throws CudaException {
+        if (mCudaParaInited) return;
+        mCudaParaInited = true;
+        mCudaTypeMap = IntCudaPointer.malloc(aPair.mTypeNum+1);
+        mCudaTypeMap.fill(aPair.mTypeMap, aPair.mTypeNum+1);
+    }
+    void computeLammpsCuda(PairNEP aPair) throws CudaException {
+        if (mDead) throw new IllegalStateException("This NEP is dead");
+        if (!mInited) throw new IllegalStateException();
+        if (!mCuda) throw new IllegalStateException();
+        initLmpParamCuda_(aPair);
+        // 常规缓存向量长度规范
+        final boolean nlflag = mNumneighMax<0 || aPair.neighborAgo()==0;
+        final boolean cvflagAtom = aPair.cvflagAtom();
+        final int inum = aPair.listInum();
+        final int nlocal = aPair.atomNlocal();
+        final int nghost = aPair.atomNghost();
+        final int nlocalghost = nlocal + nghost;
+        mFltBuf.ensureCapacity((long)nlocalghost*9);
+        mCudaX.ensureCapacity((long)nlocalghost*3);
+        mCudaF0.ensureCapacity((long)inum*3);
+        mCudaF1.ensureCapacity((long)nlocalghost*3);
+        mCudaEatom0.ensureCapacity((long)inum);
+        mCudaVatom0.ensureCapacity((long)inum*6);
+        mCudaVatom1.ensureCapacity((long)nlocalghost*(cvflagAtom?9:6));
+        mCudaType.ensureCapacity(nlocalghost);
+        if (nlflag) {
+            mCudaIlist.ensureCapacity(inum);
+            mCudaNumneigh.ensureCapacity(inum);
+        }
+        mCudaGNeiNum.ensureCapacity(inum);
+        mCudaGCType.ensureCapacity(inum);
+        cuda_Fp.ensureCapacity((long)inum*annmb.dim);
+        cuda_sum_fxyz.ensureCapacity((long)inum*(paramb.n_max_angular+1)*NUM_OF_ABC);
+        // 近邻列表大小获取和缓存合理化
+        IPointer ilist = NULL;
+        IPointer numneigh = NULL;
+        IPointer firstneigh = NULL;
+        if (nlflag) {
+            ilist = aPair.listIlist();
+            numneigh = aPair.listNumneigh();
+            firstneigh = aPair.listFirstneigh();
+            mInNums.putAt(0, inum);
+            mDataIn.putAt(0, mInNums);
+            mDataIn.putAt(1, ilist);
+            mDataIn.putAt(2, numneigh);
+            mStatNeiNumLammps.invoke(mDataIn, mOutNums);
+            mNumneighMax = mOutNums.getAt(0);
+        }
+        // 近邻列表缓存向量长度规范
+        if (nlflag) {
+            int tTotNeiNum = inum*mNumneighMax;
+            mIntBuf.ensureCapacity(tTotNeiNum);
+            mCudaFirstneigh.ensureCapacity(tTotNeiNum);
+            mCudaGNlType.ensureCapacity(tTotNeiNum);
+            mCudaGNlIdx.ensureCapacity(tTotNeiNum);
+            mCudaGNlDx.ensureCapacity(tTotNeiNum);
+            mCudaGNlDy.ensureCapacity(tTotNeiNum);
+            mCudaGNlDz.ensureCapacity(tTotNeiNum);
+            mCudaGNlFx.ensureCapacity(tTotNeiNum);
+            mCudaGNlFy.ensureCapacity(tTotNeiNum);
+            mCudaGNlFz.ensureCapacity(tTotNeiNum);
+        }
+        
+        // lammps -> cuda
+        mInNums.putAt(0, inum);
+        mInNums.putAt(1, nlocalghost);
+        mInNums.putAt(2, nlflag?1:0);
+        mInNums.putAt(3, mNumneighMax);
+        
+        mDataIn.putAt(0, mInNums);
+        mDataIn.putAt(1, aPair.atomX());
+        mDataIn.putAt(2, aPair.atomType());
+        if (nlflag) {
+            mDataIn.putAt(3, ilist);
+            mDataIn.putAt(4, numneigh);
+            mDataIn.putAt(5, firstneigh);
+        }
+        
+        mDataOut.putAt(0, mFltBuf);
+        mDataOut.putAt(1, mIntBuf);
+        mDataOut.putAt(2, mCudaX);
+        mDataOut.putAt(3, mCudaType);
+        if (nlflag) {
+            mDataOut.putAt(4, mCudaIlist);
+            mDataOut.putAt(5, mCudaNumneigh);
+            mDataOut.putAt(6, mCudaFirstneigh);
+        }
+        
+        int tCode = mLammps2Cuda.invoke(mDataIn, mDataOut);
+        CudaCore.cudaExceptionCheck(tCode);
+        
+        // cuda compute
+        mInNums.putAt(0, inum);
+        mInNums.putAt(1, nlocalghost);
+        mInNums.putAt(2, aPair.eflagEither()?1:0);
+        mInNums.putAt(3, aPair.vflagEither()?1:0);
+        mInNums.putAt(4, aPair.eflagAtom()?1:0);
+        mInNums.putAt(5, aPair.vflagAtom()?1:0);
+        mInNums.putAt(6, cvflagAtom?1:0);
+        
+        mDataIn.putAt(0, mInNums);
+        mDataIn.putAt(1, mCudaX);
+        mDataIn.putAt(2, mCudaType);
+        mDataIn.putAt(3, mCudaIlist);
+        mDataIn.putAt(4, mCudaNumneigh);
+        mDataIn.putAt(5, mCudaFirstneigh);
+        mDataIn.putAt(6, aPair.mCutoffsq);
+        mDataIn.putAt(7, mCudaTypeMap);
+        mDataIn.putAt(8, paramb.cuda_atomic_numbers);
+        mDataIn.putAt(9, paramb.cuda_q_scaler);
+        mDataIn.putAt(10, annmb.cuda_w0);
+        mDataIn.putAt(11, annmb.cuda_b0);
+        mDataIn.putAt(12, annmb.cuda_w1);
+        mDataIn.putAt(13, annmb.cuda_b1);
+        mDataIn.putAt(14, annmb.cuda_c);
+        mDataIn.putAt(15, zbl.cuda_para);
+        mDataIn.putAt(16, cuda_gn_radial);
+        mDataIn.putAt(17, cuda_gn_angular);
+        mDataIn.putAt(18, cuda_gnp_radial);
+        mDataIn.putAt(19, cuda_gnp_angular);
+        
+        mDataOut.putAt(0, mCudaF0);
+        mDataOut.putAt(1, mCudaF1);
+        mDataOut.putAt(2, mCudaEatom0);
+        mDataOut.putAt(3, mCudaVatom0);
+        mDataOut.putAt(4, mCudaVatom1);
+        mDataOut.putAt(5, mCudaGNlDx);
+        mDataOut.putAt(6, mCudaGNlDy);
+        mDataOut.putAt(7, mCudaGNlDz);
+        mDataOut.putAt(8, mCudaGNlType);
+        mDataOut.putAt(9, mCudaGNlIdx);
+        mDataOut.putAt(10, mCudaGNeiNum);
+        mDataOut.putAt(11, mCudaGCType);
+        mDataOut.putAt(12, mCudaGNlFx);
+        mDataOut.putAt(13, mCudaGNlFy);
+        mDataOut.putAt(14, mCudaGNlFz);
+        mDataOut.putAt(15, cuda_Fp);
+        mDataOut.putAt(16, cuda_sum_fxyz);
+        
+        tCode = mComputeLammpsCuda.invoke(mDataIn, mDataOut);
+        CudaCore.cudaExceptionCheck(tCode);
+        
+        // cuda -> lammps
+        mInNums.putAt(0, inum);
+        mInNums.putAt(1, nlocalghost);
+        mInNums.putAt(2, aPair.eflagEither()?1:0);
+        mInNums.putAt(3, aPair.vflagEither()?1:0);
+        mInNums.putAt(4, aPair.eflagAtom()?1:0);
+        mInNums.putAt(5, aPair.vflagAtom()?1:0);
+        mInNums.putAt(6, cvflagAtom?1:0);
+        
+        mDataIn.putAt(0, mInNums);
+        mDataIn.putAt(1, mFltBuf);
+        mDataIn.putAt(2, ilist);
+        mDataIn.putAt(3, mCudaF1);
+        mDataIn.putAt(4, mCudaEatom0);
+        mDataIn.putAt(5, mCudaVatom0);
+        mDataIn.putAt(6, mCudaVatom1);
+        
+        mDataOut.putAt(0, aPair.atomF());
+        mDataOut.putAt(1, aPair.engVdwl());
+        mDataOut.putAt(2, aPair.eatom());
+        mDataOut.putAt(3, aPair.virial());
+        mDataOut.putAt(4, aPair.vatom());
+        mDataOut.putAt(5, aPair.cvatom());
+        
+        tCode = mCuda2Lammps.invoke(mDataIn, mDataOut);
+        CudaCore.cudaExceptionCheck(tCode);
+    }
+    
+    
+    static final int NUM_OF_ABC = 80; // 3 + 5 + 7 + 9 + 11 + 13 + 15 + 17 for L_max = 8
+    static final int NUM_ELEMENTS = 94;
+    static final String[] ELEMENTS = {
+        "H",  "He", "Li", "Be", "B",  "C",  "N",  "O",  "F",  "Ne", "Na", "Mg", "Al", "Si", "P",  "S",
+        "Cl", "Ar", "K",  "Ca", "Sc", "Ti", "V",  "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge",
+        "As", "Se", "Br", "Kr", "Rb", "Sr", "Y",  "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd",
+        "In", "Sn", "Sb", "Te", "I",  "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd",
+        "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf", "Ta", "W",  "Re", "Os", "Ir", "Pt", "Au", "Hg",
+        "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", "Pa", "U",  "Np", "Pu"
+    };
+    static final int table_length = 2001;
+    static final int table_segments = table_length - 1;
+    static final double table_resolution = 0.0005;
     
     static class ParaMB {
         boolean use_typewise_cutoff = false;
@@ -138,24 +538,158 @@ public class NEP implements IPairPotential {
         int num_types_sq = 0;
         int num_c_radial = 0;
         int num_types = 0;
-        double[] q_scaler = new double[140];
-        int[] atomic_numbers = new int[94];
+        final IDoubleOrFloatCPointer q_scaler;
+        final IntCPointer atomic_numbers = IntCPointer.malloc(NUM_ELEMENTS);
+        final boolean cuda;
+        final FloatCudaPointer cuda_q_scaler;
+        final IntCudaPointer cuda_atomic_numbers;
+        ParaMB(boolean single, boolean cuda) throws CudaException {
+            q_scaler = single ? FloatCPointer.malloc(140) : DoubleCPointer.malloc(140);
+            this.cuda = cuda;
+            cuda_q_scaler = cuda ? FloatCudaPointer.malloc(140) : null;
+            cuda_atomic_numbers = cuda ? IntCudaPointer.malloc(NUM_ELEMENTS) : null;
+        }
+        void parse2cuda() throws CudaException {
+            if (!cuda) throw new IllegalStateException();
+            cuda_q_scaler.fill((FloatCPointer)q_scaler, 140);
+            cuda_atomic_numbers.fill(atomic_numbers, NUM_ELEMENTS);
+        }
+        
+        private boolean mFree = false;
+        void free() {
+            if (mFree) throw new IllegalStateException();
+            mFree = true;
+            q_scaler.free();
+            atomic_numbers.free();
+            if (cuda) {
+                try {
+                    cuda_q_scaler.free();
+                    cuda_atomic_numbers.free();
+                } catch (CudaException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
     }
     static class ANN {
+        private boolean inited = false;
         int dim = 0;
         int num_neurons1 = 0;
         int num_para = 0;
         int num_para_ann = 0;
-        double[][] w0 = new double[94][];
-        double[][] b0 = new double[94][];
-        double[][] w1 = new double[94][];
-        double[] b1;
-        double[] c;
+        final AnyCPointer w0 = AnyCPointer.calloc(NUM_ELEMENTS);
+        final AnyCPointer b0 = AnyCPointer.calloc(NUM_ELEMENTS);
+        final AnyCPointer w1 = AnyCPointer.calloc(NUM_ELEMENTS);
+        IDoubleOrFloatCPointer b1 = null;
+        IDoubleOrFloatCPointer c = null;
         // for the scalar part of polarizability
-        double[][] w0_pol = new double[94][];
-        double[][] b0_pol = new double[94][];
-        double[][] w1_pol = new double[94][];
-        double[] b1_pol;
+        final AnyCPointer w0_pol = AnyCPointer.calloc(NUM_ELEMENTS);
+        final AnyCPointer b0_pol = AnyCPointer.calloc(NUM_ELEMENTS);
+        final AnyCPointer w1_pol = AnyCPointer.calloc(NUM_ELEMENTS);
+        IDoubleOrFloatCPointer b1_pol = null;
+        
+        final boolean cuda;
+        final AnyCPointer cuda0_w0, cuda0_b0, cuda0_w1;
+        final CudaPointer cuda_w0, cuda_b0, cuda_w1;
+        FloatCudaPointer cuda_b1 = null;
+        FloatCudaPointer cuda_c = null;
+        // for the scalar part of polarizability
+        final AnyCPointer cuda0_w0_pol, cuda0_b0_pol, cuda0_w1_pol;
+        final CudaPointer cuda_w0_pol, cuda_b0_pol, cuda_w1_pol;
+        FloatCudaPointer cuda_b1_pol = null;
+        ANN(boolean single, boolean cuda) throws CudaException {
+            this.cuda = cuda;
+            cuda0_w0 = cuda ? AnyCPointer.calloc(NUM_ELEMENTS) : null;
+            cuda0_b0 = cuda ? AnyCPointer.calloc(NUM_ELEMENTS) : null;
+            cuda0_w1 = cuda ? AnyCPointer.calloc(NUM_ELEMENTS) : null;
+            cuda0_w0_pol = cuda ? AnyCPointer.calloc(NUM_ELEMENTS) : null;
+            cuda0_b0_pol = cuda ? AnyCPointer.calloc(NUM_ELEMENTS) : null;
+            cuda0_w1_pol = cuda ? AnyCPointer.calloc(NUM_ELEMENTS) : null;
+            cuda_w0 = cuda ? CudaPointer.malloc(NUM_ELEMENTS*AnyCPointer.TYPE_SIZE) : null;
+            cuda_b0 = cuda ? CudaPointer.malloc(NUM_ELEMENTS*AnyCPointer.TYPE_SIZE) : null;
+            cuda_w1 = cuda ? CudaPointer.malloc(NUM_ELEMENTS*AnyCPointer.TYPE_SIZE) : null;
+            cuda_w0_pol = cuda ? CudaPointer.malloc(NUM_ELEMENTS*AnyCPointer.TYPE_SIZE) : null;
+            cuda_b0_pol = cuda ? CudaPointer.malloc(NUM_ELEMENTS*AnyCPointer.TYPE_SIZE) : null;
+            cuda_w1_pol = cuda ? CudaPointer.malloc(NUM_ELEMENTS*AnyCPointer.TYPE_SIZE) : null;
+        }
+        
+        void clear() {
+            if (!inited) return;
+            inited = false;
+            for (int t = 0; t < NUM_ELEMENTS; ++t) {
+                getAndFree_(t, w0);
+                getAndFree_(t, b0);
+                getAndFree_(t, w1);
+                getAndFree_(t, w0_pol);
+                getAndFree_(t, b0_pol);
+                getAndFree_(t, w1_pol);
+            }
+            b1.free(); b1 = null;
+            c.free(); c = null;
+            if (b1_pol!=null) {
+                b1_pol.free();
+                b1_pol = null;
+            }
+            if (cuda) {
+                try {
+                    for (int t = 0; t < NUM_ELEMENTS; ++t) {
+                        getAndFreeCuda_(t, cuda0_w0);
+                        getAndFreeCuda_(t, cuda0_b0);
+                        getAndFreeCuda_(t, cuda0_w1);
+                        getAndFreeCuda_(t, cuda0_w0_pol);
+                        getAndFreeCuda_(t, cuda0_b0_pol);
+                        getAndFreeCuda_(t, cuda0_w1_pol);
+                    }
+                    cuda_w0.memset(0, NUM_ELEMENTS*AnyCPointer.TYPE_SIZE);
+                    cuda_b0.memset(0, NUM_ELEMENTS*AnyCPointer.TYPE_SIZE);
+                    cuda_w1.memset(0, NUM_ELEMENTS*AnyCPointer.TYPE_SIZE);
+                    cuda_w0_pol.memset(0, NUM_ELEMENTS*AnyCPointer.TYPE_SIZE);
+                    cuda_b0_pol.memset(0, NUM_ELEMENTS*AnyCPointer.TYPE_SIZE);
+                    cuda_w1_pol.memset(0, NUM_ELEMENTS*AnyCPointer.TYPE_SIZE);
+                    cuda_b1.free(); cuda_b1 = null;
+                    cuda_c.free(); c = null;
+                    if (cuda_b1_pol!=null) {
+                        cuda_b1_pol.free();
+                        cuda_b1_pol = null;
+                    }
+                } catch (CudaException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        private void getAndFree_(int i, AnyCPointer aNestedPtr) {
+            CPointer tPtr = aNestedPtr.getAsCPointerAt(i);
+            if (!tPtr.isNull()) {
+                tPtr.free();
+                aNestedPtr.putAt(i, NULL);
+            }
+        }
+        private void getAndFreeCuda_(int i, AnyCPointer aNestedPtr) throws CudaException {
+            CudaPointer tPtr = aNestedPtr.getAsCudaPointerAt(i);
+            if (!tPtr.isNull()) {
+                tPtr.free();
+                aNestedPtr.putAt(i, NULL);
+            }
+        }
+        
+        private boolean mFree = false;
+        void free() {
+            if (mFree) throw new IllegalStateException();
+            mFree = true;
+            clear();
+            w0.free(); b0.free(); w1.free();
+            w0_pol.free(); b0_pol.free(); w1_pol.free();
+            if (cuda) {
+                cuda0_w0.free(); cuda0_b0.free(); cuda0_w1.free();
+                cuda0_w0_pol.free(); cuda0_b0_pol.free(); cuda0_w1_pol.free();
+                try {
+                    cuda_w0.free(); cuda_b0.free(); cuda_w1.free();
+                    cuda_w0_pol.free(); cuda_b0_pol.free(); cuda_w1_pol.free();
+                } catch (CudaException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
     }
     static class ZBL {
         boolean enabled = false;
@@ -163,24 +697,328 @@ public class NEP implements IPairPotential {
         int num_types;
         double rc_inner = 1.0;
         double rc_outer = 2.0;
-        double[] para = new double[550];
+        final IDoubleOrFloatCPointer para;
+        final boolean cuda;
+        final FloatCudaPointer cuda_para;
+        ZBL(boolean single, boolean cuda) throws CudaException {
+            para = single ? FloatCPointer.malloc(550) : DoubleCPointer.calloc(550);
+            this.cuda = cuda;
+            cuda_para = cuda ? FloatCudaPointer.malloc(550) : null;
+        }
+        void parse2cuda() throws CudaException {
+            if (!cuda) throw new IllegalStateException();
+            cuda_para.fill((FloatCPointer)para, 550);
+        }
+        
+        private boolean mFree = false;
+        void free() {
+            if (mFree) throw new IllegalStateException();
+            mFree = true;
+            para.free();
+            if (cuda) {
+                try {
+                    cuda_para.free();
+                } catch (CudaException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
     }
     
-    int num_atoms = 0;
-    ParaMB paramb = new ParaMB();
-    ANN annmb = new ANN();
-    ZBL zbl = new ZBL();
-    DoubleList Fp = new DoubleList();
-    DoubleList sum_fxyz = new DoubleList();
-    DoubleList parameters = new DoubleList();
+    ParaMB paramb = null;
+    ANN annmb = null;
+    ZBL zbl = null;
+    IGrowableDoubleOrFloatCPointer Fp = null, sum_fxyz = null;
     ArrayList<String> element_list = new ArrayList<>();
     
-    DoubleList gn_radial = new DoubleList();   // tabulated gn_radial functions
-    DoubleList gnp_radial = new DoubleList();  // tabulated gnp_radial functions
-    DoubleList gn_angular = new DoubleList();  // tabulated gn_angular functions
-    DoubleList gnp_angular = new DoubleList(); // tabulated gnp_angular functions
+    IGrowableDoubleOrFloatCPointer gn_radial = null;   // tabulated gn_radial functions
+    IGrowableDoubleOrFloatCPointer gnp_radial = null;  // tabulated gnp_radial functions
+    IGrowableDoubleOrFloatCPointer gn_angular = null;  // tabulated gn_angular functions
+    IGrowableDoubleOrFloatCPointer gnp_angular = null; // tabulated gnp_angular functions
+    GrowableFloatCudaPointer cuda_gn_radial = null, cuda_gnp_radial = null, cuda_gn_angular = null, cuda_gnp_angular = null;
     
-    void init_from_file(String potential_filename) throws IOException {
+    boolean mInited = false, mSingle = false, mCuda = true;
+    AnyCPointer mDataIn = AnyCPointer.calloc(32), mDataOut = AnyCPointer.calloc(32);
+    IntCPointer mInNums = IntCPointer.malloc(32), mOutNums = IntCPointer.malloc(32);
+    IDoubleOrFloatCPointer mOutEng = null;
+    IGrowableDoubleOrFloatCPointer mNlDx = null, mNlDy = null, mNlDz = null;
+    IGrowableDoubleOrFloatCPointer mNlFx = null, mNlFy = null, mNlFz = null;
+    GrowableIntCPointer mNlType = null, mNlIdx = null;
+    
+    /// gpu stuffs
+    // cpu 数据
+    private int mNumneighMax = -1;
+    private GrowableFloatCPointer mFltBuf = null;
+    private GrowableIntCPointer mIntBuf = null;
+    // cuda 数据
+    private GrowableFloatCudaPointer mCudaX = null, mCudaF0 = null, mCudaF1 = null, mCudaEatom0 = null, mCudaVatom0 = null, mCudaVatom1 = null;
+    private GrowableIntCudaPointer mCudaType = null, mCudaIlist = null, mCudaNumneigh = null, mCudaGNeiNum = null, mCudaGCType = null;
+    private GrowableIntCudaPointer mCudaFirstneigh = null, mCudaGNlType = null, mCudaGNlIdx = null;
+    private GrowableFloatCudaPointer mCudaGNlDx = null, mCudaGNlDy = null, mCudaGNlDz = null, mCudaGNlFx = null, mCudaGNlFy = null, mCudaGNlFz = null;
+    private IntCudaPointer mCudaTypeMap = null;
+    private GrowableFloatCudaPointer cuda_Fp = null, cuda_sum_fxyz = null;
+    
+    /// jit stuffs
+    IJITEngine mJITEngine = null;
+    private static final String NAME_CAL_ENERGY = "jse_nep_calEnergy", NAME_CAL_ENERGYFORCE = "jse_nep_calEnergyForce";
+    private static final String NAME_CONSTRUCT_TABLE = "jse_nep_constructTable";
+    private static final String NAME_STAT_NEINUM_LAMMPS = "jse_nep_statNeiNumLammps", NAME_COMPUTE_LAMMPS = "jse_nep_computeLammps";
+    private static final String NAME_LAMMPS2CUDA = "jse_nep_lammps2cuda", NAME_CUDA2LAMMPS = "jse_nep_cuda2lammps", NAME_COMPUTE_LAMMPS_CUDA = "jse_nep_computeLammpsCuda";
+    private IJITMethod mCalEnergy = null, mCalEnergyForce = null;
+    private IJITMethod mConstructTable = null;
+    private IJITMethod mStatNeiNumLammps = null, mComputeLammps = null;
+    private IJITMethod mLammps2Cuda = null, mCuda2Lammps = null, mComputeLammpsCuda = null;
+    private String mLibDir = OS.WORKING_DIR, mProjectName = JIT_NAME;
+    
+    private final static Pattern PROJECT_INVALID_NAME = Pattern.compile("[^a-zA-Z0-9_\\-]");
+    
+    private static final String MARKER_REMOVE_START = "// >>> NEPGEN REMOVE";
+    private static final String MARKER_REMOVE_END = "// <<< NEPGEN REMOVE";
+    private static final String MARKER_PICK_START = "// >>> NEPGEN PICK";
+    private static final String MARKER_PICK_CASE = "// --- NEPGEN PICK:";
+    private static final String MARKER_PICK_END = "// <<< NEPGEN PICK";
+    private static final int STATE_NORMAL = 0, STATE_REMOVE = 1, STATE_PICK = 4;
+    
+    boolean mDead = false;
+    @Override public void shutdown() {
+        if (mDead) return;
+        mDead = true;
+        
+        mDataIn.free(); mDataOut.free();
+        mInNums.free();
+        if (mInited) {
+            mOutEng.free();
+            Fp.free(); sum_fxyz.free();
+            gn_radial.free(); gnp_radial.free();
+            gn_angular.free(); gnp_angular.free();
+            mNlType.free(); mNlIdx.free();
+            mNlDx.free(); mNlDy.free(); mNlDz.free();
+            mNlFx.free(); mNlFy.free(); mNlFz.free();
+            mJITEngine.shutdown();
+            paramb.free(); annmb.free(); zbl.free();
+        }
+        try {
+            if (mCuda) {
+                cuda_Fp.free(); cuda_sum_fxyz.free();
+                cuda_gn_radial.free(); cuda_gnp_radial.free();
+                cuda_gn_angular.free(); cuda_gnp_angular.free();
+                mCudaX.free();
+                mCudaF0.free();
+                mCudaF1.free();
+                mCudaEatom0.free();
+                mCudaVatom0.free();
+                mCudaVatom1.free();
+                mCudaType.free();
+                mCudaIlist.free();
+                mCudaNumneigh.free();
+                mCudaGNeiNum.free();
+                mCudaGCType.free();
+                mCudaFirstneigh.free();
+                mCudaGNlType.free();
+                mCudaGNlIdx.free();
+                mCudaGNlDx.free();
+                mCudaGNlDy.free();
+                mCudaGNlDz.free();
+                mCudaGNlFx.free();
+                mCudaGNlFy.free();
+                mCudaGNlFz.free();
+            }
+            if (mCudaTypeMap != null) {
+                mCudaTypeMap.free();
+                mCudaTypeMap = null;
+            }
+        } catch (CudaException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    
+    void compileJIT() throws Exception {
+        Map<String, Object> rGenMap = initGenMap_();
+        if (mCuda) {
+            rGenMap.put("NEPGEN_CUDA_BLOCKSIZE", Conf.CUDA_BLOCKSIZE);
+        }
+        rGenMap.put("[PRECISION]", mSingle ? "single" : "double");
+        rGenMap.put("[ARCH]", mCuda ? "cuda" : "cpu");
+        String tUniqueID = UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, NEP.VERSION_SHA,
+                                            rGenMap, Conf.OPTIM_LEVEL, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_CUDA_COMPILER, Conf.CMAKE_CUDA_FLAGS, Conf.CMAKE_SETTING);
+        if (mCuda) {
+            mJITEngine = CudaJIT.engine()
+                .setCmakeCudaCompiler(Conf.CMAKE_CUDA_COMPILER).setCmakeCudaFlags(Conf.CMAKE_CUDA_FLAGS)
+                .setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
+                .setCmakeSettings(Conf.CMAKE_SETTING).setOptimLevel(Conf.OPTIM_LEVEL)
+                .setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID)
+                .setSrcDirIniter((wd, engine) -> {
+                    codeGen_(IO.getResource("nep/src/"+SRC_NAME), wd+SRC_NAME, rGenMap);
+                    codeGen_(IO.getResource("nep/src/"+INTERFACE_NAME_CUDA), wd+INTERFACE_NAME_CUDA, rGenMap);
+                    codeGen_(IO.getResource("nep/src/"+INTERFACE_HEAD_NAME_CUDA), wd+INTERFACE_HEAD_NAME_CUDA, rGenMap);
+                    // 注意这里需要使用 jit 中的通用 CMakeLists，确保 project name 同步
+                    engine.writeCmakeFile(wd, INTERFACE_NAME_CUDA);
+                    return wd;
+                });
+            mJITEngine.setMethodNames(NAME_CONSTRUCT_TABLE, NAME_STAT_NEINUM_LAMMPS, NAME_LAMMPS2CUDA, NAME_CUDA2LAMMPS, NAME_COMPUTE_LAMMPS_CUDA).compile();
+            mLammps2Cuda = mJITEngine.findMethod(NAME_LAMMPS2CUDA);
+            mCuda2Lammps = mJITEngine.findMethod(NAME_CUDA2LAMMPS);
+            mComputeLammpsCuda = mJITEngine.findMethod(NAME_COMPUTE_LAMMPS_CUDA);
+        } else {
+            mJITEngine = SimpleJIT.engine()
+                .setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
+                .setCmakeSettings(Conf.CMAKE_SETTING).setOptimLevel(Conf.OPTIM_LEVEL)
+                .setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID)
+                .setSrcDirIniter((wd, engine) -> {
+                    codeGen_(IO.getResource("nep/src/"+SRC_NAME), wd+SRC_NAME, rGenMap);
+                    codeGen_(IO.getResource("nep/src/"+INTERFACE_NAME), wd+INTERFACE_NAME, rGenMap);
+                    codeGen_(IO.getResource("nep/src/"+INTERFACE_HEAD_NAME), wd+INTERFACE_HEAD_NAME, rGenMap);
+                    // 注意这里需要使用 jit 中的通用 CMakeLists，确保 project name 同步
+                    engine.writeCmakeFile(wd, INTERFACE_NAME);
+                    return wd;
+                });
+            mJITEngine.setMethodNames(NAME_CAL_ENERGY, NAME_CAL_ENERGYFORCE, NAME_CONSTRUCT_TABLE, NAME_STAT_NEINUM_LAMMPS, NAME_COMPUTE_LAMMPS).compile();
+            mCalEnergy = mJITEngine.findMethod(NAME_CAL_ENERGY);
+            mCalEnergyForce = mJITEngine.findMethod(NAME_CAL_ENERGYFORCE);
+            mComputeLammps = mJITEngine.findMethod(NAME_COMPUTE_LAMMPS);
+        }
+        mConstructTable = mJITEngine.findMethod(NAME_CONSTRUCT_TABLE);
+        mStatNeiNumLammps = mJITEngine.findMethod(NAME_STAT_NEINUM_LAMMPS);
+    }
+    private Map<String, Object> initGenMap_() {
+        Map<String, Object> rGenMap = new LinkedHashMap<>();
+        rGenMap.put("NEPGEN_USE_TABLE", Conf.USE_TABLE_FOR_RADIAL_FUNCTIONS?1:0);
+        rGenMap.put("NEPGEN_VERSION", paramb.version);
+        rGenMap.put("NEPGEN_NTYPES", paramb.num_types);
+        rGenMap.put("NEPGEN_USE_TYPEWISE_CUTOFF", paramb.use_typewise_cutoff?1:0);
+        rGenMap.put("NEPGEN_USE_TYPEWISE_CUTOFF_ZBL", paramb.use_typewise_cutoff_zbl?1:0);
+        rGenMap.put("NEPGEN_TYPEWISE_CUTOFF_FACTOR_R", paramb.typewise_cutoff_radial_factor);
+        rGenMap.put("NEPGEN_TYPEWISE_CUTOFF_FACTOR_A", paramb.typewise_cutoff_angular_factor);
+        rGenMap.put("NEPGEN_TYPEWISE_CUTOFF_FACTOR_ZBL", paramb.typewise_cutoff_zbl_factor);
+        rGenMap.put("NEPGEN_RCUT_R", paramb.rc_radial);
+        rGenMap.put("NEPGEN_RCUT_A", paramb.rc_angular);
+        rGenMap.put("NEPGEN_RCUT_INNER_ZBL", zbl.rc_inner);
+        rGenMap.put("NEPGEN_RCUT_OUTER_ZBL", zbl.rc_outer);
+        rGenMap.put("NEPGEN_NMAX_R", paramb.n_max_radial);
+        rGenMap.put("NEPGEN_NMAX_A", paramb.n_max_angular);
+        rGenMap.put("NEPGEN_BSIZE_R", paramb.basis_size_radial);
+        rGenMap.put("NEPGEN_BSIZE_A", paramb.basis_size_angular);
+        rGenMap.put("NEPGEN_NUMC_R", paramb.num_c_radial);
+        rGenMap.put("NEPGEN_LMAX", paramb.L_max);
+        rGenMap.put("NEPGEN_NUML", paramb.num_L);
+        rGenMap.put("NEPGEN_ANN_DIM_A", paramb.dim_angular);
+        rGenMap.put("NEPGEN_ANN_DIM", annmb.dim);
+        rGenMap.put("NEPGEN_NUM_NEURONS1", annmb.num_neurons1);
+        rGenMap.put("NEPGEN_NUM_PARA", annmb.num_para);
+        rGenMap.put("NEPGEN_NUM_PARA_ANN", annmb.num_para_ann);
+        rGenMap.put("NEPGEN_ZBL", zbl.enabled?1:0);
+        rGenMap.put("NEPGEN_ZBL_FLEXIBLED", zbl.flexibled?1:0);
+        return rGenMap;
+    }
+    private static void codeGen_(URL aSourceURL, String aTargetPath, Map<String, Object> aGenMap) throws Exception {
+        List<String> tLines;
+        try (BufferedReader tReader = jse.code.IO.toReader(aSourceURL)) {
+            tLines = jse.code.IO.readAllLines(tReader);
+        }
+        IO.write(aTargetPath, processLines_(tLines, aGenMap));
+    }
+    private static List<String> processLines_(List<String> aLines, Map<String, Object> aGenMap) {
+        int tState = STATE_NORMAL;
+        List<String> rBuf0 = new ArrayList<>(), rBuf1 = new ArrayList<>();
+        List<String> rOutLines = new ArrayList<>(aLines.size());
+        for (String tLine : aLines) {
+            switch(tState) {
+            case STATE_NORMAL: {
+                switch(tLine.trim()) {
+                case MARKER_REMOVE_START: {
+                    tState = STATE_REMOVE;
+                    break;
+                }
+                case MARKER_PICK_START: {
+                    tState = STATE_PICK;
+                    break;
+                }
+                default: {
+                    rOutLines.add(baseReplace_(tLine, aGenMap));
+                    break;
+                }}
+                break;
+            }
+            case STATE_REMOVE: {
+                if (tLine.trim().equals(MARKER_REMOVE_END)) {
+                    tState = STATE_NORMAL;
+                }
+                break;
+            }
+            case STATE_PICK: {
+                if (tLine.trim().startsWith(MARKER_PICK_END)) {
+                    tState = STATE_NORMAL;
+                    String tKey = tLine.trim().substring(MARKER_PICK_END.length()).trim();
+                    Object tValue = aGenMap.get(tKey);
+                    if (tValue==null) throw new IllegalStateException("Missing pick key: "+tKey);
+                    rBuf1.clear();
+                    boolean tInCase = false;
+                    for (String tBufLine : rBuf0) {
+                        if (tInCase) {
+                            if (tBufLine.trim().startsWith(MARKER_PICK_CASE)) {
+                                break;
+                            } else {
+                                rBuf1.add(tBufLine.replace("NEPGENO", "NEPGEN"));
+                            }
+                        } else {
+                            if (tBufLine.trim().startsWith(MARKER_PICK_CASE)) {
+                                String tCase = tBufLine.trim().substring(MARKER_PICK_CASE.length()).trim();
+                                if (tCase.equals(tValue)) tInCase = true;
+                            }
+                        }
+                    }
+                    rBuf0.clear();
+                    // 内部只核心逻辑，全部完成后递归处理后续
+                    rOutLines.addAll(processLines_(rBuf1, aGenMap));
+                } else {
+                    rBuf0.add(tLine);
+                }
+                break;
+            }
+            default: {
+                throw new IllegalStateException();
+            }}
+        }
+        if (tState!=STATE_NORMAL) throw new IllegalStateException();
+        return rOutLines;
+    }
+    private static String baseReplace_(String aLine, Map<String, Object> aGenMap) {
+        // 简单串联，在没有遇到性能问题前都就这样做好了
+        for (Map.Entry<String, Object> tEntry : aGenMap.entrySet()) {
+            String tKey = tEntry.getKey();
+            if (tKey.startsWith("[") && tKey.endsWith("]")) continue;
+            aLine = aLine.replace("__"+tKey+"__", tEntry.getValue().toString());
+        }
+        return aLine;
+    }
+    
+    void init_from_file(String potential_filename, String architecture) throws Exception {
+        mInited = true;
+        if (architecture.equals("cpu")) {
+            mCuda = false;
+        } else
+        if (architecture.equals("cuda")) {
+            mCuda = true;
+        } else {
+            throw new IllegalArgumentException("NEP architecture MUST be 'cpu' or 'cuda', input: " + architecture);
+        }
+        if (mCuda) {
+            mSingle = true;
+        } else {
+            if (Conf.PRECISION.equals("single")) {
+                mSingle = true;
+            } else
+            if (Conf.PRECISION.equals("double")) {
+                mSingle = false;
+            } else {
+                throw new IllegalArgumentException("NEP precision MUST be 'double' or 'single', input: " + Conf.PRECISION);
+            }
+        }
+        paramb = new ParaMB(mSingle, mCuda);
+        annmb = new ANN(mSingle, mCuda);
+        zbl = new ZBL(mSingle, mCuda);
+        
+        DoubleList parameters = new DoubleList();
         int num_para_descriptor;
         try (BufferedReader input = IO.toReader(potential_filename)) {
             // nep3 1 C
@@ -269,7 +1107,7 @@ public class NEP implements IPairPotential {
                         break;
                     }
                 }
-                paramb.atomic_numbers[n] = atomic_number;
+                paramb.atomic_numbers.putAt(n, atomic_number);
             }
             
             // zbl 0.7 1.4
@@ -380,10 +1218,9 @@ public class NEP implements IPairPotential {
                 tokens = get_tokens(input);
                 parameters.add(Double.parseDouble(tokens[0]));
             }
-            update_potential(parameters.internalData(), annmb);
             for (int d = 0; d < annmb.dim; ++d) {
                 tokens = get_tokens(input);
-                paramb.q_scaler[d] = Double.parseDouble(tokens[0]);
+                paramb.q_scaler.putAtD(d, Double.parseDouble(tokens[0]));
             }
             
             // flexible zbl potential parameters if (zbl.flexibled)
@@ -391,2040 +1228,209 @@ public class NEP implements IPairPotential {
                 int num_type_zbl = (paramb.num_types * (paramb.num_types + 1)) / 2;
                 for (int d = 0; d < 10 * num_type_zbl; ++d) {
                     tokens = get_tokens(input);
-                    zbl.para[d] = Double.parseDouble(tokens[0]);
+                    zbl.para.putAtD(d, Double.parseDouble(tokens[0]));
                 }
                 zbl.num_types = paramb.num_types;
             }
         }
+        // init cpointer here
+        Fp = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+        sum_fxyz = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+        
+        gn_radial = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+        gnp_radial = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+        gn_angular = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+        gnp_angular = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+        
+        mOutEng = mSingle ? FloatCPointer.malloc(1) : DoubleCPointer.malloc(1);
+        mNlDx = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
+        mNlDy = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
+        mNlDz = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
+        mNlFx = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
+        mNlFy = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
+        mNlFz = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
+        mNlType = new GrowableIntCPointer(16);
+        mNlIdx = new GrowableIntCPointer(16);
+        
+        // init cuda pointer here
+        if (mCuda) {
+            cuda_Fp = new GrowableFloatCudaPointer(1);
+            cuda_sum_fxyz = new GrowableFloatCudaPointer(1);
+            
+            cuda_gn_radial = new GrowableFloatCudaPointer(1);
+            cuda_gnp_radial = new GrowableFloatCudaPointer(1);
+            cuda_gn_angular = new GrowableFloatCudaPointer(1);
+            cuda_gnp_angular = new GrowableFloatCudaPointer(1);
+            
+            mFltBuf = new GrowableFloatCPointer(128);
+            mIntBuf = new GrowableIntCPointer(1024);
+            mCudaX = new GrowableFloatCudaPointer(128);
+            mCudaF0 = new GrowableFloatCudaPointer(128);
+            mCudaF1 = new GrowableFloatCudaPointer(128);
+            mCudaEatom0 = new GrowableFloatCudaPointer(128);
+            mCudaVatom0 = new GrowableFloatCudaPointer(128);
+            mCudaVatom1 = new GrowableFloatCudaPointer(128);
+            mCudaType = new GrowableIntCudaPointer(128);
+            mCudaIlist = new GrowableIntCudaPointer(128);
+            mCudaNumneigh = new GrowableIntCudaPointer(128);
+            mCudaGNeiNum = new GrowableIntCudaPointer(128);
+            mCudaGCType = new GrowableIntCudaPointer(128);
+            mCudaFirstneigh = new GrowableIntCudaPointer(1024);
+            mCudaGNlType = new GrowableIntCudaPointer(1024);
+            mCudaGNlIdx = new GrowableIntCudaPointer(1024);
+            mCudaGNlDx = new GrowableFloatCudaPointer(1024);
+            mCudaGNlDy = new GrowableFloatCudaPointer(1024);
+            mCudaGNlDz = new GrowableFloatCudaPointer(1024);
+            mCudaGNlFx = new GrowableFloatCudaPointer(1024);
+            mCudaGNlFy = new GrowableFloatCudaPointer(1024);
+            mCudaGNlFz = new GrowableFloatCudaPointer(1024);
+        }
+        
+        // compile nep here
+        String tLibDir = IO.toParentPath(potential_filename);
+        if (tLibDir!=null) mLibDir = tLibDir;
+        String tProjectName = IO.toFileName(potential_filename).replace(".txt", "");
+        tProjectName = PROJECT_INVALID_NAME.matcher(tProjectName).replaceAll("");
+        if (!tProjectName.isEmpty()) mProjectName = tProjectName;
+        compileJIT();
+        
+        DoubleCPointer parametersPtr = DoubleCPointer.malloc(parameters.size());
+        parametersPtr.fill(parameters);
+        update_potential(parametersPtr);
 
         if (Conf.USE_TABLE_FOR_RADIAL_FUNCTIONS) {
             if (paramb.use_typewise_cutoff) {
                 throw new IllegalStateException("Cannot use tabulated radial functions with typewise cutoff.");
             }
-            construct_table(parameters.internalData());
+            gn_radial.ensureCapacity((long) table_length * paramb.num_types_sq * (paramb.n_max_radial + 1));
+            gnp_radial.ensureCapacity((long) table_length * paramb.num_types_sq * (paramb.n_max_radial + 1));
+            gn_angular.ensureCapacity((long) table_length * paramb.num_types_sq * (paramb.n_max_angular + 1));
+            gnp_angular.ensureCapacity((long) table_length * paramb.num_types_sq * (paramb.n_max_angular + 1));
+            mDataOut.putAt(0, gn_radial);
+            mDataOut.putAt(1, gn_angular);
+            mDataOut.putAt(2, gnp_radial);
+            mDataOut.putAt(3, gnp_angular);
+            mConstructTable.invoke(parametersPtr, mDataOut);
+            if (mCuda) {
+                long count;
+                count = (long) table_length * paramb.num_types_sq * (paramb.n_max_radial + 1);
+                cuda_gn_radial.ensureCapacity(count); cuda_gn_radial.fill((FloatCPointer)gn_radial, count);
+                count = (long) table_length * paramb.num_types_sq * (paramb.n_max_radial + 1);
+                cuda_gnp_radial.ensureCapacity(count); cuda_gnp_radial.fill((FloatCPointer)gnp_radial, count);
+                count = (long) table_length * paramb.num_types_sq * (paramb.n_max_angular + 1);
+                cuda_gn_angular.ensureCapacity(count); cuda_gn_angular.fill((FloatCPointer)gn_angular, count);
+                count = (long) table_length * paramb.num_types_sq * (paramb.n_max_angular + 1);
+                cuda_gnp_angular.ensureCapacity(count); cuda_gnp_angular.fill((FloatCPointer)gnp_angular, count);
+            }
+        }
+        parametersPtr.free();
+        
+        if (mCuda) {
+            paramb.parse2cuda();
+            zbl.parse2cuda();
         }
     }
-    
-    void update_potential(double[] parameters, ANN ann) {
-        int start = 0;
-        double[] buf;
+    void update_potential(DoubleCPointer aPtr) throws CudaException {
+        annmb.clear();
+        int count;
+        IDoubleOrFloatCPointer buf;
+        DoubleCPointer ptr = aPtr.copy();
         for (int t = 0; t < paramb.num_types; ++t) {
             if (t > 0 && paramb.version == 3) { // Use the same set of NN parameters for NEP3
-                start -= (ann.dim+2) * ann.num_neurons1;
+                ptr.leftShift((long) (annmb.dim + 2) * annmb.num_neurons1);
             }
-            buf = new double[ann.num_neurons1 * ann.dim]; System.arraycopy(parameters, start, buf, 0, buf.length);
-            ann.w0[t] = buf;
-            start += buf.length;
-            buf = new double[ann.num_neurons1]; System.arraycopy(parameters, start, buf, 0, buf.length);
-            ann.b0[t] = buf;
-            start += buf.length;
-            buf = new double[paramb.version==5 ? ann.num_neurons1+1 : ann.num_neurons1]; // one extra bias for NEP5 stored in ann.w1[t]
-            System.arraycopy(parameters, start, buf, 0, buf.length);
-            ann.w1[t] = buf;
-            start += buf.length;
+            count = annmb.num_neurons1 * annmb.dim;
+            buf = mSingle?FloatCPointer.malloc(count):DoubleCPointer.malloc(count); buf.fillD(ptr, count); ptr.rightShift(count);
+            annmb.w0.putAt(t, buf);
+            count = annmb.num_neurons1;
+            buf = mSingle?FloatCPointer.malloc(count):DoubleCPointer.malloc(count); buf.fillD(ptr, count); ptr.rightShift(count);
+            annmb.b0.putAt(t, buf);
+            count = paramb.version==5 ? annmb.num_neurons1+1 : annmb.num_neurons1; // one extra bias for NEP5 stored in ann.w1[t]
+            buf = mSingle?FloatCPointer.malloc(count):DoubleCPointer.malloc(count); buf.fillD(ptr, count); ptr.rightShift(count);
+            annmb.w1.putAt(t, buf);
         }
-        ann.b1 = new double[] {parameters[start]};
-        start += 1;
+        buf = mSingle?FloatCPointer.malloc(1):DoubleCPointer.malloc(1); buf.setD(ptr.get()); ptr.next();
+        annmb.b1 = buf;
         
         if (paramb.model_type == 2) {
             for (int t = 0; t < paramb.num_types; ++t) {
                 if (t > 0 && paramb.version == 3) { // Use the same set of NN parameters for NEP3
-                    start -= (ann.dim + 2) * ann.num_neurons1;
+                    ptr.leftShift((long) (annmb.dim + 2) * annmb.num_neurons1);
                 }
-                buf = new double[ann.num_neurons1 * ann.dim]; System.arraycopy(parameters, start, buf, 0, buf.length);
-                ann.w0_pol[t] = buf;
-                start += buf.length;
-                buf = new double[ann.num_neurons1]; System.arraycopy(parameters, start, buf, 0, buf.length);
-                ann.b0_pol[t] = buf;
-                start += buf.length;
-                buf = new double[ann.num_neurons1]; System.arraycopy(parameters, start, buf, 0, buf.length);
-                ann.w1_pol[t] = buf;
-                start += buf.length;
+                count = annmb.num_neurons1 * annmb.dim;
+                buf = mSingle?FloatCPointer.malloc(count):DoubleCPointer.malloc(count); buf.fillD(ptr, count); ptr.rightShift(count);
+                annmb.w0_pol.putAt(t, buf);
+                count = annmb.num_neurons1;
+                buf = mSingle?FloatCPointer.malloc(count):DoubleCPointer.malloc(count); buf.fillD(ptr, count); ptr.rightShift(count);
+                annmb.b0_pol.putAt(t, buf);
+                count = annmb.num_neurons1;
+                buf = mSingle ?FloatCPointer.malloc(count):DoubleCPointer.malloc(count); buf.fillD(ptr, count); ptr.rightShift(count);
+                annmb.w1_pol.putAt(t, buf);
             }
-            ann.b1_pol = new double[] {parameters[start]};
-            start += 1;
+            buf = mSingle?FloatCPointer.malloc(1):DoubleCPointer.malloc(1); buf.setD(ptr.get()); ptr.next();
+            annmb.b1_pol = buf;
         }
-        buf = new double[parameters.length-start]; System.arraycopy(parameters, start, buf, 0, buf.length);
-        ann.c = buf;
-    }
-    
-    void construct_table(double[] parameters) {
-        gn_radial.clear(); gn_radial.addZeros(table_length * paramb.num_types_sq * (paramb.n_max_radial + 1));
-        gnp_radial.clear(); gnp_radial.addZeros(table_length * paramb.num_types_sq * (paramb.n_max_radial + 1));
-        gn_angular.clear(); gn_angular.addZeros(table_length * paramb.num_types_sq * (paramb.n_max_angular + 1));
-        gnp_angular.clear(); gnp_angular.addZeros(table_length * paramb.num_types_sq * (paramb.n_max_angular + 1));
-        construct_table_radial_or_angular(
-            paramb.version, paramb.num_types, paramb.num_types_sq, paramb.n_max_radial,
-            paramb.basis_size_radial, paramb.rc_radial, paramb.rcinv_radial, parameters, annmb.num_para_ann, gn_radial.internalData(),
-            gnp_radial.internalData()
-        );
-        construct_table_radial_or_angular(
-            paramb.version, paramb.num_types, paramb.num_types_sq, paramb.n_max_angular,
-            paramb.basis_size_angular, paramb.rc_angular, paramb.rcinv_angular,
-            parameters, annmb.num_para_ann+paramb.num_c_radial, gn_angular.internalData(), gnp_angular.internalData()
-        );
-    }
-    
-    
-    static final int MAX_NEURON = 200; // maximum number of neurons in the hidden layer
-    static final int MN = 1000;        // maximum number of neighbors for one atom
-    static final int NUM_OF_ABC = 80;  // 3 + 5 + 7 + 9 + 11 + 13 + 15 + 17 for L_max = 8
-    static final int MAX_NUM_N = 20;   // n_max+1 = 19+1
-    static final int MAX_DIM = MAX_NUM_N * 7;
-    static final int MAX_DIM_ANGULAR = MAX_NUM_N * 6;
-    static final double[] C3B = {
-        0.238732414637843, 0.119366207318922, 0.119366207318922, 0.099471839432435, 0.596831036594608,
-        0.596831036594608, 0.149207759148652, 0.149207759148652, 0.139260575205408, 0.104445431404056,
-        0.104445431404056, 1.044454314040563, 1.044454314040563, 0.174075719006761, 0.174075719006761,
-        0.011190581936149, 0.223811638722978, 0.223811638722978, 0.111905819361489, 0.111905819361489,
-        1.566681471060845, 1.566681471060845, 0.195835183882606, 0.195835183882606, 0.013677377921960,
-        0.102580334414698, 0.102580334414698, 2.872249363611549, 2.872249363611549, 0.119677056817148,
-        0.119677056817148, 2.154187022708661, 2.154187022708661, 0.215418702270866, 0.215418702270866,
-        0.004041043476943, 0.169723826031592, 0.169723826031592, 0.106077391269745, 0.106077391269745,
-        0.424309565078979, 0.424309565078979, 0.127292869523694, 0.127292869523694, 2.800443129521260,
-        2.800443129521260, 0.233370260793438, 0.233370260793438, 0.004662742473395, 0.004079899664221,
-        0.004079899664221, 0.024479397985326, 0.024479397985326, 0.012239698992663, 0.012239698992663,
-        0.538546755677165, 0.538546755677165, 0.134636688919291, 0.134636688919291, 3.500553911901575,
-        3.500553911901575, 0.250039565135827, 0.250039565135827, 0.000082569397966, 0.005944996653579,
-        0.005944996653579, 0.104037441437634, 0.104037441437634, 0.762941237209318, 0.762941237209318,
-        0.114441185581398, 0.114441185581398, 5.950941650232678, 5.950941650232678, 0.141689086910302,
-        0.141689086910302, 4.250672607309055, 4.250672607309055, 0.265667037956816, 0.265667037956816
-    };
-    static final double[] C4B = {
-        -0.007499480826664, -0.134990654879954, 0.067495327439977, 0.404971964639861, -0.809943929279723
-    };
-    static final double[] C5B = {0.026596810706114, 0.053193621412227, 0.026596810706114};
-    static final double[][] Z_COEFFICIENT_1 = {{0.0, 1.0}, {1.0, 0.0}};
-    static final double[][] Z_COEFFICIENT_2 = {{-1.0, 0.0, 3.0}, {0.0, 1.0, 0.0}, {1.0, 0.0, 0.0}};
-    static final double[][] Z_COEFFICIENT_3 = {
-        {0.0, -3.0, 0.0, 5.0}, {-1.0, 0.0, 5.0, 0.0}, {0.0, 1.0, 0.0, 0.0}, {1.0, 0.0, 0.0, 0.0}
-    };
-    static final double[][] Z_COEFFICIENT_4 = {
-        {3.0, 0.0, -30.0, 0.0, 35.0},
-        {0.0, -3.0, 0.0, 7.0, 0.0},
-        {-1.0, 0.0, 7.0, 0.0, 0.0},
-        {0.0, 1.0, 0.0, 0.0, 0.0},
-        {1.0, 0.0, 0.0, 0.0, 0.0}
-    };
-    static final double[][] Z_COEFFICIENT_5 = {
-        {0.0, 15.0, 0.0, -70.0, 0.0, 63.0}, {1.0, 0.0, -14.0, 0.0, 21.0, 0.0},
-        {0.0, -1.0, 0.0, 3.0, 0.0, 0.0},    {-1.0, 0.0, 9.0, 0.0, 0.0, 0.0},
-        {0.0, 1.0, 0.0, 0.0, 0.0, 0.0},     {1.0, 0.0, 0.0, 0.0, 0.0, 0.0}
-    };
-    static final double[][] Z_COEFFICIENT_6 = {
-        {-5.0, 0.0, 105.0, 0.0, -315.0, 0.0, 231.0}, {0.0, 5.0, 0.0, -30.0, 0.0, 33.0, 0.0},
-        {1.0, 0.0, -18.0, 0.0, 33.0, 0.0, 0.0},      {0.0, -3.0, 0.0, 11.0, 0.0, 0.0, 0.0},
-        {-1.0, 0.0, 11.0, 0.0, 0.0, 0.0, 0.0},       {0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-        {1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
-    };
-    static final double[][] Z_COEFFICIENT_7 = {
-        {0.0, -35.0, 0.0, 315.0, 0.0, -693.0, 0.0, 429.0},
-        {-5.0, 0.0, 135.0, 0.0, -495.0, 0.0, 429.0, 0.0},
-        {0.0, 15.0, 0.0, -110.0, 0.0, 143.0, 0.0, 0.0},
-        {3.0, 0.0, -66.0, 0.0, 143.0, 0.0, 0.0, 0.0},
-        {0.0, -3.0, 0.0, 13.0, 0.0, 0.0, 0.0, 0.0},
-        {-1.0, 0.0, 13.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-        {0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-        {1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
-    };
-    static final double[][] Z_COEFFICIENT_8 = {
-        {35.0, 0.0, -1260.0, 0.0, 6930.0, 0.0, -12012.0, 0.0, 6435.0},
-        {0.0, -35.0, 0.0, 385.0, 0.0, -1001.0, 0.0, 715.0, 0.0},
-        {-1.0, 0.0, 33.0, 0.0, -143.0, 0.0, 143.0, 0.0, 0.0},
-        {0.0, 3.0, 0.0, -26.0, 0.0, 39.0, 0.0, 0.0, 0.0},
-        {1.0, 0.0, -26.0, 0.0, 65.0, 0.0, 0.0, 0.0, 0.0},
-        {0.0, -1.0, 0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-        {-1.0, 0.0, 15.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-        {0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-        {1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
-    };
-    static final double K_C_SP = 14.399645; // 1/(4*PI*epsilon_0)
-    static final double PI = 3.141592653589793;
-    static final double PI_HALF = 1.570796326794897;
-    static final int NUM_ELEMENTS = 94;
-    static final String[] ELEMENTS = {
-        "H",  "He", "Li", "Be", "B",  "C",  "N",  "O",  "F",  "Ne", "Na", "Mg", "Al", "Si", "P",  "S",
-        "Cl", "Ar", "K",  "Ca", "Sc", "Ti", "V",  "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge",
-        "As", "Se", "Br", "Kr", "Rb", "Sr", "Y",  "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd",
-        "In", "Sn", "Sb", "Te", "I",  "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd",
-        "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf", "Ta", "W",  "Re", "Os", "Ir", "Pt", "Au", "Hg",
-        "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", "Pa", "U",  "Np", "Pu"
-    };
-    static final double[] COVALENT_RADIUS = {
-        0.426667, 0.613333, 1.6,     1.25333, 1.02667, 1.0,     0.946667, 0.84,    0.853333, 0.893333,
-        1.86667,  1.66667,  1.50667, 1.38667, 1.46667, 1.36,    1.32,     1.28,    2.34667,  2.05333,
-        1.77333,  1.62667,  1.61333, 1.46667, 1.42667, 1.38667, 1.33333,  1.32,    1.34667,  1.45333,
-        1.49333,  1.45333,  1.53333, 1.46667, 1.52,    1.56,    2.52,     2.22667, 1.96,     1.85333,
-        1.76,     1.65333,  1.53333, 1.50667, 1.50667, 1.44,    1.53333,  1.64,    1.70667,  1.68,
-        1.68,     1.64,     1.76,    1.74667, 2.78667, 2.34667, 2.16,     1.96,    2.10667,  2.09333,
-        2.08,     2.06667,  2.01333, 2.02667, 2.01333, 2.0,     1.98667,  1.98667, 1.97333,  2.04,
-        1.94667,  1.82667,  1.74667, 1.64,    1.57333, 1.54667, 1.48,     1.49333, 1.50667,  1.76,
-        1.73333,  1.73333,  1.81333, 1.74667, 1.84,    1.89333, 2.68,     2.41333, 2.22667,  2.10667,
-        2.02667,  2.04,     2.05333, 2.06667
-    };
-    
-    static void complex_product(double a, double b, double[] real_part, double[] imag_part) {
-        double real_temp = real_part[0];
-        real_part[0] = a * real_temp - b * imag_part[0];
-        imag_part[0] = a * imag_part[0] + b * real_temp;
-    }
-    
-    static void apply_ann_one_layer(int dim, int num_neurons1, 
-                                    double[] w0, double[] b0, double[] w1, double[] b1, double[] q,
-                                    double[] energy, double[] energy_derivative, double[] latent_space,
-                                    boolean need_B_projection, double[] B_projection, int shift) {
-        for (int n = 0; n < num_neurons1; ++n) {
-            double w0_times_q = 0.0;
-            for (int d = 0; d < dim; ++d) {
-                w0_times_q += w0[n * dim + d] * q[d];
+        count = annmb.num_para - annmb.num_para_ann;
+        buf = mSingle?FloatCPointer.malloc(count):DoubleCPointer.malloc(count); buf.fillD(ptr, count);
+        annmb.c = buf;
+        
+        if (mCuda) {
+            FloatCudaPointer bufCuda;
+            for (int t = 0; t < paramb.num_types; ++t) {
+                count = annmb.num_neurons1 * annmb.dim;
+                bufCuda = FloatCudaPointer.malloc(count);
+                bufCuda.fill(annmb.w0.getAsFloatCPointerAt(t), count);
+                annmb.cuda0_w0.putAt(t, bufCuda);
+                count = annmb.num_neurons1;
+                bufCuda = FloatCudaPointer.malloc(count);
+                bufCuda.fill(annmb.b0.getAsFloatCPointerAt(t), count);
+                annmb.cuda0_b0.putAt(t, bufCuda);
+                count = paramb.version==5 ? annmb.num_neurons1+1 : annmb.num_neurons1; // one extra bias for NEP5 stored in ann.w1[t]
+                bufCuda = FloatCudaPointer.malloc(count);
+                bufCuda.fill(annmb.w1.getAsFloatCPointerAt(t), count);
+                annmb.cuda0_w1.putAt(t, bufCuda);
             }
-            double x1 = tanh(w0_times_q - b0[n]);
-            double tan_der = 1.0 - x1 * x1;
+            bufCuda = FloatCudaPointer.malloc(1);
+            bufCuda.fill((FloatCPointer)annmb.b1, 1);
+            annmb.cuda_b1 = bufCuda;
+            annmb.cuda_w0.memcpy2this(annmb.cuda0_w0, paramb.num_types*AnyCPointer.TYPE_SIZE);
+            annmb.cuda_b0.memcpy2this(annmb.cuda0_b0, paramb.num_types*AnyCPointer.TYPE_SIZE);
+            annmb.cuda_w1.memcpy2this(annmb.cuda0_w1, paramb.num_types*AnyCPointer.TYPE_SIZE);
             
-            if (need_B_projection) {
-                // calculate B_projection:
-                // dE/dw0
-                for (int d = 0; d < dim; ++d)
-                    B_projection[shift + n * (dim + 2) + d] = tan_der * q[d] * w1[n];
-                // dE/db0
-                B_projection[shift + n * (dim + 2) + dim] = -tan_der * w1[n];
-                // dE/dw1
-                B_projection[shift + n * (dim + 2) + dim + 1] = x1;
-            }
-            
-            latent_space[n] = w1[n] * x1; // also try x1
-            energy[0] += w1[n] * x1;
-            for (int d = 0; d < dim; ++d) {
-                double y1 = tan_der * w0[n * dim + d];
-                energy_derivative[d] += w1[n] * y1;
-            }
-        }
-        energy[0] -= b1[0];
-    }
-    
-    static void apply_ann_one_layer_nep5(int dim, int num_neurons1,
-                                         double[] w0, double[] b0, double[] w1, double[] b1, double[] q,
-                                         double[] energy, double[] energy_derivative, double[] latent_space) {
-        for (int n = 0; n < num_neurons1; ++n) {
-            double w0_times_q = 0.0;
-            for (int d = 0; d < dim; ++d) {
-                w0_times_q += w0[n * dim + d] * q[d];
-            }
-            double x1 = tanh(w0_times_q - b0[n]);
-            latent_space[n] = w1[n] * x1; // also try x1
-            energy[0] += w1[n] * x1;
-            for (int d = 0; d < dim; ++d) {
-                double y1 = (1.0 - x1 * x1) * w0[n * dim + d];
-                energy_derivative[d] += w1[n] * y1;
-            }
-        }
-        energy[0] -= w1[num_neurons1] + b1[0]; // typewise bias + common bias
-    }
-    
-    static void find_fc(double rc, double rcinv, double d12, double[] fc) {
-        if (d12 < rc) {
-            double x = d12 * rcinv;
-            fc[0] = 0.5 * cos(PI * x) + 0.5;
-        } else {
-            fc[0] = 0.0;
-        }
-    }
-    
-    static void find_fc_and_fcp(double rc, double rcinv, double d12, double[] fc, double[] fcp) {
-        if (d12 < rc) {
-            double x = d12 * rcinv;
-            fc[0] = 0.5 * cos(PI * x) + 0.5;
-            fcp[0] = -PI_HALF * sin(PI * x);
-            fcp[0] *= rcinv;
-        } else {
-            fc[0] = 0.0;
-            fcp[0] = 0.0;
-        }
-    }
-    
-    static void find_fc_and_fcp_zbl(double r1, double r2, double d12, double[] fc, double[] fcp) {
-        if (d12 < r1) {
-            fc[0] = 1.0;
-            fcp[0] = 0.0;
-        } else if (d12 < r2) {
-            double pi_factor = PI / (r2 - r1);
-            fc[0] = cos(pi_factor * (d12 - r1)) * 0.5 + 0.5;
-            fcp[0] = -sin(pi_factor * (d12 - r1)) * pi_factor * 0.5;
-        } else {
-            fc[0] = 0.0;
-            fcp[0] = 0.0;
-        }
-    }
-    
-    static void find_phi_and_phip_zbl(double a, double b, double x, double[] phi, double[] phip) {
-        double tmp = a * exp(-b * x);
-        phi[0] += tmp;
-        phip[0] -= b * tmp;
-    }
-    
-    static void find_f_and_fp_zbl(double zizj, double a_inv, 
-                                  double rc_inner, double rc_outer, 
-                                  double d12, double d12inv, 
-                                  double[] f, double[] fp) {
-        double x = d12 * a_inv;
-        f[0] = fp[0] = 0.0;
-        double[] Zbl_para = {0.18175, 3.1998, 0.50986, 0.94229, 0.28022, 0.4029, 0.02817, 0.20162};
-        find_phi_and_phip_zbl(Zbl_para[0], Zbl_para[1], x, f, fp);
-        find_phi_and_phip_zbl(Zbl_para[2], Zbl_para[3], x, f, fp);
-        find_phi_and_phip_zbl(Zbl_para[4], Zbl_para[5], x, f, fp);
-        find_phi_and_phip_zbl(Zbl_para[6], Zbl_para[7], x, f, fp);
-        f[0] *= zizj;
-        fp[0] *= zizj * a_inv;
-        fp[0] = fp[0] * d12inv - f[0] * d12inv * d12inv;
-        f[0] *= d12inv;
-        double[] fc = {0.0}, fcp = {0.0};
-        find_fc_and_fcp_zbl(rc_inner, rc_outer, d12, fc, fcp);
-        fp[0] = fp[0] * fc[0] + f[0] * fcp[0];
-        f[0] *= fc[0];
-    }
-    
-    static void find_f_and_fp_zbl(double[] zbl_para, double zizj, double a_inv, 
-                                  double d12, double d12inv, 
-                                  double[] f, double[] fp) {
-        double x = d12 * a_inv;
-        f[0] = fp[0] = 0.0;
-        find_phi_and_phip_zbl(zbl_para[2], zbl_para[3], x, f, fp);
-        find_phi_and_phip_zbl(zbl_para[4], zbl_para[5], x, f, fp);
-        find_phi_and_phip_zbl(zbl_para[6], zbl_para[7], x, f, fp);
-        find_phi_and_phip_zbl(zbl_para[8], zbl_para[9], x, f, fp);
-        f[0] *= zizj;
-        fp[0] *= zizj * a_inv;
-        fp[0] = fp[0] * d12inv - f[0] * d12inv * d12inv;
-        f[0] *= d12inv;
-        double[] fc = {0.0}, fcp = {0.0};
-        find_fc_and_fcp_zbl(zbl_para[0], zbl_para[1], d12, fc, fcp);
-        fp[0] = fp[0] * fc[0] + f[0] * fcp[0];
-        f[0] *= fc[0];
-    }
-    
-    static void find_fn0(int n, double rcinv, double d12, double fc12, double[] fn) {
-        if (n == 0) {
-            fn[0] = fc12;
-        } else if (n == 1) {
-            double x = 2.0 * (d12 * rcinv - 1.0) * (d12 * rcinv - 1.0) - 1.0;
-            fn[0] = (x + 1.0) * 0.5 * fc12;
-        } else {
-            double x = 2.0 * (d12 * rcinv - 1.0) * (d12 * rcinv - 1.0) - 1.0;
-            double t0 = 1.0;
-            double t1 = x;
-            double t2 = 0.0;
-            for (int m = 2; m <= n; ++m) {
-                t2 = 2.0 * x * t1 - t0;
-                t0 = t1;
-                t1 = t2;
-            }
-            fn[0] = (t2 + 1.0) * 0.5 * fc12;
-        }
-    }
-    
-    static void find_fn_and_fnp0(int n, double rcinv, 
-                                 double d12, double fc12, double fcp12, 
-                                 double[] fn, double[] fnp) {
-        if (n == 0) {
-            fn[0] = fc12;
-            fnp[0] = fcp12;
-        } else if (n == 1) {
-            double x = 2.0 * (d12 * rcinv - 1.0) * (d12 * rcinv - 1.0) - 1.0;
-            fn[0] = (x + 1.0) * 0.5;
-            fnp[0] = 2.0 * (d12 * rcinv - 1.0) * rcinv * fc12 + fn[0] * fcp12;
-            fn[0] *= fc12;
-        } else {
-            double x = 2.0 * (d12 * rcinv - 1.0) * (d12 * rcinv - 1.0) - 1.0;
-            double t0 = 1.0;
-            double t1 = x;
-            double t2 = 0.0;
-            double u0 = 1.0;
-            double u1 = 2.0 * x;
-            double u2;
-            for (int m = 2; m <= n; ++m) {
-                t2 = 2.0 * x * t1 - t0;
-                t0 = t1;
-                t1 = t2;
-                u2 = 2.0 * x * u1 - u0;
-                u0 = u1;
-                u1 = u2;
-            }
-            fn[0] = (t2 + 1.0) * 0.5;
-            fnp[0] = n * u0 * 2.0 * (d12 * rcinv - 1.0) * rcinv;
-            fnp[0] = fnp[0] * fc12 + fn[0] * fcp12;
-            fn[0] *= fc12;
-        }
-    }
-    
-    static void find_fn(int n_max, double rcinv, double d12, double fc12, double[] fn) {
-        double x = 2.0 * (d12 * rcinv - 1.0) * (d12 * rcinv - 1.0) - 1.0;
-        fn[0] = 1.0;
-        fn[1] = x;
-        for (int m = 2; m <= n_max; ++m) {
-            fn[m] = 2.0 * x * fn[m - 1] - fn[m - 2];
-        }
-        for (int m = 0; m <= n_max; ++m) {
-            fn[m] = (fn[m] + 1.0) * 0.5 * fc12;
-        }
-    }
-    
-    static void find_fn_and_fnp(int n_max, double rcinv, 
-                                double d12, double fc12, double fcp12, 
-                                double[] fn, double[] fnp) {
-        double x = 2.0 * (d12 * rcinv - 1.0) * (d12 * rcinv - 1.0) - 1.0;
-        fn[0] = 1.0;
-        fnp[0] = 0.0;
-        fn[1] = x;
-        fnp[1] = 1.0;
-        double u0 = 1.0;
-        double u1 = 2.0 * x;
-        double u2;
-        for (int m = 2; m <= n_max; ++m) {
-            fn[m] = 2.0 * x * fn[m - 1] - fn[m - 2];
-            fnp[m] = m * u1;
-            u2 = 2.0 * x * u1 - u0;
-            u0 = u1;
-            u1 = u2;
-        }
-        for (int m = 0; m <= n_max; ++m) {
-            fn[m] = (fn[m] + 1.0) * 0.5;
-            fnp[m] *= 2.0 * (d12 * rcinv - 1.0) * rcinv;
-            fnp[m] = fnp[m] * fc12 + fn[m] * fcp12;
-            fn[m] *= fc12;
-        }
-    }
-    
-    static void get_f12_4body(double d12, double d12inv, 
-                              double fn, double fnp, double Fp, 
-                              double[] s, double[] r12, double[] f12) {
-        double fn_factor = Fp * fn;
-        double fnp_factor = Fp * fnp * d12inv;
-        double y20 = (3.0 * r12[2] * r12[2] - d12 * d12);
-        
-        // derivative wrt s[0]
-        double tmp0 = C4B[0] * 3.0 * s[0] * s[0] + C4B[1] * (s[1] * s[1] + s[2] * s[2]) +
-            C4B[2] * (s[3] * s[3] + s[4] * s[4]);
-        double tmp1 = tmp0 * y20 * fnp_factor;
-        double tmp2 = tmp0 * fn_factor;
-        f12[0] += tmp1 * r12[0] - tmp2 * 2.0 * r12[0];
-        f12[1] += tmp1 * r12[1] - tmp2 * 2.0 * r12[1];
-        f12[2] += tmp1 * r12[2] + tmp2 * 4.0 * r12[2];
-        
-        // derivative wrt s[1]
-        tmp0 = C4B[1] * s[0] * s[1] * 2.0 - C4B[3] * s[3] * s[1] * 2.0 + C4B[4] * s[2] * s[4];
-        tmp1 = tmp0 * r12[0] * r12[2] * fnp_factor;
-        tmp2 = tmp0 * fn_factor;
-        f12[0] += tmp1 * r12[0] + tmp2 * r12[2];
-        f12[1] += tmp1 * r12[1];
-        f12[2] += tmp1 * r12[2] + tmp2 * r12[0];
-        
-        // derivative wrt s[2]
-        tmp0 = C4B[1] * s[0] * s[2] * 2.0 + C4B[3] * s[3] * s[2] * 2.0 + C4B[4] * s[1] * s[4];
-        tmp1 = tmp0 * r12[1] * r12[2] * fnp_factor;
-        tmp2 = tmp0 * fn_factor;
-        f12[0] += tmp1 * r12[0];
-        f12[1] += tmp1 * r12[1] + tmp2 * r12[2];
-        f12[2] += tmp1 * r12[2] + tmp2 * r12[1];
-        
-        // derivative wrt s[3]
-        tmp0 = C4B[2] * s[0] * s[3] * 2.0 + C4B[3] * (s[2] * s[2] - s[1] * s[1]);
-        tmp1 = tmp0 * (r12[0] * r12[0] - r12[1] * r12[1]) * fnp_factor;
-        tmp2 = tmp0 * fn_factor;
-        f12[0] += tmp1 * r12[0] + tmp2 * 2.0 * r12[0];
-        f12[1] += tmp1 * r12[1] - tmp2 * 2.0 * r12[1];
-        f12[2] += tmp1 * r12[2];
-        
-        // derivative wrt s[4]
-        tmp0 = C4B[2] * s[0] * s[4] * 2.0 + C4B[4] * s[1] * s[2];
-        tmp1 = tmp0 * (2.0 * r12[0] * r12[1]) * fnp_factor;
-        tmp2 = tmp0 * fn_factor;
-        f12[0] += tmp1 * r12[0] + tmp2 * 2.0 * r12[1];
-        f12[1] += tmp1 * r12[1] + tmp2 * 2.0 * r12[0];
-        f12[2] += tmp1 * r12[2];
-    }
-    
-    static void get_f12_5body(double d12, double d12inv, double fn, double fnp, double Fp, 
-                              double[] s, double[] r12, double[] f12) {
-        double fn_factor = Fp * fn;
-        double fnp_factor = Fp * fnp * d12inv;
-        double s1_sq_plus_s2_sq = s[1] * s[1] + s[2] * s[2];
-        
-        // derivative wrt s[0]
-        double tmp0 = C5B[0] * 4.0 * s[0] * s[0] * s[0] + C5B[1] * s1_sq_plus_s2_sq * 2.0 * s[0];
-        double tmp1 = tmp0 * r12[2] * fnp_factor;
-        double tmp2 = tmp0 * fn_factor;
-        f12[0] += tmp1 * r12[0];
-        f12[1] += tmp1 * r12[1];
-        f12[2] += tmp1 * r12[2] + tmp2;
-        
-        // derivative wrt s[1]
-        tmp0 = C5B[1] * s[0] * s[0] * s[1] * 2.0 + C5B[2] * s1_sq_plus_s2_sq * s[1] * 4.0;
-        tmp1 = tmp0 * r12[0] * fnp_factor;
-        tmp2 = tmp0 * fn_factor;
-        f12[0] += tmp1 * r12[0] + tmp2;
-        f12[1] += tmp1 * r12[1];
-        f12[2] += tmp1 * r12[2];
-        
-        // derivative wrt s[2]
-        tmp0 = C5B[1] * s[0] * s[0] * s[2] * 2.0 + C5B[2] * s1_sq_plus_s2_sq * s[2] * 4.0;
-        tmp1 = tmp0 * r12[1] * fnp_factor;
-        tmp2 = tmp0 * fn_factor;
-        f12[0] += tmp1 * r12[0];
-        f12[1] += tmp1 * r12[1] + tmp2;
-        f12[2] += tmp1 * r12[2];
-    }
-    
-    static void calculate_s_one_1(int n, int n_max_angular_plus_1,
-                                  double[] Fp, double[] sum_fxyz, double[] s) {
-        final int L_minus_1 = 1 - 1;
-        final int L_twice_plus_1 = 2 * 1 + 1;
-        final int L_square_minus_1 = 1 * 1 - 1;
-        double Fp_factor = 2.0 * Fp[L_minus_1 * n_max_angular_plus_1 + n];
-        s[0] = sum_fxyz[n * NUM_OF_ABC + L_square_minus_1] * C3B[L_square_minus_1] * Fp_factor;
-        Fp_factor *= 2.0;
-        for (int k = 1; k < L_twice_plus_1; ++k) {
-            s[k] = sum_fxyz[n * NUM_OF_ABC + L_square_minus_1 + k] * C3B[L_square_minus_1 + k] * Fp_factor;
-        }
-    }
-    static void calculate_s_one_2(int n, int n_max_angular_plus_1,
-                                  double[] Fp, double[] sum_fxyz, double[] s) {
-        final int L_minus_1 = 2 - 1;
-        final int L_twice_plus_1 = 2 * 2 + 1;
-        final int L_square_minus_1 = 2 * 2 - 1;
-        double Fp_factor = 2.0 * Fp[L_minus_1 * n_max_angular_plus_1 + n];
-        s[0] = sum_fxyz[n * NUM_OF_ABC + L_square_minus_1] * C3B[L_square_minus_1] * Fp_factor;
-        Fp_factor *= 2.0;
-        for (int k = 1; k < L_twice_plus_1; ++k) {
-            s[k] = sum_fxyz[n * NUM_OF_ABC + L_square_minus_1 + k] * C3B[L_square_minus_1 + k] * Fp_factor;
-        }
-    }
-    static void calculate_s_one_3(int n, int n_max_angular_plus_1,
-                                  double[] Fp, double[] sum_fxyz, double[] s) {
-        final int L_minus_1 = 3 - 1;
-        final int L_twice_plus_1 = 2 * 3 + 1;
-        final int L_square_minus_1 = 3 * 3 - 1;
-        double Fp_factor = 2.0 * Fp[L_minus_1 * n_max_angular_plus_1 + n];
-        s[0] = sum_fxyz[n * NUM_OF_ABC + L_square_minus_1] * C3B[L_square_minus_1] * Fp_factor;
-        Fp_factor *= 2.0;
-        for (int k = 1; k < L_twice_plus_1; ++k) {
-            s[k] = sum_fxyz[n * NUM_OF_ABC + L_square_minus_1 + k] * C3B[L_square_minus_1 + k] * Fp_factor;
-        }
-    }
-    static void calculate_s_one_4(int n, int n_max_angular_plus_1,
-                                  double[] Fp, double[] sum_fxyz, double[] s) {
-        final int L_minus_1 = 4 - 1;
-        final int L_twice_plus_1 = 2 * 4 + 1;
-        final int L_square_minus_1 = 4 * 4 - 1;
-        double Fp_factor = 2.0 * Fp[L_minus_1 * n_max_angular_plus_1 + n];
-        s[0] = sum_fxyz[n * NUM_OF_ABC + L_square_minus_1] * C3B[L_square_minus_1] * Fp_factor;
-        Fp_factor *= 2.0;
-        for (int k = 1; k < L_twice_plus_1; ++k) {
-            s[k] = sum_fxyz[n * NUM_OF_ABC + L_square_minus_1 + k] * C3B[L_square_minus_1 + k] * Fp_factor;
-        }
-    }
-    static void calculate_s_one_5(int n, int n_max_angular_plus_1,
-                                  double[] Fp, double[] sum_fxyz, double[] s) {
-        final int L_minus_1 = 5 - 1;
-        final int L_twice_plus_1 = 2 * 5 + 1;
-        final int L_square_minus_1 = 5 * 5 - 1;
-        double Fp_factor = 2.0 * Fp[L_minus_1 * n_max_angular_plus_1 + n];
-        s[0] = sum_fxyz[n * NUM_OF_ABC + L_square_minus_1] * C3B[L_square_minus_1] * Fp_factor;
-        Fp_factor *= 2.0;
-        for (int k = 1; k < L_twice_plus_1; ++k) {
-            s[k] = sum_fxyz[n * NUM_OF_ABC + L_square_minus_1 + k] * C3B[L_square_minus_1 + k] * Fp_factor;
-        }
-    }
-    static void calculate_s_one_6(int n, int n_max_angular_plus_1,
-                                  double[] Fp, double[] sum_fxyz, double[] s) {
-        final int L_minus_1 = 6 - 1;
-        final int L_twice_plus_1 = 2 * 6 + 1;
-        final int L_square_minus_1 = 6 * 6 - 1;
-        double Fp_factor = 2.0 * Fp[L_minus_1 * n_max_angular_plus_1 + n];
-        s[0] = sum_fxyz[n * NUM_OF_ABC + L_square_minus_1] * C3B[L_square_minus_1] * Fp_factor;
-        Fp_factor *= 2.0;
-        for (int k = 1; k < L_twice_plus_1; ++k) {
-            s[k] = sum_fxyz[n * NUM_OF_ABC + L_square_minus_1 + k] * C3B[L_square_minus_1 + k] * Fp_factor;
-        }
-    }
-    static void calculate_s_one_7(int n, int n_max_angular_plus_1,
-                                  double[] Fp, double[] sum_fxyz, double[] s) {
-        final int L_minus_1 = 7 - 1;
-        final int L_twice_plus_1 = 2 * 7 + 1;
-        final int L_square_minus_1 = 7 * 7 - 1;
-        double Fp_factor = 2.0 * Fp[L_minus_1 * n_max_angular_plus_1 + n];
-        s[0] = sum_fxyz[n * NUM_OF_ABC + L_square_minus_1] * C3B[L_square_minus_1] * Fp_factor;
-        Fp_factor *= 2.0;
-        for (int k = 1; k < L_twice_plus_1; ++k) {
-            s[k] = sum_fxyz[n * NUM_OF_ABC + L_square_minus_1 + k] * C3B[L_square_minus_1 + k] * Fp_factor;
-        }
-    }
-    static void calculate_s_one_8(int n, int n_max_angular_plus_1,
-                                  double[] Fp, double[] sum_fxyz, double[] s) {
-        final int L_minus_1 = 8 - 1;
-        final int L_twice_plus_1 = 2 * 8 + 1;
-        final int L_square_minus_1 = 8 * 8 - 1;
-        double Fp_factor = 2.0 * Fp[L_minus_1 * n_max_angular_plus_1 + n];
-        s[0] = sum_fxyz[n * NUM_OF_ABC + L_square_minus_1] * C3B[L_square_minus_1] * Fp_factor;
-        Fp_factor *= 2.0;
-        for (int k = 1; k < L_twice_plus_1; ++k) {
-            s[k] = sum_fxyz[n * NUM_OF_ABC + L_square_minus_1 + k] * C3B[L_square_minus_1 + k] * Fp_factor;
-        }
-    }
-    
-    static void accumulate_f12_one_1(double d12inv, double fn, double fnp,
-                                     double[] s, double[] r12, double[] f12) {
-        double[] dx = {(1.0 - r12[0] * r12[0]) * d12inv, -r12[0] * r12[1] * d12inv, -r12[0] * r12[2] * d12inv};
-        double[] dy = {-r12[0] * r12[1] * d12inv, (1.0 - r12[1] * r12[1]) * d12inv, -r12[1] * r12[2] * d12inv};
-        double[] dz = {-r12[0] * r12[2] * d12inv, -r12[1] * r12[2] * d12inv, (1.0 - r12[2] * r12[2]) * d12inv};
-        
-        double[] z_pow = {1.0, 0.0};
-        z_pow[1] = r12[2] * z_pow[0];
-        
-        double[] real_part = {1.0};
-        double[] imag_part = {0.0};
-        
-        double z_factor = 0.0;
-        double dz_factor = 0.0;
-        // L == 1
-        z_factor += Z_COEFFICIENT_1[0][1] * z_pow[1];
-        dz_factor += Z_COEFFICIENT_1[0][1] * 1 * z_pow[0];
-        f12[0] += s[0] * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
-        f12[1] += s[0] * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
-        f12[2] += s[0] * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
-        
-        z_factor = 0.0;
-        dz_factor = 0.0;
-        // L == 1
-        z_factor += Z_COEFFICIENT_1[1][0] * z_pow[0];
-        double real_part_n1 = 1 * real_part[0];
-        double imag_part_n1 = 1 * imag_part[0];
-        {
-            double[] real_part_dx = {dx[0]};
-            double[] imag_part_dy = {dy[0]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[0] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
-        }
-        {
-            double[] real_part_dx = {dx[1]};
-            double[] imag_part_dy = {dy[1]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[1] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
-        }
-        {
-            double[] real_part_dx = {dx[2]};
-            double[] imag_part_dy = {dy[2]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[2] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
-        }
-        complex_product(r12[0], r12[1], real_part, imag_part);
-        double xy_temp = s[1] * real_part[0] + s[2] * imag_part[0];
-        f12[0] += xy_temp * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
-        f12[1] += xy_temp * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
-        f12[2] += xy_temp * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
-    }
-    static void accumulate_f12_one_2(double d12inv, double fn, double fnp,
-                                     double[] s, double[] r12, double[] f12) {
-        double[] dx = {(1.0 - r12[0] * r12[0]) * d12inv, -r12[0] * r12[1] * d12inv, -r12[0] * r12[2] * d12inv};
-        double[] dy = {-r12[0] * r12[1] * d12inv, (1.0 - r12[1] * r12[1]) * d12inv, -r12[1] * r12[2] * d12inv};
-        double[] dz = {-r12[0] * r12[2] * d12inv, -r12[1] * r12[2] * d12inv, (1.0 - r12[2] * r12[2]) * d12inv};
-        
-        double[] z_pow = {1.0, 0.0, 0.0};
-        z_pow[1] = r12[2] * z_pow[0];
-        z_pow[2] = r12[2] * z_pow[1];
-        
-        double[] real_part = {1.0};
-        double[] imag_part = {0.0};
-        double z_factor = 0.0;
-        double dz_factor = 0.0;
-        // L == 2
-        z_factor += Z_COEFFICIENT_2[0][0] * z_pow[0];
-        z_factor += Z_COEFFICIENT_2[0][2] * z_pow[2];
-        dz_factor += Z_COEFFICIENT_2[0][2] * 2 * z_pow[2 - 1];
-        f12[0] += s[0] * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
-        f12[1] += s[0] * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
-        f12[2] += s[0] * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
-
-        z_factor = 0.0;
-        dz_factor = 0.0;
-        // L == 2
-        z_factor += Z_COEFFICIENT_2[1][1] * z_pow[1];
-        dz_factor += Z_COEFFICIENT_2[1][1] * 1 * z_pow[0];
-        double real_part_n1 = 1 * real_part[0];
-        double imag_part_n1 = 1 * imag_part[0];
-        {
-            double[] real_part_dx = {dx[0]};
-            double[] imag_part_dy = {dy[0]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[0] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
-        }
-        {
-            double[] real_part_dx = {dx[1]};
-            double[] imag_part_dy = {dy[1]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[1] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
-        }
-        {
-            double[] real_part_dx = {dx[2]};
-            double[] imag_part_dy = {dy[2]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[2] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
-        }
-        complex_product(r12[0], r12[1], real_part, imag_part);
-        double xy_temp = s[1] * real_part[0] + s[2] * imag_part[0];
-        f12[0] += xy_temp * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
-        f12[1] += xy_temp * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
-        f12[2] += xy_temp * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
-        
-        z_factor = 0.0;
-        dz_factor = 0.0;
-        // L == 2
-        z_factor += Z_COEFFICIENT_2[2][0] * z_pow[0];
-        real_part_n1 = 2 * real_part[0];
-        imag_part_n1 = 2 * imag_part[0];
-        {
-            double[] real_part_dx = {dx[0]};
-            double[] imag_part_dy = {dy[0]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[0] += (s[3] * real_part_dx[0] + s[4] * imag_part_dy[0]) * z_factor * fn;
-        }
-        {
-            double[] real_part_dx = {dx[1]};
-            double[] imag_part_dy = {dy[1]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[1] += (s[3] * real_part_dx[0] + s[4] * imag_part_dy[0]) * z_factor * fn;
-        }
-        {
-            double[] real_part_dx = {dx[2]};
-            double[] imag_part_dy = {dy[2]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[2] += (s[3] * real_part_dx[0] + s[4] * imag_part_dy[0]) * z_factor * fn;
-        }
-        complex_product(r12[0], r12[1], real_part, imag_part);
-        xy_temp = s[3] * real_part[0] + s[4] * imag_part[0];
-        f12[0] += xy_temp * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
-        f12[1] += xy_temp * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
-        f12[2] += xy_temp * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
-    }
-    static void accumulate_f12_one_3(double d12inv, double fn, double fnp,
-                                     double[] s, double[] r12, double[] f12) {
-        double[] dx = {(1.0 - r12[0] * r12[0]) * d12inv, -r12[0] * r12[1] * d12inv, -r12[0] * r12[2] * d12inv};
-        double[] dy = {-r12[0] * r12[1] * d12inv, (1.0 - r12[1] * r12[1]) * d12inv, -r12[1] * r12[2] * d12inv};
-        double[] dz = {-r12[0] * r12[2] * d12inv, -r12[1] * r12[2] * d12inv, (1.0 - r12[2] * r12[2]) * d12inv};
-        
-        double[] z_pow = {1.0, 0.0, 0.0, 0.0};
-        z_pow[1] = r12[2] * z_pow[0];
-        z_pow[2] = r12[2] * z_pow[1];
-        z_pow[3] = r12[2] * z_pow[2];
-        
-        double[] real_part = {1.0};
-        double[] imag_part = {0.0};
-        
-        double z_factor = 0.0;
-        double dz_factor = 0.0;
-        // L == 3
-        z_factor += Z_COEFFICIENT_3[0][1] * z_pow[1];
-        dz_factor += Z_COEFFICIENT_3[0][1] * 1 * z_pow[0];
-        z_factor += Z_COEFFICIENT_3[0][3] * z_pow[3];
-        dz_factor += Z_COEFFICIENT_3[0][3] * 3 * z_pow[2];
-        f12[0] += s[0] * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
-        f12[1] += s[0] * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
-        f12[2] += s[0] * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
-        
-        z_factor = 0.0;
-        dz_factor = 0.0;
-        // L == 3
-        z_factor += Z_COEFFICIENT_3[1][0] * z_pow[0];
-        z_factor += Z_COEFFICIENT_3[1][2] * z_pow[2];
-        dz_factor += Z_COEFFICIENT_3[1][2] * 2 * z_pow[2 - 1];
-        double real_part_n1 = 1 * real_part[0];
-        double imag_part_n1 = 1 * imag_part[0];
-        {
-            double[] real_part_dx = {dx[0]};
-            double[] imag_part_dy = {dy[0]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[0] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
-        }
-        {
-            double[] real_part_dx = {dx[1]};
-            double[] imag_part_dy = {dy[1]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[1] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
-        }
-        {
-            double[] real_part_dx = {dx[2]};
-            double[] imag_part_dy = {dy[2]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[2] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
-        }
-        complex_product(r12[0], r12[1], real_part, imag_part);
-        double xy_temp = s[1] * real_part[0] + s[2] * imag_part[0];
-        f12[0] += xy_temp * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
-        f12[1] += xy_temp * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
-        f12[2] += xy_temp * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
-        
-        z_factor = 0.0;
-        dz_factor = 0.0;
-        // L == 3
-        z_factor += Z_COEFFICIENT_3[2][1] * z_pow[1];
-        dz_factor += Z_COEFFICIENT_3[2][1] * 1 * z_pow[0];
-        real_part_n1 = 2 * real_part[0];
-        imag_part_n1 = 2 * imag_part[0];
-        {
-            double[] real_part_dx = {dx[0]};
-            double[] imag_part_dy = {dy[0]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[0] += (s[3] * real_part_dx[0] + s[4] * imag_part_dy[0]) * z_factor * fn;
-        }
-        {
-            double[] real_part_dx = {dx[1]};
-            double[] imag_part_dy = {dy[1]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[1] += (s[3] * real_part_dx[0] + s[4] * imag_part_dy[0]) * z_factor * fn;
-        }
-        {
-            double[] real_part_dx = {dx[2]};
-            double[] imag_part_dy = {dy[2]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[2] += (s[3] * real_part_dx[0] + s[4] * imag_part_dy[0]) * z_factor * fn;
-        }
-        complex_product(r12[0], r12[1], real_part, imag_part);
-        xy_temp = s[2 * 2 - 1] * real_part[0] + s[4] * imag_part[0];
-        f12[0] += xy_temp * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
-        f12[1] += xy_temp * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
-        f12[2] += xy_temp * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
-        
-        z_factor = 0.0;
-        dz_factor = 0.0;
-        // L == 3
-        z_factor += Z_COEFFICIENT_3[3][0] * z_pow[0];
-        real_part_n1 = 3 * real_part[0];
-        imag_part_n1 = 3 * imag_part[0];
-        {
-            double[] real_part_dx = {dx[0]};
-            double[] imag_part_dy = {dy[0]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[0] += (s[5] * real_part_dx[0] + s[6] * imag_part_dy[0]) * z_factor * fn;
-        }
-        {
-            double[] real_part_dx = {dx[1]};
-            double[] imag_part_dy = {dy[1]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[1] += (s[5] * real_part_dx[0] + s[6] * imag_part_dy[0]) * z_factor * fn;
-        }
-        {
-            double[] real_part_dx = {dx[2]};
-            double[] imag_part_dy = {dy[2]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[2] += (s[5] * real_part_dx[0] + s[6] * imag_part_dy[0]) * z_factor * fn;
-        }
-        complex_product(r12[0], r12[1], real_part, imag_part);
-        xy_temp = s[5] * real_part[0] + s[6] * imag_part[0];
-        f12[0] += xy_temp * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
-        f12[1] += xy_temp * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
-        f12[2] += xy_temp * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
-    }
-    static void accumulate_f12_one_4(double d12inv, double fn, double fnp,
-                                     double[] s, double[] r12, double[] f12) {
-        double[] dx = {(1.0 - r12[0] * r12[0]) * d12inv, -r12[0] * r12[1] * d12inv, -r12[0] * r12[2] * d12inv};
-        double[] dy = {-r12[0] * r12[1] * d12inv, (1.0 - r12[1] * r12[1]) * d12inv, -r12[1] * r12[2] * d12inv};
-        double[] dz = {-r12[0] * r12[2] * d12inv, -r12[1] * r12[2] * d12inv, (1.0 - r12[2] * r12[2]) * d12inv};
-        
-        double[] z_pow = {1.0, 0.0, 0.0, 0.0, 0.0};
-        z_pow[1] = r12[2] * z_pow[0];
-        z_pow[2] = r12[2] * z_pow[1];
-        z_pow[3] = r12[2] * z_pow[2];
-        z_pow[4] = r12[2] * z_pow[3];
-        
-        double[] real_part = {1.0};
-        double[] imag_part = {0.0};
-    
-        double z_factor = 0.0;
-        double dz_factor = 0.0;
-        // L == 4
-        z_factor += Z_COEFFICIENT_4[0][0] * z_pow[0];
-        z_factor += Z_COEFFICIENT_4[0][2] * z_pow[2];
-        dz_factor += Z_COEFFICIENT_4[0][2] * 2 * z_pow[1];
-        z_factor += Z_COEFFICIENT_4[0][4] * z_pow[4];
-        dz_factor += Z_COEFFICIENT_4[0][4] * 4 * z_pow[3];
-        f12[0] += s[0] * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
-        f12[1] += s[0] * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
-        f12[2] += s[0] * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
-
-        z_factor = 0.0;
-        dz_factor = 0.0;
-        // L == 4
-        z_factor += Z_COEFFICIENT_4[1][1] * z_pow[1];
-        dz_factor += Z_COEFFICIENT_4[1][1] * 1 * z_pow[0];
-        z_factor += Z_COEFFICIENT_4[1][3] * z_pow[3];
-        dz_factor += Z_COEFFICIENT_4[1][3] * 3 * z_pow[2];
-        double real_part_n1 = 1 * real_part[0];
-        double imag_part_n1 = 1 * imag_part[0];
-        {
-            double[] real_part_dx = {dx[0]};
-            double[] imag_part_dy = {dy[0]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[0] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
-        }
-        {
-            double[] real_part_dx = {dx[1]};
-            double[] imag_part_dy = {dy[1]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[1] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
-        }
-        {
-            double[] real_part_dx = {dx[2]};
-            double[] imag_part_dy = {dy[2]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[2] += (s[1] * real_part_dx[0] + s[2] * imag_part_dy[0]) * z_factor * fn;
-        }
-        complex_product(r12[0], r12[1], real_part, imag_part);
-        double xy_temp = s[1] * real_part[0] + s[2] * imag_part[0];
-        f12[0] += xy_temp * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
-        f12[1] += xy_temp * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
-        f12[2] += xy_temp * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
-
-        z_factor = 0.0;
-        dz_factor = 0.0;
-        // L == 4
-        z_factor += Z_COEFFICIENT_4[2][0] * z_pow[0];
-        z_factor += Z_COEFFICIENT_4[2][2] * z_pow[2];
-        dz_factor += Z_COEFFICIENT_4[2][2] * 2 * z_pow[2 - 1];
-        real_part_n1 = 2 * real_part[0];
-        imag_part_n1 = 2 * imag_part[0];
-        {
-            double[] real_part_dx = {dx[0]};
-            double[] imag_part_dy = {dy[0]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[0] += (s[3] * real_part_dx[0] + s[4] * imag_part_dy[0]) * z_factor * fn;
-        }
-        {
-            double[] real_part_dx = {dx[1]};
-            double[] imag_part_dy = {dy[1]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[1] += (s[3] * real_part_dx[0] + s[4] * imag_part_dy[0]) * z_factor * fn;
-        }
-        {
-            double[] real_part_dx = {dx[2]};
-            double[] imag_part_dy = {dy[2]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[2] += (s[3] * real_part_dx[0] + s[4] * imag_part_dy[0]) * z_factor * fn;
-        }
-        complex_product(r12[0], r12[1], real_part, imag_part);
-        xy_temp = s[3] * real_part[0] + s[4] * imag_part[0];
-        f12[0] += xy_temp * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
-        f12[1] += xy_temp * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
-        f12[2] += xy_temp * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
-        
-        z_factor = 0.0;
-        dz_factor = 0.0;
-        // L == 4
-        z_factor += Z_COEFFICIENT_4[3][1] * z_pow[1];
-        dz_factor += Z_COEFFICIENT_4[3][1] * 1 * z_pow[0];
-        real_part_n1 = 3 * real_part[0];
-        imag_part_n1 = 3 * imag_part[0];
-        {
-            double[] real_part_dx = {dx[0]};
-            double[] imag_part_dy = {dy[0]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[0] += (s[5] * real_part_dx[0] + s[6] * imag_part_dy[0]) * z_factor * fn;
-        }
-        {
-            double[] real_part_dx = {dx[1]};
-            double[] imag_part_dy = {dy[1]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[1] += (s[5] * real_part_dx[0] + s[6] * imag_part_dy[0]) * z_factor * fn;
-        }
-        {
-            double[] real_part_dx = {dx[2]};
-            double[] imag_part_dy = {dy[2]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[2] += (s[5] * real_part_dx[0] + s[6] * imag_part_dy[0]) * z_factor * fn;
-        }
-        complex_product(r12[0], r12[1], real_part, imag_part);
-        xy_temp = s[5] * real_part[0] + s[6] * imag_part[0];
-        f12[0] += xy_temp * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
-        f12[1] += xy_temp * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
-        f12[2] += xy_temp * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
-        
-        z_factor = 0.0;
-        dz_factor = 0.0;
-        // L == 4
-        z_factor += Z_COEFFICIENT_4[4][0] * z_pow[0];
-        real_part_n1 = 4 * real_part[0];
-        imag_part_n1 = 4 * imag_part[0];
-        {
-            double[] real_part_dx = {dx[0]};
-            double[] imag_part_dy = {dy[0]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[0] += (s[7] * real_part_dx[0] + s[8] * imag_part_dy[0]) * z_factor * fn;
-        }
-        {
-            double[] real_part_dx = {dx[1]};
-            double[] imag_part_dy = {dy[1]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[1] += (s[7] * real_part_dx[0] + s[8] * imag_part_dy[0]) * z_factor * fn;
-        }
-        {
-            double[] real_part_dx = {dx[2]};
-            double[] imag_part_dy = {dy[2]};
-            complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-            f12[2] += (s[7] * real_part_dx[0] + s[8] * imag_part_dy[0]) * z_factor * fn;
-        }
-        complex_product(r12[0], r12[1], real_part, imag_part);
-        xy_temp = s[7] * real_part[0] + s[8] * imag_part[0];
-        f12[0] += xy_temp * (z_factor * fnp * r12[0] + fn * dz_factor * dz[0]);
-        f12[1] += xy_temp * (z_factor * fnp * r12[1] + fn * dz_factor * dz[1]);
-        f12[2] += xy_temp * (z_factor * fnp * r12[2] + fn * dz_factor * dz[2]);
-    }
-    static void accumulate_f12_one_5(double d12inv, double fn, double fnp,
-                                     double[] s, double[] r12, double[] f12) {
-        double[] dx = {(1.0 - r12[0] * r12[0]) * d12inv, -r12[0] * r12[1] * d12inv, -r12[0] * r12[2] * d12inv};
-        double[] dy = {-r12[0] * r12[1] * d12inv, (1.0 - r12[1] * r12[1]) * d12inv, -r12[1] * r12[2] * d12inv};
-        double[] dz = {-r12[0] * r12[2] * d12inv, -r12[1] * r12[2] * d12inv, (1.0 - r12[2] * r12[2]) * d12inv};
-        
-        final int L = 5;
-        double[] z_pow = {1.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-        for (int n = 1; n <= L; ++n) {
-            z_pow[n] = r12[2] * z_pow[n-1];
-        }
-        
-        double[] real_part = {1.0};
-        double[] imag_part = {0.0};
-        for (int n1 = 0; n1 <= L; ++n1) {
-            int n2_start = (L + n1) % 2 == 0 ? 0 : 1;
-            double z_factor = 0.0;
-            double dz_factor = 0.0;
-            for (int n2 = n2_start; n2 <= L - n1; n2 += 2) {
-                // L == 5
-                z_factor += Z_COEFFICIENT_5[n1][n2] * z_pow[n2];
-                if (n2 > 0) {
-                    dz_factor += Z_COEFFICIENT_5[n1][n2] * n2 * z_pow[n2 - 1];
+            if (paramb.model_type == 2) {
+                for (int t = 0; t < paramb.num_types; ++t) {
+                    count = annmb.num_neurons1 * annmb.dim;
+                    bufCuda = FloatCudaPointer.malloc(count);
+                    bufCuda.fill(annmb.w0_pol.getAsFloatCPointerAt(t), count);
+                    annmb.cuda0_w0_pol.putAt(t, bufCuda);
+                    count = annmb.num_neurons1;
+                    bufCuda = FloatCudaPointer.malloc(count);
+                    bufCuda.fill(annmb.b0_pol.getAsFloatCPointerAt(t), count);
+                    annmb.cuda0_b0_pol.putAt(t, bufCuda);
+                    count = annmb.num_neurons1;
+                    bufCuda = FloatCudaPointer.malloc(count);
+                    bufCuda.fill(annmb.w1_pol.getAsFloatCPointerAt(t), count);
+                    annmb.cuda0_w1_pol.putAt(t, bufCuda);
                 }
+                bufCuda = FloatCudaPointer.malloc(1);
+                bufCuda.fill((FloatCPointer)annmb.b1_pol, 1);
+                annmb.cuda_b1_pol = bufCuda;
+                annmb.cuda_w0_pol.memcpy2this(annmb.cuda0_w0_pol, paramb.num_types*AnyCPointer.TYPE_SIZE);
+                annmb.cuda_b0_pol.memcpy2this(annmb.cuda0_b0_pol, paramb.num_types*AnyCPointer.TYPE_SIZE);
+                annmb.cuda_w1_pol.memcpy2this(annmb.cuda0_w1_pol, paramb.num_types*AnyCPointer.TYPE_SIZE);
             }
-            if (n1 == 0) {
-                for (int d = 0; d < 3; ++d) {
-                    f12[d] += s[0] * (z_factor * fnp * r12[d] + fn * dz_factor * dz[d]);
-                }
-            } else {
-                double real_part_n1 = n1 * real_part[0];
-                double imag_part_n1 = n1 * imag_part[0];
-                for (int d = 0; d < 3; ++d) {
-                    double[] real_part_dx = {dx[d]};
-                    double[] imag_part_dy = {dy[d]};
-                    complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-                    f12[d] += (s[2 * n1 - 1] * real_part_dx[0] + s[2 * n1 - 0] * imag_part_dy[0]) * z_factor * fn;
-                }
-                complex_product(r12[0], r12[1], real_part, imag_part);
-                double xy_temp = s[2 * n1 - 1] * real_part[0] + s[2 * n1 - 0] * imag_part[0];
-                for (int d = 0; d < 3; ++d) {
-                    f12[d] += xy_temp * (z_factor * fnp * r12[d] + fn * dz_factor * dz[d]);
-                }
-            }
+            count = annmb.num_para - annmb.num_para_ann;
+            bufCuda = FloatCudaPointer.malloc(count);
+            bufCuda.fill((FloatCPointer)annmb.c, count);
+            annmb.cuda_c = bufCuda;
         }
     }
-    static void accumulate_f12_one_6(double d12inv, double fn, double fnp,
-                                     double[] s, double[] r12, double[] f12) {
-        double[] dx = {(1.0 - r12[0] * r12[0]) * d12inv, -r12[0] * r12[1] * d12inv, -r12[0] * r12[2] * d12inv};
-        double[] dy = {-r12[0] * r12[1] * d12inv, (1.0 - r12[1] * r12[1]) * d12inv, -r12[1] * r12[2] * d12inv};
-        double[] dz = {-r12[0] * r12[2] * d12inv, -r12[1] * r12[2] * d12inv, (1.0 - r12[2] * r12[2]) * d12inv};
-        
-        final int L = 6;
-        double[] z_pow = {1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-        for (int n = 1; n <= L; ++n) {
-            z_pow[n] = r12[2] * z_pow[n-1];
-        }
-        
-        double[] real_part = {1.0};
-        double[] imag_part = {0.0};
-        for (int n1 = 0; n1 <= L; ++n1) {
-            int n2_start = (L + n1) % 2 == 0 ? 0 : 1;
-            double z_factor = 0.0;
-            double dz_factor = 0.0;
-            for (int n2 = n2_start; n2 <= L - n1; n2 += 2) {
-                // L == 6
-                z_factor += Z_COEFFICIENT_6[n1][n2] * z_pow[n2];
-                if (n2 > 0) {
-                    dz_factor += Z_COEFFICIENT_6[n1][n2] * n2 * z_pow[n2 - 1];
-                }
-            }
-            if (n1 == 0) {
-                for (int d = 0; d < 3; ++d) {
-                    f12[d] += s[0] * (z_factor * fnp * r12[d] + fn * dz_factor * dz[d]);
-                }
-            } else {
-                double real_part_n1 = n1 * real_part[0];
-                double imag_part_n1 = n1 * imag_part[0];
-                for (int d = 0; d < 3; ++d) {
-                    double[] real_part_dx = {dx[d]};
-                    double[] imag_part_dy = {dy[d]};
-                    complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-                    f12[d] += (s[2 * n1 - 1] * real_part_dx[0] + s[2 * n1 - 0] * imag_part_dy[0]) * z_factor * fn;
-                }
-                complex_product(r12[0], r12[1], real_part, imag_part);
-                double xy_temp = s[2 * n1 - 1] * real_part[0] + s[2 * n1 - 0] * imag_part[0];
-                for (int d = 0; d < 3; ++d) {
-                    f12[d] += xy_temp * (z_factor * fnp * r12[d] + fn * dz_factor * dz[d]);
-                }
-            }
-        }
-    }
-    static void accumulate_f12_one_7(double d12inv, double fn, double fnp,
-                                     double[] s, double[] r12, double[] f12) {
-        double[] dx = {(1.0 - r12[0] * r12[0]) * d12inv, -r12[0] * r12[1] * d12inv, -r12[0] * r12[2] * d12inv};
-        double[] dy = {-r12[0] * r12[1] * d12inv, (1.0 - r12[1] * r12[1]) * d12inv, -r12[1] * r12[2] * d12inv};
-        double[] dz = {-r12[0] * r12[2] * d12inv, -r12[1] * r12[2] * d12inv, (1.0 - r12[2] * r12[2]) * d12inv};
-        
-        final int L = 7;
-        double[] z_pow = {1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-        for (int n = 1; n <= L; ++n) {
-            z_pow[n] = r12[2] * z_pow[n-1];
-        }
-        
-        double[] real_part = {1.0};
-        double[] imag_part = {0.0};
-        for (int n1 = 0; n1 <= L; ++n1) {
-            int n2_start = (L + n1) % 2 == 0 ? 0 : 1;
-            double z_factor = 0.0;
-            double dz_factor = 0.0;
-            for (int n2 = n2_start; n2 <= L - n1; n2 += 2) {
-                // L == 7
-                z_factor += Z_COEFFICIENT_7[n1][n2] * z_pow[n2];
-                if (n2 > 0) {
-                    dz_factor += Z_COEFFICIENT_7[n1][n2] * n2 * z_pow[n2 - 1];
-                }
-            }
-            if (n1 == 0) {
-                for (int d = 0; d < 3; ++d) {
-                    f12[d] += s[0] * (z_factor * fnp * r12[d] + fn * dz_factor * dz[d]);
-                }
-            } else {
-                double real_part_n1 = n1 * real_part[0];
-                double imag_part_n1 = n1 * imag_part[0];
-                for (int d = 0; d < 3; ++d) {
-                    double[] real_part_dx = {dx[d]};
-                    double[] imag_part_dy = {dy[d]};
-                    complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-                    f12[d] += (s[2 * n1 - 1] * real_part_dx[0] + s[2 * n1 - 0] * imag_part_dy[0]) * z_factor * fn;
-                }
-                complex_product(r12[0], r12[1], real_part, imag_part);
-                double xy_temp = s[2 * n1 - 1] * real_part[0] + s[2 * n1 - 0] * imag_part[0];
-                for (int d = 0; d < 3; ++d) {
-                    f12[d] += xy_temp * (z_factor * fnp * r12[d] + fn * dz_factor * dz[d]);
-                }
-            }
-        }
-    }
-    static void accumulate_f12_one_8(double d12inv, double fn, double fnp,
-                                     double[] s, double[] r12, double[] f12) {
-        double[] dx = {(1.0 - r12[0] * r12[0]) * d12inv, -r12[0] * r12[1] * d12inv, -r12[0] * r12[2] * d12inv};
-        double[] dy = {-r12[0] * r12[1] * d12inv, (1.0 - r12[1] * r12[1]) * d12inv, -r12[1] * r12[2] * d12inv};
-        double[] dz = {-r12[0] * r12[2] * d12inv, -r12[1] * r12[2] * d12inv, (1.0 - r12[2] * r12[2]) * d12inv};
-        
-        final int L = 8;
-        double[] z_pow = {1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-        for (int n = 1; n <= L; ++n) {
-            z_pow[n] = r12[2] * z_pow[n-1];
-        }
-        
-        double[] real_part = {1.0};
-        double[] imag_part = {0.0};
-        for (int n1 = 0; n1 <= L; ++n1) {
-            int n2_start = (L + n1) % 2 == 0 ? 0 : 1;
-            double z_factor = 0.0;
-            double dz_factor = 0.0;
-            for (int n2 = n2_start; n2 <= L - n1; n2 += 2) {
-                // L == 8
-                z_factor += Z_COEFFICIENT_8[n1][n2] * z_pow[n2];
-                if (n2 > 0) {
-                    dz_factor += Z_COEFFICIENT_8[n1][n2] * n2 * z_pow[n2 - 1];
-                }
-            }
-            if (n1 == 0) {
-                for (int d = 0; d < 3; ++d) {
-                    f12[d] += s[0] * (z_factor * fnp * r12[d] + fn * dz_factor * dz[d]);
-                }
-            } else {
-                double real_part_n1 = n1 * real_part[0];
-                double imag_part_n1 = n1 * imag_part[0];
-                for (int d = 0; d < 3; ++d) {
-                    double[] real_part_dx = {dx[d]};
-                    double[] imag_part_dy = {dy[d]};
-                    complex_product(real_part_n1, imag_part_n1, real_part_dx, imag_part_dy);
-                    f12[d] += (s[2 * n1 - 1] * real_part_dx[0] + s[2 * n1 - 0] * imag_part_dy[0]) * z_factor * fn;
-                }
-                complex_product(r12[0], r12[1], real_part, imag_part);
-                double xy_temp = s[2 * n1 - 1] * real_part[0] + s[2 * n1 - 0] * imag_part[0];
-                for (int d = 0; d < 3; ++d) {
-                    f12[d] += xy_temp * (z_factor * fnp * r12[d] + fn * dz_factor * dz[d]);
-                }
-            }
-        }
-    }
-    
-    static void accumulate_f12(int L_max, int num_L, int n, int n_max_angular_plus_1, 
-                               double d12, double[] r12, double fn, double fnp, 
-                               double[] Fp, double[] sum_fxyz, double[] f12) {
-        double fn_original = fn;
-        double fnp_original = fnp;
-        double d12inv = 1.0 / d12;
-        double[] r12unit = {r12[0] * d12inv, r12[1] * d12inv, r12[2] * d12inv};
-        
-        fnp = fnp * d12inv - fn * d12inv * d12inv;
-        fn = fn * d12inv;
-        if (num_L >= L_max + 2) {
-            double[] s1 = {sum_fxyz[n * NUM_OF_ABC + 0], sum_fxyz[n * NUM_OF_ABC + 1], sum_fxyz[n * NUM_OF_ABC + 2]};
-            get_f12_5body(d12, d12inv, fn, fnp, Fp[(L_max + 1) * n_max_angular_plus_1 + n], s1, r12, f12);
-        }
-        
-        if (L_max >= 1) {
-            double[] s1 = {0.0, 0.0, 0.0};
-            calculate_s_one_1(n, n_max_angular_plus_1, Fp, sum_fxyz, s1);
-            accumulate_f12_one_1(d12inv, fn_original, fnp_original, s1, r12unit, f12);
-        }
-        
-        fnp = fnp * d12inv - fn * d12inv * d12inv;
-        fn = fn * d12inv;
-        if (num_L >= L_max + 1) {
-            double[] s2 = {sum_fxyz[n * NUM_OF_ABC + 3], sum_fxyz[n * NUM_OF_ABC + 4], sum_fxyz[n * NUM_OF_ABC + 5], sum_fxyz[n * NUM_OF_ABC + 6], sum_fxyz[n * NUM_OF_ABC + 7]};
-            get_f12_4body(d12, d12inv, fn, fnp, Fp[L_max * n_max_angular_plus_1 + n], s2, r12, f12);
-        }
-        
-        if (L_max >= 2) {
-            double[] s2 = {0.0, 0.0, 0.0, 0.0, 0.0};
-            calculate_s_one_2(n, n_max_angular_plus_1, Fp, sum_fxyz, s2);
-            accumulate_f12_one_2(d12inv, fn_original, fnp_original, s2, r12unit, f12);
-        }
-        
-        if (L_max >= 3) {
-            double[] s3 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-            calculate_s_one_3(n, n_max_angular_plus_1, Fp, sum_fxyz, s3);
-            accumulate_f12_one_3(d12inv, fn_original, fnp_original, s3, r12unit, f12);
-        }
-        
-        if (L_max >= 4) {
-            double[] s4 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-            calculate_s_one_4(n, n_max_angular_plus_1, Fp, sum_fxyz, s4);
-            accumulate_f12_one_4(d12inv, fn_original, fnp_original, s4, r12unit, f12);
-        }
-        
-        if (L_max >= 5) {
-            double[] s5 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-            calculate_s_one_5(n, n_max_angular_plus_1, Fp, sum_fxyz, s5);
-            accumulate_f12_one_5(d12inv, fn_original, fnp_original, s5, r12unit, f12);
-        }
-        
-        if (L_max >= 6) {
-            double[] s6 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-            calculate_s_one_6(n, n_max_angular_plus_1, Fp, sum_fxyz, s6);
-            accumulate_f12_one_6(d12inv, fn_original, fnp_original, s6, r12unit, f12);
-        }
-        
-        if (L_max >= 7) {
-            double[] s7 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-            calculate_s_one_7(n, n_max_angular_plus_1, Fp, sum_fxyz, s7);
-            accumulate_f12_one_7(d12inv, fn_original, fnp_original, s7, r12unit, f12);
-        }
-        
-        if (L_max >= 8) {
-            double[] s8 = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-            calculate_s_one_8(n, n_max_angular_plus_1, Fp, sum_fxyz, s8);
-            accumulate_f12_one_8(d12inv, fn_original, fnp_original, s8, r12unit, f12);
-        }
-    }
-    
-    static void accumulate_s_one_1(double x12, double y12, double z12, double fn, double[] s) {
-        int s_index = 0;
-        
-        double[] z_pow = {1.0, 0.0};
-        z_pow[1] = z12 * z_pow[0];
-        
-        double[] real_part = {x12};
-        double[] imag_part = {y12};
-        double z_factor = 0.0;
-        // L == 1
-        z_factor += Z_COEFFICIENT_1[0][1] * z_pow[1];
-        z_factor *= fn;
-        s[s_index++] += z_factor;
-        
-        z_factor = 0.0;
-        // L == 1
-        z_factor += Z_COEFFICIENT_1[1][0] * z_pow[0];
-        z_factor *= fn;
-        s[s_index++] += z_factor * real_part[0];
-        s[s_index++] += z_factor * imag_part[0];
-        complex_product(x12, y12, real_part, imag_part);
-    }
-    static void accumulate_s_one_2(double x12, double y12, double z12, double fn, double[] s) {
-        int s_index = 3;
-        
-        double[] z_pow = {1.0, 0.0, 0.0};
-        z_pow[1] = z12 * z_pow[0];
-        z_pow[2] = z12 * z_pow[1];
-        
-        double[] real_part = {x12};
-        double[] imag_part = {y12};
-        double z_factor = 0.0;
-        // L == 2
-        z_factor += Z_COEFFICIENT_2[0][0] * z_pow[0];
-        z_factor += Z_COEFFICIENT_2[0][2] * z_pow[2];
-        z_factor *= fn;
-        s[s_index++] += z_factor;
-        
-        z_factor = 0.0;
-        // L == 2
-        z_factor += Z_COEFFICIENT_2[1][1] * z_pow[1];
-        z_factor *= fn;
-        s[s_index++] += z_factor * real_part[0];
-        s[s_index++] += z_factor * imag_part[0];
-        complex_product(x12, y12, real_part, imag_part);
-        
-        z_factor = 0.0;
-        // L == 2
-        z_factor += Z_COEFFICIENT_2[2][0] * z_pow[0];
-        z_factor *= fn;
-        s[s_index++] += z_factor * real_part[0];
-        s[s_index++] += z_factor * imag_part[0];
-        complex_product(x12, y12, real_part, imag_part);
-    }
-    static void accumulate_s_one_3(double x12, double y12, double z12, double fn, double[] s) {
-        int s_index = 8;
-        
-        double[] z_pow = {1.0, 0.0, 0.0, 0.0};
-        z_pow[1] = z12 * z_pow[0];
-        z_pow[2] = z12 * z_pow[1];
-        z_pow[3] = z12 * z_pow[2];
-        
-        double[] real_part = {x12};
-        double[] imag_part = {y12};
-        double z_factor = 0.0;
-        // L == 3
-        z_factor += Z_COEFFICIENT_3[0][1] * z_pow[1];
-        z_factor += Z_COEFFICIENT_3[0][3] * z_pow[3];
-        z_factor *= fn;
-        s[s_index++] += z_factor;
-
-        z_factor = 0.0;
-        // L == 3
-        z_factor += Z_COEFFICIENT_3[1][0] * z_pow[0];
-        z_factor += Z_COEFFICIENT_3[1][2] * z_pow[2];
-        z_factor *= fn;
-        s[s_index++] += z_factor * real_part[0];
-        s[s_index++] += z_factor * imag_part[0];
-        complex_product(x12, y12, real_part, imag_part);
-
-        z_factor = 0.0;
-        // L == 3
-        z_factor += Z_COEFFICIENT_3[2][1] * z_pow[1];
-        z_factor *= fn;
-        s[s_index++] += z_factor * real_part[0];
-        s[s_index++] += z_factor * imag_part[0];
-        complex_product(x12, y12, real_part, imag_part);
-
-        z_factor = 0.0;
-        // L == 3
-        z_factor += Z_COEFFICIENT_3[3][0] * z_pow[0];
-        z_factor *= fn;
-        s[s_index++] += z_factor * real_part[0];
-        s[s_index++] += z_factor * imag_part[0];
-        complex_product(x12, y12, real_part, imag_part);
-    }
-    static void accumulate_s_one_4(double x12, double y12, double z12, double fn, double[] s) {
-        final int L = 4;
-        int s_index = 15;
-        
-        double[] z_pow = {1.0, 0.0, 0.0, 0.0, 0.0};
-        z_pow[1] = z12 * z_pow[0];
-        z_pow[2] = z12 * z_pow[1];
-        z_pow[3] = z12 * z_pow[2];
-        z_pow[4] = z12 * z_pow[3];
-        
-        double[] real_part = {x12};
-        double[] imag_part = {y12};
-        double z_factor = 0.0;
-        // L == 4
-        z_factor += Z_COEFFICIENT_4[0][0] * z_pow[0];
-        z_factor += Z_COEFFICIENT_4[0][2] * z_pow[2];
-        z_factor += Z_COEFFICIENT_4[0][4] * z_pow[4];
-        z_factor *= fn;
-        s[s_index++] += z_factor;
-
-        z_factor = 0.0;
-        // L == 4
-        z_factor += Z_COEFFICIENT_4[1][1] * z_pow[1];
-        z_factor += Z_COEFFICIENT_4[1][3] * z_pow[3];
-        z_factor *= fn;
-        s[s_index++] += z_factor * real_part[0];
-        s[s_index++] += z_factor * imag_part[0];
-        complex_product(x12, y12, real_part, imag_part);
-
-        z_factor = 0.0;
-        // L == 4
-        z_factor += Z_COEFFICIENT_4[2][0] * z_pow[0];
-        z_factor += Z_COEFFICIENT_4[2][2] * z_pow[2];
-        z_factor *= fn;
-        s[s_index++] += z_factor * real_part[0];
-        s[s_index++] += z_factor * imag_part[0];
-        complex_product(x12, y12, real_part, imag_part);
-
-        z_factor = 0.0;
-        // L == 4
-        z_factor += Z_COEFFICIENT_4[3][1] * z_pow[1];
-        z_factor *= fn;
-        s[s_index++] += z_factor * real_part[0];
-        s[s_index++] += z_factor * imag_part[0];
-        complex_product(x12, y12, real_part, imag_part);
-
-        z_factor = 0.0;
-        // L == 4
-        z_factor += Z_COEFFICIENT_4[4][0] * z_pow[0];
-        z_factor *= fn;
-        s[s_index++] += z_factor * real_part[0];
-        s[s_index++] += z_factor * imag_part[0];
-        complex_product(x12, y12, real_part, imag_part);
-    }
-    static void accumulate_s_one_5(double x12, double y12, double z12, double fn, double[] s) {
-        final int L = 5;
-        int s_index = L * L - 1;
-        
-        double[] z_pow = {1.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-        for (int n = 1; n <= L; ++n) {
-            z_pow[n] = z12 * z_pow[n-1];
-        }
-        double[] real_part = {x12};
-        double[] imag_part = {y12};
-        for (int n1 = 0; n1 <= L; ++n1) {
-            int n2_start = (L + n1) % 2 == 0 ? 0 : 1;
-            double z_factor = 0.0;
-            for (int n2 = n2_start; n2 <= L - n1; n2 += 2) {
-                // L == 5
-                z_factor += Z_COEFFICIENT_5[n1][n2] * z_pow[n2];
-            }
-            z_factor *= fn;
-            if (n1 == 0) {
-                s[s_index++] += z_factor;
-            } else {
-                s[s_index++] += z_factor * real_part[0];
-                s[s_index++] += z_factor * imag_part[0];
-                complex_product(x12, y12, real_part, imag_part);
-            }
-        }
-    }
-    static void accumulate_s_one_6(double x12, double y12, double z12, double fn, double[] s) {
-        final int L = 6;
-        int s_index = L * L - 1;
-        
-        double[] z_pow = {1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-        for (int n = 1; n <= L; ++n) {
-            z_pow[n] = z12 * z_pow[n-1];
-        }
-        double[] real_part = {x12};
-        double[] imag_part = {y12};
-        for (int n1 = 0; n1 <= L; ++n1) {
-            int n2_start = (L + n1) % 2 == 0 ? 0 : 1;
-            double z_factor = 0.0;
-            for (int n2 = n2_start; n2 <= L - n1; n2 += 2) {
-                // L == 6
-                z_factor += Z_COEFFICIENT_6[n1][n2] * z_pow[n2];
-            }
-            z_factor *= fn;
-            if (n1 == 0) {
-                s[s_index++] += z_factor;
-            } else {
-                s[s_index++] += z_factor * real_part[0];
-                s[s_index++] += z_factor * imag_part[0];
-                complex_product(x12, y12, real_part, imag_part);
-            }
-        }
-    }
-    static void accumulate_s_one_7(double x12, double y12, double z12, double fn, double[] s) {
-        final int L = 7;
-        int s_index = L * L - 1;
-        
-        double[] z_pow = {1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-        for (int n = 1; n <= L; ++n) {
-            z_pow[n] = z12 * z_pow[n-1];
-        }
-        double[] real_part = {x12};
-        double[] imag_part = {y12};
-        for (int n1 = 0; n1 <= L; ++n1) {
-            int n2_start = (L + n1) % 2 == 0 ? 0 : 1;
-            double z_factor = 0.0;
-            for (int n2 = n2_start; n2 <= L - n1; n2 += 2) {
-                // L == 7
-                z_factor += Z_COEFFICIENT_7[n1][n2] * z_pow[n2];
-            }
-            z_factor *= fn;
-            if (n1 == 0) {
-                s[s_index++] += z_factor;
-            } else {
-                s[s_index++] += z_factor * real_part[0];
-                s[s_index++] += z_factor * imag_part[0];
-                complex_product(x12, y12, real_part, imag_part);
-            }
-        }
-    }
-    static void accumulate_s_one_8(double x12, double y12, double z12, double fn, double[] s) {
-        final int L = 8;
-        int s_index = L * L - 1;
-        
-        double[] z_pow = {1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-        for (int n = 1; n <= L; ++n) {
-            z_pow[n] = z12 * z_pow[n-1];
-        }
-        double[] real_part = {x12};
-        double[] imag_part = {y12};
-        for (int n1 = 0; n1 <= L; ++n1) {
-            int n2_start = (L + n1) % 2 == 0 ? 0 : 1;
-            double z_factor = 0.0;
-            for (int n2 = n2_start; n2 <= L - n1; n2 += 2) {
-                // L == 8
-                z_factor += Z_COEFFICIENT_8[n1][n2] * z_pow[n2];
-            }
-            z_factor *= fn;
-            if (n1 == 0) {
-                s[s_index++] += z_factor;
-            } else {
-                s[s_index++] += z_factor * real_part[0];
-                s[s_index++] += z_factor * imag_part[0];
-                complex_product(x12, y12, real_part, imag_part);
-            }
-        }
-    }
-    
-    static void accumulate_s(int L_max, double d12, double x12, double y12, double z12, double fn, double[] s) {
-        double d12inv = 1.0 / d12;
-        x12 *= d12inv;
-        y12 *= d12inv;
-        z12 *= d12inv;
-        if (L_max >= 1) {
-            accumulate_s_one_1(x12, y12, z12, fn, s);
-        }
-        if (L_max >= 2) {
-            accumulate_s_one_2(x12, y12, z12, fn, s);
-        }
-        if (L_max >= 3) {
-            accumulate_s_one_3(x12, y12, z12, fn, s);
-        }
-        if (L_max >= 4) {
-            accumulate_s_one_4(x12, y12, z12, fn, s);
-        }
-        if (L_max >= 5) {
-            accumulate_s_one_5(x12, y12, z12, fn, s);
-        }
-        if (L_max >= 6) {
-            accumulate_s_one_6(x12, y12, z12, fn, s);
-        }
-        if (L_max >= 7) {
-            accumulate_s_one_7(x12, y12, z12, fn, s);
-        }
-        if (L_max >= 8) {
-            accumulate_s_one_8(x12, y12, z12, fn, s);
-        }
-    }
-    
-    static double find_q_one_1(double[] s) {
-        final int start_index = 1 * 1 - 1;
-        final int num_terms = 2 * 1 + 1;
-        double q = 0.0;
-        for (int k = 1; k < num_terms; ++k) {
-            q += C3B[start_index + k] * s[start_index + k] * s[start_index + k];
-        }
-        q *= 2.0;
-        q += C3B[start_index] * s[start_index] * s[start_index];
-        return q;
-    }
-    static double find_q_one_2(double[] s) {
-        int start_index = 2 * 2 - 1;
-        int num_terms = 2 * 2 + 1;
-        double q = 0.0;
-        for (int k = 1; k < num_terms; ++k) {
-            q += C3B[start_index + k] * s[start_index + k] * s[start_index + k];
-        }
-        q *= 2.0;
-        q += C3B[start_index] * s[start_index] * s[start_index];
-        return q;
-    }
-    static double find_q_one_3(double[] s) {
-        int start_index = 3 * 3 - 1;
-        int num_terms = 2 * 3 + 1;
-        double q = 0.0;
-        for (int k = 1; k < num_terms; ++k) {
-            q += C3B[start_index + k] * s[start_index + k] * s[start_index + k];
-        }
-        q *= 2.0;
-        q += C3B[start_index] * s[start_index] * s[start_index];
-        return q;
-    }
-    static double find_q_one_4(double[] s) {
-        int start_index = 4 * 4 - 1;
-        int num_terms = 2 * 4 + 1;
-        double q = 0.0;
-        for (int k = 1; k < num_terms; ++k) {
-            q += C3B[start_index + k] * s[start_index + k] * s[start_index + k];
-        }
-        q *= 2.0;
-        q += C3B[start_index] * s[start_index] * s[start_index];
-        return q;
-    }
-    static double find_q_one_5(double[] s) {
-        int start_index = 5 * 5 - 1;
-        int num_terms = 2 * 5 + 1;
-        double q = 0.0;
-        for (int k = 1; k < num_terms; ++k) {
-            q += C3B[start_index + k] * s[start_index + k] * s[start_index + k];
-        }
-        q *= 2.0;
-        q += C3B[start_index] * s[start_index] * s[start_index];
-        return q;
-    }
-    static double find_q_one_6(double[] s) {
-        int start_index = 6 * 6 - 1;
-        int num_terms = 2 * 6 + 1;
-        double q = 0.0;
-        for (int k = 1; k < num_terms; ++k) {
-            q += C3B[start_index + k] * s[start_index + k] * s[start_index + k];
-        }
-        q *= 2.0;
-        q += C3B[start_index] * s[start_index] * s[start_index];
-        return q;
-    }
-    static double find_q_one_7(double[] s) {
-        int start_index = 7 * 7 - 1;
-        int num_terms = 2 * 7 + 1;
-        double q = 0.0;
-        for (int k = 1; k < num_terms; ++k) {
-            q += C3B[start_index + k] * s[start_index + k] * s[start_index + k];
-        }
-        q *= 2.0;
-        q += C3B[start_index] * s[start_index] * s[start_index];
-        return q;
-    }
-    static double find_q_one_8(double[] s) {
-        int start_index = 8 * 8 - 1;
-        int num_terms = 2 * 8 + 1;
-        double q = 0.0;
-        for (int k = 1; k < num_terms; ++k) {
-            q += C3B[start_index + k] * s[start_index + k] * s[start_index + k];
-        }
-        q *= 2.0;
-        q += C3B[start_index] * s[start_index] * s[start_index];
-        return q;
-    }
-    
-    static void find_q(int L_max, int num_L, int n_max_angular_plus_1, int n, 
-                       double[] s, double[] q, int shift) {
-        if (L_max >= 1) {
-            q[shift + 0 * n_max_angular_plus_1 + n] = find_q_one_1(s);
-        }
-        if (L_max >= 2) {
-            q[shift + 1 * n_max_angular_plus_1 + n] = find_q_one_2(s);
-        }
-        if (L_max >= 3) {
-            q[shift + 2 * n_max_angular_plus_1 + n] = find_q_one_3(s);
-        }
-        if (L_max >= 4) {
-            q[shift + 3 * n_max_angular_plus_1 + n] = find_q_one_4(s);
-        }
-        if (L_max >= 5) {
-            q[shift + 4 * n_max_angular_plus_1 + n] = find_q_one_5(s);
-        }
-        if (L_max >= 6) {
-            q[shift + 5 * n_max_angular_plus_1 + n] = find_q_one_6(s);
-        }
-        if (L_max >= 7) {
-            q[shift + 6 * n_max_angular_plus_1 + n] = find_q_one_7(s);
-        }
-        if (L_max >= 8) {
-            q[shift + 7 * n_max_angular_plus_1 + n] = find_q_one_8(s);
-        }
-        if (num_L >= L_max + 1) {
-            q[shift + L_max * n_max_angular_plus_1 + n] =
-                C4B[0] * s[3] * s[3] * s[3] + C4B[1] * s[3] * (s[4] * s[4] + s[5] * s[5]) +
-                C4B[2] * s[3] * (s[6] * s[6] + s[7] * s[7]) + C4B[3] * s[6] * (s[5] * s[5] - s[4] * s[4]) +
-                C4B[4] * s[4] * s[5] * s[7];
-        }
-        if (num_L >= L_max + 2) {
-            double s0_sq = s[0] * s[0];
-            double s1_sq_plus_s2_sq = s[1] * s[1] + s[2] * s[2];
-            q[shift + (L_max + 1) * n_max_angular_plus_1 + n] =
-                C5B[0] * s0_sq * s0_sq +
-                C5B[1] * s0_sq * s1_sq_plus_s2_sq +
-                C5B[2] * s1_sq_plus_s2_sq * s1_sq_plus_s2_sq;
-        }
-    }
-    
-    static final int table_length = 2001;
-    static final int table_segments = table_length - 1;
-    static final double table_resolution = 0.0005;
-    
-    static void find_index_and_weight(double d12_reduced, 
-                                      int[] index_left, int[] index_right, 
-                                      double[] weight_left, double[] weight_right) {
-        double d12_index = d12_reduced * table_segments;
-        index_left[0] = (int)d12_index;
-        if (index_left[0] == table_segments) {
-            --index_left[0];
-        }
-        index_right[0] = index_left[0] + 1;
-        weight_right[0] = d12_index - index_left[0];
-        weight_left[0] = 1.0 - weight_right[0];
-    }
-    
-    static void construct_table_radial_or_angular(int version, int num_types, int num_types_sq, 
-                                                  int n_max, int basis_size, double rc, double rcinv, 
-                                                  double[] c, int shift, double[] gn, double[] gnp) {
-        double[] fn12 = DoubleArrayCache.getArray(MAX_NUM_N);
-        double[] fnp12 = DoubleArrayCache.getArray(MAX_NUM_N);
-        for (int table_index = 0; table_index < table_length; ++table_index) {
-            double d12 = table_index * table_resolution * rc;
-            double[] fc12 = {0.0}, fcp12 = {0.0};
-            find_fc_and_fcp(rc, rcinv, d12, fc12, fcp12);
-            for (int t1 = 0; t1 < num_types; ++t1) {
-                for (int t2 = 0; t2 < num_types; ++t2) {
-                    int t12 = t1 * num_types + t2;
-                    find_fn_and_fnp(basis_size, rcinv, d12, fc12[0], fcp12[0], fn12, fnp12);
-                    for (int n = 0; n <= n_max; ++n) {
-                        double gn12 = 0.0;
-                        double gnp12 = 0.0;
-                        for (int k = 0; k <= basis_size; ++k) {
-                            gn12 += fn12[k] * c[shift + (n * (basis_size + 1) + k) * num_types_sq + t12];
-                            gnp12 += fnp12[k] * c[shift + (n * (basis_size + 1) + k) * num_types_sq + t12];
-                        }
-                        int index_all = (table_index * num_types_sq + t12) * (n_max + 1) + n;
-                        gn[index_all] = gn12;
-                        gnp[index_all] = gnp12;
-                    }
-                }
-            }
-        }
-        DoubleArrayCache.returnArray(fn12);
-        DoubleArrayCache.returnArray(fnp12);
-    }
-    
-    static void find_descriptor(ParaMB paramb, ANN annmb,
-                                int aAtomNumber, INeighborListGetter aNeighborListGetter,
-                                double[] g_gn_radial, double[] g_gn_angular,
-                                double[] g_Fp, double[] g_sum_fxyz, @Nullable IEnergyAccumulator rEnergyAccumulator) {
-        double[] q = DoubleArrayCache.getArray(MAX_DIM);
-        double[] fn12 = DoubleArrayCache.getArray(MAX_NUM_N);
-        double[] s = DoubleArrayCache.getArray(NUM_OF_ABC);
-        double[] Fp = DoubleArrayCache.getArray(MAX_DIM), latent_space = DoubleArrayCache.getArray(MAX_NEURON);
-        final int N = aAtomNumber;
-        aNeighborListGetter.forEachNL((threadID, cIdx, cType, nl) -> {
-            int t1 = cType-1;
-            Arrays.fill(q, 0.0);
-            nl.forEachDxyzTypeIdx(paramb.rc_radial, (dx, dy, dz, type, idx) -> {
-                double d12 = hypot(dx, dy, dz);
-                if (d12 >= paramb.rc_radial) return;
-                int t2 = type - 1;
-                
-                if (Conf.USE_TABLE_FOR_RADIAL_FUNCTIONS) {
-                    int[] index_left = {0}, index_right = {0};
-                    double[] weight_left = {0.0}, weight_right = {0.0};
-                    find_index_and_weight(d12 * paramb.rcinv_radial, index_left, index_right, weight_left, weight_right);
-                    int t12 = t1 * paramb.num_types + t2;
-                    for (int n = 0; n <= paramb.n_max_radial; ++n) {
-                        q[n] += g_gn_radial[(index_left[0] * paramb.num_types_sq + t12) * (paramb.n_max_radial + 1) + n] * weight_left[0] +
-                            g_gn_radial[(index_right[0] * paramb.num_types_sq + t12) * (paramb.n_max_radial + 1) + n] * weight_right[0];
-                    }
-                } else {
-                    double[] fc12 = {0.0};
-                    double rc = paramb.rc_radial;
-                    double rcinv = paramb.rcinv_radial;
-                    if (paramb.use_typewise_cutoff) {
-                        rc = Math.min((COVALENT_RADIUS[paramb.atomic_numbers[t1]] + COVALENT_RADIUS[paramb.atomic_numbers[t2]]) * paramb.typewise_cutoff_radial_factor, rc);
-                        rcinv = 1.0 / rc;
-                    }
-                    find_fc(rc, rcinv, d12, fc12);
-                    find_fn(paramb.basis_size_radial, rcinv, d12, fc12[0], fn12);
-                    for (int n = 0; n <= paramb.n_max_radial; ++n) {
-                        double gn12 = 0.0;
-                        for (int k = 0; k <= paramb.basis_size_radial; ++k) {
-                            int c_index = (n * (paramb.basis_size_radial + 1) + k) * paramb.num_types_sq;
-                            c_index += t1 * paramb.num_types + t2;
-                            gn12 += fn12[k] * annmb.c[c_index];
-                        }
-                        q[n] += gn12;
-                    }
-                }
-            });
-            
-            for (int n = 0; n <= paramb.n_max_angular; ++n) {
-                Arrays.fill(s, 0.0);
-                final int fn = n;
-                nl.forEachDxyzTypeIdx(paramb.rc_angular, (dx, dy, dz, type, idx) -> {
-                    double d12 = hypot(dx, dy, dz);
-                    if (d12 >= paramb.rc_angular) return;
-                    int t2 = type-1;
-                    
-                    if (Conf.USE_TABLE_FOR_RADIAL_FUNCTIONS) {
-                        int[] index_left = {0}, index_right = {0};
-                        double[] weight_left = {0.0}, weight_right = {0.0};
-                        find_index_and_weight(d12 * paramb.rcinv_angular, index_left, index_right, weight_left, weight_right);
-                        int t12 = t1 * paramb.num_types + t2;
-                        double gn12 =
-                            g_gn_angular[(index_left[0] * paramb.num_types_sq + t12) * (paramb.n_max_angular + 1) + fn] * weight_left[0] +
-                            g_gn_angular[(index_right[0] * paramb.num_types_sq + t12) * (paramb.n_max_angular + 1) + fn] * weight_right[0];
-                        accumulate_s(paramb.L_max, d12, dx, dy, dz, gn12, s);
-                    } else {
-                        double[] fc12 = {0.0};
-                        double rc = paramb.rc_angular;
-                        double rcinv = paramb.rcinv_angular;
-                        if (paramb.use_typewise_cutoff) {
-                            rc = Math.min((COVALENT_RADIUS[paramb.atomic_numbers[t1]] + COVALENT_RADIUS[paramb.atomic_numbers[t2]]) * paramb.typewise_cutoff_angular_factor, rc);
-                            rcinv = 1.0 / rc;
-                        }
-                        find_fc(rc, rcinv, d12, fc12);
-                        find_fn(paramb.basis_size_angular, rcinv, d12, fc12[0], fn12);
-                        double gn12 = 0.0;
-                        for (int k = 0; k <= paramb.basis_size_angular; ++k) {
-                            int c_index = (fn * (paramb.basis_size_angular + 1) + k) * paramb.num_types_sq;
-                            c_index += t1 * paramb.num_types + t2 + paramb.num_c_radial;
-                            gn12 += fn12[k] * annmb.c[c_index];
-                        }
-                        accumulate_s(paramb.L_max, d12, dx, dy, dz, gn12, s);
-                    }
-                });
-                find_q(paramb.L_max, paramb.num_L, paramb.n_max_angular + 1, n, s, q, (paramb.n_max_radial + 1));
-                for (int abc = 0; abc < NUM_OF_ABC; ++abc) {
-                    g_sum_fxyz[(n * NUM_OF_ABC + abc) * N + cIdx] = s[abc];
-                }
-            }
-            for (int d = 0; d < annmb.dim; ++d) {
-                q[d] = q[d] * paramb.q_scaler[d];
-            }
-            double[] F = {0.0};
-            Arrays.fill(Fp, 0.0);
-            Arrays.fill(latent_space, 0.0);
-            
-            if (paramb.version == 5) {
-                apply_ann_one_layer_nep5(annmb.dim, annmb.num_neurons1, annmb.w0[t1], annmb.b0[t1], annmb.w1[t1], annmb.b1, q, F, Fp, latent_space);
-            } else {
-                apply_ann_one_layer(annmb.dim, annmb.num_neurons1, annmb.w0[t1], annmb.b0[t1], annmb.w1[t1], annmb.b1, q, F, Fp, latent_space, false, null, 0);
-            }
-            
-            if (rEnergyAccumulator != null) {
-                rEnergyAccumulator.add(threadID, cIdx, -1, F[0]);
-            }
-            for (int d = 0; d < annmb.dim; ++d) {
-                g_Fp[d * N + cIdx] = Fp[d] * paramb.q_scaler[d];
-            }
-        });
-        DoubleArrayCache.returnArray(latent_space);
-        DoubleArrayCache.returnArray(Fp);
-        DoubleArrayCache.returnArray(s);
-        DoubleArrayCache.returnArray(fn12);
-        DoubleArrayCache.returnArray(q);
-    }
-    
-    static void find_force_radial(ParaMB paramb, ANN annmb,
-                                  int aAtomNumber, INeighborListGetter aNeighborListGetter,
-                                  double[] g_Fp, double[] g_gnp_radial,
-                                  @Nullable IForceAccumulator rForceAccumulator, @Nullable IVirialAccumulator rVirialAccumulator) {
-        double[] fn12 = DoubleArrayCache.getArray(MAX_NUM_N);
-        double[] fnp12 = DoubleArrayCache.getArray(MAX_NUM_N);
-        final int N = aAtomNumber;
-        aNeighborListGetter.forEachNL((threadID, cIdx, cType, nl) -> {
-            int t1 = cType-1;
-            nl.forEachDxyzTypeIdx(paramb.rc_radial, (dx, dy, dz, type, idx) -> {
-                double d12 = hypot(dx, dy, dz);
-                if (d12 >= paramb.rc_radial) return;
-                int t2 = type - 1;
-                double d12inv = 1.0 / d12;
-                double[] f12 = {0.0, 0.0, 0.0};
-                if (Conf.USE_TABLE_FOR_RADIAL_FUNCTIONS) {
-                    int[] index_left = {0}, index_right = {0};
-                    double[] weight_left = {0.0}, weight_right = {0.0};
-                    find_index_and_weight(d12 * paramb.rcinv_radial, index_left, index_right, weight_left, weight_right);
-                    int t12 = t1 * paramb.num_types + t2;
-                    for (int n = 0; n <= paramb.n_max_radial; ++n) {
-                        double gnp12 =
-                            g_gnp_radial[(index_left[0] * paramb.num_types_sq + t12) * (paramb.n_max_radial + 1) + n] * weight_left[0] +
-                            g_gnp_radial[(index_right[0] * paramb.num_types_sq + t12) * (paramb.n_max_radial + 1) + n] * weight_right[0];
-                        double tmp12 = -g_Fp[cIdx + n * N] * gnp12 * d12inv;
-                        f12[0] += tmp12 * dx;
-                        f12[1] += tmp12 * dy;
-                        f12[2] += tmp12 * dz;
-                    }
-                } else {
-                    double[] fc12 = {0.0}, fcp12 = {0.0};
-                    double rc = paramb.rc_radial;
-                    double rcinv = paramb.rcinv_radial;
-                    if (paramb.use_typewise_cutoff) {
-                        rc = Math.min((COVALENT_RADIUS[paramb.atomic_numbers[t1]] + COVALENT_RADIUS[paramb.atomic_numbers[t2]]) * paramb.typewise_cutoff_radial_factor, rc);
-                        rcinv = 1.0 / rc;
-                    }
-                    find_fc_and_fcp(rc, rcinv, d12, fc12, fcp12);
-                    find_fn_and_fnp(paramb.basis_size_radial, rcinv, d12, fc12[0], fcp12[0], fn12, fnp12);
-                    for (int n = 0; n <= paramb.n_max_radial; ++n) {
-                        double gnp12 = 0.0;
-                        for (int k = 0; k <= paramb.basis_size_radial; ++k) {
-                            int c_index = (n * (paramb.basis_size_radial + 1) + k) * paramb.num_types_sq;
-                            c_index += t1 * paramb.num_types + t2;
-                            gnp12 += fnp12[k] * annmb.c[c_index];
-                        }
-                        double tmp12 = -g_Fp[cIdx + n * N] * gnp12 * d12inv;
-                        f12[0] += tmp12 * dx;
-                        f12[1] += tmp12 * dy;
-                        f12[2] += tmp12 * dz;
-                    }
-                }
-                if (rForceAccumulator != null) {
-                    rForceAccumulator.add(threadID, cIdx, idx, f12[0], f12[1], f12[2]);
-                }
-                if (rVirialAccumulator != null) {
-                    rVirialAccumulator.add(threadID, -1, idx, f12[0], f12[1], f12[2], dx, dy, dz);
-                }
-            });
-        });
-        DoubleArrayCache.returnArray(fn12);
-        DoubleArrayCache.returnArray(fnp12);
-    }
-    
-    static void find_force_angular(ParaMB paramb, ANN annmb,
-                                   int aAtomNumber, INeighborListGetter aNeighborListGetter,
-                                   double[] g_Fp, double[] g_sum_fxyz,
-                                   double[] g_gn_angular, double[] g_gnp_angular,
-                                   @Nullable IForceAccumulator rForceAccumulator, @Nullable IVirialAccumulator rVirialAccumulator) {
-        double[] Fp = DoubleArrayCache.getArray(MAX_DIM_ANGULAR);
-        double[] sum_fxyz = DoubleArrayCache.getArray(NUM_OF_ABC * MAX_NUM_N);
-        double[] fn12 = DoubleArrayCache.getArray(MAX_NUM_N);
-        double[] fnp12 = DoubleArrayCache.getArray(MAX_NUM_N);
-        final int N = aAtomNumber;
-        aNeighborListGetter.forEachNL((threadID, cIdx, cType, nl) -> {
-            for (int d = 0; d < paramb.dim_angular; ++d) {
-                Fp[d] = g_Fp[(paramb.n_max_radial + 1 + d) * N + cIdx];
-            }
-            for (int d = 0; d < (paramb.n_max_angular + 1) * NUM_OF_ABC; ++d) {
-                sum_fxyz[d] = g_sum_fxyz[d * N + cIdx];
-            }
-            
-            int t1 = cType-1;
-            nl.forEachDxyzTypeIdx(paramb.rc_angular, (dx, dy, dz, type, idx) -> {
-                double d12 = hypot(dx, dy, dz);
-                if (d12 >= paramb.rc_angular) return;
-                int t2 = type-1;
-                double[] r12 = {dx, dy, dz};
-                double[] f12 = {0.0, 0.0, 0.0};
-                
-                if (Conf.USE_TABLE_FOR_RADIAL_FUNCTIONS) {
-                    int[] index_left = {0}, index_right = {0};
-                    double[] weight_left = {0.0}, weight_right = {0.0};
-                    find_index_and_weight(d12 * paramb.rcinv_angular, index_left, index_right, weight_left, weight_right);
-                    int t12 = t1 * paramb.num_types + t2;
-                    for (int n = 0; n <= paramb.n_max_angular; ++n) {
-                        int index_left_all = (index_left[0] * paramb.num_types_sq + t12) * (paramb.n_max_angular + 1) + n;
-                        int index_right_all = (index_right[0] * paramb.num_types_sq + t12) * (paramb.n_max_angular + 1) + n;
-                        double gn12 = g_gn_angular[index_left_all] * weight_left[0] + g_gn_angular[index_right_all] * weight_right[0];
-                        double gnp12 = g_gnp_angular[index_left_all] * weight_left[0] + g_gnp_angular[index_right_all] * weight_right[0];
-                        accumulate_f12(paramb.L_max, paramb.num_L, n, paramb.n_max_angular + 1, d12, r12, gn12, gnp12, Fp, sum_fxyz, f12);
-                    }
-                } else {
-                    double[] fc12 = {0.0}, fcp12 = {0.0};
-                    double rc = paramb.rc_angular;
-                    double rcinv = paramb.rcinv_angular;
-                    if (paramb.use_typewise_cutoff) {
-                        rc = Math.min((COVALENT_RADIUS[paramb.atomic_numbers[t1]] + COVALENT_RADIUS[paramb.atomic_numbers[t2]]) * paramb.typewise_cutoff_angular_factor, rc);
-                        rcinv = 1.0 / rc;
-                    }
-                    find_fc_and_fcp(rc, rcinv, d12, fc12, fcp12);
-                    find_fn_and_fnp(paramb.basis_size_angular, rcinv, d12, fc12[0], fcp12[0], fn12, fnp12);
-                    for (int n = 0; n <= paramb.n_max_angular; ++n) {
-                        double gn12 = 0.0;
-                        double gnp12 = 0.0;
-                        for (int k = 0; k <= paramb.basis_size_angular; ++k) {
-                            int c_index = (n * (paramb.basis_size_angular + 1) + k) * paramb.num_types_sq;
-                            c_index += t1 * paramb.num_types + t2 + paramb.num_c_radial;
-                            gn12 += fn12[k] * annmb.c[c_index];
-                            gnp12 += fnp12[k] * annmb.c[c_index];
-                        }
-                        accumulate_f12(paramb.L_max, paramb.num_L, n, paramb.n_max_angular + 1, d12, r12, gn12, gnp12, Fp, sum_fxyz, f12);
-                    }
-                }
-                f12[0] = -f12[0];
-                f12[1] = -f12[1];
-                f12[2] = -f12[2];
-                if (rForceAccumulator != null) {
-                    rForceAccumulator.add(threadID, cIdx, idx, f12[0], f12[1], f12[2]);
-                }
-                if (rVirialAccumulator != null) {
-                    rVirialAccumulator.add(threadID, -1, idx, f12[0], f12[1], f12[2], dx, dy, dz);
-                }
-            });
-        });
-        DoubleArrayCache.returnArray(Fp);
-        DoubleArrayCache.returnArray(sum_fxyz);
-        DoubleArrayCache.returnArray(fn12);
-        DoubleArrayCache.returnArray(fnp12);
-    }
-    
-    static void find_force_ZBL(ParaMB paramb, ZBL zbl,
-                               INeighborListGetter aNeighborListGetter,
-                               @Nullable IForceAccumulator rForceAccumulator,
-                               @Nullable IVirialAccumulator rVirialAccumulator,
-                               @Nullable IEnergyAccumulator rEnergyAccumulator) {
-        aNeighborListGetter.forEachNL((threadID, cIdx, cType, nl) -> {
-            int type1 = cType-1;
-            int zi = paramb.atomic_numbers[type1] + 1;
-            double pow_zi = pow(zi, 0.23);
-            double max_rc_outer = 2.5;
-            nl.forEachDxyzTypeIdx(max_rc_outer, (dx, dy, dz, type, idx) -> {
-                double d12 = hypot(dx, dy, dz);
-                if (d12 >= max_rc_outer) return;
-                int type2 = type - 1;
-                double d12inv = 1.0 / d12;
-                double[] f = {0.0}, fp = {0.0};
-                int zj = paramb.atomic_numbers[type2] + 1;
-                double a_inv = (pow_zi + pow(zj, 0.23)) * 2.134563;
-                double zizj = K_C_SP * zi * zj;
-                if (zbl.flexibled) {
-                    int t1, t2;
-                    if (type1 < type2) {
-                        t1 = type1;
-                        t2 = type2;
-                    } else {
-                        t1 = type2;
-                        t2 = type1;
-                    }
-                    int zbl_index = t1 * zbl.num_types - (t1 * (t1 - 1)) / 2 + (t2 - t1);
-                    double[] ZBL_para = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-                    for (int i = 0; i < 10; ++i) {
-                        ZBL_para[i] = zbl.para[10 * zbl_index + i];
-                    }
-                    find_f_and_fp_zbl(ZBL_para, zizj, a_inv, d12, d12inv, f, fp);
-                } else {
-                    double rc_inner = zbl.rc_inner;
-                    double rc_outer = zbl.rc_outer;
-                    if (paramb.use_typewise_cutoff_zbl) {
-                        // zi and zj start from 1, so need to minus 1 here
-                        rc_outer = Math.min((COVALENT_RADIUS[zi - 1] + COVALENT_RADIUS[zj - 1]) * paramb.typewise_cutoff_zbl_factor, rc_outer);
-                        rc_inner = rc_outer * 0.5f;
-                    }
-                    find_f_and_fp_zbl(zizj, a_inv, rc_inner, rc_outer, d12, d12inv, f, fp);
-                }
-                double f2 = -fp[0] * d12inv * 0.5;
-                double[] f12 = {dx * f2, dy * f2, dz * f2};
-                if (rForceAccumulator != null) {
-                    rForceAccumulator.add(threadID, cIdx, idx, f12[0], f12[1], f12[2]);
-                }
-                if (rVirialAccumulator != null) {
-                    // 原则上这里累加到任何位置都是等价的，不过这里保持一致
-                    rVirialAccumulator.add(threadID, -1, idx, f12[0], f12[1], f12[2], dx, dy, dz);
-                }
-                if (rEnergyAccumulator != null) {
-                    rEnergyAccumulator.add(threadID, cIdx, -1, f[0]*0.5);
-                }
-            });
-        });
-    }
-    
     
     static String[] get_tokens(BufferedReader input) throws IOException {
         String line = input.readLine();
         if (line == null) return ZL_STR;
         return IO.Text.splitBlank(line);
     }
-    
     static void print_tokens(String[] tokens) {
         System.err.print("Line:");
         for (String token : tokens) {

@@ -4,8 +4,8 @@ import jse.math.IDataShell;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * 内部存储 double[][] 的复向量，会加速相关的运算
  * @author liqa
- * <p> 内部存储 double[][] 的复向量，会加速相关的运算 </p>
  */
 public abstract class BiDoubleArrayVector extends AbstractComplexVector implements IDataShell<double[][]> {
     protected double[][] mData;
@@ -55,7 +55,7 @@ public abstract class BiDoubleArrayVector extends AbstractComplexVector implemen
     }
     
     /** stuff to override */
-    protected abstract BiDoubleArrayVector newZeros_(int aSize);
+    @Override protected abstract BiDoubleArrayVector newZeros_(int aSize);
     
-    public abstract double @Nullable[][] getIfHasSameOrderData(Object aObj);
+    @Override public abstract double @Nullable[][] getIfHasSameOrderData(Object aObj);
 }

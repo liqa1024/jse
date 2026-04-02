@@ -324,10 +324,10 @@ public abstract class AbstractIntVector implements IIntVector {
     
     
     /** stuff to override */
-    public abstract int get(int aIdx);
-    public abstract void set(int aIdx, int aValue);
-    public abstract int getAndSet(int aIdx, int aValue);
-    public abstract int size();
+    @Override public abstract int get(int aIdx);
+    @Override public abstract void set(int aIdx, int aValue);
+    @Override public abstract int getAndSet(int aIdx, int aValue);
+    @Override public abstract int size();
     protected abstract IIntVector newZeros_(int aSize);
     
     protected String toString_(int aValue) {return " "+aValue;}

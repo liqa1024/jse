@@ -29,8 +29,8 @@ public abstract class AbstractThreadPool<TP extends IThreadPool> implements IThr
         @Override public boolean isTerminated() {return false;}
         @Override public void awaitTermination() {/**/}
         @Override public void waitUntilDone() {/**/}
-        @Override public int jobNumber() {return 0;}
-        @Override public int threadNumber() {return 1;}
+        @Override public int njobs() {return 0;}
+        @Override public int nthreads() {return 1;}
     };
     
     
@@ -47,6 +47,6 @@ public abstract class AbstractThreadPool<TP extends IThreadPool> implements IThr
     @Override public void awaitTermination() throws InterruptedException {mPool.awaitTermination();}
     
     @Override public void waitUntilDone() throws InterruptedException {mPool.waitUntilDone();}
-    @Override public int jobNumber() {return mPool.jobNumber();}
-    @Override public int threadNumber() {return mPool.threadNumber();}
+    @Override public int njobs() {return mPool.njobs();}
+    @Override public int nthreads() {return mPool.nthreads();}
 }

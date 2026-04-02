@@ -27,7 +27,7 @@ public abstract class AbstractIntMatrix implements IIntMatrix {
     /** print */
     @Override public String toString() {
         final StringBuilder rStr  = new StringBuilder();
-        rStr.append(String.format("%d x %d Integer Matrix:", rowNumber(), columnNumber()));
+        rStr.append(String.format("%d x %d Integer Matrix:", nrows(), ncols()));
         for (IIntVector tRow : rows()) {
             rStr.append("\n");
             tRow.forEach(v -> rStr.append(toString_(v)));
@@ -38,8 +38,8 @@ public abstract class AbstractIntMatrix implements IIntMatrix {
     /** Iterator stuffs */
     @Override public IIntIterator iteratorCol() {
         return new IIntIterator() {
-            private final int mColNum = columnNumber();
-            private final int mRowNum = rowNumber();
+            private final int mColNum = ncols();
+            private final int mRowNum = nrows();
             private int mCol = 0;
             private int mRow = 0;
             @Override public boolean hasNext() {return mCol < mColNum;}
@@ -57,8 +57,8 @@ public abstract class AbstractIntMatrix implements IIntMatrix {
     }
     @Override public IIntIterator iteratorRow() {
         return new IIntIterator() {
-            private final int mColNum = columnNumber();
-            private final int mRowNum = rowNumber();
+            private final int mColNum = ncols();
+            private final int mRowNum = nrows();
             private int mCol = 0;
             private int mRow = 0;
             @Override public boolean hasNext() {return mRow < mRowNum;}
@@ -75,9 +75,9 @@ public abstract class AbstractIntMatrix implements IIntMatrix {
         };
     }
     @Override public IIntIterator iteratorColAt(final int aCol) {
-        rangeCheckCol(aCol, columnNumber());
+        rangeCheckCol(aCol, ncols());
         return new IIntIterator() {
-            private final int mRowNum = rowNumber();
+            private final int mRowNum = nrows();
             private int mRow = 0;
             @Override public boolean hasNext() {return mRow < mRowNum;}
             @Override public int next() {
@@ -92,9 +92,9 @@ public abstract class AbstractIntMatrix implements IIntMatrix {
         };
     }
     @Override public IIntIterator iteratorRowAt(final int aRow) {
-        rangeCheckRow(aRow, rowNumber());
+        rangeCheckRow(aRow, nrows());
         return new IIntIterator() {
-            private final int mColNum = columnNumber();
+            private final int mColNum = ncols();
             private int mCol = 0;
             @Override public boolean hasNext() {return mCol < mColNum;}
             @Override public int next() {
@@ -110,8 +110,8 @@ public abstract class AbstractIntMatrix implements IIntMatrix {
     }
     @Override public IIntSetIterator setIteratorCol() {
         return new IIntSetIterator() {
-            private final int mColNum = columnNumber();
-            private final int mRowNum = rowNumber();
+            private final int mColNum = ncols();
+            private final int mRowNum = nrows();
             private int mCol = 0, oCol = -1;
             private int mRow = 0, oRow = -1;
             @Override public boolean hasNext() {return mCol < mColNum;}
@@ -153,8 +153,8 @@ public abstract class AbstractIntMatrix implements IIntMatrix {
     }
     @Override public IIntSetIterator setIteratorRow() {
         return new IIntSetIterator() {
-            private final int mColNum = columnNumber();
-            private final int mRowNum = rowNumber();
+            private final int mColNum = ncols();
+            private final int mRowNum = nrows();
             private int mCol = 0, oCol = -1;
             private int mRow = 0, oRow = -1;
             @Override public boolean hasNext() {return mRow < mRowNum;}
@@ -195,9 +195,9 @@ public abstract class AbstractIntMatrix implements IIntMatrix {
         };
     }
     @Override public IIntSetIterator setIteratorColAt(final int aCol) {
-        rangeCheckCol(aCol, columnNumber());
+        rangeCheckCol(aCol, ncols());
         return new IIntSetIterator() {
-            private final int mRowNum = rowNumber();
+            private final int mRowNum = nrows();
             private int mRow = 0, oRow = -1;
             @Override public boolean hasNext() {return mRow < mRowNum;}
             @Override public void set(int aValue) {
@@ -231,9 +231,9 @@ public abstract class AbstractIntMatrix implements IIntMatrix {
         };
     }
     @Override public IIntSetIterator setIteratorRowAt(final int aRow) {
-        rangeCheckRow(aRow, rowNumber());
+        rangeCheckRow(aRow, nrows());
         return new IIntSetIterator() {
-            private final int mColNum = columnNumber();
+            private final int mColNum = ncols();
             private int mCol = 0, oCol = -1;
             @Override public boolean hasNext() {return mCol < mColNum;}
             @Override public void set(int aValue) {
@@ -276,8 +276,8 @@ public abstract class AbstractIntMatrix implements IIntMatrix {
             @Override public double get(int aRow, int aCol) {return AbstractIntMatrix.this.get(aRow, aCol);}
             @Override public void set(int aRow, int aCol, double aValue) {AbstractIntMatrix.this.set(aRow, aCol, (int)aValue);}
             @Override public double getAndSet(int aRow, int aCol, double aValue) {return AbstractIntMatrix.this.getAndSet(aRow, aCol, (int)aValue);}
-            @Override public int rowNumber() {return AbstractIntMatrix.this.rowNumber();}
-            @Override public int columnNumber() {return AbstractIntMatrix.this.columnNumber();}
+            @Override public int nrows() {return AbstractIntMatrix.this.nrows();}
+            @Override public int ncols() {return AbstractIntMatrix.this.ncols();}
             @Override public IDoubleIterator iteratorCol() {return AbstractIntMatrix.this.iteratorCol().asDouble();}
             @Override public IDoubleIterator iteratorRow() {return AbstractIntMatrix.this.iteratorRow().asDouble();}
             @Override public IDoubleIterator iteratorColAt(int aCol) {return AbstractIntMatrix.this.iteratorColAt(aCol).asDouble();}
@@ -286,7 +286,7 @@ public abstract class AbstractIntMatrix implements IIntMatrix {
     }
     @Override public IIntVector asVecCol() {
         return new RefIntVector() {
-            private final int mRowNum = rowNumber(), mColNum = columnNumber();
+            private final int mRowNum = nrows(), mColNum = ncols();
             @Override public int get(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractIntMatrix.this.get(aIdx%mRowNum, aIdx/mRowNum);}
             @Override public void set(int aIdx, int aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractIntMatrix.this.set(aIdx%mRowNum, aIdx/mRowNum, aValue);}
             @Override public int getAndSet(int aIdx, int aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractIntMatrix.this.getAndSet(aIdx%mRowNum, aIdx/mRowNum, aValue);}
@@ -297,7 +297,7 @@ public abstract class AbstractIntMatrix implements IIntMatrix {
     }
     @Override public IIntVector asVecRow() {
         return new RefIntVector() {
-            private final int mRowNum = rowNumber(), mColNum = columnNumber();
+            private final int mRowNum = nrows(), mColNum = ncols();
             @Override public int get(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractIntMatrix.this.get(aIdx/mColNum, aIdx%mColNum);}
             @Override public void set(int aIdx, int aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractIntMatrix.this.set(aIdx/mColNum, aIdx%mColNum, aValue);}
             @Override public int getAndSet(int aIdx, int aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractIntMatrix.this.getAndSet(aIdx/mColNum, aIdx%mColNum, aValue);}
@@ -313,8 +313,8 @@ public abstract class AbstractIntMatrix implements IIntMatrix {
      * @return {@inheritDoc}
      */
     @Override public NDArray<int[]> numpy() {
-        final int tRowNum = rowNumber();
-        final int tColNum = columnNumber();
+        final int tRowNum = nrows();
+        final int tColNum = ncols();
         final int tSize = tRowNum*tColNum;
         int[] rData = new int[tSize];
         final IIntIterator it = iteratorRow();
@@ -325,8 +325,8 @@ public abstract class AbstractIntMatrix implements IIntMatrix {
     }
     /** {@inheritDoc} */
     @Override public int[][] data() {
-        final int tRowNum = rowNumber();
-        final int tColNum = columnNumber();
+        final int tRowNum = nrows();
+        final int tColNum = ncols();
         int[][] rMat = new int[tRowNum][tColNum];
         final IIntIterator it = iteratorRow();
         for (int row = 0; row < tRowNum; ++row) {
@@ -336,13 +336,13 @@ public abstract class AbstractIntMatrix implements IIntMatrix {
         return rMat;
     }
     @Override public ColumnIntMatrix toBufCol(boolean aAbort) {
-        ColumnIntMatrix rBuf = IntMatrixCache.getMatCol(rowNumber(), columnNumber());
+        ColumnIntMatrix rBuf = IntMatrixCache.getMatCol(nrows(), ncols());
         if (aAbort) return rBuf;
         rBuf.fill(this);
         return rBuf;
     }
     @Override public RowIntMatrix toBufRow(boolean aAbort) {
-        RowIntMatrix rBuf = IntMatrixCache.getMatRow(rowNumber(), columnNumber());
+        RowIntMatrix rBuf = IntMatrixCache.getMatRow(nrows(), ncols());
         if (aAbort) return rBuf;
         rBuf.fill(this);
         return rBuf;
@@ -360,8 +360,8 @@ public abstract class AbstractIntMatrix implements IIntMatrix {
     /** 同样这里改为直接用迭代器遍历实现而不去调用对应向量的运算，中等的优化程度 */
     @Override public void fill(final int[][] aData) {
         final IIntSetIterator si = setIteratorRow();
-        final int tRowNum = rowNumber();
-        final int tColNum = columnNumber();
+        final int tRowNum = nrows();
+        final int tColNum = ncols();
         for (int row = 0; row < tRowNum; ++row) {
             final int[] tRow = aData[row];
             for (int col = 0; col < tColNum; ++col) si.nextAndSet(tRow[col]);
@@ -414,57 +414,57 @@ public abstract class AbstractIntMatrix implements IIntMatrix {
     
     @Override public IMatrix.ISize size() {
         return new AbstractMatrix.AbstractSize() {
-            @Override public int row() {return rowNumber();}
-            @Override public int col() {return columnNumber();}
+            @Override public int row() {return nrows();}
+            @Override public int col() {return ncols();}
         };
     }
     
     
     @Override public List<? extends IIntVector> rows() {
         return new AbstractRandomAccessList<IIntVector>() {
-            @Override public int size() {return rowNumber();}
+            @Override public int size() {return nrows();}
             @Override public IIntVector get(int aRow) {return row(aRow);}
         };
     }
     @Override public IIntVector row(final int aRow) {
-        rangeCheckRow(aRow, rowNumber());
+        rangeCheckRow(aRow, nrows());
         return new RefIntVector() {
             @Override public int get(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractIntMatrix.this.get(aRow, aIdx);}
             @Override public void set(int aIdx, int aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractIntMatrix.this.set(aRow, aIdx, aValue);}
             @Override public int getAndSet(int aIdx, int aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractIntMatrix.this.getAndSet(aRow, aIdx, aValue);}
-            @Override public int size() {return columnNumber();}
+            @Override public int size() {return ncols();}
             @Override public IIntIterator iterator() {return iteratorRowAt(aRow);}
             @Override public IIntSetIterator setIterator() {return setIteratorRowAt(aRow);}
         };
     }
     @Override public List<? extends IIntVector> cols() {
         return new AbstractRandomAccessList<IIntVector>() {
-            @Override public int size() {return columnNumber();}
+            @Override public int size() {return ncols();}
             @Override public IIntVector get(int aCol) {return col(aCol);}
         };
     }
     @Override public IIntVector col(final int aCol) {
-        rangeCheckCol(aCol, columnNumber());
+        rangeCheckCol(aCol, ncols());
         return new RefIntVector() {
             @Override public int get(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractIntMatrix.this.get(aIdx, aCol);}
             @Override public void set(int aIdx, int aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractIntMatrix.this.set(aIdx, aCol, aValue);}
             @Override public int getAndSet(int aIdx, int aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractIntMatrix.this.getAndSet(aIdx, aCol, aValue);}
-            @Override public int size() {return rowNumber();}
+            @Override public int size() {return nrows();}
             @Override public IIntIterator iterator() {return iteratorColAt(aCol);}
             @Override public IIntSetIterator setIterator() {return setIteratorColAt(aCol);}
         };
     }
     
     @Override public void update(int aRow, int aCol, IntUnaryOperator aOpt) {
-        rangeCheckRow(aRow, rowNumber());
-        rangeCheckCol(aCol, columnNumber());
+        rangeCheckRow(aRow, nrows());
+        rangeCheckCol(aCol, ncols());
         int tValue = get(aRow, aCol);
         tValue = aOpt.applyAsInt(tValue);
         set(aRow, aCol, tValue);
     }
     @Override public int getAndUpdate(int aRow, int aCol, IntUnaryOperator aOpt) {
-        rangeCheckRow(aRow, rowNumber());
-        rangeCheckCol(aCol, columnNumber());
+        rangeCheckRow(aRow, nrows());
+        rangeCheckCol(aCol, ncols());
         int tValue = get(aRow, aCol);
         set(aRow, aCol, aOpt.applyAsInt(tValue));
         return tValue;
@@ -472,7 +472,7 @@ public abstract class AbstractIntMatrix implements IIntMatrix {
     
     
     @Override public IIntMatrix copy() {
-        IIntMatrix rMatrix = newZeros_(rowNumber(), columnNumber());
+        IIntMatrix rMatrix = newZeros_(nrows(), ncols());
         rMatrix.fill(this);
         return rMatrix;
     }
@@ -488,11 +488,11 @@ public abstract class AbstractIntMatrix implements IIntMatrix {
     
     
     /** stuff to override */
-    public abstract int get(int aRow, int aCol);
-    public abstract void set(int aRow, int aCol, int aValue);
-    public abstract int getAndSet(int aRow, int aCol, int aValue); // 返回修改前的值
-    public abstract int rowNumber();
-    public abstract int columnNumber();
+    @Override public abstract int get(int aRow, int aCol);
+    @Override public abstract void set(int aRow, int aCol, int aValue);
+    @Override public abstract int getAndSet(int aRow, int aCol, int aValue); // 返回修改前的值
+    @Override public abstract int nrows();
+    @Override public abstract int ncols();
     protected abstract IIntMatrix newZeros_(int aRowNum, int aColNum);
     protected IIntVector newZerosVec_(int aSize) {return IntVector.zeros(aSize);}
     

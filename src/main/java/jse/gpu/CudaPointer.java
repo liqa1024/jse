@@ -10,7 +10,7 @@ import org.jetbrains.annotations.ApiStatus;
  * 此类因此是 {@code Unsafe} 的。
  * @author liqa
  */
-public class CudaPointer implements IPointer {
+public class CudaPointer implements ICudaPointer {
     
     static {
         // 依赖 CudaCore
@@ -42,16 +42,15 @@ public class CudaPointer implements IPointer {
      * {@inheritDoc}
      * @return {@code sizeof(char)}, 1
      */
-    public long typeSize() {return TYPE_SIZE;}
+    @Override public long typeSize() {return TYPE_SIZE;}
     public final static long TYPE_SIZE = 1;
     
     /**
-     * 调用 {@link CudaCore#cudaFree} 来释放一个 cuda 指针对应的内存
-     *
-     * @throws IllegalStateException 如果此 cuda 指针是空指针
+     * {@inheritDoc}
+     * @throws IllegalStateException {@inheritDoc}
      */
     @UnsafeJNI("Free wild pointer will directly result in JVM SIGSEGV")
-    public void free() throws CudaException {
+    @Override public void free() throws CudaException {
         if (isNull()) throw new IllegalStateException("Cannot free a NULL pointer");
         CudaCore.cudaFree(mPtr);
         mPtr = 0;
@@ -77,53 +76,54 @@ public class CudaPointer implements IPointer {
     }
     
     /**
-     * 直接调用 {@link CudaCore#cudaMemcpyD2D} 来将此数组值拷贝到另一个 cuda 数组中
-     * @param rDest 需要拷贝的目标 cuda 指针
-     * @param aCount 需要拷贝的数据长度
+     * {@inheritDoc}
+     * @param rDest {@inheritDoc}
+     * @param aCount {@inheritDoc}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void memcpy2dest(CudaPointer rDest, long aCount) throws CudaException {
+    @Override public void memcpy2dest(ICudaPointer rDest, long aCount) throws CudaException {
         if (isNull() || rDest.isNull()) throw new NullPointerException();
-        CudaCore.cudaMemcpyD2D(mPtr, rDest.mPtr, aCount);
+        CudaCore.cudaMemcpyD2D(mPtr, rDest.ptr_(), aCount);
     }
     /**
-     * 直接调用 {@link CudaCore#cudaMemcpyD2H} 来将此数组值拷贝到另一个 c 数组中
-     * @param rDest 需要拷贝的目标 c 指针
-     * @param aCount 需要拷贝的数据长度
+     * {@inheritDoc}
+     * @param rDest {@inheritDoc}
+     * @param aCount {@inheritDoc}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void memcpy2dest(ICPointer rDest, long aCount) throws CudaException {
+    @Override public void memcpy2dest(ICPointer rDest, long aCount) throws CudaException {
         if (isNull() || rDest.isNull()) throw new NullPointerException();
         CudaCore.cudaMemcpyD2H(mPtr, rDest.ptr_(), aCount);
     }
+    
     /**
-     * 直接调用 {@link CudaCore#cudaMemcpyD2D} 来将输入 cuda 数组值拷贝到此数组中
-     * @param aSrc 需要拷贝的目标 cuda 指针
-     * @param aCount 需要拷贝的数据长度
+     * {@inheritDoc}
+     * @param aSrc {@inheritDoc}
+     * @param aCount {@inheritDoc}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void memcpy2this(CudaPointer aSrc, long aCount) throws CudaException {
+    @Override public void memcpy2this(ICudaPointer aSrc, long aCount) throws CudaException {
         if (isNull() || aSrc.isNull()) throw new NullPointerException();
-        CudaCore.cudaMemcpyD2D(aSrc.mPtr, mPtr, aCount);
+        CudaCore.cudaMemcpyD2D(aSrc.ptr_(), mPtr, aCount);
     }
     /**
-     * 直接调用 {@link CudaCore#cudaMemcpyH2D} 来将输入 c 数组值拷贝到此数组中
-     * @param aSrc 需要拷贝的目标 c 指针
-     * @param aCount 需要拷贝的数据长度
+     * {@inheritDoc}
+     * @param aSrc {@inheritDoc}
+     * @param aCount {@inheritDoc}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void memcpy2this(ICPointer aSrc, long aCount) throws CudaException {
+    @Override public void memcpy2this(ICPointer aSrc, long aCount) throws CudaException {
         if (isNull() || aSrc.isNull()) throw new NullPointerException();
         CudaCore.cudaMemcpyH2D(aSrc.ptr_(), mPtr, aCount);
     }
     
     /**
-     * 直接调用 {@link CudaCore#cudaMemset} 来将指定字节值设置到整个 cuda 内存中
-     * @param aValue 需要设置的字节值
-     * @param aCount 需要设置的数据长度
+     * {@inheritDoc}
+     * @param aValue {@inheritDoc}
+     * @param aCount {@inheritDoc}
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
-    public void memset(int aValue, long aCount) throws CudaException {
+    @Override public void memset(int aValue, long aCount) throws CudaException {
         if (isNull()) throw new NullPointerException();
         CudaCore.cudaMemset(mPtr, aValue, aCount);
     }

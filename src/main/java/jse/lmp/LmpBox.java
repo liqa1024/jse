@@ -42,12 +42,6 @@ public class LmpBox implements IBox {
     public final double zlo() {return mBoxLo==null ? 0.0 : mBoxLo.mZ;}
     public final double zhi() {return mBoxHi.mZ;}
     
-    /** 现在这些会引起混淆，只是保留兼容 */
-    @Deprecated public final IXYZ boxLo() {return mBoxLo==null ? XYZ_ZERO : mBoxLo;}
-    @Deprecated public final IXYZ boxHi() {return mBoxLo==null ? new XYZ(this) : plus(mBoxLo);}
-    @Deprecated public final boolean isShifted() {return mBoxLo == null;}
-    @Deprecated public final @NotNull IXYZ shiftedBox() {return new XYZ(this);}
-    
     
     /** 将任意的模拟盒转换成对应属性的 lammps 模拟盒 */
     public static LmpBox of(IBox aBox) {

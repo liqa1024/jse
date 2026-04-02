@@ -25,16 +25,16 @@ public class NNAPExtensions {
      */
     public static List<Vector> calBasisNNAP(final AtomicParameterCalculator self, final int aNMax, final int aLMax, final double aRCutOff) {
         if (self.isShutdown()) throw new RuntimeException("This Calculator is dead");
-        final int tThreadNum = self.threadNumber();
+        final int tThreadNum = self.nthreads();
         Basis[] tBasis = new Basis[tThreadNum];
         for (int i = 0; i < tThreadNum; ++i) {
             //noinspection resource
-            tBasis[i] = new SimpleSphericalChebyshev(self.atomTypeNumber(), aNMax, aLMax, aRCutOff);
+            tBasis[i] = new SimpleSphericalChebyshev(self.ntypes(), aNMax, aLMax, aRCutOff);
         }
         try {
-            final List<Vector> rFingerPrints = VectorCache.getVec(tBasis[0].size(), self.atomNumber());
+            final List<Vector> rFingerPrints = VectorCache.getVec(tBasis[0].size(), self.natoms());
             // 理论上只需要遍历一半从而加速这个过程，但由于实现较麻烦且占用过多内存（所有近邻的 Ylm, Rn, fc 都要存，会随着截断半径增加爆炸增涨），这里不考虑
-            self.pool_().parfor(self.atomNumber(), (i, threadID) -> {
+            self.pool_().parfor(self.natoms(), (i, threadID) -> {
                 tBasis[threadID].eval(self, i, rFingerPrints.get(i));
             });
             return rFingerPrints;

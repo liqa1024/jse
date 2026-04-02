@@ -1089,116 +1089,116 @@ public class MPI {
             System.load(IO.toAbsolutePath(MPIJNI_LIB_PATH));
             
             // 初始化 final 常量
-            MPI_GROUP_NULL  = getMpiGroupNull_();
-            MPI_GROUP_EMPTY = getMpiGroupEmpty_();
+            MPI_GROUP_NULL  = getMpiGroupNull0();
+            MPI_GROUP_EMPTY = getMpiGroupEmpty0();
             
-            MPI_COMM_NULL  = getMpiCommNull_();
-            MPI_COMM_WORLD = getMpiCommWorld_();
-            MPI_COMM_SELF  = getMpiCommSelf_();
+            MPI_COMM_NULL  = getMpiCommNull0();
+            MPI_COMM_WORLD = getMpiCommWorld0();
+            MPI_COMM_SELF  = getMpiCommSelf0();
             
-            MPI_OP_NULL  = getMpiOpNull_();
-            MPI_MAX      = getMpiMax_();
-            MPI_MIN      = getMpiMin_();
-            MPI_SUM      = getMpiSum_();
-            MPI_PROD     = getMpiProd_();
-            MPI_LAND     = getMpiLand_();
-            MPI_BAND     = getMpiBand_();
-            MPI_LOR      = getMpiLor_();
-            MPI_BOR      = getMpiBor_();
-            MPI_LXOR     = getMpiLxor_();
-            MPI_BXOR     = getMpiBxor_();
-            MPI_MINLOC   = getMpiMinloc_();
-            MPI_MAXLOC   = getMpiMaxloc_();
-            MPI_REPLACE  = getMpiReplace_();
+            MPI_OP_NULL  = getMpiOpNull0();
+            MPI_MAX      = getMpiMax0();
+            MPI_MIN      = getMpiMin0();
+            MPI_SUM      = getMpiSum0();
+            MPI_PROD     = getMpiProd0();
+            MPI_LAND     = getMpiLand0();
+            MPI_BAND     = getMpiBand0();
+            MPI_LOR      = getMpiLor0();
+            MPI_BOR      = getMpiBor0();
+            MPI_LXOR     = getMpiLxor0();
+            MPI_BXOR     = getMpiBxor0();
+            MPI_MINLOC   = getMpiMinloc0();
+            MPI_MAXLOC   = getMpiMaxloc0();
+            MPI_REPLACE  = getMpiReplace0();
             
-            MPI_DATATYPE_NULL      = getMpiDatatypeNull_();
-            MPI_CHAR               = getMpiChar_();
-            MPI_UNSIGNED_CHAR      = getMpiUnsignedChar_();
-            MPI_SHORT              = getMpiShort_();
-            MPI_UNSIGNED_SHORT     = getMpiUnsignedShort_();
-            MPI_INT                = getMpiInt_();
-            MPI_UNSIGNED           = getMpiUnsigned_();
-            MPI_LONG               = getMpiLong_();
-            MPI_UNSIGNED_LONG      = getMpiUnsignedLong_();
-            MPI_LONG_LONG          = getMpiLongLong_();
-            MPI_FLOAT              = getMpiFloat_();
-            MPI_DOUBLE             = getMpiDouble_();
-            MPI_BYTE               = getMpiByte_();
-            MPI_SIGNED_CHAR        = getMpiSignedChar_();
-            MPI_UNSIGNED_LONG_LONG = getMpiUnsignedLongLong_();
-            MPI_INT8_T             = getMpiInt8T_();
-            MPI_INT16_T            = getMpiInt16T_();
-            MPI_INT32_T            = getMpiInt32T_();
-            MPI_INT64_T            = getMpiInt64T_();
-            MPI_UINT8_T            = getMpiUint8T_();
-            MPI_UINT16_T           = getMpiUint16T_();
-            MPI_UINT32_T           = getMpiUint32T_();
-            MPI_UINT64_T           = getMpiUint64T_();
+            MPI_DATATYPE_NULL      = getMpiDatatypeNull0();
+            MPI_CHAR               = getMpiChar0();
+            MPI_UNSIGNED_CHAR      = getMpiUnsignedChar0();
+            MPI_SHORT              = getMpiShort0();
+            MPI_UNSIGNED_SHORT     = getMpiUnsignedShort0();
+            MPI_INT                = getMpiInt0();
+            MPI_UNSIGNED           = getMpiUnsigned0();
+            MPI_LONG               = getMpiLong0();
+            MPI_UNSIGNED_LONG      = getMpiUnsignedLong0();
+            MPI_LONG_LONG          = getMpiLongLong0();
+            MPI_FLOAT              = getMpiFloat0();
+            MPI_DOUBLE             = getMpiDouble0();
+            MPI_BYTE               = getMpiByte0();
+            MPI_SIGNED_CHAR        = getMpiSignedChar0();
+            MPI_UNSIGNED_LONG_LONG = getMpiUnsignedLongLong0();
+            MPI_INT8_T             = getMpiInt8T0();
+            MPI_INT16_T            = getMpiInt16T0();
+            MPI_INT32_T            = getMpiInt32T0();
+            MPI_INT64_T            = getMpiInt64T0();
+            MPI_UINT8_T            = getMpiUint8T0();
+            MPI_UINT16_T           = getMpiUint16T0();
+            MPI_UINT32_T           = getMpiUint32T0();
+            MPI_UINT64_T           = getMpiUint64T0();
             
-            MPI_THREAD_SINGLE     = getMpiThreadSingle_();
-            MPI_THREAD_FUNNELED   = getMpiThreadFunneled_();
-            MPI_THREAD_SERIALIZED = getMpiThreadSerialized_();
-            MPI_THREAD_MULTIPLE   = getMpiThreadMultiple_();
+            MPI_THREAD_SINGLE     = getMpiThreadSingle0();
+            MPI_THREAD_FUNNELED   = getMpiThreadFunneled0();
+            MPI_THREAD_SERIALIZED = getMpiThreadSerialized0();
+            MPI_THREAD_MULTIPLE   = getMpiThreadMultiple0();
             
-            MPI_PROC_NULL  = getMpiProcNull_();
-            MPI_ANY_SOURCE = getMpiAnySource_();
-            MPI_ROOT       = getMpiRoot_();
+            MPI_PROC_NULL  = getMpiProcNull0();
+            MPI_ANY_SOURCE = getMpiAnySource0();
+            MPI_ROOT       = getMpiRoot0();
             
-            MPI_ANY_TAG = getMpiAnyTag_();
+            MPI_ANY_TAG = getMpiAnyTag0();
             
-            MPI_UNDEFINED = getMpiUndefined_();
+            MPI_UNDEFINED = getMpiUndefined0();
         }
         
         public final static long MPI_GROUP_NULL, MPI_GROUP_EMPTY;
-        private native static long getMpiGroupNull_();
-        private native static long getMpiGroupEmpty_();
+        private native static long getMpiGroupNull0();
+        private native static long getMpiGroupEmpty0();
         
         public final static long MPI_COMM_NULL, MPI_COMM_WORLD, MPI_COMM_SELF;
-        private native static long getMpiCommNull_();
-        private native static long getMpiCommWorld_();
-        private native static long getMpiCommSelf_();
+        private native static long getMpiCommNull0();
+        private native static long getMpiCommWorld0();
+        private native static long getMpiCommSelf0();
         
         public final static long MPI_OP_NULL, MPI_MAX, MPI_MIN, MPI_SUM, MPI_PROD, MPI_LAND, MPI_BAND, MPI_LOR, MPI_BOR, MPI_LXOR, MPI_BXOR, MPI_MINLOC, MPI_MAXLOC, MPI_REPLACE;
-        private native static long getMpiOpNull_();
-        private native static long getMpiMax_();
-        private native static long getMpiMin_();
-        private native static long getMpiSum_();
-        private native static long getMpiProd_();
-        private native static long getMpiLand_();
-        private native static long getMpiBand_();
-        private native static long getMpiLor_();
-        private native static long getMpiBor_();
-        private native static long getMpiLxor_();
-        private native static long getMpiBxor_();
-        private native static long getMpiMinloc_();
-        private native static long getMpiMaxloc_();
-        private native static long getMpiReplace_();
+        private native static long getMpiOpNull0();
+        private native static long getMpiMax0();
+        private native static long getMpiMin0();
+        private native static long getMpiSum0();
+        private native static long getMpiProd0();
+        private native static long getMpiLand0();
+        private native static long getMpiBand0();
+        private native static long getMpiLor0();
+        private native static long getMpiBor0();
+        private native static long getMpiLxor0();
+        private native static long getMpiBxor0();
+        private native static long getMpiMinloc0();
+        private native static long getMpiMaxloc0();
+        private native static long getMpiReplace0();
         
         // 只保留部分必要的，因为 MPI 实现中都不尽相同
         public final static long MPI_DATATYPE_NULL, MPI_CHAR, MPI_UNSIGNED_CHAR, MPI_SHORT, MPI_UNSIGNED_SHORT, MPI_INT, MPI_UNSIGNED, MPI_LONG, MPI_UNSIGNED_LONG, MPI_LONG_LONG, MPI_FLOAT, MPI_DOUBLE, MPI_BYTE, MPI_SIGNED_CHAR, MPI_UNSIGNED_LONG_LONG, MPI_INT8_T, MPI_INT16_T, MPI_INT32_T, MPI_INT64_T, MPI_UINT8_T, MPI_UINT16_T, MPI_UINT32_T, MPI_UINT64_T;
-        private native static long getMpiDatatypeNull_();
-        private native static long getMpiChar_();
-        private native static long getMpiUnsignedChar_();
-        private native static long getMpiShort_();
-        private native static long getMpiUnsignedShort_();
-        private native static long getMpiInt_();
-        private native static long getMpiUnsigned_();
-        private native static long getMpiLong_();
-        private native static long getMpiUnsignedLong_();
-        private native static long getMpiLongLong_();
-        private native static long getMpiFloat_();
-        private native static long getMpiDouble_();
-        private native static long getMpiByte_();
-        private native static long getMpiSignedChar_();
-        private native static long getMpiUnsignedLongLong_();
-        private native static long getMpiInt8T_();
-        private native static long getMpiInt16T_();
-        private native static long getMpiInt32T_();
-        private native static long getMpiInt64T_();
-        private native static long getMpiUint8T_();
-        private native static long getMpiUint16T_();
-        private native static long getMpiUint32T_();
-        private native static long getMpiUint64T_();
+        private native static long getMpiDatatypeNull0();
+        private native static long getMpiChar0();
+        private native static long getMpiUnsignedChar0();
+        private native static long getMpiShort0();
+        private native static long getMpiUnsignedShort0();
+        private native static long getMpiInt0();
+        private native static long getMpiUnsigned0();
+        private native static long getMpiLong0();
+        private native static long getMpiUnsignedLong0();
+        private native static long getMpiLongLong0();
+        private native static long getMpiFloat0();
+        private native static long getMpiDouble0();
+        private native static long getMpiByte0();
+        private native static long getMpiSignedChar0();
+        private native static long getMpiUnsignedLongLong0();
+        private native static long getMpiInt8T0();
+        private native static long getMpiInt16T0();
+        private native static long getMpiInt32T0();
+        private native static long getMpiInt64T0();
+        private native static long getMpiUint8T0();
+        private native static long getMpiUint16T0();
+        private native static long getMpiUint32T0();
+        private native static long getMpiUint64T0();
         /** 这里增加 java 原始类型的定义，基本和 open mpi 保持一致 */
         public final static long
           MPI_JNULL    = MPI_DATATYPE_NULL
@@ -1214,24 +1214,24 @@ public class MPI {
         public final static long[] JTYPE_TO_MPI_TYPE = {MPI_JNULL, MPI_JBYTE, MPI_JDOUBLE, MPI_JBOOLEAN, MPI_JCHAR, MPI_JSHORT, MPI_JINT, MPI_JLONG, MPI_JFLOAT};
         
         public final static int MPI_THREAD_SINGLE, MPI_THREAD_FUNNELED, MPI_THREAD_SERIALIZED, MPI_THREAD_MULTIPLE;
-        private native static int getMpiThreadSingle_();
-        private native static int getMpiThreadFunneled_();
-        private native static int getMpiThreadSerialized_();
-        private native static int getMpiThreadMultiple_();
+        private native static int getMpiThreadSingle0();
+        private native static int getMpiThreadFunneled0();
+        private native static int getMpiThreadSerialized0();
+        private native static int getMpiThreadMultiple0();
         
         /** Used in: Rank */
         public final static int MPI_PROC_NULL, MPI_ANY_SOURCE, MPI_ROOT;
-        private native static int getMpiProcNull_();
-        private native static int getMpiAnySource_();
-        private native static int getMpiRoot_();
+        private native static int getMpiProcNull0();
+        private native static int getMpiAnySource0();
+        private native static int getMpiRoot0();
         
         /** Used in: Tag */
         public final static int MPI_ANY_TAG;
-        private native static int getMpiAnyTag_();
+        private native static int getMpiAnyTag0();
         
         /** Used in: Count, Index, Rank, Color, Toplogy, Precision, Exponent range  */
         public final static int MPI_UNDEFINED;
-        private native static int getMpiUndefined_();
+        private native static int getMpiUndefined0();
         
         
         /** Debug, 输出此 mpi 实例的版本，可以用来检测 mpi 是否一致 */

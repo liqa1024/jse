@@ -56,6 +56,9 @@ public class Vectors {
         if (tData instanceof double[]) {
             return new Vector(tSize, (double[])tData);
         } else
+        if (tData instanceof float[]) {
+            return new FloatVector(tSize, (float[])tData);
+        } else
         if (tData instanceof int[]) {
             return new IntVector(tSize, (int[])tData);
         } else
@@ -97,8 +100,12 @@ public class Vectors {
         return rVector;
     }
     /// Groovy stuff
-    public static Vector from(int aSize, @ClosureParams(value=SimpleType.class, options="int") final Closure<? extends Number> aGroovyTask) {return fromDouble(aSize, aGroovyTask);}
-    public static Vector fromDouble(int aSize, @ClosureParams(value=SimpleType.class, options="int") final Closure<? extends Number> aGroovyTask) {return fromDouble(aSize, i -> UT.Code.doubleValue(aGroovyTask.call(i)));}
+    public static Vector from(int aSize, @ClosureParams(value=SimpleType.class, options="int") final Closure<? extends Number> aGroovyTask) {
+        return fromDouble(aSize, aGroovyTask);
+    }
+    public static Vector fromDouble(int aSize, @ClosureParams(value=SimpleType.class, options="int") final Closure<? extends Number> aGroovyTask) {
+        return fromDouble(aSize, i -> UT.Code.doubleValue(aGroovyTask.call(i)));
+    }
     
     public static Vector from(Iterable<? extends Number> aIterable) {return fromDouble(aIterable);}
     public static Vector from(Collection<? extends Number> aList) {return fromDouble(aList);}
@@ -163,7 +170,9 @@ public class Vectors {
         return rVector;
     }
     /** Groovy stuff */
-    public static LogicalVector fromBoolean(int aSize, @ClosureParams(value=SimpleType.class, options="int") final Closure<Boolean> aGroovyTask) {return fromBoolean(aSize, aGroovyTask::call);}
+    public static LogicalVector fromBoolean(int aSize, @ClosureParams(value=SimpleType.class, options="int") final Closure<Boolean> aGroovyTask) {
+        return fromBoolean(aSize, aGroovyTask::call);
+    }
     
     public static LogicalVector fromBoolean(Iterable<Boolean> aIterable) {
         final LogicalVector.Builder rBuilder = LogicalVector.builder();
@@ -183,31 +192,33 @@ public class Vectors {
     }
     
     
-    public static IntVector fromInteger(int aSize, IIntVectorGetter aVectorGetter) {
+    public static IntVector fromInt(int aSize, IIntVectorGetter aVectorGetter) {
         IntVector rVector = IntVector.zeros(aSize);
         rVector.fill(aVectorGetter);
         return rVector;
     }
-    public static IntVector fromInteger(IIntVector aVector) {
+    public static IntVector fromInt(IIntVector aVector) {
         IntVector rVector = IntVector.zeros(aVector.size());
         rVector.fill(aVector);
         return rVector;
     }
     /** Groovy stuff */
-    public static IntVector fromInteger(int aSize, @ClosureParams(value=SimpleType.class, options="int") final Closure<Integer> aGroovyTask) {return fromInteger(aSize, aGroovyTask::call);}
+    public static IntVector fromInt(int aSize, @ClosureParams(value=SimpleType.class, options="int") final Closure<Integer> aGroovyTask) {
+        return fromInt(aSize, aGroovyTask::call);
+    }
     
-    public static IntVector fromInteger(Iterable<Integer> aIterable) {
+    public static IntVector fromInt(Iterable<Integer> aIterable) {
         final IntVector.Builder rBuilder = IntVector.builder();
         for (Integer tValue : aIterable) rBuilder.add(tValue);
         rBuilder.trimToSize();
         return rBuilder.build();
     }
-    public static IntVector fromInteger(Collection<Integer> aList) {
+    public static IntVector fromInt(Collection<Integer> aList) {
         IntVector rVector = IntVector.zeros(aList.size());
         rVector.fill(aList);
         return rVector;
     }
-    public static IntVector fromInteger(int[] aData) {
+    public static IntVector fromInt(int[] aData) {
         IntVector rVector = IntVector.zeros(aData.length);
         rVector.fill(aData);
         return rVector;

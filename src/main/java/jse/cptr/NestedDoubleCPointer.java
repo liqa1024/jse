@@ -63,7 +63,7 @@ public class NestedDoubleCPointer extends AnyCPointer {
      */
     @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
     public void fill(RowMatrix aData) {
-        fill(aData, aData.rowNumber(), aData.columnNumber());
+        fill(aData, aData.nrows(), aData.ncols());
     }
     /**
      * 将 jse 的 {@code IDataShell<double[]>} 填充到此嵌套 c 指针对应的内存中，认为数据按行排列且每个内部的
@@ -126,7 +126,7 @@ public class NestedDoubleCPointer extends AnyCPointer {
      */
     @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
     public void parse2dest(RowMatrix rDest) {
-        parse2dest(rDest, rDest.rowNumber(), rDest.columnNumber());
+        parse2dest(rDest, rDest.nrows(), rDest.ncols());
     }
     /**
      * 将此嵌套 c 指针对应的内存数值写入 jse 的 {@code IDataShell<double[]>} 中，认为数据按行排列且每个内部的
@@ -183,6 +183,10 @@ public class NestedDoubleCPointer extends AnyCPointer {
         if (isNull()) throw new NullPointerException();
         return new DoubleCPointer(getAt0(mPtr, aIdx));
     }
+    /** 用于兼容 groovy 运算符重载，这是 groovy 的 bug */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
+    @Override public DoubleCPointer getAt(int aIdx) {return getAt((long)aIdx);}
+    
     /**
      * 将此嵌套指针当作一个 c 的矩阵，获取内部指定行列的值，即对应 c 中的 {@code ptr[aRow][aCol]}
      * @param aRow 需要获取的行
@@ -256,8 +260,8 @@ public class NestedDoubleCPointer extends AnyCPointer {
                 AbstractMatrix.rangeCheckCol(aCol, aColNum);
                 NestedDoubleCPointer.this.putAt(aRow, aCol, aValue);
             }
-            @Override public int rowNumber() {return aRowNum;}
-            @Override public int columnNumber() {return aColNum;}
+            @Override public int nrows() {return aRowNum;}
+            @Override public int ncols() {return aColNum;}
         };
     }
     /**

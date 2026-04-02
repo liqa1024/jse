@@ -62,8 +62,6 @@ public interface ISettableAtomData extends IAtomData {
     ISettableAtomDataOperation operation();
     /** @see #operation() */
     @VisibleForTesting default ISettableAtomDataOperation op() {return operation();}
-    /** @deprecated use {@link #op()} */
-    @VisibleForTesting @Deprecated @SuppressWarnings("deprecation") default ISettableAtomDataOperation opt() {return operation();}
     
     /**
      * 直接修改指定索引位置的原子，会读取输入原子的属性然后进行设置
@@ -82,15 +80,13 @@ public interface ISettableAtomData extends IAtomData {
      * 设置此原子数据的总原子种类数目，可以大于实际的原子种类数目，
      * 当设置小于实际原子种类数目时，内部大于种类数目的原子种类编号都会截断到设置的种类数目。
      *
-     * @param aAtomTypeNum 需要的原子总类数目
+     * @param aNumTypes 需要的原子总类数目
      * @return 自身方便链式调用
      * @throws UnsupportedOperationException 如果原子数据不支持设置总原子种类数目操作
-     * @see #atomTypeNumber()
+     * @see #ntypes()
      * @see IAtom#type()
      */
-    ISettableAtomData setAtomTypeNumber(int aAtomTypeNum);
-    /** @deprecated use {@link #setAtomTypeNumber(int)} */
-    @Deprecated default ISettableAtomData setAtomTypeNum(int aAtomTypeNum) {return setAtomTypeNumber(aAtomTypeNum);}
+    ISettableAtomData setNtypes(int aNumTypes);
     
     /**
      * 设置此原子数据的模拟盒属性
@@ -446,8 +442,6 @@ public interface ISettableAtomData extends IAtomData {
      * @see #setHasVelocity()
      */
     ISettableAtomData setNoVelocity();
-    /** @deprecated use {@link #setNoVelocity()} */
-    @Deprecated default ISettableAtomData setNoVelocities() {return setNoVelocity();}
     /**
      * 设置此原子数据会包含速度信息，在调用过后
      * {@link #hasVelocity()} 总是会返回 {@code true}
@@ -460,8 +454,6 @@ public interface ISettableAtomData extends IAtomData {
      * @see #setNoVelocity()
      */
     ISettableAtomData setHasVelocity();
-    /** @deprecated use {@link #setHasVelocity()} */
-    @Deprecated default ISettableAtomData setHasVelocities() {return setHasVelocity();}
     
     /**
      * 设置此原子数据的元素符号，按照元素编号排序进行设置（和
@@ -548,8 +540,8 @@ public interface ISettableAtomData extends IAtomData {
     
     
     /// Groovy stuffs
-    /** @see #atomTypeNumber() */
-    @VisibleForTesting default int getAtomTypeNumber() {return atomTypeNumber();}
+    /** @see #ntypes() */
+    @VisibleForTesting default int getNtypes() {return ntypes();}
     /** @see #box() */
     @VisibleForTesting default IBox getBox() {return box();}
     /** @see #symbols() */

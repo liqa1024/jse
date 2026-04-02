@@ -143,7 +143,7 @@ public class SimpleChebyshev extends Basis {
      */
     @Override public int size() {return mSize;}
     /** @return {@inheritDoc} */
-    @Override public int atomTypeNumber() {return mTypeNum;}
+    @Override public int ntypes() {return mTypeNum;}
     /**
      * {@inheritDoc}
      * @return {@inheritDoc}

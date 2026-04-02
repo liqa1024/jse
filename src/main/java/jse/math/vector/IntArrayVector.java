@@ -36,8 +36,8 @@ public abstract class IntArrayVector extends AbstractIntVector implements IDataS
     @Override public IntArrayVector copy() {return (IntArrayVector)super.copy();}
     
     /** stuff to override */
-    protected abstract IntArrayVector newZeros_(int aSize);
+    @Override protected abstract IntArrayVector newZeros_(int aSize);
     
-    public abstract int @Nullable[] getIfHasSameOrderData(Object aObj);
+    @Override public abstract int @Nullable[] getIfHasSameOrderData(Object aObj);
 }
 

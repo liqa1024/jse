@@ -109,6 +109,13 @@ public class UT {
         public static double doubleValue(@Nullable Number aNumber) {
             return aNumber==null ? Double.NaN : aNumber.doubleValue();
         }
+        /**
+         * 考虑 null 的转为 float
+         * @author liqa
+         */
+        public static float floatValue(@Nullable Number aNumber) {
+            return aNumber==null ? Float.NaN : aNumber.floatValue();
+        }
         
         /**
          * Get the random seed for lammps usage
@@ -329,7 +336,7 @@ public class UT {
         /** 改为全局的 pool 缓存来避免总是创建 */
         private static @Nullable ParforThreadPool POOL = null;
         public static @NotNull ParforThreadPool pool(@Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {
-            if (POOL==null || POOL.threadNumber()!=aThreadNum) {
+            if (POOL==null || POOL.nthreads()!=aThreadNum) {
                 if (POOL != null) POOL.shutdown();
                 POOL = new ParforThreadPool(aThreadNum);
             }
@@ -805,7 +812,7 @@ public class UT {
         
         /** {@link IAtomData} 的序列化和反序列化 */
         @Deprecated public static byte[] atomDataXYZ2bytes(IAtomData aAtomData) {
-            byte[] rBytes = new byte[Double.BYTES*3 + Double.BYTES*3*aAtomData.atomNumber()];
+            byte[] rBytes = new byte[Double.BYTES*3 + Double.BYTES*3*aAtomData.natoms()];
             int tIdx = 0;
             // 模拟盒数据
             IXYZ tBox = aAtomData.box();
@@ -842,7 +849,7 @@ public class UT {
         
         /** {@link IAtomData} 的序列化和反序列化 */
         @Deprecated public static byte[] atomDataXYZType2bytes(IAtomData aAtomData) {
-            byte[] rBytes = new byte[Double.BYTES*3 + Integer.BYTES + (Double.BYTES*3 + Integer.BYTES)*aAtomData.atomNumber()];
+            byte[] rBytes = new byte[Double.BYTES*3 + Integer.BYTES + (Double.BYTES*3 + Integer.BYTES)*aAtomData.natoms()];
             int tIdx = 0;
             // 模拟盒数据
             IXYZ tBox = aAtomData.box();
@@ -850,7 +857,7 @@ public class UT {
             double2bytes(tBox.y(), rBytes, tIdx); tIdx+=Double.BYTES;
             double2bytes(tBox.z(), rBytes, tIdx); tIdx+=Double.BYTES;
             // 原子种类数目信息
-            int2bytes(aAtomData.atomTypeNumber(), rBytes, tIdx); tIdx+=Integer.BYTES;
+            int2bytes(aAtomData.ntypes(), rBytes, tIdx); tIdx+=Integer.BYTES;
             // 原子数据
             for (IAtom tAtom : aAtomData.atoms()) {
                 double2bytes(tAtom.x(), rBytes, tIdx); tIdx+=Double.BYTES;
@@ -904,21 +911,19 @@ public class UT {
         /** 增加多图片支持 */
         public static IPlotter plotter() {PLT = Plotters.get(); PLTS.add(PLT); return PLT;}
         public static IPlotter plotter(int aIdx) {return PLTS.get(aIdx);}
-        public static int plotterNumber() {return PLTS.size();}
-        public static int nplotters() {return plotterNumber();}
+        public static int nplotters() {return PLTS.size();}
         public static List<? extends IPlotter> plotters() {
             return new AbstractRandomAccessList<IPlotter>() {
-                @Override public int size() {return plotterNumber();}
+                @Override public int size() {return nplotters();}
                 @Override public IPlotter get(int index) {return plotter(index);}
             };
         }
         public static IFigure figure() {PLT = Plotters.get(); PLTS.add(PLT); return PLT.show();}
         public static IFigure figure(int aIdx) {return PLTS.get(aIdx).show();}
-        public static int figureNumber() {return PLTS.size();}
-        public static int nfigures() {return figureNumber();}
+        public static int nfigures() {return PLTS.size();}
         public static List<? extends IFigure> figures() {
             return new AbstractRandomAccessList<IFigure>() {
-                @Override public int size() {return figureNumber();}
+                @Override public int size() {return nfigures();}
                 @Override public IFigure get(int index) {return figure(index);}
             };
         }
@@ -1097,7 +1102,7 @@ public class UT {
         @SuppressWarnings("unchecked")
         public static ILine[] plot(IAtomData aAtomData, Map<?, ?> aArgs) {
             validPlotter_();
-            List<?> aTypes = (List<?>)Code.getWithDefault(aArgs, aAtomData.hasSymbol() ? AbstractCollections.from(aAtomData.atomTypeNumber(), i -> aAtomData.symbol(i+1)==null ? ("type "+(i+1)) : aAtomData.symbol(i+1)) : AbstractCollections.zl(), "Types", "types", "t");
+            List<?> aTypes = (List<?>)Code.getWithDefault(aArgs, aAtomData.hasSymbol() ? AbstractCollections.from(aAtomData.ntypes(), i -> aAtomData.symbol(i+1)==null ? ("type "+(i+1)) : aAtomData.symbol(i+1)) : AbstractCollections.zl(), "Types", "types", "t");
             List<?> aColors = (List<?>)Code.getWithDefault(aArgs, AbstractCollections.from(aTypes.size(), i -> COLOR.getOrDefault(Code.toString(aTypes.get(i)), Colors.COLOR(i+1))), "Colors", "colors", "c");
             List<?> aSizes = (List<?>)Code.getWithDefault(aArgs, AbstractCollections.map(aTypes, type -> SIZE.getOrDefault(Code.toString(type), 1.0)), "Sizes", "sizes", "s");
             String aAxis = Code.toString(Code.getWithDefault(aArgs, "z", "Axis", "axis", "a"));
@@ -1110,7 +1115,7 @@ public class UT {
             case "z": {tScale = 200.0/Math.max(aAtomData.box().x(), aAtomData.box().y()); break;}
             default: throw new RuntimeException();
             }
-            ILine[] rLines = new ILine[aAtomData.atomTypeNumber()];
+            ILine[] rLines = new ILine[aAtomData.ntypes()];
             for (int i = 0; i < rLines.length; ++i) {
                 final int tType = i + 1;
                 Iterable<IAtom> tAtoms = AbstractCollections.filter(aAtomData.atoms(), atom->atom.type()==tType);
@@ -1201,8 +1206,7 @@ public class UT {
         public static List<? extends ILine> lines() {validPlotter_(); return PLT.lines();}
         public static ILine line(String aName) {validPlotter_(); return PLT.line(aName);}
         public static ILine line(int aIdx) {validPlotter_(); return PLT.line(aIdx);}
-        public static int lineNumber() {validPlotter_(); return PLT.lineNumber();}
-        @VisibleForTesting public static int nlines()  {validPlotter_(); return PLT.nlines();}
+        public static int nlines() {validPlotter_(); return PLT.nlines();}
     }
     
     
@@ -1361,7 +1365,7 @@ public class UT {
         public static IMatrix hypot(IMatrix aX, final double aY, IMatrix aZ) {return aX.operation().operate(aZ, (x, z) -> hypot(x, aY, z));}
         public static IMatrix hypot(final double aX, IMatrix aY, IMatrix aZ) {return aY.operation().operate(aZ, (y, z) -> hypot(aX, y, z));}
         /** IMatrix 不支持三元运算，这里不再考虑效率问题直接这样实现 */
-        public static IMatrix hypot(IMatrix aX, IMatrix aY, IMatrix aZ) {return Matrices.from(aX.rowNumber(), aX.columnNumber(), (i, j) -> hypot(aX.get(i, j), aY.get(i, j), aZ.get(i, j)));}
+        public static IMatrix hypot(IMatrix aX, IMatrix aY, IMatrix aZ) {return Matrices.from(aX.nrows(), aX.ncols(), (i, j) -> hypot(aX.get(i, j), aY.get(i, j), aZ.get(i, j)));}
         
         public static IMatrix exp(IMatrix aMat) {return aMat.operation().map(Math::exp);}
         public static IMatrix log(IMatrix aMat) {return aMat.operation().map(Math::log);}

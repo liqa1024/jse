@@ -48,14 +48,14 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
     
     @Override public ISettableAtomData map(int aMinTypeNum, IUnaryFullOperator<? extends IAtom, ? super IAtom> aOperator) {
         final IAtomData tThis = thisAtomData_();
-        final int tAtomNum = tThis.atomNumber();
+        final int tAtomNum = tThis.natoms();
         ISettableAtomData rAtomData = newSettableAtomData_(tAtomNum);
         for (int i = 0; i < tAtomNum; ++i) {
             // 保存修改后的原子，现在内部会自动更新种类计数
             rAtomData.setAtom(i, aOperator.apply(tThis.atom(i)));
         }
         // 这里不进行 try 包含，因为目前这里的实例都是支持的，并且手动指定了 aMinTypeNum 后才会调用，此时设置失败会希望抛出错误
-        if (rAtomData.atomTypeNumber() < aMinTypeNum) rAtomData.setAtomTypeNumber(aMinTypeNum);
+        if (rAtomData.ntypes() < aMinTypeNum) rAtomData.setNtypes(aMinTypeNum);
         return rAtomData;
     }
     
@@ -86,7 +86,7 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
     
     @Override public ISettableAtomData repeat(int aNx, int aNy, int aNz) {
         final IAtomData tThis = thisAtomData_();
-        final int tAtomNum = tThis.atomNumber();
+        final int tAtomNum = tThis.natoms();
         final IBox tBox = tThis.box();
         final double tAx = tBox.ax(), tAy = tBox.ay(), tAz = tBox.az();
         final double tBx = tBox.bx(), tBy = tBox.by(), tBz = tBox.bz();
@@ -143,7 +143,7 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
     
     @Override public List<? extends ISettableAtomData> slice(int aNx, int aNy, int aNz) {
         final IAtomData tThis = thisAtomData_();
-        final int tAtomNum = tThis.atomNumber();
+        final int tAtomNum = tThis.natoms();
         final IBox tBox = tThis.box();
         final IBox rBox = tThis.isPrism() ? new BoxPrism(
             tBox.ax()/aNx, tBox.ay()/aNx, tBox.az()/aNx,
@@ -166,7 +166,7 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
         for (int i = 0; i < tSliceNum; ++i) {
             IntList subIndices = rIndices.get(i);
             ISettableAtomData subAtomData = newSettableAtomData_(rIndices.get(i).size(), rBox.copy());
-            int subAtomNum = subAtomData.atomNumber();
+            int subAtomNum = subAtomData.natoms();
             for (int j = 0; j < subAtomNum; ++j) {
                 ISettableAtom subAtom = subAtomData.atom(j);
                 IAtom tAtom = tThis.atom(subIndices.get(j));
@@ -198,7 +198,7 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
         final IAtomData tThis = thisAtomData_();
         assert !aUnwrapByCluster2this || (tThis instanceof ISettableAtomData);
         
-        final int tAtomNum = tThis.atomNumber();
+        final int tAtomNum = tThis.natoms();
         // 使用 apc 来获取近邻列表
         try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(tThis)) {
             final List<IntVector> rClusters = aOutputIndex ? new ArrayList<>() : null;
@@ -248,7 +248,7 @@ public abstract class AbstractAtomDataOperation implements IAtomDataOperation {
     private IAtomData refAtomData_(List<? extends IAtom> aAtoms) {
         IAtomData tThis = thisAtomData_();
         @Nullable List<@Nullable String> tSymbols = tThis.symbols();
-        return new AtomData(aAtoms, tThis.atomTypeNumber(), tThis.box(), tThis.hasID(), tThis.hasVelocity(), tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
+        return new AtomData(aAtoms, tThis.ntypes(), tThis.box(), tThis.hasID(), tThis.hasVelocity(), tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
     }
     
     /// stuff to override

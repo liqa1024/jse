@@ -28,7 +28,7 @@ public abstract class ColumnMatrixFunc2 extends AbstractFunc2 implements IEqualI
     /** DataShell stuffs */
     @Override public final void setInternalData(ColumnMatrix aData) {mData = aData;}
     @Override public final ColumnMatrix internalData() {return mData;}
-    @Override public final int internalDataSize() {return mData.rowNumber() * mData.columnNumber();}
+    @Override public final int internalDataSize() {return mData.nrows() * mData.ncols();}
     @Override public final @Nullable ColumnMatrix getIfHasSameOrderData(Object aObj) {
         // 必须要求同样是 ColumnMatrixFunc2 并且开始位置，间距以及长度都相同，也就是只考虑完全一致的情况（因为 Func 在区域外依旧可以取值）
         if (aObj instanceof ColumnMatrixFunc2) {
@@ -66,8 +66,8 @@ public abstract class ColumnMatrixFunc2 extends AbstractFunc2 implements IEqualI
     @Override public int getJNear(double aY) {return MathEX.Code.round2int((aY-mY0)/mDy);}
     
     /** 索引和 x 相互转换的接口 */
-    @Override public final int Nx() {return mData.rowNumber();}
-    @Override public final int Ny() {return mData.columnNumber();}
+    @Override public final int Nx() {return mData.nrows();}
+    @Override public final int Ny() {return mData.ncols();}
     @Override public final double x0() {return mX0;}
     @Override public final double dx() {return mDx;}
     @Override public final double y0() {return mY0;}

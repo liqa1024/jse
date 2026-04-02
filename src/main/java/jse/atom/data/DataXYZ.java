@@ -1,13 +1,13 @@
 package jse.atom.data;
 
+import jse.ase.AseAtoms;
 import jse.atom.*;
+import jse.code.Conf;
+import jse.code.FileEndException;
 import jse.code.IO;
 import jse.code.collection.AbstractCollections;
 import jse.math.MathEX;
-import jse.math.matrix.IIntMatrix;
-import jse.math.matrix.IMatrix;
-import jse.math.matrix.RowIntMatrix;
-import jse.math.matrix.RowMatrix;
+import jse.math.matrix.*;
 import jse.math.vector.*;
 import jse.math.vector.Vector;
 import org.jetbrains.annotations.NotNull;
@@ -56,7 +56,7 @@ import static jse.code.CS.*;
  * @author liqa
  */
 public class DataXYZ extends AbstractSettableAtomData {
-    private final int mAtomNum;
+    private final int mNumAtoms;
     private @Nullable String mComment;
     private final @NotNull Map<String, Object> mParameters;
     private final @NotNull Map<String, Object> mProperties;
@@ -70,21 +70,21 @@ public class DataXYZ extends AbstractSettableAtomData {
     private final @NotNull Map<String, Integer> mSymbol2Type;
     private String @Nullable[] mType2Symbol; // 第 0 个直接制空
     
-    DataXYZ(int aAtomNum, @Nullable String aComment, @NotNull Map<String, Object> aParameters, @NotNull Map<String, Object> aProperties, @Nullable IBox aBox) {
-        mAtomNum = aAtomNum;
+    DataXYZ(int aNumAtoms, @Nullable String aComment, @NotNull Map<String, Object> aParameters, @NotNull Map<String, Object> aProperties, @Nullable IBox aBox) {
+        mNumAtoms = aNumAtoms;
         mComment = aComment;
         mParameters = aParameters;
         mProperties = aProperties;
         Object tSymbols = mProperties.get("species");
         if (tSymbols instanceof String[]) mSpecies = (String[])tSymbols;
         Object tPositions = mProperties.get("pos");
-        if (tPositions instanceof IMatrix && ((IMatrix)tPositions).columnNumber()==3) mPositions = (IMatrix)tPositions;
+        if ((tPositions instanceof IMatrix) && ((IMatrix)tPositions).ncols()==3) mPositions = (IMatrix)tPositions;
         Object tVelocities = mProperties.get("velo");
-        if (tVelocities instanceof IMatrix && ((IMatrix)tVelocities).columnNumber()==3) {
+        if ((tVelocities instanceof IMatrix) && ((IMatrix)tVelocities).ncols()==3) {
             mVelocities = (IMatrix)tVelocities;
         } else {
             tVelocities = mProperties.get("vel");
-            if (tVelocities instanceof IMatrix && ((IMatrix)tVelocities).columnNumber()==3) mVelocities = (IMatrix)tVelocities;
+            if ((tVelocities instanceof IMatrix) && ((IMatrix)tVelocities).ncols()==3) mVelocities = (IMatrix)tVelocities;
         }
         if (aBox==null && mPositions!=null) {
             double tMaxX = mPositions.col(0).max(); double tMinX = Math.min(0.0, mPositions.col(0).min());
@@ -109,6 +109,13 @@ public class DataXYZ extends AbstractSettableAtomData {
                 mType2Symbol[tEntry.getValue()] = tEntry.getKey();
             }
         }
+    }
+    
+    public static boolean isInvalidKey(String aKey) {
+        return aKey.contains("\"") || IO.Text.findBlankIndex(aKey, 0)>=0;
+    }
+    public static boolean isInvalidPropertyKey(String aKey) {
+        return aKey.contains(":") || isInvalidKey(aKey);
     }
     
     /**
@@ -222,6 +229,7 @@ public class DataXYZ extends AbstractSettableAtomData {
     public DataXYZ setParameter(String aKey, Object aValue) {
         if (aKey.equals("Lattice")) throw new IllegalArgumentException("Lattice for DataXYZ parameter");
         if (aKey.equals("Properties")) throw new IllegalArgumentException("Properties for DataXYZ parameter");
+        if (isInvalidKey(aKey)) throw new IllegalArgumentException("Invalid key '"+aKey+"'");
         validComment_();
         if (aValue == null) {
             mParameters.remove(aKey);
@@ -292,6 +300,7 @@ public class DataXYZ extends AbstractSettableAtomData {
      * @see #removeProperty(String)
      */
     public DataXYZ setProperty(String aKey, Object aValue) {
+        if (isInvalidPropertyKey(aKey)) throw new IllegalArgumentException("Invalid key '"+aKey+"'");
         validComment_();
         if (aValue == null) {
             removeProperty(aKey);
@@ -302,16 +311,16 @@ public class DataXYZ extends AbstractSettableAtomData {
         case "pos": {
             if (!(aValue instanceof IMatrix)) throw new IllegalArgumentException("Value type MUST be Matrix for pos, input: "+aValue.getClass().getName());
             IMatrix tValue = (IMatrix)aValue;
-            if (tValue.rowNumber() < mAtomNum) throw new IndexOutOfBoundsException("Need: "+mAtomNum+", Size: "+tValue.rowNumber());
-            if (tValue.columnNumber() < ATOM_DATA_KEYS_XYZ.length) throw new IndexOutOfBoundsException("Need: "+ATOM_DATA_KEYS_XYZ.length+", Size: "+tValue.columnNumber());
+            if (tValue.nrows() != mNumAtoms) throw new IllegalArgumentException("Data nrows mismatch, need: "+mNumAtoms+", input: "+tValue.nrows());
+            if (tValue.ncols() != ATOM_DATA_KEYS_XYZ.length) throw new IllegalArgumentException("Data ncols mismatch, need: "+ATOM_DATA_KEYS_XYZ.length+", input: "+tValue.ncols());
             mPositions = tValue;
-            mProperties.put("pos", tValue);
+            mProperties.put(aKey, tValue);
             return this;
         }
         case "species": {
             if (!(aValue instanceof String[])) throw new IllegalArgumentException("Value type MUST be String[] for species, input: "+aValue.getClass().getName());
             String[] tValue = (String[])aValue;
-            if (tValue.length < mAtomNum) throw new IndexOutOfBoundsException("Need: "+mAtomNum+", Size: "+tValue.length);
+            if (tValue.length != mNumAtoms) throw new IllegalArgumentException("Data size mismatch, need: "+mNumAtoms+", input: "+tValue.length);
             mSpecies = tValue;
             // 这里直接重置原有的 symbol order
             mSymbol2Type.clear();
@@ -325,31 +334,72 @@ public class DataXYZ extends AbstractSettableAtomData {
             for (Map.Entry<String, Integer> tEntry : mSymbol2Type.entrySet()) {
                 mType2Symbol[tEntry.getValue()] = tEntry.getKey();
             }
-            mProperties.put("species", tValue);
+            mProperties.put(aKey, tValue);
             return this;
         }
         case "velo": {
             if (!(aValue instanceof IMatrix)) throw new IllegalArgumentException("Value type MUST be Matrix for velo, input: "+aValue.getClass().getName());
             IMatrix tValue = (IMatrix)aValue;
-            if (tValue.rowNumber() < mAtomNum) throw new IndexOutOfBoundsException("Need: "+mAtomNum+", Size: "+tValue.rowNumber());
-            if (tValue.columnNumber() < ATOM_DATA_KEYS_VELOCITY.length) throw new IndexOutOfBoundsException("Need: "+ATOM_DATA_KEYS_VELOCITY.length+", Size: "+tValue.columnNumber());
+            if (tValue.nrows() != mNumAtoms) throw new IllegalArgumentException("Data nrows mismatch, need: "+mNumAtoms+", input: "+tValue.nrows());
+            if (tValue.ncols() != ATOM_DATA_KEYS_VELOCITY.length) throw new IllegalArgumentException("Data ncols mismatch, need: "+ATOM_DATA_KEYS_VELOCITY.length+", input: "+tValue.ncols());
             mVelocities = tValue;
-            mProperties.put("velo", tValue);
+            mProperties.put(aKey, tValue);
             return this;
         }
         case "vel": {
             if (!(aValue instanceof IMatrix)) throw new IllegalArgumentException("Value type MUST be Matrix for vel, input: "+aValue.getClass().getName());
             IMatrix tValue = (IMatrix)aValue;
-            if (tValue.rowNumber() < mAtomNum) throw new IndexOutOfBoundsException("Need: "+mAtomNum+", Size: "+tValue.rowNumber());
-            if (tValue.columnNumber() < ATOM_DATA_KEYS_VELOCITY.length) throw new IndexOutOfBoundsException("Need: "+ATOM_DATA_KEYS_VELOCITY.length+", Size: "+tValue.columnNumber());
-            Object tVelo = mProperties.remove("velo");
-            if (!(tVelo instanceof IMatrix) || ((IMatrix) tVelo).columnNumber()!=3) {
+            if (tValue.nrows() != mNumAtoms) throw new IllegalArgumentException("Data nrows mismatch, need: "+mNumAtoms+", input: "+tValue.nrows());
+            if (tValue.ncols() != ATOM_DATA_KEYS_VELOCITY.length) throw new IllegalArgumentException("Data ncols mismatch, need: "+ATOM_DATA_KEYS_VELOCITY.length+", input: "+tValue.ncols());
+            Object tVelo = mProperties.get("velo");
+            if (!(tVelo instanceof IMatrix) || ((IMatrix) tVelo).ncols()!=3) {
                 mVelocities = tValue;
             }
-            mProperties.put("vel", tValue);
+            mProperties.put(aKey, tValue);
             return this;
         }}
-        mProperties.put(aKey, aValue);
+        if (aValue instanceof IVector) {
+            IVector tValue = (IVector)aValue;
+            if (tValue.size() != mNumAtoms) throw new IllegalArgumentException("Data size mismatch, need: "+mNumAtoms+", input: "+tValue.size());
+            mProperties.put(aKey, tValue);
+        } else
+        if (aValue instanceof IIntVector) {
+            IIntVector tValue = (IIntVector)aValue;
+            if (tValue.size() != mNumAtoms) throw new IllegalArgumentException("Data size mismatch, need: "+mNumAtoms+", input: "+tValue.size());
+            mProperties.put(aKey, tValue);
+        } else
+        if (aValue instanceof ILogicalVector) {
+            ILogicalVector tValue = (ILogicalVector)aValue;
+            if (tValue.size() != mNumAtoms) throw new IllegalArgumentException("Data size mismatch, need: "+mNumAtoms+", input: "+tValue.size());
+            mProperties.put(aKey, tValue);
+        } else
+        if (aValue instanceof IMatrix) {
+            IMatrix tValue = (IMatrix)aValue;
+            if (tValue.nrows() != mNumAtoms) throw new IllegalArgumentException("Data nrows mismatch, need: "+mNumAtoms+", input: "+tValue.nrows());
+            mProperties.put(aKey, tValue);
+        } else
+        if (aValue instanceof IIntMatrix) {
+            IIntMatrix tValue = (IIntMatrix)aValue;
+            if (tValue.nrows() != mNumAtoms) throw new IllegalArgumentException("Data nrows mismatch, need: "+mNumAtoms+", input: "+tValue.nrows());
+            mProperties.put(aKey, tValue);
+        } else
+        if (aValue instanceof ILogicalMatrix) {
+            ILogicalMatrix tValue = (ILogicalMatrix)aValue;
+            if (tValue.nrows() != mNumAtoms) throw new IllegalArgumentException("Data nrows mismatch, need: "+mNumAtoms+", input: "+tValue.nrows());
+            mProperties.put(aKey, tValue);
+        } else
+        if (aValue instanceof String[]) {
+            String[] tValue = (String[])aValue;
+            if (tValue.length != mNumAtoms) throw new IllegalArgumentException("Data size mismatch, need: "+mNumAtoms+", input: "+tValue.length);
+            mProperties.put(aKey, tValue);
+        } else
+        if (aValue instanceof String[][]) {
+            String[][] tValue = (String[][])aValue;
+            if (tValue.length != mNumAtoms) throw new IllegalArgumentException("Data nrows mismatch, need: "+mNumAtoms+", input: "+tValue.length);
+            mProperties.put(aKey, tValue);
+        } else {
+            throw new IllegalArgumentException("Invalid ext-xyz property type, input: "+aValue.getClass().getName());
+        }
         return this;
     }
     /**
@@ -375,20 +425,20 @@ public class DataXYZ extends AbstractSettableAtomData {
             return mProperties.remove(aKey);
         }
         case "velo": {
-            Object tVel = mProperties.remove("vel");
-            if (tVel instanceof IMatrix && ((IMatrix)tVel).columnNumber()==3) {
+            Object tVel = mProperties.get("vel");
+            if (tVel instanceof IMatrix && ((IMatrix)tVel).ncols()==3) {
                 mVelocities = (IMatrix)tVel;
             } else {
                 mVelocities = null;
             }
-            return mProperties.remove("velo");
+            return mProperties.remove(aKey);
         }
         case "vel": {
-            Object tVelo = mProperties.remove("velo");
-            if (!(tVelo instanceof IMatrix) || ((IMatrix) tVelo).columnNumber()!=3) {
+            Object tVelo = mProperties.get("velo");
+            if (!(tVelo instanceof IMatrix) || ((IMatrix) tVelo).ncols()!=3) {
                 mVelocities = null;
             }
-            return mProperties.remove("vel");
+            return mProperties.remove(aKey);
         }}
         return mProperties.remove(aKey);
     }
@@ -406,7 +456,7 @@ public class DataXYZ extends AbstractSettableAtomData {
         if (mSpecies == null) throw new UnsupportedOperationException("`setSymbolOrder` for DataXYZ without species data");
         assert mType2Symbol != null;
         if (aSymbolOrder == null) aSymbolOrder = ZL_STR;
-        if (aSymbolOrder.length > atomTypeNumber()) {
+        if (aSymbolOrder.length > this.ntypes()) {
             mType2Symbol = new String[aSymbolOrder.length+1];
         }
         System.arraycopy(aSymbolOrder, 0, mType2Symbol, 1, aSymbolOrder.length);
@@ -442,7 +492,7 @@ public class DataXYZ extends AbstractSettableAtomData {
         if (mSpecies == null) throw new UnsupportedOperationException("`setSymbols` for DataXYZ without species data");
         assert mType2Symbol != null;
         if (aSymbols==null || aSymbols.length==0) return this;
-        if (aSymbols.length > atomTypeNumber()) {
+        if (aSymbols.length > this.ntypes()) {
             mType2Symbol = new String[aSymbols.length+1];
         }
         System.arraycopy(aSymbols, 0, mType2Symbol, 1, aSymbols.length);
@@ -455,35 +505,35 @@ public class DataXYZ extends AbstractSettableAtomData {
     }
     /**
      * {@inheritDoc}
-     * @param aAtomTypeNum {@inheritDoc}
+     * @param aNumTypes {@inheritDoc}
      * @return {@inheritDoc}
      * @throws UnsupportedOperationException 如果不包含元素符号信息
-     * @see #atomTypeNumber()
+     * @see #ntypes()
      * @see IAtom#type()
      */
-    @Override public DataXYZ setAtomTypeNumber(int aAtomTypeNum) {
-        if (mSpecies == null) throw new UnsupportedOperationException("`setAtomTypeNumber` for DataXYZ without species data");
+    @Override public DataXYZ setNtypes(int aNumTypes) {
+        if (mSpecies == null) throw new UnsupportedOperationException("`setNtypes` for DataXYZ without species data");
         assert mType2Symbol != null;
-        int oTypeNum = atomTypeNumber();
-        if (aAtomTypeNum == oTypeNum) return this;
-        if (aAtomTypeNum < oTypeNum) {
+        int oTypeNum = this.ntypes();
+        if (aNumTypes == oTypeNum) return this;
+        if (aNumTypes < oTypeNum) {
             // 现在支持设置更小的值，更大的种类会直接截断
             for (int i = 0; i < mSpecies.length; ++i) {
                 int tType = mSymbol2Type.get(mSpecies[i]);
-                if (tType > aAtomTypeNum) {
-                    mSpecies[i] = mType2Symbol[aAtomTypeNum];
+                if (tType > aNumTypes) {
+                    mSpecies[i] = mType2Symbol[aNumTypes];
                 }
             }
             String[] oType2Symbol = mType2Symbol;
-            mType2Symbol = new String[aAtomTypeNum+1];
+            mType2Symbol = new String[aNumTypes +1];
             System.arraycopy(oType2Symbol, 0, mType2Symbol, 0, mType2Symbol.length);
             validSymbol2Type_();
             return this;
         }
         String[] oType2Symbol = mType2Symbol;
-        mType2Symbol = new String[aAtomTypeNum+1];
+        mType2Symbol = new String[aNumTypes +1];
         System.arraycopy(oType2Symbol, 0, mType2Symbol, 0, oType2Symbol.length);
-        for (int tType = oType2Symbol.length; tType <= aAtomTypeNum; ++tType) {
+        for (int tType = oType2Symbol.length; tType <= aNumTypes; ++tType) {
             mType2Symbol[tType] = "T"+tType;
         }
         validSymbol2Type_();
@@ -492,7 +542,7 @@ public class DataXYZ extends AbstractSettableAtomData {
     void validSymbol2Type_() {
         assert mType2Symbol != null;
         mSymbol2Type.clear();
-        int tAtomTypeNumber = atomTypeNumber();
+        int tAtomTypeNumber = this.ntypes();
         for (int tType = 1; tType <= tAtomTypeNumber; ++tType) {
             mSymbol2Type.put(mType2Symbol[tType], tType);
         }
@@ -518,7 +568,7 @@ public class DataXYZ extends AbstractSettableAtomData {
     @Override public DataXYZ setHasVelocity() {
         validComment_();
         if (mVelocities == null) {
-            mVelocities = RowMatrix.zeros(atomNumber(), ATOM_DATA_KEYS_VELOCITY.length);
+            mVelocities = RowMatrix.zeros(this.natoms(), ATOM_DATA_KEYS_VELOCITY.length);
             mProperties.put("velo", mVelocities);
         }
         return this;
@@ -544,7 +594,7 @@ public class DataXYZ extends AbstractSettableAtomData {
     }
     @Override protected void validAtomPosition_(boolean aKeepAtomPosition, IBox aOldBox) {
         if (aKeepAtomPosition) return;
-        final int tAtomNum = atomNumber();
+        final int tAtomNum = this.natoms();
         XYZ tBuf = new XYZ();
         assert mBox != null;
         if (mBox.isPrism() || aOldBox.isPrism()) {
@@ -653,9 +703,9 @@ public class DataXYZ extends AbstractSettableAtomData {
      */
     @Override public IBox box() {return mBox;}
     /** @return {@inheritDoc} */
-    @Override public int atomNumber() {return mAtomNum;}
+    @Override public int natoms() {return mNumAtoms;}
     /** @return {@inheritDoc} */
-    @Override public int atomTypeNumber() {return mType2Symbol==null ? 1 : mType2Symbol.length-1;}
+    @Override public int ntypes() {return mType2Symbol==null ? 1 : mType2Symbol.length-1;}
     
     /** @return {@inheritDoc} */
     @Override public DataXYZ copy() {
@@ -672,8 +722,12 @@ public class DataXYZ extends AbstractSettableAtomData {
             } else
             if (oValue instanceof String[][]) {
                 String[][] oValueStr = (String[][])oValue;
-                String[][] tValue = new String[oValueStr.length][oValueStr[0].length];
-                System.arraycopy(oValueStr, 0, tValue, 0, tValue.length);
+                int nrows = oValueStr.length;
+                int ncols = oValueStr[0].length;
+                String[][] tValue = new String[nrows][ncols];
+                for (int i = 0; i < nrows; ++i) {
+                    System.arraycopy(oValueStr[i], 0, tValue[i], 0, ncols);
+                }
                 tProperties.put(oEntry.getKey(), tValue);
             } else
             if (oValue instanceof IVector) {
@@ -687,9 +741,15 @@ public class DataXYZ extends AbstractSettableAtomData {
             } else
             if (oValue instanceof IIntMatrix) {
                 tProperties.put(oEntry.getKey(), ((IIntMatrix)oValue).copy());
+            } else
+            if (oValue instanceof ILogicalVector) {
+                tProperties.put(oEntry.getKey(), ((ILogicalVector)oValue).copy());
+            } else
+            if (oValue instanceof ILogicalMatrix) {
+                tProperties.put(oEntry.getKey(), ((ILogicalMatrix)oValue).copy());
             }
         }
-        DataXYZ tOut = new DataXYZ(mAtomNum, mComment, tParameter, tProperties, mBox==null?null:mBox.copy());
+        DataXYZ tOut = new DataXYZ(mNumAtoms, mComment, tParameter, tProperties, mBox==null?null:mBox.copy());
         if (mType2Symbol != null) {
             String[] tSymbols = new String[mType2Symbol.length-1];
             System.arraycopy(mType2Symbol, 1, tSymbols, 0, tSymbols.length);
@@ -726,47 +786,225 @@ public class DataXYZ extends AbstractSettableAtomData {
      * @see #of(IAtomData, String...)
      * @see #fromAtomData(IAtomData)
      */
+    @SuppressWarnings("unchecked")
     public static DataXYZ fromAtomData(IAtomData aAtomData, String... aSymbols) {
         if (aSymbols == null) aSymbols = ZL_STR;
         // 根据输入的 aAtomData 类型来具体判断需要如何获取 rAtomData
         if (aAtomData instanceof DataXYZ) {
             // DataXYZ 则直接获取即可（专门优化，保留完整模拟盒信息）
             return ((DataXYZ)aAtomData).copy().setSymbols(aSymbols);
-        } else {
-            // 直接遍历拷贝数据
-            int tAtomNum = aAtomData.atomNumber();
-            String[] rSpecies = new String[tAtomNum];
-            RowMatrix rPositions = RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_XYZ.length);
-            @Nullable RowMatrix rVelocities = aAtomData.hasVelocity() ? RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length) : null;
-            for (int i = 0; i < tAtomNum; ++i) {
-                IAtom tAtom = aAtomData.atom(i);
-                int tType = tAtom.type();
-                rSpecies[i] = tType>aSymbols.length ? ("T"+tType) : aSymbols[tType-1];
-                rPositions.set(i, XYZ_X_COL, tAtom.x());
-                rPositions.set(i, XYZ_Y_COL, tAtom.y());
-                rPositions.set(i, XYZ_Z_COL, tAtom.z());
-                if (rVelocities != null) {
-                    rVelocities.set(i, STD_VX_COL, tAtom.vx());
-                    rVelocities.set(i, STD_VY_COL, tAtom.vy());
-                    rVelocities.set(i, STD_VZ_COL, tAtom.vz());
+        }
+        // 直接遍历拷贝数据
+        int tNumAtoms = aAtomData.natoms();
+        String[] rSpecies = new String[tNumAtoms];
+        RowMatrix rPositions = RowMatrix.zeros(tNumAtoms, ATOM_DATA_KEYS_XYZ.length);
+        @Nullable RowMatrix rVelocities = aAtomData.hasVelocity() ? RowMatrix.zeros(tNumAtoms, ATOM_DATA_KEYS_VELOCITY.length) : null;
+        for (int i = 0; i < tNumAtoms; ++i) {
+            IAtom tAtom = aAtomData.atom(i);
+            int tType = tAtom.type();
+            rSpecies[i] = tType>aSymbols.length ? ("T"+tType) : aSymbols[tType-1];
+            rPositions.set(i, XYZ_X_COL, tAtom.x());
+            rPositions.set(i, XYZ_Y_COL, tAtom.y());
+            rPositions.set(i, XYZ_Z_COL, tAtom.z());
+            if (rVelocities != null) {
+                rVelocities.set(i, STD_VX_COL, tAtom.vx());
+                rVelocities.set(i, STD_VY_COL, tAtom.vy());
+                rVelocities.set(i, STD_VZ_COL, tAtom.vz());
+            }
+        }
+        Map<String, Object> rProperties = new LinkedHashMap<>();
+        rProperties.put("species", rSpecies);
+        rProperties.put("pos", rPositions);
+        if (rVelocities != null) rProperties.put("velo", rVelocities);
+        // 转换时默认增加 T T T 的 pbc
+        Map<String, Object> rParameters = new LinkedHashMap<>();
+        rParameters.put("pbc", "T T T");
+        DataXYZ rDataXYZ = new DataXYZ(tNumAtoms, null,
+                                       rParameters, rProperties, aAtomData.box().copy()).setSymbolOrder(aSymbols);
+        // 针对 AseAtoms 特殊处理，这里简单直接补充添加额外属性
+        if (aAtomData instanceof AseAtoms) {
+            AseAtoms tAtoms = (AseAtoms)aAtomData;
+            // 遍历添加，对于 calc results 的属性只考虑特殊已知名称，这里主要保证 xyz 的格式合法
+            for (Map.Entry<String, Object> tEntry : tAtoms.calcResults().entrySet()) {
+                String tKey = tEntry.getKey();
+                Object tValue = tEntry.getValue();
+                switch(tKey) {
+                case "energy": case "free_energy": {
+                    if (tValue instanceof Number) {
+                        rDataXYZ.setParameter(tKey, ((Number)tValue).doubleValue());
+                    }
+                    break;
+                }
+                case "magmom": {
+                    if (tValue instanceof IVector) {
+                        rDataXYZ.setParameter(tKey, String.join(" ", AbstractCollections.map((IVector)tValue, Object::toString)));
+                    } else
+                    if (tValue instanceof Number) {
+                        rDataXYZ.setParameter(tKey, ((Number)tValue).doubleValue());
+                    }
+                    break;
+                }
+                case "stress": {
+                    if (tValue instanceof IVector) {
+                        //  0,  1,  2,  3,  4,  5
+                        // xx, yy, zz, yz, xz, xy
+                        IVector tStressAse = (IVector)tValue;
+                        //  0,  1,  2,  3,  4,  5,  6,  7,  8
+                        // xx, xy, xz, yx, yy, yz, zx, zy, zz
+                        IVector tStressXYZ = Vectors.zeros(9);
+                        tStressXYZ.set(0, tStressAse.get(0)); tStressXYZ.set(1, tStressAse.get(5)); tStressXYZ.set(2, tStressAse.get(4));
+                        tStressXYZ.set(3, tStressAse.get(5)); tStressXYZ.set(4, tStressAse.get(1)); tStressXYZ.set(5, tStressAse.get(3));
+                        tStressXYZ.set(6, tStressAse.get(4)); tStressXYZ.set(7, tStressAse.get(3)); tStressXYZ.set(8, tStressAse.get(2));
+                        rDataXYZ.setParameter(tKey, String.join(" ", AbstractCollections.map(tStressXYZ, Object::toString)));
+                    }
+                    break;
+                }
+                case "dipole": {
+                    if (tValue instanceof IVector) {
+                        rDataXYZ.setParameter(tKey, String.join(" ", AbstractCollections.map((IVector)tValue, Object::toString)));
+                    }
+                    break;
+                }
+                case "forces": case "stresses": {
+                    if (tValue instanceof IMatrix) {
+                        rDataXYZ.setProperty(tKey, ((IMatrix)tValue).copy());
+                    }
+                    break;
+                }
+                case "energies": case "charges": {
+                    if (tValue instanceof IVector) {
+                        rDataXYZ.setProperty(tKey, ((IVector)tValue).copy());
+                    }
+                    break;
+                }
+                case "magmoms": {
+                    if (tValue instanceof IVector) {
+                        rDataXYZ.setProperty(tKey, ((IVector)tValue).copy());
+                    } else
+                    if (tValue instanceof IMatrix) {
+                        rDataXYZ.setProperty(tKey, ((IMatrix)tValue).copy());
+                    }
+                    break;
+                }}
+            }
+            for (Map.Entry<String, Object> tEntry : tAtoms.infos().entrySet()) {
+                String tKey = tEntry.getKey();
+                Object tValue = tEntry.getValue();
+                if (tValue instanceof CharSequence) {
+                    rDataXYZ.setParameter(tKey, ((CharSequence)tValue).toString());
+                } else
+                if (tValue instanceof Number) {
+                    rDataXYZ.setParameter(tKey, ((Number)tValue).doubleValue());
+                } else
+                if (tValue instanceof IVector) {
+                    rDataXYZ.setParameter(tKey, String.join(" ", AbstractCollections.map((IVector)tValue, Object::toString)));
+                } else
+                if (tValue instanceof IIntVector) {
+                    rDataXYZ.setParameter(tKey, String.join(" ", AbstractCollections.map((IIntVector)tValue, Object::toString)));
+                } else
+                if (tValue instanceof ILogicalVector) {
+                    // 此类型不支持完美的反向转换，但目前 jse 协议下的 ext-xyz 不认为此类型合法，因此是额外扩充兼容
+                    rDataXYZ.setParameter(tKey, String.join(" ", AbstractCollections.map(((ILogicalVector)tValue).asList(), v->(v?"T":"F"))));
+                } else
+                if (tValue instanceof List) {
+                    // 此类型不支持完美的反向转换，但目前 jse 协议下的 ext-xyz 不认为此类型合法，因此是额外扩充兼容
+                    rDataXYZ.setParameter(tKey, String.join(" ", AbstractCollections.map((List<?>)tValue, v -> {
+                        if (v instanceof Boolean) {
+                            return (Boolean)v ? "T" : "F";
+                        }
+                        return v.toString();
+                    })));
                 }
             }
-            Map<String, Object> rProperties = new LinkedHashMap<>();
-            rProperties.put("species", rSpecies);
-            rProperties.put("pos", rPositions);
-            if (rVelocities != null) rProperties.put("velo", rVelocities);
-            // 转换时默认增加 T T T 的 pbc
-            Map<String, Object> rParameters = new LinkedHashMap<>();
-            rParameters.put("pbc", "T T T");
-            return new DataXYZ(tAtomNum, null, rParameters, rProperties, aAtomData.box().copy()).setSymbolOrder(aSymbols);
+            for (Map.Entry<String, Object> tEntry : tAtoms.arrays().entrySet()) {
+                String tKey = tEntry.getKey();
+                Object tValue = tEntry.getValue();
+                switch(tKey) {
+                case "numbers": case "positions": case "momenta": {
+                    continue;
+                }}
+                if (tValue instanceof IVector) {
+                    rDataXYZ.setProperty(tKey, ((IVector)tValue).copy());
+                } else
+                if (tValue instanceof IMatrix) {
+                    rDataXYZ.setProperty(tKey, ((IMatrix)tValue).copy());
+                } else
+                if (tValue instanceof IIntVector) {
+                    rDataXYZ.setProperty(tKey, ((IIntVector)tValue).copy());
+                } else
+                if (tValue instanceof IIntMatrix) {
+                    rDataXYZ.setProperty(tKey, ((IIntMatrix)tValue).copy());
+                } else
+                if (tValue instanceof ILogicalVector) {
+                    rDataXYZ.setProperty(tKey, ((ILogicalVector)tValue).copy());
+                } else
+                if (tValue instanceof ILogicalMatrix) {
+                    rDataXYZ.setProperty(tKey, ((ILogicalMatrix)tValue).copy());
+                } else
+                if (tValue instanceof String[]) {
+                    String[] tValue2 = new String[((String[])tValue).length];
+                    System.arraycopy((String[])tValue, 0, tValue2, 0, tValue2.length);
+                    rDataXYZ.setProperty(tKey, tValue2);
+                } else
+                if (tValue instanceof String[][]) {
+                    int nrows = ((String[][])tValue).length;
+                    int ncols = ((String[][])tValue)[0].length;
+                    String[][] tValue2 = new String[nrows][ncols];
+                    for (int i = 0; i < nrows; ++i) {
+                        System.arraycopy(((String[][])tValue)[i], 0, tValue2[i], 0, ncols);
+                    }
+                    rDataXYZ.setProperty(tKey, tValue2);
+                } else
+                if (tValue instanceof List) {
+                    int nrows = ((List<?>)tValue).size();
+                    if (nrows == 0) {
+                        rDataXYZ.setProperty(tKey, ZL_STR);
+                    }
+                    Object tObj = ((List<?>)tValue).get(0);
+                    if (tObj instanceof List) {
+                        int ncols = ((List<?>)tObj).size();
+                        Object tObj2 = ((List<?>)tObj).get(0);
+                        if (tObj2 instanceof Boolean) {
+                            rDataXYZ.setProperty(tKey, Matrices.fromBoolean((List<?>)tValue));
+                        } else
+                        if (tObj2 instanceof Number) {
+                            rDataXYZ.setProperty(tKey, Matrices.from((List<?>)tValue));
+                        } else {
+                            String[][] tValue2 = new String[nrows][ncols];
+                            for (int i = 0; i < nrows; ++i) {
+                                List<?> tRow = (List<?>)((List<?>)tValue).get(i);
+                                for (int j = 0; j < ncols; ++j) {
+                                    tValue2[i][j] = tRow.get(j).toString();
+                                }
+                            }
+                            rDataXYZ.setProperty(tKey, tValue2);
+                        }
+                    } else
+                    if (tObj instanceof Boolean) {
+                        rDataXYZ.setProperty(tKey, Vectors.fromBoolean((List<Boolean>)tValue));
+                    } else
+                    if (tObj instanceof Number) {
+                        rDataXYZ.setProperty(tKey, Vectors.from((List<? extends Number>)tValue));
+                    } else {
+                        String[] tValue2 = new String[nrows];
+                        for (int i = 0; i < nrows; ++i) {
+                            tValue2[i] = ((List<?>)tValue).get(i).toString();
+                        }
+                        rDataXYZ.setProperty(tKey, tValue2);
+                    }
+                }
+            }
         }
+        return rDataXYZ;
     }
     /**
      * 传入列表形式元素符号的创建
      * @see #fromAtomData(IAtomData, String...)
      * @see Collection
      */
-    public static DataXYZ fromAtomData(IAtomData aAtomData, Collection<? extends CharSequence> aSymbols) {return fromAtomData(aAtomData, IO.Text.toArray(aSymbols));}
+    public static DataXYZ fromAtomData(IAtomData aAtomData, Collection<? extends CharSequence> aSymbols) {
+        return fromAtomData(aAtomData, IO.Text.toArray(aSymbols));
+    }
     /**
      * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 XYZ 数据
      * <p>
@@ -777,7 +1015,9 @@ public class DataXYZ extends AbstractSettableAtomData {
      * @return 创建的 XYZ 数据
      * @see #of(IAtomData, String...)
      */
-    public static DataXYZ of(IAtomData aAtomData) {return fromAtomData(aAtomData);}
+    public static DataXYZ of(IAtomData aAtomData) {
+        return fromAtomData(aAtomData);
+    }
     /**
      * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 XYZ 数据
      * @param aAtomData 输入的原子数据
@@ -785,43 +1025,65 @@ public class DataXYZ extends AbstractSettableAtomData {
      * @return 创建的 XYZ 数据
      * @see #of(IAtomData)
      */
-    public static DataXYZ of(IAtomData aAtomData, String... aSymbols) {return fromAtomData(aAtomData, aSymbols);}
+    public static DataXYZ of(IAtomData aAtomData, String... aSymbols) {
+        return fromAtomData(aAtomData, aSymbols);
+    }
     /**
      * 传入列表形式元素符号的转换
      * @see #of(IAtomData, String...)
      * @see Collection
      */
-    public static DataXYZ of(IAtomData aAtomData, Collection<? extends CharSequence> aSymbols) {return fromAtomData(aAtomData, aSymbols);}
+    public static DataXYZ of(IAtomData aAtomData, Collection<? extends CharSequence> aSymbols) {
+        return fromAtomData(aAtomData, aSymbols);
+    }
     
     
     /// 文件读写
     /**
      * 从 XYZ 原子数据格式或者扩展的 XYZ 格式文件读取来初始化
      * @param aFilePath XYZ 文件路径
-     * @return 读取得到的 {@link DataXYZ} 对象，如果文件不完整会直接返回 {@code null}
+     * @return 读取得到的 {@link DataXYZ} 对象
      * @throws IOException 如果读取失败
      * @see #write(String)
      */
-    public static DataXYZ read(String aFilePath) throws IOException {try (BufferedReader tReader = IO.toReader(aFilePath)) {return read_(tReader);}}
-    static DataXYZ read_(BufferedReader aReader) throws IOException {
+    public static DataXYZ read(String aFilePath) throws IOException {
+        try (BufferedReader tReader = IO.toReader(aFilePath)) {
+            return read(tReader);
+        }
+    }
+    /**
+     * 提供使用 {@link BufferedReader} 的流式接口
+     * @param aReader 需要的读取流
+     * @return 读取得到的 {@link DataXYZ} 对象
+     * @throws IOException 如果读取失败
+     * @throws FileEndException 在发现文件似乎不完整时
+     */
+    public static DataXYZ read(BufferedReader aReader) throws IOException {
         String tLine;
         String[] tTokens;
         
-        int aAtomNum;
+        int aNumAtoms;
         String aComment;
         Map<String, Object> aParameters = new LinkedHashMap<>();
         IBox aBox = null;
         Map<String, Object> aProperties = null;
         
         // 第一行为原子数
-        tLine = aReader.readLine(); if (tLine == null) return null;
-        aAtomNum = Integer.parseInt(tLine.trim());
+        tLine = aReader.readLine(); if (tLine==null) {IO.fileEnd(); return null;}
+        aNumAtoms = Integer.parseInt(tLine.trim());
         // 第二行为 comment
-        tLine = aReader.readLine(); if (tLine == null) return null;
+        tLine = aReader.readLine(); if (tLine==null) {IO.fileEnd(); return null;}
         aComment = tLine;
         // 对于扩展的 XYZ 格式，comment 会包含其余重要信息，需要解析 comment
-        boolean tIsExtended = parseParameters_(aComment, aParameters);
-        if (!tIsExtended) {
+        @Nullable String tParseErr = parseParameters_(aComment, aParameters);
+        // 只要有 Properties 属性就认为是扩展的 XYZ，此时有任何解析错误就抛出错误
+        if ((aParameters.containsKey("Properties") || aParameters.containsKey("properties")) && tParseErr!=null) {
+            if (Conf.STRICT_IO) throw new IllegalArgumentException(tParseErr);
+            // 为了避免意外的转换，这里还是返回 null，毕竟传统 xyz 格式是基本弃用的，只提供最低程度支持
+            return null;
+        }
+        // 有任何错误回退到传统 xyz
+        if (tParseErr!=null) {
             aParameters.clear();
         } else {
             aComment = null;
@@ -870,15 +1132,19 @@ public class DataXYZ extends AbstractSettableAtomData {
                     int tCols = Integer.parseInt(tPropertiesArr[i+2]);
                     switch (tType) {
                     case "S": {
-                        aProperties.put(tKey, tCols==1 ? new String[aAtomNum] : new String[aAtomNum][tCols]);
+                        aProperties.put(tKey, tCols==1 ? new String[aNumAtoms] : new String[aNumAtoms][tCols]);
                         break;
                     }
                     case "R": {
-                        aProperties.put(tKey, tCols==1 ? Vectors.zeros(aAtomNum) : RowMatrix.zeros(aAtomNum, tCols));
+                        aProperties.put(tKey, tCols==1 ? Vectors.zeros(aNumAtoms) : RowMatrix.zeros(aNumAtoms, tCols));
                         break;
                     }
                     case "I": {
-                        aProperties.put(tKey, tCols==1 ? IntVector.zeros(aAtomNum) : RowIntMatrix.zeros(aAtomNum, tCols));
+                        aProperties.put(tKey, tCols==1 ? IntVector.zeros(aNumAtoms) : RowIntMatrix.zeros(aNumAtoms, tCols));
+                        break;
+                    }
+                    case "L": {
+                        aProperties.put(tKey, tCols==1 ? LogicalVector.zeros(aNumAtoms) : RowLogicalMatrix.zeros(aNumAtoms, tCols));
                         break;
                     }}
                 }
@@ -887,12 +1153,13 @@ public class DataXYZ extends AbstractSettableAtomData {
         if (aProperties == null) {
             // 即使是非 Extended，也需要有 Properties 以及 Box
             aProperties = new LinkedHashMap<>();
-            aProperties.put("species", new String[aAtomNum]);
-            aProperties.put("pos", RowMatrix.zeros(aAtomNum, ATOM_DATA_KEYS_XYZ.length));
+            aProperties.put("species", new String[aNumAtoms]);
+            aProperties.put("pos", RowMatrix.zeros(aNumAtoms, ATOM_DATA_KEYS_XYZ.length));
         }
         // 简单遍历后续数据
-        for (int i = 0; i < aAtomNum; ++i) {
-            tLine = aReader.readLine(); if (tLine == null) return null; tTokens = IO.Text.splitBlank(tLine);
+        for (int i = 0; i < aNumAtoms; ++i) {
+            tLine = aReader.readLine(); if (tLine == null) {IO.fileEnd(); return null;}
+            tTokens = IO.Text.splitBlank(tLine);
             // 基于 aProperties 的顺序解析，现在可以统一解析语法
             int j = 0;
             for (Object tValue : aProperties.values()) {
@@ -928,27 +1195,67 @@ public class DataXYZ extends AbstractSettableAtomData {
                         tRow.set(k, Integer.parseInt(tTokens[j]));
                         ++j;
                     }
+                } else
+                if (tValue instanceof ILogicalVector) {
+                    boolean tSub;
+                    if (tTokens[j].equals("T")) {
+                        tSub = true;
+                    } else
+                    if (tTokens[j].equals("F")) {
+                        tSub = false;
+                    } else {
+                        throw new IllegalArgumentException("Illegal L token: " + tTokens[j]);
+                    }
+                    ((ILogicalVector)tValue).set(i, tSub);
+                    ++j;
+                } else
+                if (tValue instanceof ILogicalMatrix) {
+                    ILogicalVector tRow = ((ILogicalMatrix)tValue).row(i);
+                    for (int k = 0; k < tRow.size(); ++k) {
+                        boolean tSub;
+                        if (tTokens[j].equals("T")) {
+                            tSub = true;
+                        } else
+                        if (tTokens[j].equals("F")) {
+                            tSub = false;
+                        } else {
+                            throw new IllegalArgumentException("Illegal L token: " + tTokens[j]);
+                        }
+                        tRow.set(k, tSub);
+                        ++j;
+                    }
                 }
             }
         }
         // 返回 XYZ
-        return new DataXYZ(aAtomNum, aComment, aParameters, aProperties, aBox);
+        return new DataXYZ(aNumAtoms, aComment, aParameters, aProperties, aBox);
     }
-    static boolean parseParameters_(String aComment, Map<String, Object> rParameters) {
+    private static String subStringLimit_(String aStr, int aBegin) {
+        int tSize = aStr.length();
+        if (tSize-aBegin > 16) {
+            return aStr.substring(aBegin, aBegin+12) + "...";
+        }
+        return aStr.substring(aBegin, tSize);
+    }
+    static @Nullable String parseParameters_(String aComment, Map<String, Object> rParameters) {
         aComment = aComment.trim();
         // 这个操作比较复杂，还需要处理双引号的情况
         final int tLen = aComment.length();
         int tKeyBegin = 0;
         while (tKeyBegin < tLen) {
             int tKeyEnd = aComment.indexOf('=', tKeyBegin);
-            if (tKeyEnd < 0) return false;
+            if (tKeyEnd < 0) {
+                return "Miss `=` from: "+subStringLimit_(aComment, tKeyBegin);
+            }
             int tValueBegin = tKeyEnd+1;
             boolean tHasQuote = aComment.charAt(tValueBegin)=='"';
             int tValueEnd;
             if (tHasQuote) {
                 ++tValueBegin;
                 tValueEnd = aComment.indexOf('"', tValueBegin);
-                if (tValueEnd < 0) return false;
+                if (tValueEnd < 0) {
+                    return "Miss `\"` from: "+subStringLimit_(aComment, tValueBegin-1);
+                }
             } else {
                 tValueEnd = IO.Text.findBlankIndex(aComment, tValueBegin);
                 if (tValueEnd < 0) tValueEnd = tLen;
@@ -961,17 +1268,20 @@ public class DataXYZ extends AbstractSettableAtomData {
                 if (tValue.equals("F")) {
                     tValue = false;
                 } else {
-                    Number tNumberValue = IO.Text.str2number((String)tValue);
+                    Number tNumberValue = IO.Text.str2number(true, (String)tValue);
                     if (tNumberValue != null) tValue = tNumberValue;
                 }
             }
-            rParameters.put(aComment.substring(tKeyBegin, tKeyEnd), tValue);
+            String tKey = aComment.substring(tKeyBegin, tKeyEnd);
+            if (isInvalidKey(tKey)) return "Invalid key: "+tKey;
+            rParameters.put(tKey, tValue);
             if (tHasQuote) ++tValueEnd;
             tKeyBegin = IO.Text.findNoBlankIndex(aComment, tValueEnd);
             if (tKeyBegin < 0) break; // 注意这种情况是已经结束了
         }
         // 这里削弱要求，不一定需要特定的参数名称
-        return true;
+        // null 表示没有任何解析错误
+        return null;
     }
     
     
@@ -981,10 +1291,16 @@ public class DataXYZ extends AbstractSettableAtomData {
      * @throws IOException 如果写入文件失败
      * @see #read(String)
      */
-    public void write(String aFilePath) throws IOException {try (IO.IWriteln tWriteln = IO.toWriteln(aFilePath)) {write_(tWriteln);}}
-    /** 改为 {@link IO.IWriteln} 而不是 {@code List<String>} 来避免过多内存占用 */
-    void write_(IO.IWriteln aWriteln) throws IOException {
-        aWriteln.writeln(String.valueOf(mAtomNum));
+    public void write(String aFilePath) throws IOException {
+        try (IO.IWriteln tWriteln = IO.toWriteln(aFilePath)) {write(tWriteln);}
+    }
+    /**
+     * 提供使用 {@link IO.IWriteln} 的流式接口
+     * @param aWriteln 需要写入的流
+     * @throws IOException 如果写入文件失败
+     */
+    public void write(IO.IWriteln aWriteln) throws IOException {
+        aWriteln.writeln(String.valueOf(mNumAtoms));
         if (mComment != null) {
             aWriteln.writeln(mComment);
         } else {
@@ -1025,7 +1341,7 @@ public class DataXYZ extends AbstractSettableAtomData {
                 if (tValue instanceof IMatrix) {
                     rLine.append(tEntry.getKey());
                     rLine.append(":R:");
-                    rLine.append(((IMatrix)tValue).columnNumber());
+                    rLine.append(((IMatrix)tValue).ncols());
                 } else
                 if (tValue instanceof IIntVector) {
                     rLine.append(tEntry.getKey());
@@ -1034,7 +1350,16 @@ public class DataXYZ extends AbstractSettableAtomData {
                 if (tValue instanceof IIntMatrix) {
                     rLine.append(tEntry.getKey());
                     rLine.append(":I:");
-                    rLine.append(((IIntMatrix)tValue).columnNumber());
+                    rLine.append(((IIntMatrix)tValue).ncols());
+                } else
+                if (tValue instanceof ILogicalVector) {
+                    rLine.append(tEntry.getKey());
+                    rLine.append(":L:1");
+                } else
+                if (tValue instanceof ILogicalMatrix) {
+                    rLine.append(tEntry.getKey());
+                    rLine.append(":L:");
+                    rLine.append(((ILogicalMatrix)tValue).ncols());
                 }
             }
             // 如果不存在 pbc 参数，则自动写入一个 T T T
@@ -1051,14 +1376,19 @@ public class DataXYZ extends AbstractSettableAtomData {
                 } else {
                     String tValueStr = tValue.toString();
                     boolean tHasBlank = IO.Text.findBlankIndex(tValueStr, 0)>=0;
-                    if (tHasBlank) rLine.append("\"");
+                    if (tHasBlank) {
+                        tValueStr = tValueStr.replace("\"", "");
+                        rLine.append("\"");
+                    }
                     rLine.append(tValueStr);
-                    if (tHasBlank) rLine.append("\"");
+                    if (tHasBlank) {
+                        rLine.append("\"");
+                    }
                 }
             }
             aWriteln.writeln(rLine.toString());
         }
-        for (int i = 0; i < mAtomNum; ++i) {
+        for (int i = 0; i < mNumAtoms; ++i) {
             // 基于 mProperties 的顺序写入
             List<String> rLine = new ArrayList<>();
             for (Object tValue : mProperties.values()) {
@@ -1082,6 +1412,13 @@ public class DataXYZ extends AbstractSettableAtomData {
                 if (tValue instanceof IIntMatrix) {
                     IIntVector tRow = ((IIntMatrix)tValue).row(i);
                     rLine.addAll(AbstractCollections.map(tRow, String::valueOf));
+                } else
+                if (tValue instanceof ILogicalVector) {
+                    rLine.add(((ILogicalVector)tValue).get(i) ? "T" : "F");
+                } else
+                if (tValue instanceof ILogicalMatrix) {
+                    ILogicalVector tRow = ((ILogicalMatrix)tValue).row(i);
+                    rLine.addAll(AbstractCollections.map(tRow.asList(), v -> v ? "T" : "F"));
                 }
             }
             aWriteln.writeln(String.join(" ", rLine));

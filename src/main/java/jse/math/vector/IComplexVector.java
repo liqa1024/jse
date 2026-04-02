@@ -4,8 +4,6 @@ import groovy.lang.Closure;
 import groovy.transform.stc.ClosureParams;
 import groovy.transform.stc.FromString;
 import groovy.transform.stc.SimpleType;
-import jse.atom.IAtom;
-import jse.atom.IXYZ;
 import jse.math.SliceType;
 import jse.code.collection.ISlice;
 import jse.code.functional.IDoubleBinaryConsumer;
@@ -25,19 +23,15 @@ import java.util.NoSuchElementException;
 import java.util.function.*;
 
 /**
+ * 复数向量，返回类型 {@link ComplexDouble}
  * @author liqa
- * <p> 专用的复数向量 </p>
- * <p> 会存在一些不可避免的 lambda 重载，为了内部使用方便这里不去刻意避免，
- * 如遇到 Groovy 脚本使用不方便问题则专门提供一个用于 Groovy 脚本使用的接口 </p>
- * <p> 和 {@link IXYZ} 或者 {@link IAtom} 部分的用法思路不同，
- * 这里直接返回 {@link ComplexDouble} 让其和基本类型一样的使用，不会有引用的属性在里面 </p>
  */
 public interface IComplexVector extends ISwapper, IHasComplexDoubleIterator, IHasComplexDoubleSetIterator, IComplexVectorGetter {
     /** Iterable stuffs，虽然不继承 Iterable 但是会提供相关的直接获取的接口方便直接使用 */
-    IComplexDoubleIterator iterator();
-    IComplexDoubleSetIterator setIterator();
+    @Override IComplexDoubleIterator iterator();
+    @Override IComplexDoubleSetIterator setIterator();
     
-    default Iterable<ComplexDouble> iterable() {return () -> iterator().toIterator();}
+    @Override default Iterable<ComplexDouble> iterable() {return () -> iterator().toIterator();}
     List<ComplexDouble> asList();
     
     /** 获取实部和虚部 */
@@ -48,7 +42,7 @@ public interface IComplexVector extends ISwapper, IHasComplexDoubleIterator, IHa
     double[][] data();
     
     /** ISwapper stuffs */
-    void swap(int aIdx1, int aIdx2);
+    @Override void swap(int aIdx1, int aIdx2);
     
     /** 批量修改的接口 */
     void fill(IComplexDouble aValue);
@@ -60,20 +54,20 @@ public interface IComplexVector extends ISwapper, IHasComplexDoubleIterator, IHa
     void fill(double[][] aData);
     void fill(double[] aData);
     void fill(Iterable<?> aList);
-    void assign(Supplier<? extends IComplexDouble> aSup);
-    void assign(DoubleSupplier aSup);
-    void forEach(Consumer<? super ComplexDouble> aCon);
-    void forEach(IDoubleBinaryConsumer aCon);
+    @Override void assign(Supplier<? extends IComplexDouble> aSup);
+    @Override void assign(DoubleSupplier aSup);
+    @Override void forEach(Consumer<? super ComplexDouble> aCon);
+    @Override void forEach(IDoubleBinaryConsumer aCon);
     /** Groovy stuff */
     void fill(@ClosureParams(value=SimpleType.class, options="int") Closure<?> aGroovyTask);
-    void assign(Closure<?> aGroovyTask);
-    void forEach(@ClosureParams(value=FromString.class, options={"ComplexDouble", "double,double"}) Closure<?> aGroovyTask);
+    @Override void assign(Closure<?> aGroovyTask);
+    @Override void forEach(@ClosureParams(value=FromString.class, options={"ComplexDouble", "double,double"}) Closure<?> aGroovyTask);
     
     /** 访问和修改部分，自带的接口 */
     int size();
-    ComplexDouble get(int aIdx);
-    double getReal(int aIdx);
-    double getImag(int aIdx);
+    @Override ComplexDouble get(int aIdx);
+    @Override double getReal(int aIdx);
+    @Override double getImag(int aIdx);
     void set(int aIdx, IComplexDouble aValue);
     void set(int aIdx, ComplexDouble aValue);
     void set(int aIdx, double aValue);
@@ -121,8 +115,6 @@ public interface IComplexVector extends ISwapper, IHasComplexDoubleIterator, IHa
     /** 向量的运算操作，默认返回新的向量 */
     IComplexVectorOperation operation();
     @VisibleForTesting default IComplexVectorOperation op() {return operation();}
-    /** @deprecated use {@link #op()} */
-    @VisibleForTesting @Deprecated default IComplexVectorOperation opt() {return operation();}
     
     /** Groovy 的部分，增加向量基本的运算操作，现在也归入内部使用 */
     IComplexVector plus     (IComplexDouble aRHS);

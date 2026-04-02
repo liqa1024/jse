@@ -4,6 +4,7 @@ import jse.atom.*;
 import jse.cache.IntVectorCache;
 import jse.cache.MatrixCache;
 import jse.cache.VectorCache;
+import jse.code.FileEndException;
 import jse.code.IO;
 import jse.code.UT;
 import jse.code.collection.AbstractRandomAccessList;
@@ -29,12 +30,14 @@ import static jse.code.CS.*;
 
 
 /**
+ * lammps 使用 {@code write_data} 写出的数据格式，
+ * 存储格式匹配 {@link NativeLmp} 的使用
+ * <p>
+ * 暂只支持简单 {@code # atoms} 格式，其余格式只提供部分支持
+ * <p>
+ * 别称为 {@link Data}
+ *
  * @author liqa
- * <p> lammps 使用 write_data 写出的数据格式，头的顺序也是本程序的标准原子格式 </p>
- * <p> 包含读取写出的文本文件的格式 </p>
- * <p> 暂时不支持键和键角等信息 </p>
- * <p> 直接获取到的所有数据都是引用，因此外部可以直接进行修改 </p>
- * <p> 修改了格式从而匹配 {@link NativeLmp} 的使用 </p>
  */
 public class Lmpdat extends AbstractSettableAtomData {
     public final static int LMPDAT_VELOCITY_LENGTH = 4, LMPDAT_BOND_LENGTH = 4;
@@ -118,30 +121,30 @@ public class Lmpdat extends AbstractSettableAtomData {
         return this;
     }
     /** 设置原子种类数目 */
-    @Override public Lmpdat setAtomTypeNumber(int aAtomTypeNum) {
+    @Override public Lmpdat setNtypes(int aNumTypes) {
         int oTypeNum = mAtomTypeNum;
-        if (aAtomTypeNum == oTypeNum) return this;
-        mAtomTypeNum = aAtomTypeNum;
-        if (aAtomTypeNum < oTypeNum) {
+        if (aNumTypes == oTypeNum) return this;
+        mAtomTypeNum = aNumTypes;
+        if (aNumTypes < oTypeNum) {
             // 现在支持设置更小的值，更大的种类会直接截断
-            mAtomType.op().map2this(v -> Math.min(v, aAtomTypeNum));
+            mAtomType.op().map2this(v -> Math.min(v, aNumTypes));
             return this;
         }
         // 现在理论上不需要更新 Masses 长度
         return this;
     }
     /** 设置键种类数目 */
-    public Lmpdat setBondTypeNumber(int aBondTypeNum) {
-        if (mBondType == null) throw new UnsupportedOperationException("setBondTypeNumber for Lmpdat has no bond");
+    public Lmpdat setNtypesBond(int aNumTypesBond) {
+        if (mBondType == null) throw new UnsupportedOperationException("setNtypesBond for Lmpdat has no bond");
         int oTypeNum = mBondTypeNum;
-        if (aBondTypeNum == oTypeNum) return this;
-        mBondTypeNum = aBondTypeNum;
-        if (aBondTypeNum < oTypeNum) {
+        if (aNumTypesBond == oTypeNum) return this;
+        mBondTypeNum = aNumTypesBond;
+        if (aNumTypesBond < oTypeNum) {
             // 现在支持设置更小的值，更大的种类会直接截断
             for (IntList tBondType : mBondType) {
                 int tSize = tBondType.size();
                 for (int j = 0; j < tSize; ++j) {
-                    tBondType.set(j, Math.min(tBondType.get(j), aBondTypeNum));
+                    tBondType.set(j, Math.min(tBondType.get(j), aNumTypesBond));
                 }
             }
         }
@@ -209,7 +212,7 @@ public class Lmpdat extends AbstractSettableAtomData {
     }
     @Override protected void validAtomPosition_(boolean aKeepAtomPosition, IBox aOldBox) {
         if (aKeepAtomPosition) return;
-        final int tAtomNum = atomNumber();
+        final int tAtomNum = this.natoms();
         XYZ tBuf = new XYZ();
         if (mBox.isPrism() || aOldBox.isPrism()) {
             for (int i = 0; i < tAtomNum; ++i) {
@@ -258,7 +261,6 @@ public class Lmpdat extends AbstractSettableAtomData {
     
     
     /// 获取属性
-    /** @deprecated use {@link #box} */ @Deprecated public LmpBox lmpBox() {return box();}
     public IIntVector ids() {return mAtomID;}
     public IIntVector types() {return mAtomType;}
     public IMatrix positions() {return mAtomXYZ;}
@@ -321,9 +323,9 @@ public class Lmpdat extends AbstractSettableAtomData {
         };
     }
     @Override public LmpBox box() {return mBox;}
-    @Override public int atomNumber() {return mAtomNum;}
-    @Override public int atomTypeNumber() {return mAtomTypeNum;}
-    @Override public int bondTypeNumber() {return mBondTypeNum;}
+    @Override public int natoms() {return mAtomNum;}
+    @Override public int ntypes() {return mAtomTypeNum;}
+    @Override public int ntypesBond() {return mBondTypeNum;}
     
     
     private static IntList @Nullable[] copyBondInfo_(IntList @Nullable[] aBondInfo) {
@@ -338,8 +340,8 @@ public class Lmpdat extends AbstractSettableAtomData {
     /** 拷贝一份 Lmpdat，为了简洁还是只保留 copy 一种方法 */
     @Override public Lmpdat copy() {return new Lmpdat(mAtomTypeNum, mBondTypeNum, mBondNum, mBox.copy(), mMasses==null?null:mMasses.copy(), mAtomID.copy(), mAtomType.copy(), mAtomXYZ.copy(), mVelocities==null?null:mVelocities.copy(), copyBondInfo_(mBondID), copyBondInfo_(mBondType), copyBondInfo_(mBondIndex));}
     @Override protected Lmpdat newSame_() {return new Lmpdat(mAtomTypeNum, mBondTypeNum, mBondNum, mBox.copy(), mMasses==null?null:mMasses.copy(), mAtomID.copy(), mAtomType.copy(), mAtomXYZ.copy(), mVelocities==null?null:mVelocities.copy(), copyBondInfo_(mBondID), copyBondInfo_(mBondType), copyBondInfo_(mBondIndex));}
-    @Override protected Lmpdat newZeros_(int aAtomNum) {return new Lmpdat(mAtomTypeNum, mBondTypeNum, mBondNum, mBox.copy(), mMasses==null?null:mMasses.copy(), IntVector.zeros(aAtomNum), IntVector.zeros(aAtomNum), RowMatrix.zeros(aAtomNum, mAtomXYZ.columnNumber()), mVelocities==null?null:RowMatrix.zeros(aAtomNum, mVelocities.columnNumber()), copyBondInfo_(mBondID), copyBondInfo_(mBondType), copyBondInfo_(mBondIndex));}
-    @Override protected Lmpdat newZeros_(int aAtomNum, IBox aBox) {return new Lmpdat(mAtomTypeNum, mBondTypeNum, mBondNum, LmpBox.of(aBox), mMasses==null?null:mMasses.copy(), IntVector.zeros(aAtomNum), IntVector.zeros(aAtomNum), RowMatrix.zeros(aAtomNum, mAtomXYZ.columnNumber()), mVelocities==null?null:RowMatrix.zeros(aAtomNum, mVelocities.columnNumber()), copyBondInfo_(mBondID), copyBondInfo_(mBondType), copyBondInfo_(mBondIndex));}
+    @Override protected Lmpdat newZeros_(int aAtomNum) {return new Lmpdat(mAtomTypeNum, mBondTypeNum, mBondNum, mBox.copy(), mMasses==null?null:mMasses.copy(), IntVector.zeros(aAtomNum), IntVector.zeros(aAtomNum), RowMatrix.zeros(aAtomNum, mAtomXYZ.ncols()), mVelocities==null?null:RowMatrix.zeros(aAtomNum, mVelocities.ncols()), copyBondInfo_(mBondID), copyBondInfo_(mBondType), copyBondInfo_(mBondIndex));}
+    @Override protected Lmpdat newZeros_(int aAtomNum, IBox aBox) {return new Lmpdat(mAtomTypeNum, mBondTypeNum, mBondNum, LmpBox.of(aBox), mMasses==null?null:mMasses.copy(), IntVector.zeros(aAtomNum), IntVector.zeros(aAtomNum), RowMatrix.zeros(aAtomNum, mAtomXYZ.ncols()), mVelocities==null?null:RowMatrix.zeros(aAtomNum, mVelocities.ncols()), copyBondInfo_(mBondID), copyBondInfo_(mBondType), copyBondInfo_(mBondIndex));}
     
     /** 从 IAtomData 来创建，一般来说 Lmpdat 需要一个额外的质量信息 */
     public static Lmpdat fromAtomData(IAtomData aAtomData) {return fromAtomData_(aAtomData, Vectors.from(aAtomData.masses()));}
@@ -353,13 +355,13 @@ public class Lmpdat extends AbstractSettableAtomData {
             // Lmpdat 则直接获取即可（专门优化，保留完整模拟盒信息）
             return ((Lmpdat)aAtomData).copy().setMasses_(aMasses, false);
         } else {
-            int tAtomNum = aAtomData.atomNumber();
+            int tAtomNum = aAtomData.natoms();
             IntVector rAtomID = IntVector.zeros(tAtomNum);
             IntVector rAtomType = IntVector.zeros(tAtomNum);
             RowMatrix rAtomXYZ = RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_XYZ.length);
             @Nullable RowMatrix rVelocities = aAtomData.hasVelocity() ? RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length) : null;
             boolean tHasBond = aAtomData.hasBond();
-            int tBondTypeNumber = tHasBond ? aAtomData.bondTypeNumber() : 0;
+            int tBondTypeNumber = tHasBond ? aAtomData.ntypesBond() : 0;
             IntList @Nullable[] rBondID = tHasBond ? new IntList[tAtomNum] : null;
             IntList @Nullable[] rBondType = tHasBond ? new IntList[tAtomNum] : null;
             IntList @Nullable[] rBondIndex = tHasBond ? new IntList[tAtomNum] : null;
@@ -405,7 +407,7 @@ public class Lmpdat extends AbstractSettableAtomData {
                     }
                 }
             }
-            int tAtomTypeNum = aAtomData.atomTypeNumber();
+            int tAtomTypeNum = aAtomData.ntypes();
             if (aMasses != null && aMasses.isEmpty()) aMasses = null;
             if (aMasses != null) {
                 if (aMasses.size() > tAtomTypeNum) {
@@ -448,12 +450,22 @@ public class Lmpdat extends AbstractSettableAtomData {
      * <p>
      * 目前只支持单原子数据
      * @param aFilePath lammps 输出的 data 文件路径
-     * @return 读取得到的 Lmpdat 对象，如果文件不完整会直接返回 null
+     * @return 读取得到的 {@link Lmpdat} 对象
      * @throws IOException 如果读取失败
      */
-    public static Lmpdat read(String aFilePath) throws IOException {try (BufferedReader tReader = IO.toReader(aFilePath)) {return read_(tReader);}}
-    /** 改为 {@link BufferedReader} 而不是 {@code List<String>} 来避免过多内存占用 */
-    static Lmpdat read_(BufferedReader aReader) throws IOException {
+    public static Lmpdat read(String aFilePath) throws IOException {
+        try (BufferedReader tReader = IO.toReader(aFilePath)) {
+            return read(tReader);
+        }
+    }
+    /**
+     * 提供使用 {@link BufferedReader} 的流式接口
+     * @param aReader 需要的读取流
+     * @return 读取得到的 {@link Lmpdat} 对象
+     * @throws IOException 如果读取失败
+     * @throws FileEndException 在发现文件似乎不完整时
+     */
+    public static Lmpdat read(BufferedReader aReader) throws IOException {
         String tLine;
         String[] tTokens;
         
@@ -476,38 +488,43 @@ public class Lmpdat extends AbstractSettableAtomData {
         // 跳过第一行描述
         aReader.readLine();
         // 读取原子数目（中间存在空行以及可能存在的不支持的信息）
-        tLine = IO.Text.findLineContaining(aReader, "atoms", true); if (tLine == null) return null; tTokens = IO.Text.splitBlank(tLine);
+        tLine = IO.Text.findLineContaining(aReader, "atoms", true);
+        if (tLine == null) {IO.fileEnd("Fail to find `atoms`"); return null;} tTokens = IO.Text.splitBlank(tLine);
         tAtomNum = Integer.parseInt(tTokens[0]);
         // 读取可选键数目
-        tLine = IO.Text.findLineNoBlank(aReader); if (tLine == null) return null;
+        tLine = IO.Text.findLineNoBlank(aReader); if (tLine == null) {IO.fileEnd(); return null;}
         if (IO.Text.containsIgnoreCase(tLine, "bonds")) {
             tTokens = IO.Text.splitBlank(tLine);
             aBondNum = Integer.parseInt(tTokens[0]);
         }
         // 读取原子种类数目（中间存在可选空行以及可能存在的不支持的信息）
         if (!IO.Text.containsIgnoreCase(tLine, "atom types")) {
-            tLine = IO.Text.findLineContaining(aReader, "atom types", true); if (tLine == null) return null;
+            tLine = IO.Text.findLineContaining(aReader, "atom types", true);
+            if (tLine == null) {IO.fileEnd("Fail to find `atom types`"); return null;}
         }
         tTokens = IO.Text.splitBlank(tLine);
         aAtomTypeNum = Integer.parseInt(tTokens[0]);
         // 读取可选键种类数
-        tLine = IO.Text.findLineNoBlank(aReader); if (tLine == null) return null;
+        tLine = IO.Text.findLineNoBlank(aReader); if (tLine == null) {IO.fileEnd(); return null;}
         if (IO.Text.containsIgnoreCase(tLine, "bond types")) {
             tTokens = IO.Text.splitBlank(tLine);
             aBondTypeNum = Integer.parseInt(tTokens[0]);
         }
         // 读取模拟盒信息（中间存在空行以及可能存在的不支持的信息）
         if (!IO.Text.containsIgnoreCase(tLine, "xlo xhi")) {
-            tLine = IO.Text.findLineContaining(aReader, "xlo xhi", true); if (tLine == null) return null;
+            tLine = IO.Text.findLineContaining(aReader, "xlo xhi", true);
+            if (tLine == null) {IO.fileEnd("Fail to find `xlo xhi`"); return null;}
         }
         tTokens = IO.Text.splitBlank(tLine);
         double aXlo = Double.parseDouble(tTokens[0]); double aXhi = Double.parseDouble(tTokens[1]);
-        tLine = IO.Text.findLineContaining(aReader, "ylo yhi", true); if (tLine == null) return null; tTokens = IO.Text.splitBlank(tLine);
+        tLine = IO.Text.findLineContaining(aReader, "ylo yhi", true);
+        if (tLine == null) {IO.fileEnd("Fail to find `ylo yhi`"); return null;} tTokens = IO.Text.splitBlank(tLine);
         double aYlo = Double.parseDouble(tTokens[0]); double aYhi = Double.parseDouble(tTokens[1]);
-        tLine = IO.Text.findLineContaining(aReader, "zlo zhi", true); if (tLine == null) return null; tTokens = IO.Text.splitBlank(tLine);
+        tLine = IO.Text.findLineContaining(aReader, "zlo zhi", true);
+        if (tLine == null) {IO.fileEnd("Fail to find `zlo zhi`"); return null;} tTokens = IO.Text.splitBlank(tLine);
         double aZlo = Double.parseDouble(tTokens[0]); double aZhi = Double.parseDouble(tTokens[1]);
         // 兼容可能的斜方模拟盒，直接在下一行
-        tLine = aReader.readLine();
+        tLine = aReader.readLine(); if (tLine == null) {IO.fileEnd(); return null;}
         if (IO.Text.containsIgnoreCase(tLine, "xy xz yz")) {
             tTokens = IO.Text.splitBlank(tLine);
             aBox = new LmpBoxPrism(aXlo, aXhi, aYlo, aYhi, aZlo, aZhi, Double.parseDouble(tTokens[0]), Double.parseDouble(tTokens[1]), Double.parseDouble(tTokens[2]));
@@ -519,21 +536,24 @@ public class Lmpdat extends AbstractSettableAtomData {
             // 各种情况分别处理
             if (aMasses==null && IO.Text.containsIgnoreCase(tLine, "Masses")) {
                 aMasses = Vectors.zeros(aAtomTypeNum);
-                readMasses_(aReader, aMasses);
+                boolean tFileEnd = readMasses_(aReader, aMasses);
+                if (tFileEnd) {IO.fileEnd(); return null;}
             } else
             if (aAtomID==null && IO.Text.containsIgnoreCase(tLine, "Atoms")) {
                 boolean aIsFull = IO.Text.containsIgnoreCase(tLine, "# full");
                 aAtomID = IntVector.zeros(tAtomNum);
                 aAtomType = IntVector.zeros(tAtomNum);
                 aAtomXYZ = RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_XYZ.length);
-                readAtoms_(aReader, aAtomID, aAtomType, aAtomXYZ, aIsFull);
+                boolean tFileEnd = readAtoms_(aReader, aAtomID, aAtomType, aAtomXYZ, aIsFull);
+                if (tFileEnd) {IO.fileEnd(); return null;}
                 // 统计 id 到对应行号的映射，用于其余属性的快速赋值
                 tId2Row = new HashMap<>(tAtomNum);
                 for (int i = 0; i < tAtomNum; ++i) tId2Row.put(aAtomID.get(i), i);
             } else
             if (tId2Row!=null && aVelocities==null && IO.Text.containsIgnoreCase(tLine, "Velocities")) {
                 aVelocities = RowMatrix.zeros(tAtomNum, ATOM_DATA_KEYS_VELOCITY.length);
-                readVelocities_(aReader, tId2Row, aVelocities);
+                boolean tFileEnd = readVelocities_(aReader, tId2Row, aVelocities);
+                if (tFileEnd) {IO.fileEnd(); return null;}
             } else
             if (tId2Row!=null && aBondNum >=0 && aBondID==null && IO.Text.containsIgnoreCase(tLine, "Bonds")) {
                 aBondID = new IntList[tAtomNum];
@@ -544,12 +564,14 @@ public class Lmpdat extends AbstractSettableAtomData {
                     aBondType[i] = new IntList();
                     aBondIndex[i] = new IntList();
                 }
-                readBonds_(aReader, tId2Row, aBondNum, aBondID, aBondType, aBondIndex);
+                boolean tFileEnd = readBonds_(aReader, tId2Row, aBondNum, aBondID, aBondType, aBondIndex);
+                if (tFileEnd) {IO.fileEnd(); return null;}
             } else {
-                readElse_(aReader);
+                boolean tFileEnd = readElse_(aReader);
+                if (tFileEnd) {IO.fileEnd(); return null;}
             }
         }
-        if (aAtomID == null) return null;
+        if (aAtomID == null) {IO.fileEnd(); return null;}
         // 返回 lmpdat
         return new Lmpdat(aAtomTypeNum, aBondTypeNum, aBondNum, aBox, aMasses, aAtomID, aAtomType, aAtomXYZ, aVelocities, aBondID, aBondType, aBondIndex);
     }
@@ -566,46 +588,53 @@ public class Lmpdat extends AbstractSettableAtomData {
      * 读取特定信息，此时的 aReader 应该在最开头，也就是 {@code aReader.readLine()} 会得到一个空行，并且下一行是数据；
      * 读取完成后会跳过末尾的空行，也就是 {@code aReader.readLine()} 会得到下一个属性的字符串
      */
-    private static void readMasses_(BufferedReader aReader, IVector rMasses) throws IOException {
-        String tLine = findLineNonBlank_(aReader); if (tLine == null) return; // 跳过开头空行
+    private static boolean readMasses_(BufferedReader aReader, IVector rMasses) throws IOException {
+        String tLine = findLineNonBlank_(aReader); // 跳过开头空行
         final int tAtomTypeNum = rMasses.size();
         for (int i = 0; i < tAtomTypeNum; ++i) {
+            if (tLine == null) return true;
             String[] tTokens = IO.Text.splitBlank(tLine);
             rMasses.set(Integer.parseInt(tTokens[0])-1, Double.parseDouble(tTokens[1]));
-            tLine = aReader.readLine(); if (tLine == null) return;
+            tLine = aReader.readLine();
         }
+        return false;
     }
-    private static void readAtoms_(BufferedReader aReader, IIntVector rAtomID, IIntVector rAtomType, IMatrix rAtomXYZ, boolean aIsFull) throws IOException {
-        String tLine = findLineNonBlank_(aReader); if (tLine == null) return; // 跳过开头空行
+    private static boolean readAtoms_(BufferedReader aReader, IIntVector rAtomID, IIntVector rAtomType, IMatrix rAtomXYZ, boolean aIsFull) throws IOException {
+        String tLine = findLineNonBlank_(aReader); // 跳过开头空行
         final int tAtomNum = rAtomID.size();
         // 和坐标排序一致的顺序来存储，暂不存储 molecule-tag，q，nx，ny，nz
         for (int i = 0; i < tAtomNum; ++i) {
+            if (tLine == null) return true;
             IVector tIDTypeXYZ = IO.Text.str2data(tLine, aIsFull ? ATOM_DATA_KEYS_ID_TYPE_MOL_CHARGE_XYZ.length : ATOM_DATA_KEYS_ID_TYPE_XYZ.length);
             rAtomID.set(i, (int)tIDTypeXYZ.get(aIsFull ? LMPDAT_FULL_ID_COL : LMPDAT_ID_COL));
             rAtomType.set(i, (int)tIDTypeXYZ.get(aIsFull ? LMPDAT_FULL_TYPE_COL : LMPDAT_TYPE_COL));
             rAtomXYZ.set(i, XYZ_X_COL, tIDTypeXYZ.get(aIsFull ? LMPDAT_FULL_X_COL : LMPDAT_X_COL));
             rAtomXYZ.set(i, XYZ_Y_COL, tIDTypeXYZ.get(aIsFull ? LMPDAT_FULL_Y_COL : LMPDAT_Y_COL));
             rAtomXYZ.set(i, XYZ_Z_COL, tIDTypeXYZ.get(aIsFull ? LMPDAT_FULL_Z_COL : LMPDAT_Z_COL));
-            tLine = aReader.readLine(); if (tLine == null) return;
+            tLine = aReader.readLine();
         }
+        return false;
     }
-    private static void readVelocities_(BufferedReader aReader, Map<Integer, Integer> aId2Row, IMatrix rVelocities) throws IOException {
-        String tLine = findLineNonBlank_(aReader); if (tLine == null) return; // 跳过开头空行
-        final int tAtomNum = rVelocities.rowNumber();
+    private static boolean readVelocities_(BufferedReader aReader, Map<Integer, Integer> aId2Row, IMatrix rVelocities) throws IOException {
+        String tLine = findLineNonBlank_(aReader); // 跳过开头空行
+        final int tAtomNum = rVelocities.nrows();
         // 和坐标排序一致的顺序来存储
         for (int i = 0; i < tAtomNum; ++i) {
+            if (tLine == null) return true;
             IVector tVelocity = IO.Text.str2data(tLine, LMPDAT_VELOCITY_LENGTH);
             int tRow = aId2Row.get((int)tVelocity.get(LMPDAT_ID_COL));
             rVelocities.set(tRow, STD_VX_COL, tVelocity.get(LMPDAT_VX_COL));
             rVelocities.set(tRow, STD_VY_COL, tVelocity.get(LMPDAT_VY_COL));
             rVelocities.set(tRow, STD_VZ_COL, tVelocity.get(LMPDAT_VZ_COL));
-            tLine = aReader.readLine(); if (tLine == null) return;
+            tLine = aReader.readLine();
         }
+        return false;
     }
-    private static void readBonds_(BufferedReader aReader, Map<Integer, Integer> aId2Row, int aBondNum, IntList[] rBondID, IntList[] rBondType, IntList[] rBondIndex) throws IOException {
-        String tLine = findLineNonBlank_(aReader); if (tLine == null) return; // 跳过开头空行
+    private static boolean readBonds_(BufferedReader aReader, Map<Integer, Integer> aId2Row, int aBondNum, IntList[] rBondID, IntList[] rBondType, IntList[] rBondIndex) throws IOException {
+        String tLine = findLineNonBlank_(aReader); // 跳过开头空行
         // 和坐标排序一致的顺序来存储
         for (int i = 0; i < aBondNum; ++i) {
+            if (tLine == null) return true;
             IVector tIdTypeId1Id2 = IO.Text.str2data(tLine, LMPDAT_BOND_LENGTH);
             int tId = (int)tIdTypeId1Id2.get(LMPDAT_BOND_ID_COL);
             int tType = (int)tIdTypeId1Id2.get(LMPDAT_BOND_TYPE_COL);
@@ -614,15 +643,17 @@ public class Lmpdat extends AbstractSettableAtomData {
             rBondID[tRow1].add(tId); rBondID[tRow2].add(tId);
             rBondType[tRow1].add(tType); rBondType[tRow2].add(tType);
             rBondIndex[tRow1].add(tRow2); rBondIndex[tRow2].add(tRow1);
-            tLine = aReader.readLine(); if (tLine == null) return;
+            tLine = aReader.readLine();
         }
+        return false;
     }
-    private static void readElse_(BufferedReader aReader) throws IOException {
-        String tLine = findLineNonBlank_(aReader); if (tLine == null) return; // 跳过开头空行
+    private static boolean readElse_(BufferedReader aReader) throws IOException {
+        String tLine = findLineNonBlank_(aReader); if (tLine == null) return true; // 跳过开头空行
         // 其余不支持的情况直接跳过中间的非空行即可
         while ((tLine = aReader.readLine()) != null) {
-            if (IO.Text.isBlank(tLine)) return;
+            if (IO.Text.isBlank(tLine)) return false;
         }
+        return false; // 可能是文件不完整，也可能是正常作为最后一行结束了，这里不做判断
     }
     
     
@@ -631,9 +662,15 @@ public class Lmpdat extends AbstractSettableAtomData {
      * @param aFilePath 需要输出的路径
      * @throws IOException 如果写入文件失败
      */
-    public void write(String aFilePath) throws IOException {try (IO.IWriteln tWriteln = IO.toWriteln(aFilePath)) {write_(tWriteln);}}
-    /** 改为 {@link IO.IWriteln} 而不是 {@code List<String>} 来避免过多内存占用 */
-    void write_(IO.IWriteln aWriteln) throws IOException {
+    public void write(String aFilePath) throws IOException {
+        try (IO.IWriteln tWriteln = IO.toWriteln(aFilePath)) {write(tWriteln);}
+    }
+    /**
+     * 提供使用 {@link IO.IWriteln} 的流式接口
+     * @param aWriteln 需要写入的流
+     * @throws IOException 如果写入文件失败
+     */
+    public void write(IO.IWriteln aWriteln) throws IOException {
         final boolean tHasBond = hasBond();
         aWriteln.writeln("LAMMPS data file generated by jse");
         aWriteln.writeln("");

@@ -4,6 +4,9 @@ import jse.clib.MiMalloc;
 import jse.clib.UnsafeJNI;
 import jse.code.collection.AbstractRandomAccessList;
 import jse.math.IDataShell;
+import jse.math.vector.AbstractVector;
+import jse.math.vector.IFloatVector;
+import jse.math.vector.RefFloatVector;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
@@ -318,6 +321,10 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
         return getAt0(mPtr, aIdx);
     }
     private native static float getAt0(long aPtr, long aIdx);
+    /** 用于兼容 groovy 运算符重载，这是 groovy 的 bug */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
+    public float getAt(int aIdx) {return getAt((long)aIdx);}
+    
     /**
      * {@inheritDoc}
      * @param aIdx {@inheritDoc}
@@ -375,6 +382,10 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
         putAt0(mPtr, aIdx, aValue);
     }
     private native static void putAt0(long aPtr, long aIdx, float aValue);
+    /** 用于兼容 groovy 运算符重载，这是 groovy 的 bug */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
+    public void putAt(int aIdx, float aValue) {putAt((long)aIdx, aValue);}
+    
     /**
      * {@inheritDoc}
      * @param aIdx {@inheritDoc}
@@ -458,6 +469,20 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
         return new FloatCPointer(mPtr);
     }
     
+    /**
+     * 将此 float 指针转换成 jse 的向量 {@link IFloatVector}，为这个指针对应数组的引用
+     * @param aSize 此指针的对应数组的长度
+     * @return 转换后的向量
+     * @see IFloatVector
+     */
+    @UnsafeJNI("Invalid input size may result in JVM SIGSEGV")
+    public IFloatVector asVec(final int aSize) {
+        return new RefFloatVector() {
+            @Override public float get(int aIdx) {AbstractVector.rangeCheck(aIdx, aSize); return FloatCPointer.this.getAt(aIdx);}
+            @Override public void set(int aIdx, float aValue) {AbstractVector.rangeCheck(aIdx, aSize); FloatCPointer.this.putAt(aIdx, aValue);}
+            @Override public int size() {return aSize;}
+        };
+    }
     /**
      * 将此 float 指针转换成 java 的列表 {@link List}，为这个指针对应数组的引用
      * @param aSize 此指针的对应数组的长度

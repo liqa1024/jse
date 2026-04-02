@@ -73,7 +73,7 @@ public interface IPotential extends IAutoShutdown {
             }
         }
         if (!aSystemChanges && tAllInResults) return rResults;
-        IAtomData tAtoms = AseAtoms.of(aPyAseAtoms);
+        IAtomData tAtoms = AseAtoms.fromPyObject(aPyAseAtoms, true);
         // 遍历统计需要的量
         boolean tRequireEnergy = false, tRequirePreAtomEnergy = false;
         boolean tRequireForces = false;
@@ -101,7 +101,7 @@ public interface IPotential extends IAutoShutdown {
             return rResults;
         }
         // 其余情况则统一全部计算
-        final int tAtomNum = tAtoms.atomNumber();
+        final int tAtomNum = tAtoms.natoms();
         Vector rEnergies = VectorCache.getZeros(tRequirePreAtomEnergy?tAtomNum:1);
         RowMatrix rForces = MatrixCache.getZerosRow(tAtomNum, 3);
         RowMatrix rStresses = MatrixCache.getZerosRow(tRequirePreAtomStress?tAtomNum:1, 6);
@@ -139,7 +139,7 @@ public interface IPotential extends IAutoShutdown {
      */
     default Vector calEnergies(IAtomData aAtomData) throws Exception {
         if (isShutdown()) throw new IllegalStateException("This Potential is dead");
-        Vector rEnergies = VectorCache.getVec(aAtomData.atomNumber());
+        Vector rEnergies = VectorCache.getVec(aAtomData.natoms());
         calEnergyForceVirials(aAtomData, rEnergies, null, null, null, null, null, null, null, null, null);
         return rEnergies;
     }
@@ -167,7 +167,7 @@ public interface IPotential extends IAutoShutdown {
      */
     default RowMatrix calForces(IAtomData aAtomData) throws Exception {
         if (isShutdown()) throw new IllegalStateException("This Potential is dead");
-        RowMatrix rForces = MatrixCache.getMatRow(aAtomData.atomNumber(), 3);
+        RowMatrix rForces = MatrixCache.getMatRow(aAtomData.natoms(), 3);
         calEnergyForceVirials(aAtomData, null, rForces.col(0), rForces.col(1), rForces.col(2), null, null, null, null, null, null);
         return rForces;
     }
@@ -191,7 +191,7 @@ public interface IPotential extends IAutoShutdown {
      */
     default List<Vector> calStresses(IAtomData aAtomData, boolean aIdealGas) throws Exception {
         if (isShutdown()) throw new IllegalStateException("This Potential is dead");
-        final int tAtomNum = aAtomData.atomNumber();
+        final int tAtomNum = aAtomData.natoms();
         final boolean tCentroid = centroidPerAtomStressSupport();
         final int tColNum = tCentroid ? 9 : 6;
         List<Vector> rStresses = VectorCache.getVec(tAtomNum, tColNum);
@@ -272,7 +272,7 @@ public interface IPotential extends IAutoShutdown {
             return Lists.newArrayList(rStressXX/tVolume, rStressYY/tVolume, rStressZZ/tVolume, rStressXY/tVolume, rStressXZ/tVolume, rStressYZ/tVolume);
         }
         // 累加速度项，这里需要消去整体的平动
-        final int tAtomNum = aAtomData.atomNumber();
+        final int tAtomNum = aAtomData.natoms();
         double vxTot = 0.0, vyTot = 0.0, vzTot = 0.0;
         for (int i = 0; i < tAtomNum; ++i) {
             IAtom tAtom = aAtomData.atom(i);

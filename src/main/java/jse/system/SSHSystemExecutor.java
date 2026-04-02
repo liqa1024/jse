@@ -47,7 +47,7 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
     public static Builder builder() {return new Builder();}
     public final static class Builder {
         private Builder() {}
-        int mIOThreadNum = -1;
+        int mNthreadsIO = -1;
         String mUsername; String mHostname; int mPort = 22;
         @Nullable String mLocalWorkingDir = null;
         @Nullable String mRemoteWorkingDir = null;
@@ -56,7 +56,7 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
         int mCompressLevel = -1;
         @Nullable String mBeforeCommand = null;
         
-        public Builder setIOThreadNumber(int aIOThreadNum) {mIOThreadNum = aIOThreadNum; return this;}
+        public Builder setNthreadsIO(int aNthreadsIO) {mNthreadsIO = aNthreadsIO; return this;}
         
         public Builder setUsername(String aUsername) {mUsername = aUsername; return this;}
         public Builder setHostname(String aHostname) {mHostname = aHostname; return this;}
@@ -69,7 +69,7 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
         public Builder setBeforeCommand(String aBeforeCommand) {mBeforeCommand = aBeforeCommand; return this;}
         
         public SSHSystemExecutor build() throws Exception {
-            return new SSHSystemExecutor(mIOThreadNum, SSHCore.of(
+            return new SSHSystemExecutor(mNthreadsIO, SSHCore.of(
                 mUsername, mHostname, mPort,
                 mLocalWorkingDir, mRemoteWorkingDir,
                 mPassword, mKeyPath,

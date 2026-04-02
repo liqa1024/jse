@@ -10,13 +10,13 @@ public abstract class RefLongVector extends AbstractLongVector {
     @Override protected final ILongVector newZeros_(int aSize) {return LongVector.zeros(aSize);}
     
     /** stuff to override */
-    public abstract long get(int aIdx);
-    public void set(int aIdx, long aValue) {throw new UnsupportedOperationException("set");}
-    public long getAndSet(int aIdx, long aValue) {
+    @Override public abstract long get(int aIdx);
+    @Override public void set(int aIdx, long aValue) {throw new UnsupportedOperationException("set");}
+    @Override public long getAndSet(int aIdx, long aValue) {
         rangeCheck(aIdx, size());
         long oValue = get(aIdx);
         set(aIdx, aValue);
         return oValue;
     }
-    public abstract int size();
+    @Override public abstract int size();
 }

@@ -9,10 +9,10 @@ extern "C" {
 #endif
 /*
  * Class:     jse_lmp_NativeLmpPointer
- * Method:    lammpsClose_
+ * Method:    lammpsClose0
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_jse_lmp_NativeLmpPointer_lammpsClose_1
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmpPointer_lammpsClose0
   (JNIEnv *, jclass, jlong);
 
 #ifdef __cplusplus

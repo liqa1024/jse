@@ -24,10 +24,10 @@ import java.util.function.*;
  */
 public interface ILongVector extends ISwapper, IHasLongIterator, IHasLongSetIterator, ILongVectorGetter {
     /** Iterable stuffs，虽然不继承 Iterable 但是会提供相关的直接获取的接口方便直接使用 */
-    ILongIterator iterator();
-    ILongSetIterator setIterator();
+    @Override ILongIterator iterator();
+    @Override ILongSetIterator setIterator();
     
-    default Iterable<Long> iterable() {return () -> iterator().toIterator();}
+    @Override default Iterable<Long> iterable() {return () -> iterator().toIterator();}
     List<Long> asList();
     IVector asVec();
     IIntVector asIntVec();
@@ -42,7 +42,7 @@ public interface ILongVector extends ISwapper, IHasLongIterator, IHasLongSetIter
     long[] data();
     
     /** ISwapper stuffs */
-    void swap(int aIdx1, int aIdx2);
+    @Override void swap(int aIdx1, int aIdx2);
     
     /** 批量修改的接口 */
     void fill(long aValue);
@@ -50,15 +50,15 @@ public interface ILongVector extends ISwapper, IHasLongIterator, IHasLongSetIter
     void fill(ILongVectorGetter aVectorGetter);
     void fill(long[] aData);
     void fill(Iterable<? extends Number> aList);
-    void assign(LongSupplier aSup);
-    void forEach(LongConsumer aCon);
+    @Override void assign(LongSupplier aSup);
+    @Override void forEach(LongConsumer aCon);
     /** Groovy stuff */
     default void fill(@ClosureParams(value=SimpleType.class, options="int") final Closure<? extends Number> aGroovyTask) {fill(i -> aGroovyTask.call(i).longValue());}
     default void assign(final Closure<? extends Number> aGroovyTask) {assign(() -> aGroovyTask.call().longValue());}
     
     /** 访问和修改部分，自带的接口 */
     int size();
-    long get(int aIdx);
+    @Override long get(int aIdx);
     long getAndSet(int aIdx, long aValue); // 返回修改前的值
     void set(int aIdx, long aValue);
     
@@ -93,8 +93,6 @@ public interface ILongVector extends ISwapper, IHasLongIterator, IHasLongSetIter
     /** 向量的运算操作，默认返回新的向量 */
     ILongVectorOperation operation();
     @VisibleForTesting default ILongVectorOperation op() {return operation();}
-    /** @deprecated use {@link #op()} */
-    @VisibleForTesting @Deprecated default ILongVectorOperation opt() {return operation();}
     
     /** 增加向量基本的运算操作，现在也归入内部使用 */
     long   sum  ();

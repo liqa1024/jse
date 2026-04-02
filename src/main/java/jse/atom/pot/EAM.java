@@ -524,7 +524,7 @@ public class EAM implements IPairPotential {
     }
     
     /** @return {@inheritDoc} */
-    @Override public int atomTypeNumber() {return mTypeNum;}
+    @Override public int ntypes() {return mTypeNum;}
     /** @return {@inheritDoc} */
     @Override public boolean hasSymbol() {return true;}
     /**
@@ -555,13 +555,13 @@ public class EAM implements IPairPotential {
      * {@inheritDoc}
      * @return {@inheritDoc}
      */
-    @Override public int threadNumber() {return mThreadNum;}
+    @Override public int nthreads() {return mThreadNum;}
     /**
      * 设置传入原子数据后计算使用的默认线程数
-     * @param aThreadNum 需要设置的线程数，默认为 {@code 1}
+     * @param aNumThreads 需要设置的线程数，默认为 {@code 1}
      * @return 自身方便链式调用
      */
-    public EAM setThreadNum(int aThreadNum) {mThreadNum = aThreadNum; return this;}
+    public EAM setNthreads(int aNumThreads) {mThreadNum = aNumThreads; return this;}
     
     /**
      * {@inheritDoc}
@@ -570,7 +570,7 @@ public class EAM implements IPairPotential {
      * @return {@inheritDoc}
      */
     @Override public void calEnergyPart(int aAtomNumber, INeighborListGetter aNeighborListGetter, IEnergyPartAccumulator rEnergyAccumulator) {
-        int tThreadNum = threadNumber();
+        int tThreadNum = nthreads();
         final List<Vector> tRhoPar = VectorCache.getZeros(aAtomNumber, tThreadNum);
         final List<Vector> tMuXPar = mUR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
         final List<Vector> tMuYPar = mUR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
@@ -687,7 +687,7 @@ public class EAM implements IPairPotential {
      * @return {@inheritDoc}
      */
     @Override public void calEnergy(int aAtomNumber, INeighborListGetter aNeighborListGetter, IEnergyAccumulator rEnergyAccumulator) {
-        int tThreadNum = threadNumber();
+        int tThreadNum = nthreads();
         final List<Vector> tRhoPar = VectorCache.getZeros(aAtomNumber, tThreadNum);
         final List<Vector> tMuXPar = mUR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
         final List<Vector> tMuYPar = mUR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
@@ -817,7 +817,7 @@ public class EAM implements IPairPotential {
      * @return {@inheritDoc}
      */
     @Override public void calEnergyForceVirial(int aAtomNumber, INeighborListGetter aNeighborListGetter, @Nullable IEnergyAccumulator rEnergyAccumulator, @Nullable IForceAccumulator rForceAccumulator, @Nullable IVirialAccumulator rVirialAccumulator) throws Exception {
-        int tThreadNum = threadNumber();
+        int tThreadNum = nthreads();
         final List<Vector> tRhoPar = VectorCache.getZeros(aAtomNumber, tThreadNum);
         final List<Vector> tMuXPar = mUR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);
         final List<Vector> tMuYPar = mUR==null ? null : VectorCache.getZeros(aAtomNumber, tThreadNum);

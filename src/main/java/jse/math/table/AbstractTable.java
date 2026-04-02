@@ -102,13 +102,13 @@ public abstract class AbstractTable implements ITable {
                             @Override public IVector setValue(IVector value) {throw new UnsupportedOperationException("setValue");}
                         });
                     }
-                    @Override public int size() {return columnNumber();}
+                    @Override public int size() {return ncols();}
                 };
             }
             @Override public IVector get(Object key) {return asMatrix().col(mHead2Idx.get(key));}
             @Override public boolean containsKey(Object key) {return mHead2Idx.containsKey(key);}
             @Override public IVector remove(Object key) {throw new UnsupportedOperationException("remove");}
-            @Override public int size() {return columnNumber();}
+            @Override public int size() {return ncols();}
             @Override public void clear() {throw new UnsupportedOperationException("clear");}
             @Override public IVector put(String key, IVector value) {throw new UnsupportedOperationException("put");}
         };
@@ -121,8 +121,8 @@ public abstract class AbstractTable implements ITable {
     @Override public IVector row(int aRow) {return asMatrix().row(aRow);}
     @Override public List<? extends IVector> cols() {return asMatrix().cols();}
     @Override public IVector col(String aHead) {return asMatrix().col(mHead2Idx.get(aHead));}
-    @Override public int rowNumber() {return asMatrix().rowNumber();}
-    @Override public int columnNumber() {return mHeads.size();}
+    @Override public int nrows() {return asMatrix().nrows();}
+    @Override public int ncols() {return mHeads.size();}
     
     @Override public ITable copy() {return Tables.from(asMatrix(), copyHeads_());}
     
@@ -133,7 +133,7 @@ public abstract class AbstractTable implements ITable {
             @Override protected ITable getAL(final ISlice aSelectedCols) {return Tables.from(asMatrix().refSlicer().get(ALL, aSelectedCols), copyHeads_(aSelectedCols));}
             @Override protected ITable getAA() {return Tables.from(asMatrix(), copyHeads_());}
             
-            @Override protected int thisRowNum_() {return rowNumber();}
+            @Override protected int thisRowNum_() {return nrows();}
             @Override protected int head2col_(String aHead) {return getColumn(aHead);}
             @Override protected Iterable<String> thisHeads_() {return heads();}
         };
@@ -157,7 +157,7 @@ public abstract class AbstractTable implements ITable {
                 return new AbstractTable(NewCollections.from(mHeads)) {@Override public IMatrix asMatrix() {return tMatrix;}};
             }
             
-            @Override protected int thisRowNum_() {return rowNumber();}
+            @Override protected int thisRowNum_() {return nrows();}
             @Override protected int head2col_(String aHead) {return getColumn(aHead);}
             @Override protected Iterable<String> thisHeads_() {return heads();}
         };

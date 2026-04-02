@@ -60,7 +60,7 @@ public class VoronoiExtensions {
         if (self.isShutdown()) throw new RuntimeException("This Calculator is dead");
         final VoronoiBuilder rBuilder = new VoronoiBuilder().setNoWarning(aNoWarning).setIndexLength(aIndexLength).setAreaThreshold(aAreaThreshold).setLengthThreshold(aLengthThreshold);
         // 先增加内部原本的粒子，根据 cell 的顺序添加可以加速 voronoi 的构造
-        final int[] idx2voronoi = new int[self.atomNumber()];
+        final int[] idx2voronoi = new int[self.natoms()];
         self.nl_().forEachCell(aRCutOff, idx -> {
             idx2voronoi[idx] = rBuilder.sizeVertex();
             // 原则上 VoronoiBuilder.insert 内部也会进行一次拷贝避免坐标被意外修改，但是旧版本没有，这样写可以兼顾效率和旧版兼容
@@ -70,7 +70,7 @@ public class VoronoiExtensions {
         self.nl_().forEachMirrorCell(aRCutOff, rBuilder::insert);
         // 注意需要进行一次重新排序保证顺序和原子的顺序相同
         return new AbstractCalculator(rBuilder) {
-            @Override public int size() {return self.atomNumber();}
+            @Override public int size() {return self.natoms();}
             @Override public VoronoiBuilder.IVertex get(int aIdx) {return mBuilder.getVertex(idx2voronoi[aIdx]);}
         };
     }

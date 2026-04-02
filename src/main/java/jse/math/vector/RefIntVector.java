@@ -10,13 +10,13 @@ public abstract class RefIntVector extends AbstractIntVector {
     @Override protected final IIntVector newZeros_(int aSize) {return IntVector.zeros(aSize);}
     
     /** stuff to override */
-    public abstract int get(int aIdx);
-    public void set(int aIdx, int aValue) {throw new UnsupportedOperationException("set");}
-    public int getAndSet(int aIdx, int aValue) {
+    @Override public abstract int get(int aIdx);
+    @Override public void set(int aIdx, int aValue) {throw new UnsupportedOperationException("set");}
+    @Override public int getAndSet(int aIdx, int aValue) {
         rangeCheck(aIdx, size());
         int oValue = get(aIdx);
         set(aIdx, aValue);
         return oValue;
     }
-    public abstract int size();
+    @Override public abstract int size();
 }

@@ -6,7 +6,7 @@ import jse.lmp.Dump
 import static jse.code.CS.MASS
 
 // 读取现有的 lammps dump 文件
-def dump = Dump.read('lmp/dump/CuFCC108.lammpstrj')
+def dump = Dump.read('data/lmp/dump/CuFCC108.lammpstrj')
 
 // 通过 `of` 方法将其中某一帧转为 data 文件
 def data = Data.of(dump[4], MASS.Cu, MASS.Zr) // dump 数据中不包含原子质量，因此转为 data 时可以这样来指定每个原子种类的质量

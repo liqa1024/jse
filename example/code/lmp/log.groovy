@@ -3,7 +3,7 @@ package code.lmp
 import jse.lmp.Log
 
 // 读取现有的 lammps log 文件
-def log = Log.read('lmp/log/CuFCC108.thermo')
+def log = Log.read('data/lmp/log/CuFCC108.thermo')
 
 // 获取属性
 println('heads: ' + log.heads())

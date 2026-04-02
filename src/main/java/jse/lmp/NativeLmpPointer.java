@@ -21,7 +21,7 @@ class NativeLmpPointer extends ReferenceChecker {
     @Override protected void dispose_() {
         try {
             checkThread();
-            try {lammpsClose_(mPtr);} catch (LmpException ignored) {}
+            try {lammpsClose0(mPtr);} catch (LmpException ignored) {}
         } catch (LmpException e) {
             UT.Code.printStackTrace(e);
         }
@@ -30,5 +30,5 @@ class NativeLmpPointer extends ReferenceChecker {
         Thread tCurrentThread = Thread.currentThread();
         if (tCurrentThread != mInitThead) throw new LmpException("Thread of NativeLmp MUST be SAME: "+tCurrentThread+" vs "+mInitThead);
     }
-    static native void lammpsClose_(long aModelPtr) throws LmpException;
+    private static native void lammpsClose0(long aModelPtr) throws LmpException;
 }

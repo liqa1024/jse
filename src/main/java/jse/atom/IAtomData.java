@@ -4,7 +4,6 @@ import jep.NDArray;
 import jse.code.CS;
 import jse.math.vector.IVector;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.Range;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.List;
@@ -26,7 +25,13 @@ import java.util.List;
  * jse 的原子数据统一在一个从原点开始的模拟盒内，因此一般来说不会出现坐标为负值的原子；
  * 对于存在下边界模拟盒的原子数据（例如 lammps 的 data），这里获取到的坐标会自动减去这个下边界。
  * <p>
- * 一般情况下，jse 的原子数据不会进行单位转换，也就是会统一保留读取的数据的原始值
+ * jse 的原子数据不会进行单位转换，也就是会统一保留读取的数据的原始值
+ * <p>
+ * 可以通过 {@link #op()} 来获取原子数据的运算器 {@link IAtomDataOperation}，来进行高级操作，例如：
+ * <pre> {@code
+ * def data1 = data0.op().wrapPBC()
+ * } </pre>
+ * 来将原子数据中超出模拟盒原子根据周期边界条件移动到模拟盒内（不修改 {@code data0}，而创建一个修改后的拷贝数据到 {@code data1}）
  *
  * @see ISettableAtomData ISettableAtomData: 对于可以修改的原子数据
  * @see AtomData AtomData: 对于原子数据的默认实现
@@ -53,24 +58,16 @@ public interface IAtomData extends IHasSymbol {
     IAtom atom(int aIdx);
     
     /** @return 原子总数 */
-    int atomNumber();
-    /** @see #atomNumber() */
-    @VisibleForTesting default int natoms() {return atomNumber();}
-    /** @deprecated use {@link #atomNumber()} or {@link #natoms()} */
-    @Deprecated default int atomNum() {return atomNumber();}
+    int natoms();
     
     /** @return {@inheritDoc}，可以大于实际真实包含的原子种类数目 */
-    @Override int atomTypeNumber();
-    /** @see #atomTypeNumber() */
-    @VisibleForTesting default int ntypes() {return atomTypeNumber();}
-    /** @deprecated use {@link #atomTypeNumber()} or {@link #ntypes()} */
-    @Deprecated default int atomTypeNum() {return atomTypeNumber();}
+    @Override int ntypes();
     
     /**
      * @return 原子键种类的总数，可以大于实际真实包含的原子键种类数目，当不存在键信息时返回 {@code 0}
      * @see #hasBond()
      */
-    int bondTypeNumber();
+    int ntypesBond();
     
     /**
      * @return 此原子数据对应的模拟盒
@@ -117,8 +114,6 @@ public interface IAtomData extends IHasSymbol {
      * @see IAtom#hasVelocity()
      */
     boolean hasVelocity();
-    /** @deprecated use {@link #hasVelocity()} */
-    @Deprecated default boolean hasVelocities() {return hasVelocity();}
     
     /**
      * @return {@inheritDoc}
@@ -182,8 +177,6 @@ public interface IAtomData extends IHasSymbol {
     IAtomDataOperation operation();
     /** @see #operation() */
     @VisibleForTesting default IAtomDataOperation op() {return operation();}
-    /** @deprecated use {@link #op()} */
-    @VisibleForTesting @Deprecated default IAtomDataOperation opt() {return operation();}
     
     
     /// numpy stuffs
@@ -286,14 +279,4 @@ public interface IAtomData extends IHasSymbol {
      * @see CS#ATOM_DATA_KEYS_VELOCITY
      */
     double[][] dataVelocities();
-    
-    
-    /** @deprecated use {@link AtomicParameterCalculator#of}*/ @Deprecated default AtomicParameterCalculator getTypeMonatomicParameterCalculator(int aType, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {return AtomicParameterCalculator.of(operation().filterType(aType), aThreadNum);}
-    /** @deprecated use {@link AtomicParameterCalculator#of}*/ @Deprecated default AtomicParameterCalculator getMonatomicParameterCalculator() {return AtomicParameterCalculator.of(this);}
-    /** @deprecated use {@link AtomicParameterCalculator#of}*/ @Deprecated default AtomicParameterCalculator getMonatomicParameterCalculator(@Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {return AtomicParameterCalculator.of(this                         , aThreadNum);}
-    /** @deprecated use {@link AtomicParameterCalculator#of}*/ @Deprecated default AtomicParameterCalculator getTypeMonatomicParameterCalculator(int aType) {return AtomicParameterCalculator.of(operation().filterType(aType));}
-    /** @deprecated use {@link APC#of}*/ @Deprecated @VisibleForTesting default AtomicParameterCalculator getMPC() {return APC.of(this);}
-    /** @deprecated use {@link APC#of}*/ @Deprecated @VisibleForTesting default AtomicParameterCalculator getMPC(@Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {return APC.of(this                         , aThreadNum);}
-    /** @deprecated use {@link APC#of}*/ @Deprecated @VisibleForTesting default AtomicParameterCalculator getTypeMPC(int aType) {return APC.of(operation().filterType(aType));}
-    /** @deprecated use {@link APC#of}*/ @Deprecated @VisibleForTesting default AtomicParameterCalculator getTypeMPC(int aType, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {return APC.of(operation().filterType(aType), aThreadNum);}
 }

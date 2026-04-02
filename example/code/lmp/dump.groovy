@@ -3,7 +3,7 @@ package code.lmp
 import jse.lmp.Dump
 
 // 读取现有的 lammps dump 文件
-def dump = Dump.read('lmp/dump/CuFCC108.lammpstrj')
+def dump = Dump.read('data/lmp/dump/CuFCC108.lammpstrj')
 
 // 获取帧数
 println('frame number: ' + dump.size())

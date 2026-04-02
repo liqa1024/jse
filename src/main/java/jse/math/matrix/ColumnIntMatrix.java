@@ -24,8 +24,8 @@ import static jse.math.matrix.AbstractMatrix.rangeCheckRow;
 
 
 /**
+ * 整数矩阵一般实现，按照列排序
  * @author liqa
- * <p> 矩阵一般实现，按照列排序 </p>
  */
 public class ColumnIntMatrix extends IntArrayMatrix {
     /** 提供默认的创建 */
@@ -89,8 +89,8 @@ public class ColumnIntMatrix extends IntArrayMatrix {
         mData[tIdx] = aValue;
         return oValue;
     }
-    @Override public final int rowNumber() {return mRowNum;}
-    @Override public final int columnNumber() {return mColNum;}
+    @Override public final int nrows() {return mRowNum;}
+    @Override public final int ncols() {return mColNum;}
     
     @Override protected ColumnIntMatrix newZeros_(int aRowNum, int aColNum) {return ColumnIntMatrix.zeros(aRowNum, aColNum);}
     @Override public ColumnIntMatrix copy() {return (ColumnIntMatrix)super.copy();}

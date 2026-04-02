@@ -16,10 +16,8 @@ import java.util.List;
 import java.util.function.*;
 
 /**
+ * 复数矩阵，返回类型 {@link ComplexDouble}
  * @author liqa
- * <p> 专用的复数矩阵 </p>
- * <p> 由于完全实现工作量较大，这里暂只实现用到的接口 </p>
- * <p> 当然为了后续完善的方便，结构依旧保持一致 </p>
  */
 public interface IComplexMatrix extends IComplexMatrixGetter {
     /** Iterable stuffs，现在指定具体行列会仅遍历此行或者列，虽然不继承 Iterable 但是会提供相关的直接获取的接口方便使用 */
@@ -76,11 +74,11 @@ public interface IComplexMatrix extends IComplexMatrixGetter {
     void forEachRow(@ClosureParams(value=FromString.class, options={"ComplexDouble", "double,double"}) Closure<?> aGroovyTask);
     
     /** 访问和修改部分，自带的接口 */
-    int rowNumber();
-    int columnNumber();
-    ComplexDouble get(int aRow, int aCol);
-    double getReal(int aRow, int aCol);
-    double getImag(int aRow, int aCol);
+    int nrows();
+    int ncols();
+    @Override ComplexDouble get(int aRow, int aCol);
+    @Override double getReal(int aRow, int aCol);
+    @Override double getImag(int aRow, int aCol);
     void set(int aRow, int aCol, IComplexDouble aValue);
     void set(int aRow, int aCol, ComplexDouble aValue);
     void set(int aRow, int aCol, double aValue);
@@ -94,8 +92,6 @@ public interface IComplexMatrix extends IComplexMatrixGetter {
     double getAndSetReal(int aRow, int aCol, double aReal);
     double getAndSetImag(int aRow, int aCol, double aImag);
     IMatrix.ISize size();
-    default @VisibleForTesting int nrows() {return rowNumber();}
-    default @VisibleForTesting int ncols() {return columnNumber();}
     
     /** 附加一些额外的单元素操作，对于一般的只提供一个 update 的接口 */
     void update(int aRow, int aCol, IUnaryFullOperator<? extends IComplexDouble, ? super ComplexDouble> aOpt);
@@ -116,8 +112,6 @@ public interface IComplexMatrix extends IComplexMatrixGetter {
     /** 矩阵的运算操作，默认返回新的矩阵 */
     IComplexMatrixOperation operation();
     @VisibleForTesting default IComplexMatrixOperation op() {return operation();}
-    /** @deprecated use {@link #op()} */
-    @VisibleForTesting @Deprecated default IComplexMatrixOperation opt() {return operation();}
     
     /** Groovy 的部分，增加矩阵基本的运算操作，现在也归入内部使用 */
     IComplexMatrix plus     (IComplexDouble aRHS);

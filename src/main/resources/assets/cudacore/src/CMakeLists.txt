@@ -13,6 +13,7 @@ endif()
 set(SOURCE_FILES
     jse_gpu_CudaCore.cpp
     jse_gpu_FloatCudaPointer.cpp
+    jse_gpu_DoubleCudaPointer.cpp
     jse_gpu_IntCudaPointer.cpp
     jse_gpu_Int64CudaPointer.cpp)
 add_library(cudacore SHARED ${SOURCE_FILES})

@@ -44,7 +44,7 @@ public class SharedBasis extends Basis {
     
     @Override public double rcut() {return mSharedBasis.rcut();}
     @Override public int size() {return mSharedBasis.size();}
-    @Override public int atomTypeNumber() {return mSharedBasis.atomTypeNumber();}
+    @Override public int ntypes() {return mSharedBasis.ntypes();}
     @Override public boolean hasSymbol() {return mSharedBasis.hasSymbol();}
     @Override public String symbol(int aType) {return mSharedBasis.symbol(aType);}
     

@@ -6,8 +6,8 @@ import jse.math.vector.IntVector;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * 内部存储 int[] 的矩阵，会加速相关的运算
  * @author liqa
- * <p> 内部存储 int[] 的矩阵，会加速相关的运算 </p>
  */
 public abstract class IntArrayMatrix extends AbstractIntMatrix implements IDataShell<int[]> {
     protected int[] mData;
@@ -16,7 +16,7 @@ public abstract class IntArrayMatrix extends AbstractIntMatrix implements IDataS
     /** DataShell stuffs */
     @Override public void setInternalData(int[] aData) {mData = aData;}
     @Override public int[] internalData() {return mData;}
-    @Override public int internalDataSize() {return columnNumber()*rowNumber();}
+    @Override public int internalDataSize() {return ncols()* nrows();}
     
     
     protected class IntArrayMatrixOperation_ extends IntArrayMatrixOperation {
@@ -31,7 +31,7 @@ public abstract class IntArrayMatrix extends AbstractIntMatrix implements IDataS
     @Override public IntArrayMatrix copy() {return (IntArrayMatrix)super.copy();}
     
     /** stuff to override */
-    protected abstract IntArrayMatrix newZeros_(int aRowNum, int aColNum);
+    @Override protected abstract IntArrayMatrix newZeros_(int aRowNum, int aColNum);
     
-    public abstract int @Nullable[] getIfHasSameOrderData(Object aObj);
+    @Override public abstract int @Nullable[] getIfHasSameOrderData(Object aObj);
 }

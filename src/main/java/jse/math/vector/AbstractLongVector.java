@@ -20,7 +20,7 @@ public abstract class AbstractLongVector implements ILongVector {
     /** print */
     @Override public String toString() {
         StringBuilder rStr  = new StringBuilder();
-        rStr.append(String.format("%d-length Integer Vector:", size()));
+        rStr.append(String.format("%d-length Long Vector:", size()));
         rStr.append("\n");
         forEach(v -> rStr.append(toString_(v)));
         return rStr.toString();
@@ -126,7 +126,7 @@ public abstract class AbstractLongVector implements ILongVector {
     @Override public final void fill(ILongVectorGetter aVectorGetter) {operation().fill(aVectorGetter);}
     @Override public final void fill(Iterable<? extends Number> aList) {
         final Iterator<? extends Number> it = aList.iterator();
-        assign(() -> it.next().intValue());
+        assign(() -> it.next().longValue());
     }
     @Override public void fill(long[] aData) {
         final ILongSetIterator si = setIterator();
@@ -285,10 +285,10 @@ public abstract class AbstractLongVector implements ILongVector {
     
     
     /** stuff to override */
-    public abstract long get(int aIdx);
-    public abstract void set(int aIdx, long aValue);
-    public abstract long getAndSet(int aIdx, long aValue);
-    public abstract int size();
+    @Override public abstract long get(int aIdx);
+    @Override public abstract void set(int aIdx, long aValue);
+    @Override public abstract long getAndSet(int aIdx, long aValue);
+    @Override public abstract int size();
     protected abstract ILongVector newZeros_(int aSize);
     
     protected String toString_(long aValue) {return " "+aValue;}

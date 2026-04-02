@@ -57,8 +57,6 @@ public interface IFunc2 extends IFunc2Subs {
     /** 还提供一个给函数专用的运算 */
     IFunc2Operation operation();
     @VisibleForTesting default IFunc2Operation op() {return operation();}
-    /** @deprecated use {@link #op()} */
-    @VisibleForTesting @Deprecated default IFunc2Operation opt() {return operation();}
     
     /** Groovy 的部分，增加向量基本的运算操作，现在也归入内部使用 */
     default IFunc2 plus     (double aRHS) {return operation().plus    (aRHS);}

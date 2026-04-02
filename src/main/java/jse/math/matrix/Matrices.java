@@ -57,6 +57,9 @@ public class Matrices {
         } else
         if (tData instanceof int[]) {
             return new RowIntMatrix(tRowNum, tColNum, (int[])tData);
+        } else
+        if (tData instanceof boolean[]) {
+            return new RowLogicalMatrix(tRowNum, tColNum, (boolean[])tData);
         } else {
             throw new UnsupportedOperationException("Invalid numpy dtype: " + tData.getClass().getName());
         }
@@ -88,15 +91,23 @@ public class Matrices {
         return rMatrix;
     }
     public static RowMatrix fromDouble(IMatrix aMatrix) {
-        RowMatrix rMatrix = zeros(aMatrix.rowNumber(), aMatrix.columnNumber());
+        RowMatrix rMatrix = zeros(aMatrix.nrows(), aMatrix.ncols());
         rMatrix.fill(aMatrix);
         return rMatrix;
     }
     /// Groovy stuff
-    public static RowMatrix from(int aSize, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {return fromDouble(aSize, aGroovyTask);}
-    public static RowMatrix from(int aRowNum, int aColNum, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {return fromDouble(aRowNum, aGroovyTask);}
-    public static RowMatrix fromDouble(int aSize, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {return fromDouble(aSize, (i, j) -> UT.Code.doubleValue(aGroovyTask.call(i, j)));}
-    public static RowMatrix fromDouble(int aRowNum, int aColNum, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {return fromDouble(aRowNum, aColNum, (i, j) ->UT.Code.doubleValue( aGroovyTask.call(i, j)));}
+    public static RowMatrix from(int aSize, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {
+        return fromDouble(aSize, aGroovyTask);
+    }
+    public static RowMatrix from(int aRowNum, int aColNum, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {
+        return fromDouble(aRowNum, aGroovyTask);
+    }
+    public static RowMatrix fromDouble(int aSize, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {
+        return fromDouble(aSize, (i, j) -> UT.Code.doubleValue(aGroovyTask.call(i, j)));
+    }
+    public static RowMatrix fromDouble(int aRowNum, int aColNum, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {
+        return fromDouble(aRowNum, aColNum, (i, j) ->UT.Code.doubleValue( aGroovyTask.call(i, j)));
+    }
     
     public static RowMatrix from(Collection<?> aRows) {return fromDouble(aRows);}
     public static RowMatrix fromRows(Collection<?> aRows) {return fromRowsDouble(aRows);}
@@ -144,6 +155,68 @@ public class Matrices {
     }
     
     
+    /// LogicalMatrix stuffs
+    public static RowLogicalMatrix fromBoolean(int aSize, ILogicalMatrixGetter aMatrixGetter) {return fromBoolean(aSize, aSize, aMatrixGetter);}
+    public static RowLogicalMatrix fromBoolean(int aRowNum, int aColNum, ILogicalMatrixGetter aMatrixGetter) {
+        RowLogicalMatrix rMatrix = RowLogicalMatrix.zeros(aRowNum, aColNum);
+        rMatrix.fill(aMatrixGetter);
+        return rMatrix;
+    }
+    public static RowLogicalMatrix fromBoolean(ILogicalMatrix aMatrix) {
+        RowLogicalMatrix rMatrix = RowLogicalMatrix.zeros(aMatrix.nrows(), aMatrix.ncols());
+        rMatrix.fill(aMatrix);
+        return rMatrix;
+    }
+    /// Groovy stuff
+    public static RowLogicalMatrix fromBoolean(int aSize, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<Boolean> aGroovyTask) {
+        return fromBoolean(aSize, aGroovyTask::call);
+    }
+    public static RowLogicalMatrix fromBoolean(int aRowNum, int aColNum, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<Boolean> aGroovyTask) {
+        return fromBoolean(aRowNum, aColNum, aGroovyTask::call);
+    }
+    
+    public static RowLogicalMatrix fromBoolean(Collection<?> aRows) {return fromRowsBoolean(aRows);}
+    public static RowLogicalMatrix fromRowsBoolean(Collection<?> aRows) {
+        int tColNum;
+        if (aRows.isEmpty()) {
+            tColNum = 0;
+        } else {
+            Object tFirst = UT.Code.first(aRows);
+            if (tFirst instanceof Collection) {
+                tColNum = ((Collection<?>)tFirst).size();
+            } else if (tFirst instanceof ILogicalVector) {
+                tColNum = ((ILogicalVector)tFirst).size();
+            } else if (tFirst instanceof boolean[]) {
+                tColNum = ((boolean[])tFirst).length;
+            } else {
+                throw new IllegalArgumentException("Type of Row Must be Collection<Boolean>, ILogicalVector or boolean[]");
+            }
+        }
+        RowLogicalMatrix rMatrix = RowLogicalMatrix.zeros(aRows.size(), tColNum);
+        rMatrix.fillWithRows(aRows);
+        return rMatrix;
+    }
+    public static RowLogicalMatrix fromColsBoolean(Collection<?> aCols) {
+        int tRowNum;
+        if (aCols.isEmpty()) {
+            tRowNum = 0;
+        } else {
+            Object tFirst = UT.Code.first(aCols);
+            if (tFirst instanceof Collection) {
+                tRowNum = ((Collection<?>)tFirst).size();
+            } else if (tFirst instanceof ILogicalVector) {
+                tRowNum = ((ILogicalVector)tFirst).size();
+            } else if (tFirst instanceof boolean[]) {
+                tRowNum = ((boolean[])tFirst).length;
+            } else {
+                throw new IllegalArgumentException("Type of Column Must be Collection<Boolean>, ILogicalVector or boolean[]");
+            }
+        }
+        RowLogicalMatrix rMatrix = RowLogicalMatrix.zeros(tRowNum, aCols.size());
+        rMatrix.fillWithCols(aCols);
+        return rMatrix;
+    }
+    
     /// IntMatrix stuffs
     public static RowIntMatrix fromInt(int aSize, IIntMatrixGetter aMatrixGetter) {return fromInt(aSize, aSize, aMatrixGetter);}
     public static RowIntMatrix fromInt(int aRowNum, int aColNum, IIntMatrixGetter aMatrixGetter) {
@@ -152,13 +225,17 @@ public class Matrices {
         return rMatrix;
     }
     public static RowIntMatrix fromInt(IIntMatrix aMatrix) {
-        RowIntMatrix rMatrix = RowIntMatrix.zeros(aMatrix.rowNumber(), aMatrix.columnNumber());
+        RowIntMatrix rMatrix = RowIntMatrix.zeros(aMatrix.nrows(), aMatrix.ncols());
         rMatrix.fill(aMatrix);
         return rMatrix;
     }
     /// Groovy stuff
-    public static RowIntMatrix fromInt(int aSize, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<Integer> aGroovyTask) {return fromInt(aSize, aGroovyTask::call);}
-    public static RowIntMatrix fromInt(int aRowNum, int aColNum, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<Integer> aGroovyTask) {return fromInt(aRowNum, aColNum, aGroovyTask::call);}
+    public static RowIntMatrix fromInt(int aSize, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<Integer> aGroovyTask) {
+        return fromInt(aSize, aGroovyTask::call);
+    }
+    public static RowIntMatrix fromInt(int aRowNum, int aColNum, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<Integer> aGroovyTask) {
+        return fromInt(aRowNum, aColNum, aGroovyTask::call);
+    }
     
     public static RowIntMatrix fromInt(Collection<?> aRows) {return fromRowsInt(aRows);}
     public static RowIntMatrix fromRowsInt(Collection<?> aRows) {
@@ -221,5 +298,7 @@ public class Matrices {
         return rMatrix;
     }
     /** Groovy stuff */
-    public static RowMatrix diag(int aSize, @ClosureParams(value=SimpleType.class, options="int") final Closure<? extends Number> aGroovyTask) {return diag(aSize, i -> UT.Code.doubleValue(aGroovyTask.call(i)));}
+    public static RowMatrix diag(int aSize, @ClosureParams(value=SimpleType.class, options="int") final Closure<? extends Number> aGroovyTask) {
+        return diag(aSize, i -> UT.Code.doubleValue(aGroovyTask.call(i)));
+    }
 }

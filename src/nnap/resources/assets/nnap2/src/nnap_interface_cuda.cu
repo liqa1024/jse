@@ -219,6 +219,128 @@ static void computeLammpsCuda0(int inum, int nlocalghost, int neighnumMax,
     );
 }
 
+
+static __global__ void initGpumdNeiKernel(int number_of_particles, int N1, int N2, int neighnumMax,
+        const int *g_neighbor_number, const int *g_neighbor_list,
+        const float *nl_dx, const float *nl_dy, const float *nl_dz, const int *g_type,
+        flt_t *rBufNlDx, flt_t *rBufNlDy, flt_t *rBufNlDz, int *rBufNlType, int *rBufNlIdx) {
+    const int n1 = (int)(blockIdx.x * blockDim.x + threadIdx.x + N1);
+    if (n1 >= N2) return;
+    
+    const int neighbor_number = g_neighbor_number[n1];
+    for (int i1 = 0; i1 < neighbor_number; ++i1) {
+        int n2 = g_neighbor_list[n1 + number_of_particles*i1];
+        const flt_t delx = nl_dx[n1 + number_of_particles*i1];
+        const flt_t dely = nl_dy[n1 + number_of_particles*i1];
+        const flt_t delz = nl_dz[n1 + number_of_particles*i1];
+        // TODO: i1*inum + n1
+        rBufNlDx[n1*neighnumMax + i1] = delx;
+        rBufNlDy[n1*neighnumMax + i1] = dely;
+        rBufNlDz[n1*neighnumMax + i1] = delz;
+        rBufNlType[n1*neighnumMax + i1] = g_type[n2];
+        rBufNlIdx[n1*neighnumMax + i1] = n2;
+    }
+}
+
+static __global__ void computeGpumdKernel(int N1, int N2, int neighnumMax,
+    flt_t *aBufNlDx, flt_t *aBufNlDy, flt_t *aBufNlDz, int *aBufNlType,
+    double *g_potential, const int *aBufNeiNum, const int *aBufCType,
+    flt_t **aFpHyperParam, flt_t **aFpParam, flt_t **aNormParam, flt_t **aNnParam,
+    flt_t *rBufGradNlDx, flt_t *rBufGradNlDy, flt_t *rBufGradNlDz) {
+    const int ii = (int)(blockIdx.x * blockDim.x + threadIdx.x + N1);
+    if (ii >= N2) return;
+    
+    const int ctype = aBufCType[ii];
+    const int tNeiNum = aBufNeiNum[ii];
+    // TODO: jj*inum + ii
+    flt_t *tNlDx = aBufNlDx + ii*neighnumMax;
+    flt_t *tNlDy = aBufNlDy + ii*neighnumMax;
+    flt_t *tNlDz = aBufNlDz + ii*neighnumMax;
+    int *tNlType = aBufNlType + ii*neighnumMax;
+    flt_t *rGradNlDx = rBufGradNlDx + ii*neighnumMax;
+    flt_t *rGradNlDy = rBufGradNlDy + ii*neighnumMax;
+    flt_t *rGradNlDz = rBufGradNlDz + ii*neighnumMax;
+    flt_t rEng;
+    // manual clear required for backward in force
+    // TODO: jj*inum + ii
+    for (int jj = 0; jj < tNeiNum; ++jj) {
+        rGradNlDx[jj] = ZERO;
+        rGradNlDy[jj] = ZERO;
+        rGradNlDz[jj] = ZERO;
+    }
+// >>> NNAPGEN SWITCH
+    flt_t rFpOrGradFp[__NNAPGENX_FP_SIZE__];
+    flt_t rFpForwardCache[__NNAPGENX_FP_SIZE_CACHEF__];
+    fpForward<__NNAPGENS_ctype__>(
+        tNlDx, tNlDy, tNlDz, tNlType, tNeiNum, ctype, rFpOrGradFp,
+        aFpHyperParam, aFpParam, rFpForwardCache
+    );
+    flt_t rNnGradCache[__NNAPGENX_NN_SIZE_CACHEG__];
+    flt_t rNnHiddenCache[__NNAPGENX_NN_SIZE_CACHEH__];
+    normedNnForward<__NNAPGENS_ctype__, TRUE>(
+        ctype, rFpOrGradFp, aNormParam[ctype-1], aNnParam,
+        rNnGradCache, rNnHiddenCache, &rEng
+    );
+    // manual clear required for backward in force
+    fill<__NNAPGENX_FP_SIZE__>(rFpOrGradFp, ZERO);
+    normedNnBackward<__NNAPGENS_ctype__>(
+        ctype, rFpOrGradFp, aNormParam[ctype-1], aNnParam,
+        rNnGradCache, rNnHiddenCache, ONE
+    );
+    flt_t rFpBackwardCache[__NNAPGENX_FP_SIZE_CACHEB__];
+    fpBackward<__NNAPGENS_ctype__>(
+        tNlDx, tNlDy, tNlDz, tNlType, tNeiNum, ctype, rFpOrGradFp,
+        rGradNlDx, rGradNlDy, rGradNlDz,
+        aFpHyperParam, aFpParam, rFpForwardCache, rFpBackwardCache
+    );
+// <<< NNAPGEN SWITCH (ctype) [FP NN TYPE]
+    g_potential[ii] += rEng;
+}
+
+static __global__ void collectGpumdResultsKernel(int number_of_particles, int N1, int N2, int neighnumMax,
+    double *g_fx, double *g_fy, double *g_fz, double *g_virial,
+    const flt_t *aBufNlDx, const flt_t *aBufNlDy, const flt_t *aBufNlDz,
+    const int *aBufNlIdx, const int *aBufNeiNum,
+    const flt_t *rBufGradNlDx, const flt_t *rBufGradNlDy, const flt_t *rBufGradNlDz) {
+    const int ii = (int)(blockIdx.x * blockDim.x + threadIdx.x + N1);
+    if (ii >= N2) return;
+    
+    const int tNeiNum = aBufNeiNum[ii];
+    
+    flt_t f0x = ZERO;
+    flt_t f0y = ZERO;
+    flt_t f0z = ZERO;
+    for (int jj = 0; jj < tNeiNum; ++jj) {
+        // TODO: jj*inum + ii
+        const int j = aBufNlIdx[ii*neighnumMax + jj];
+        const flt_t fx = rBufGradNlDx[ii*neighnumMax + jj];
+        const flt_t fy = rBufGradNlDy[ii*neighnumMax + jj];
+        const flt_t fz = rBufGradNlDz[ii*neighnumMax + jj];
+        f0x -= fx;
+        f0y -= fy;
+        f0z -= fz;
+        atomicAdd(g_fx + j, fx);
+        atomicAdd(g_fy + j, fy);
+        atomicAdd(g_fz + j, fz);
+        // TODO: jj*inum + ii
+        const flt_t dx = aBufNlDx[ii*neighnumMax + jj];
+        const flt_t dy = aBufNlDy[ii*neighnumMax + jj];
+        const flt_t dz = aBufNlDz[ii*neighnumMax + jj];
+        atomicAdd(g_virial + (0*number_of_particles + j), dx*fx);
+        atomicAdd(g_virial + (1*number_of_particles + j), dy*fy);
+        atomicAdd(g_virial + (2*number_of_particles + j), dz*fz);
+        atomicAdd(g_virial + (3*number_of_particles + j), dx*fy);
+        atomicAdd(g_virial + (4*number_of_particles + j), dx*fz);
+        atomicAdd(g_virial + (5*number_of_particles + j), dy*fz);
+        atomicAdd(g_virial + (6*number_of_particles + j), dy*fx);
+        atomicAdd(g_virial + (7*number_of_particles + j), dz*fx);
+        atomicAdd(g_virial + (8*number_of_particles + j), dz*fy);
+    }
+    atomicAdd(g_fx + ii, f0x);
+    atomicAdd(g_fy + ii, f0y);
+    atomicAdd(g_fz + ii, f0z);
+}
+
 }
 
 extern "C" {
@@ -469,6 +591,65 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammpsCuda(void *aDataIn, vo
         rBufNeiNum, rBufCType,
         f0, f1, eatom0, vatom0, vatom1,
         tFpHyperParam, tFpParam, tNormParam, tNnParam,
+        rBufGradNlDx, rBufGradNlDy, rBufGradNlDz
+    );
+    
+    return (int)cudaDeviceSynchronize();
+}
+
+JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeGPUMD(void *aDataIn, void *rDataOut) {
+    void **tDataIn = (void **)aDataIn;
+    void **tDataOut = (void **)rDataOut;
+
+    int *tCpuNums = (int *)tDataIn[0];
+    
+    int number_of_particles = tCpuNums[0];
+    int N1 = tCpuNums[1];
+    int N2 = tCpuNums[2];
+    int neighnumMax = tCpuNums[3];
+    
+    const int *g_neighbor_number = (const int *)tDataIn[1];
+    const int *g_neighbor_list = (const int *)tDataIn[2];
+    const float *nl_dx = (const float *)tDataIn[3];
+    const float *nl_dy = (const float *)tDataIn[4];
+    const float *nl_dz = (const float *)tDataIn[5];
+    const int *g_type = (const int *)tDataIn[6];
+    JSE_NNAP::flt_t **tFpHyperParam = (JSE_NNAP::flt_t **)tDataIn[7];
+    JSE_NNAP::flt_t **tFpParam = (JSE_NNAP::flt_t **)tDataIn[8];
+    JSE_NNAP::flt_t **tNnParam = (JSE_NNAP::flt_t **)tDataIn[9];
+    JSE_NNAP::flt_t **tNormParam = (JSE_NNAP::flt_t **)tDataIn[10];
+    
+    double *g_fx = (double *)tDataOut[0];
+    double *g_fy = (double *)tDataOut[1];
+    double *g_fz = (double *)tDataOut[2];
+    double *g_virial = (double *)tDataOut[3];
+    double *g_potential = (double *)tDataOut[4];
+    JSE_NNAP::flt_t *rBufNlDx = (JSE_NNAP::flt_t *)tDataOut[5];
+    JSE_NNAP::flt_t *rBufNlDy = (JSE_NNAP::flt_t *)tDataOut[6];
+    JSE_NNAP::flt_t *rBufNlDz = (JSE_NNAP::flt_t *)tDataOut[7];
+    int *rBufNlType = (int *)tDataOut[8];
+    int *rBufNlIdx = (int *)tDataOut[9];
+    JSE_NNAP::flt_t *rBufGradNlDx = (JSE_NNAP::flt_t *)tDataOut[10];
+    JSE_NNAP::flt_t *rBufGradNlDy = (JSE_NNAP::flt_t *)tDataOut[11];
+    JSE_NNAP::flt_t *rBufGradNlDz = (JSE_NNAP::flt_t *)tDataOut[12];
+    
+    constexpr int tBlockSize = __NNAPGEN_CUDA_BLOCKSIZE__;
+    const int tGridSize = (N2 - N1 - 1) / tBlockSize + 1; // copy from gpumd
+    
+    JSE_NNAP::initGpumdNeiKernel<<<tGridSize, tBlockSize>>>(number_of_particles, N1, N2, neighnumMax,
+        g_neighbor_number, g_neighbor_list,
+        nl_dx, nl_dy, nl_dz, g_type,
+        rBufNlDx, rBufNlDy, rBufNlDz, rBufNlType, rBufNlIdx
+    );
+    JSE_NNAP::computeGpumdKernel<<<tGridSize, tBlockSize>>>(N1, N2, neighnumMax,
+        rBufNlDx, rBufNlDy, rBufNlDz, rBufNlType,
+        g_potential, g_neighbor_number, g_type,
+        tFpHyperParam, tFpParam, tNormParam, tNnParam,
+        rBufGradNlDx, rBufGradNlDy, rBufGradNlDz
+    );
+    JSE_NNAP::collectGpumdResultsKernel<<<tGridSize, tBlockSize>>>(number_of_particles, N1, N2, neighnumMax,
+        g_fx, g_fy, g_fz, g_virial,
+        rBufNlDx, rBufNlDy, rBufNlDz, rBufNlIdx, g_neighbor_number,
         rBufGradNlDx, rBufGradNlDy, rBufGradNlDz
     );
     

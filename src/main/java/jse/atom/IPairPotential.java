@@ -33,7 +33,7 @@ public interface IPairPotential extends IPotential, IHasSymbol {
     /** @return 是否支持计算 9 列的每原子压力 */
     @Override default boolean centroidPerAtomStressSupport() {return true;}
     /** @return 此势函数支持的原子种类数目，默认为 {@code -1} 表示没有种类数目限制 */
-    @Override default int atomTypeNumber() {return -1;}
+    @Override default int ntypes() {return -1;}
     /** @return {@inheritDoc}；如果存在则会自动根据元素符号重新映射种类 */
     @Override default boolean hasSymbol() {return false;}
     /**
@@ -92,7 +92,7 @@ public interface IPairPotential extends IPotential, IHasSymbol {
      * 的线程池来并行
      * @return 此势函数期望使用的线程数
      */
-    default int threadNumber() {return 1;}
+    default int nthreads() {return 1;}
     /**
      * 获取此势函数的（最大）截断半径，用来在计算单粒子移动、翻转、种类交换时获取较小的影响原子范围，
      * 从而加速这些计算。默认为 {@code -1}，表示不能进行这些优化
@@ -128,8 +128,8 @@ public interface IPairPotential extends IPotential, IHasSymbol {
      */
     default Vector calEnergies(AtomicParameterCalculator aAPC, IntUnaryOperator aTypeMap) throws Exception {
         if (isShutdown()) throw new IllegalStateException("This Potential is dead");
-        typeMapCheck(aAPC.atomTypeNumber(), aTypeMap);
-        Vector rEnergies = VectorCache.getVec(aAPC.atomNumber());
+        typeMapCheck(aAPC.ntypes(), aTypeMap);
+        Vector rEnergies = VectorCache.getVec(aAPC.natoms());
         calEnergyForceVirials(aAPC, rEnergies, null, null, null, null, null, null, null, null, null, aTypeMap);
         return rEnergies;
     }
@@ -155,7 +155,7 @@ public interface IPairPotential extends IPotential, IHasSymbol {
      */
     default double calEnergy(AtomicParameterCalculator aAPC, IntUnaryOperator aTypeMap) throws Exception {
         if (isShutdown()) throw new IllegalStateException("This Potential is dead");
-        typeMapCheck(aAPC.atomTypeNumber(), aTypeMap);
+        typeMapCheck(aAPC.ntypes(), aTypeMap);
         Vector rTotEng = VectorCache.getVec(1);
         calEnergyForceVirials(aAPC, rTotEng, null, null, null, null, null, null, null, null, null, aTypeMap);
         double tTotEng = rTotEng.get(0);
@@ -185,8 +185,8 @@ public interface IPairPotential extends IPotential, IHasSymbol {
      */
     default RowMatrix calForces(AtomicParameterCalculator aAPC, IntUnaryOperator aTypeMap) throws Exception {
         if (isShutdown()) throw new IllegalStateException("This Potential is dead");
-        typeMapCheck(aAPC.atomTypeNumber(), aTypeMap);
-        RowMatrix rForces = MatrixCache.getMatRow(aAPC.atomNumber(), 3);
+        typeMapCheck(aAPC.ntypes(), aTypeMap);
+        RowMatrix rForces = MatrixCache.getMatRow(aAPC.natoms(), 3);
         calEnergyForceVirials(aAPC, null, rForces.col(0), rForces.col(1), rForces.col(2), null, null, null, null, null, null, aTypeMap);
         return rForces;
     }
@@ -223,10 +223,10 @@ public interface IPairPotential extends IPotential, IHasSymbol {
      */
     default List<Vector> calStresses(AtomicParameterCalculator aAPC, IntUnaryOperator aTypeMap) throws Exception {
         if (isShutdown()) throw new IllegalStateException("This Potential is dead");
-        typeMapCheck(aAPC.atomTypeNumber(), aTypeMap);
+        typeMapCheck(aAPC.ntypes(), aTypeMap);
         final boolean tCentroid = centroidPerAtomStressSupport();
         final int tColNum = tCentroid ? 9 : 6;
-        List<Vector> rStresses = VectorCache.getVec(aAPC.atomNumber(), tColNum);
+        List<Vector> rStresses = VectorCache.getVec(aAPC.natoms(), tColNum);
         calEnergyForceVirials(aAPC, null, null, null, null, rStresses.get(0), rStresses.get(1), rStresses.get(2), rStresses.get(3), rStresses.get(4), rStresses.get(5),
                               tCentroid?rStresses.get(6):null, tCentroid?rStresses.get(7):null, tCentroid?rStresses.get(8):null, aTypeMap);
         for (int i = 0; i < tColNum; ++i) {
@@ -268,7 +268,7 @@ public interface IPairPotential extends IPotential, IHasSymbol {
      */
     default List<Double> calStress(AtomicParameterCalculator aAPC, IntUnaryOperator aTypeMap) throws Exception {
         if (isShutdown()) throw new IllegalStateException("This Potential is dead");
-        typeMapCheck(aAPC.atomTypeNumber(), aTypeMap);
+        typeMapCheck(aAPC.ntypes(), aTypeMap);
         List<Vector> rStresses = VectorCache.getVec(1, 6);
         calEnergyForceVirials(aAPC, null, null, null, null, rStresses.get(0), rStresses.get(1), rStresses.get(2), rStresses.get(3), rStresses.get(4), rStresses.get(5), aTypeMap);
         double tStressXX = -rStresses.get(0).get(0);
@@ -312,15 +312,15 @@ public interface IPairPotential extends IPotential, IHasSymbol {
      */
     default double calEnergyAt(AtomicParameterCalculator aAPC, ISlice aIndices, IntUnaryOperator aTypeMap) throws Exception {
         if (isShutdown()) throw new IllegalStateException("This Potential is dead");
-        typeMapCheck(aAPC.atomTypeNumber(), aTypeMap);
-        final int tTypeNum = atomTypeNumber();
+        typeMapCheck(aAPC.ntypes(), aTypeMap);
+        final int tTypeNum = ntypes();
         // 现在强制设置 apc 的线程数
-        int oThreadNum = aAPC.threadNumber();
-        int tThreadNum = threadNumber();
-        aAPC.setThreadNumber(tThreadNum);
+        int oThreadNum = aAPC.nthreads();
+        int tThreadNum = nthreads();
+        aAPC.setNthreads(tThreadNum);
         Vector rEngPar = VectorCache.getZeros(tThreadNum);
         final boolean tNLChecked = neighborListChecked();
-        calEnergyPart(aAPC.atomNumber(), (initDo, finalDo, neighborListDo) -> {
+        calEnergyPart(aAPC.natoms(), (initDo, finalDo, neighborListDo) -> {
             aAPC.pool_().parforWithException(aIndices.size(), initDo, finalDo, (i, threadID) -> {
                 final int cIdx = aIndices.get(i);
                 final int cType = tTypeNum<=0 ? 0 : aTypeMap.applyAsInt(aAPC.atomType_().get(cIdx));
@@ -337,7 +337,7 @@ public interface IPairPotential extends IPotential, IHasSymbol {
         });
         double rEng = rEngPar.sum();
         VectorCache.returnVec(rEngPar);
-        aAPC.setThreadNumber(oThreadNum);
+        aAPC.setNthreads(oThreadNum);
         return rEng;
     }
     /**
@@ -363,7 +363,7 @@ public interface IPairPotential extends IPotential, IHasSymbol {
     default double calEnergyAt(IAtomData aAtomData, ISlice aIndices) throws Exception {
         if (isShutdown()) throw new IllegalStateException("This Potential is dead");
         IntUnaryOperator tTypeMap = hasSymbol() ? typeMap(aAtomData) : type->type;
-        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, threadNumber())) {return calEnergyAt(tAPC, aIndices, tTypeMap);}
+        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, nthreads())) {return calEnergyAt(tAPC, aIndices, tTypeMap);}
     }
     
     /**
@@ -382,7 +382,7 @@ public interface IPairPotential extends IPotential, IHasSymbol {
      */
     default double calEnergyDiffMove(AtomicParameterCalculator aAPC, int aI, double aDx, double aDy, double aDz, boolean aRestoreAPC, IntUnaryOperator aTypeMap) throws Exception {
         if (isShutdown()) throw new IllegalStateException("This Potential is dead");
-        typeMapCheck(aAPC.atomTypeNumber(), aTypeMap);
+        typeMapCheck(aAPC.ntypes(), aTypeMap);
         double tRCut = rcutMax();
         if (tRCut <= 0) {
             double oEng = calEnergy(aAPC, aTypeMap);
@@ -484,7 +484,7 @@ public interface IPairPotential extends IPotential, IHasSymbol {
     @Override default double calEnergyDiffMove(ISettableAtomData aAtomData, int aI, double aDx, double aDy, double aDz, boolean aRestoreData) throws Exception {
         if (isShutdown()) throw new IllegalStateException("This Potential is dead");
         IntUnaryOperator tTypeMap = hasSymbol() ? typeMap(aAtomData) : type->type;
-        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, threadNumber())) {return calEnergyDiffMove(tAPC, aI, aDx, aDy, aDz, false, tTypeMap);}
+        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, nthreads())) {return calEnergyDiffMove(tAPC, aI, aDx, aDy, aDz, false, tTypeMap);}
     }
     
     /**
@@ -528,7 +528,7 @@ public interface IPairPotential extends IPotential, IHasSymbol {
      */
     default double calEnergyDiffSwap(AtomicParameterCalculator aAPC, int aI, int aJ, boolean aRestoreAPC, IntUnaryOperator aTypeMap) throws Exception {
         if (isShutdown()) throw new IllegalStateException("This Potential is dead");
-        typeMapCheck(aAPC.atomTypeNumber(), aTypeMap);
+        typeMapCheck(aAPC.ntypes(), aTypeMap);
         int oTypeI = aAPC.atomType_().get(aI);
         int oTypeJ = aAPC.atomType_().get(aJ);
         if (oTypeI == oTypeJ) return 0.0;
@@ -623,7 +623,7 @@ public interface IPairPotential extends IPotential, IHasSymbol {
     @Override default double calEnergyDiffSwap(ISettableAtomData aAtomData, int aI, int aJ, boolean aRestoreData) throws Exception {
         if (isShutdown()) throw new IllegalStateException("This Potential is dead");
         IntUnaryOperator tTypeMap = hasSymbol() ? typeMap(aAtomData) : type->type;
-        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, threadNumber())) {return calEnergyDiffSwap(tAPC, aI, aJ, false, tTypeMap);}
+        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, nthreads())) {return calEnergyDiffSwap(tAPC, aI, aJ, false, tTypeMap);}
     }
     
     /**
@@ -640,7 +640,7 @@ public interface IPairPotential extends IPotential, IHasSymbol {
      */
     default double calEnergyDiffFlip(AtomicParameterCalculator aAPC, int aI, int aType, boolean aRestoreAPC, IntUnaryOperator aTypeMap) throws Exception {
         if (isShutdown()) throw new IllegalStateException("This Potential is dead");
-        typeMapCheck(aAPC.atomTypeNumber(), aTypeMap);
+        typeMapCheck(aAPC.ntypes(), aTypeMap);
         int oType = aAPC.atomType_().get(aI);
         if (oType == aType) return 0.0;
         double tRCut = rcutMax();
@@ -730,7 +730,7 @@ public interface IPairPotential extends IPotential, IHasSymbol {
     @Override default double calEnergyDiffFlip(ISettableAtomData aAtomData, int aI, int aType, boolean aRestoreData) throws Exception {
         if (isShutdown()) throw new IllegalStateException("This Potential is dead");
         IntUnaryOperator tTypeMap = hasSymbol() ? typeMap(aAtomData) : type->type;
-        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, threadNumber())) {return calEnergyDiffFlip(tAPC, aI, aType, false, tTypeMap);}
+        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, nthreads())) {return calEnergyDiffFlip(tAPC, aI, aType, false, tTypeMap);}
     }
     
     /**
@@ -810,19 +810,19 @@ public interface IPairPotential extends IPotential, IHasSymbol {
      */
     default void calEnergyForceVirials(AtomicParameterCalculator aAPC, @Nullable IVector rEnergies, @Nullable IVector rForcesX, @Nullable IVector rForcesY, @Nullable IVector rForcesZ, @Nullable IVector rVirialsXX, @Nullable IVector rVirialsYY, @Nullable IVector rVirialsZZ, @Nullable IVector rVirialsXY, @Nullable IVector rVirialsXZ, @Nullable IVector rVirialsYZ, @Nullable IVector rVirialsYX, @Nullable IVector rVirialsZX, @Nullable IVector rVirialsZY, IntUnaryOperator aTypeMap) throws Exception {
         if (isShutdown()) throw new IllegalStateException("This Potential is dead");
-        typeMapCheck(aAPC.atomTypeNumber(), aTypeMap);
+        typeMapCheck(aAPC.ntypes(), aTypeMap);
         // 统一存储常量
         final boolean tCalEnergy = rEnergies!=null;
         final boolean tCalForce = rForcesX!=null || rForcesY!=null || rForcesZ!=null;
         final boolean tCalVirial = rVirialsXX!=null || rVirialsYY!=null || rVirialsZZ!=null || rVirialsXY!=null || rVirialsXZ!=null || rVirialsYZ!=null || rVirialsYX!=null || rVirialsZX!=null || rVirialsZY!=null;
-        final int tTypeNum = atomTypeNumber();
-        final int tAtomNum = aAPC.atomNumber();
-        final int tThreadNum = threadNumber();
+        final int tTypeNum = ntypes();
+        final int tAtomNum = aAPC.natoms();
+        final int tThreadNum = nthreads();
         final boolean tNLHalf = neighborListHalf();
         final boolean tNLChecked = neighborListChecked();
         // 现在强制设置 apc 的线程数
-        final int oThreadNum = aAPC.threadNumber();
-        aAPC.setThreadNumber(tThreadNum);
+        final int oThreadNum = aAPC.nthreads();
+        aAPC.setNthreads(tThreadNum);
         // 清空可能存在的旧值
         if (tCalEnergy) rEnergies.fill(0.0);
         // 并行情况下存在并行写入的问题，因此需要这样操作
@@ -836,7 +836,7 @@ public interface IPairPotential extends IPotential, IHasSymbol {
         /// 特殊处理只需要计算能量的情况
         if (!tCalForce && !tCalVirial) {
             if (!tCalEnergy) {
-                aAPC.setThreadNumber(oThreadNum);
+                aAPC.setNthreads(oThreadNum);
                 return;
             }
             calEnergy(tAtomNum, (initDo, finalDo, neighborListDo) -> {
@@ -874,7 +874,7 @@ public interface IPairPotential extends IPotential, IHasSymbol {
                 rEnergies.plus2this(rEnergiesPar[i]);
                 VectorCache.returnVec(rEnergiesPar[i]);
             }
-            aAPC.setThreadNumber(oThreadNum);
+            aAPC.setNthreads(oThreadNum);
             return;
         }
         /// 其余需要计算力或位力的情况
@@ -1018,7 +1018,7 @@ public interface IPairPotential extends IPotential, IHasSymbol {
         if (rVirialsZZ != null) {for (int i = 1; i < tThreadNum; ++i) {rVirialsZZ.plus2this(rVirialsZZPar[i]); VectorCache.returnVec(rVirialsZZPar[i]);}}
         if (rVirialsYY != null) {for (int i = 1; i < tThreadNum; ++i) {rVirialsYY.plus2this(rVirialsYYPar[i]); VectorCache.returnVec(rVirialsYYPar[i]);}}
         if (rVirialsXX != null) {for (int i = 1; i < tThreadNum; ++i) {rVirialsXX.plus2this(rVirialsXXPar[i]); VectorCache.returnVec(rVirialsXXPar[i]);}}
-        aAPC.setThreadNumber(oThreadNum);
+        aAPC.setNthreads(oThreadNum);
     }
     /**
      * 使用此势函数计算所有需要的性质，需要注意的是，这里位力需要采用
@@ -1137,6 +1137,6 @@ public interface IPairPotential extends IPotential, IHasSymbol {
     @Override default void calEnergyForceVirials(IAtomData aAtomData, @Nullable IVector rEnergies, @Nullable IVector rForcesX, @Nullable IVector rForcesY, @Nullable IVector rForcesZ, @Nullable IVector rVirialsXX, @Nullable IVector rVirialsYY, @Nullable IVector rVirialsZZ, @Nullable IVector rVirialsXY, @Nullable IVector rVirialsXZ, @Nullable IVector rVirialsYZ, @Nullable IVector rVirialsYX, @Nullable IVector rVirialsZX, @Nullable IVector rVirialsZY) throws Exception {
         if (isShutdown()) throw new IllegalStateException("This Potential is dead");
         IntUnaryOperator tTypeMap = hasSymbol() ? typeMap(aAtomData) : type->type;
-        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, threadNumber())) {calEnergyForceVirials(tAPC, rEnergies, rForcesX, rForcesY, rForcesZ, rVirialsXX, rVirialsYY, rVirialsZZ, rVirialsXY, rVirialsXZ, rVirialsYZ, rVirialsYX, rVirialsZX, rVirialsZY, tTypeMap);}
+        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, nthreads())) {calEnergyForceVirials(tAPC, rEnergies, rForcesX, rForcesY, rForcesZ, rVirialsXX, rVirialsYY, rVirialsZZ, rVirialsXY, rVirialsXZ, rVirialsYZ, rVirialsYX, rVirialsZX, rVirialsZY, tTypeMap);}
     }
 }

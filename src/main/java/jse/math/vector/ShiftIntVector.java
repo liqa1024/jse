@@ -11,9 +11,10 @@ import java.util.function.IntUnaryOperator;
 import static jse.math.vector.AbstractVector.*;
 
 /**
+ * 支持将内部的 int[] 进行平移访问的 IntVector，理论拥有和 {@link IntVector} 几乎一样的性能
+ * <p>
+ * 仅用于临时操作，因此由此返回的新对象类型依旧为 {@link IntVector}
  * @author liqa
- * <p> 支持将内部的 int[] 进行平移访问的 IntVector，理论拥有和 {@link IntVector} 几乎一样的性能 </p>
- * <p> 仅用于临时操作，因此由此返回的新对象类型依旧为 {@link IntVector} </p>
  */
 public final class ShiftIntVector extends IntArrayVector {
     private int mSize;

@@ -36,8 +36,8 @@ public abstract class LongArrayVector extends AbstractLongVector implements IDat
     @Override public LongArrayVector copy() {return (LongArrayVector)super.copy();}
     
     /** stuff to override */
-    protected abstract LongArrayVector newZeros_(int aSize);
+    @Override protected abstract LongArrayVector newZeros_(int aSize);
     
-    public abstract long @Nullable[] getIfHasSameOrderData(Object aObj);
+    @Override public abstract long @Nullable[] getIfHasSameOrderData(Object aObj);
 }
 

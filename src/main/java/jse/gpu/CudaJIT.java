@@ -16,9 +16,23 @@ import java.util.List;
  */
 @ApiStatus.Experimental
 public class CudaJIT {
+    /** 用于判断是否进行了静态初始化以及方便的手动初始化 */
+    public final static class InitHelper {
+        private static volatile boolean INITIALIZED = false;
+        public static boolean initialized() {return INITIALIZED;}
+        @SuppressWarnings({"ResultOfMethodCallIgnored", "UnnecessaryCallToStringValueOf"})
+        public static void init() {
+            // 手动调用此值来强制初始化
+            if (!INITIALIZED) String.valueOf(_INIT_FLAG);
+        }
+    }
+    private final static boolean _INIT_FLAG;
     static {
-        // 简单依赖 SimpleJIT
+        CudaJIT.InitHelper.INITIALIZED = true;
+        // 简单依赖 SimpleJIT CudaCore
         SimpleJIT.InitHelper.init();
+        CudaCore.InitHelper.init();
+        _INIT_FLAG = false;
     }
     
     public static Engine engine() {return new Engine();}

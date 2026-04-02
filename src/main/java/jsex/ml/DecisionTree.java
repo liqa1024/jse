@@ -143,7 +143,7 @@ public class DecisionTree implements ISavable {
         }
         
         /** stuff to override */
-        protected int getConsiderCharaNumber(int aAllCharaNum) {return aAllCharaNum;}
+        protected int getConsiderCharaCount(int aAllCharaNum) {return aAllCharaNum;}
         
         protected static double Gini(double aProb) {
             return 2.0 * aProb * (1.0 - aProb);
@@ -269,7 +269,7 @@ public class DecisionTree implements ISavable {
             ++aCurrentDepth;
             
             // 统计需要考虑的特征变量
-            int tConsiderNum = getConsiderCharaNumber(tValidCharaNum);
+            int tConsiderNum = getConsiderCharaCount(tValidCharaNum);
             IIndexFilter tConsiderID;
             if (tConsiderNum < tValidCharaNum) {
                 IIntVector rRandIndex = tValidChara.where();

@@ -6,7 +6,7 @@ import jse.lmp.Data
 import static jse.code.UT.Plot.*
 
 // 导入 data 文件
-def data = Data.read('lmp/data/data-glass')
+def data = Data.read('data/lmp/data/data-glass')
 
 // 根据 data 创建参数计算器 apc 并计算 gr 和 Sq
 def apc = APC.of(data)

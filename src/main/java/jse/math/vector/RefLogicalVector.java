@@ -10,13 +10,13 @@ public abstract class RefLogicalVector extends AbstractLogicalVector {
     @Override protected final ILogicalVector newZeros_(int aSize) {return LogicalVector.zeros(aSize);}
     
     /** stuff to override */
-    public abstract boolean get(int aIdx);
-    public void set(int aIdx, boolean aValue) {throw new UnsupportedOperationException("set");}
-    public boolean getAndSet(int aIdx, boolean aValue) {
+    @Override public abstract boolean get(int aIdx);
+    @Override public void set(int aIdx, boolean aValue) {throw new UnsupportedOperationException("set");}
+    @Override public boolean getAndSet(int aIdx, boolean aValue) {
         rangeCheck(aIdx, size());
         boolean oValue = get(aIdx);
         set(aIdx, aValue);
         return oValue;
     }
-    public abstract int size();
+    @Override public abstract int size();
 }

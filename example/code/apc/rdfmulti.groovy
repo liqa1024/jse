@@ -8,7 +8,7 @@ import static jse.code.UT.Plot.*
 
 
 // 导入 dump 文件
-def dump = Dump.read('lmp/dump/CuFCC108.lammpstrj')
+def dump = Dump.read('data/lmp/dump/CuFCC108.lammpstrj')
 // 去除开头的数据不进行统计
 dump.cutFront(1)
 

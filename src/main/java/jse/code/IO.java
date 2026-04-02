@@ -5,6 +5,10 @@ import groovy.json.JsonSlurper;
 import groovy.lang.Closure;
 import groovy.toml.TomlBuilder;
 import groovy.toml.TomlSlurper;
+import groovy.xml.MarkupBuilder;
+import groovy.xml.XmlSlurper;
+import groovy.xml.slurpersupport.GPathResult;
+import groovy.xml.slurpersupport.NodeChild;
 import groovy.yaml.YamlBuilder;
 import groovy.yaml.YamlSlurper;
 import jse.cache.ByteArrayCache;
@@ -26,6 +30,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.groovy.util.Maps;
 import org.codehaus.groovy.runtime.IOGroovyMethods;
 import org.codehaus.groovy.runtime.StringGroovyMethods;
 import org.codehaus.groovy.util.CharSequenceReader;
@@ -88,6 +93,26 @@ import static jse.code.OS.WORKING_DIR_PATH;
 public class IO {
     static {jse.code.OS.InitHelper.init();}
     private final static int BUFFER_SIZE = 8192;
+    
+    /**
+     * 在读取文件到结束时尝试抛出一个 {@link IOException}，只在 {@link Conf#STRICT_IO}
+     * 开启时才会抛出
+     * @param aMsg 异常信息
+     * @throws FileEndException 在 {@link Conf#STRICT_IO} 开启时
+     */
+    @ApiStatus.Experimental
+    public static void fileEnd(String aMsg) throws FileEndException {
+        if (Conf.STRICT_IO) throw new FileEndException(aMsg);
+    }
+    /**
+     * 在读取文件到结束时尝试抛出一个 {@link IOException}，只在 {@link Conf#STRICT_IO}
+     * 开启时才会抛出
+     * @throws FileEndException 在 {@link Conf#STRICT_IO} 开启时
+     */
+    @ApiStatus.Experimental
+    public static void fileEnd() throws FileEndException {
+        if (Conf.STRICT_IO) throw new FileEndException();
+    }
     
     /**
      * 文本操作的工具类，这里包含只进行文本操作，但不进行文件读写的一些方法
@@ -285,22 +310,36 @@ public class IO {
                 return CharScanner.isDigit(aChar);
             }}
         }
+        
         /**
          * 将单个字符串转为 Number 值，要求前后不能含有任何空格；
          * 自动检测整数类型和小数类型，对于小数会返回{@link Double}，整数会根据大小返回
          * {@link Integer} 或 {@link Long}
          * @param aStr 需要进行转换的字符串
-         * @return 转换得到的数字，如果转换失败则返回 {@code null}
+         * @return 转换得到的数字
          */
-        public static @Nullable Number str2number(String aStr) {
+        public static Number str2number(String aStr) {
+            return str2number(!Conf.STRICT_IO, aStr);
+        }
+        /**
+         * 将单个字符串转为 Number 值，要求前后不能含有任何空格；
+         * 自动检测整数类型和小数类型，对于小数会返回{@link Double}，整数会根据大小返回
+         * {@link Integer} 或 {@link Long}
+         * @param aIgnoreErr 在转换失败时是否忽略错误，如果忽略错误则返回 {@code null}，默认在
+         *        {@link Conf#STRICT_IO} 开启时则不会忽略
+         * @param aStr 需要进行转换的字符串
+         * @return 转换得到的数字
+         */
+        public static Number str2number(boolean aIgnoreErr, String aStr) {
+            boolean[] rAnyErr = {false};
             // 先直接转 char[]，适配 groovy-json 的 CharScanner
             char[] tChar = aStr.toCharArray();
             // 先判断开头，这样可以避免抛出错误带来的性能损失
-            if (!charIsDigitDecimal_(tChar[0])) return null;
-            // 但一般还是使用 try，这样避免意外的情况
-            try {return CharScanner.parseNumber(tChar, 0, tChar.length);}
-            catch (Exception ignored) {}
-            return null;
+            if (!charIsDigitDecimal_(tChar[0])) {
+                if (aIgnoreErr) return null;
+                throw new NumberFormatException("Invalid number start char: "+tChar[0]);
+            }
+            return CharScanner.parseNumber(aIgnoreErr, rAnyErr, tChar, 0, tChar.length);
         }
         
         /**
@@ -356,19 +395,52 @@ public class IO {
         
         /**
          * 将字符串转换成 jse 的向量数据 {@link Vector}，认为这个字符串是按照逗号
-         * {@code ","} 或者空格 {@code " "} 分割的数字组成的，会忽略每个数据开头和结尾的任意数量空格，
-         * 任何读取失败的数字都会存为 {@link Double#NaN} 而不是抛出错误。
+         * {@code ","} 或者空格 {@code " "} 分割的数字组成的，会忽略每个数据开头和结尾的任意数量空格。
          * <p>
          * 这样设计主要确保支持 lammps 或其他软件的输出文件中使用的空格分割的数据，并也能兼容一般的逗号分割的 csv 文件。
          * <p>
-         * 此操作进行了专门优化，使用了 groovy-json 中的 {@link CharScanner#parseDouble(char[], int, int)}
-         * 等方法，总体比直接 {@code split} 并用 java 的 {@link Double#parseDouble(String)} 快一倍以上。
+         * 此操作进行了专门优化，使用了类似 groovy-json 中的 {@link CharScanner#parseDouble}
+         * 等方法，总体比直接 {@code split} 并用 java 的 {@link Double#parseDouble} 快一倍以上。
          *
          * @param aStr 需要进行转换的字符串
          * @param aLength 期望的向量长度，字符串超出的数据会忽略，不足的会填充 {@link Double#NaN}
          * @return 转换得到的向量 {@link Vector}
          */
         public static Vector str2data(String aStr, int aLength) {
+            return str2data(!Conf.STRICT_IO, aStr, aLength);
+        }
+        /**
+         * 将字符串转换成 jse 的向量数据 {@link Vector}，认为这个字符串是按照逗号
+         * {@code ","} 或者空格 {@code " "} 分割的数字组成的，会忽略每个数据开头和结尾的任意数量空格。
+         * <p>
+         * 这样设计主要确保支持 lammps 或其他软件的输出文件中使用的空格分割的数据，并也能兼容一般的逗号分割的 csv 文件。
+         * <p>
+         * 此操作进行了专门优化，使用了类似 groovy-json 中的 {@link CharScanner#parseDouble}
+         * 等方法，总体比直接 {@code split} 并用 java 的 {@link Double#parseDouble} 快一倍以上。
+         *
+         * @param aStr 需要进行转换的字符串
+         * @return 转换得到的向量 {@link Vector}
+         */
+        public static Vector str2data(String aStr) {
+            return str2data(!Conf.STRICT_IO, aStr);
+        }
+        /**
+         * 将字符串转换成 jse 的向量数据 {@link Vector}，认为这个字符串是按照逗号
+         * {@code ","} 或者空格 {@code " "} 分割的数字组成的，会忽略每个数据开头和结尾的任意数量空格。
+         * <p>
+         * 这样设计主要确保支持 lammps 或其他软件的输出文件中使用的空格分割的数据，并也能兼容一般的逗号分割的 csv 文件。
+         * <p>
+         * 此操作进行了专门优化，使用了类似 groovy-json 中的 {@link CharScanner#parseDouble}
+         * 等方法，总体比直接 {@code split} 并用 java 的 {@link Double#parseDouble} 快一倍以上。
+         *
+         * @param aIgnoreErr 在任何读取失败时是否忽略错误，如果忽略错误则统一读取为 {@link Double#NaN}，默认在
+         *        {@link Conf#STRICT_IO} 开启时则不会忽略
+         * @param aStr 需要进行转换的字符串
+         * @param aLength 期望的向量长度，字符串超出的数据会忽略，不足的会填充 {@link Double#NaN}
+         * @return 转换得到的向量 {@link Vector}
+         */
+        public static Vector str2data(boolean aIgnoreErr, String aStr, int aLength) {
+            boolean[] rAnyErr = {false};
             // 不足的数据现在默认为 NaN
             Vector rData = Vectors.NaN(aLength);
             // 先直接转 char[]，适配 groovy-json 的 CharScanner
@@ -396,8 +468,7 @@ public class IO {
                 } else {
                     if (tCharCode<=32 || tCharCode==44) {
                         if (tCharCode == 44) tHasComma = true;
-                        try {rData.set(tIdx, CharScanner.parseDouble(tChar, tFrom, i));}
-                        catch (Exception ignored) {}
+                        rData.set(tIdx, CharScanner.parseDouble(aIgnoreErr, rAnyErr, tChar, tFrom, i));
                         tFrom = -1;
                         ++tIdx;
                         if (tIdx == aLength) return rData;
@@ -406,10 +477,64 @@ public class IO {
             }
             // 最后一个数据
             if (tFrom >= 0 && tFrom < tChar.length) {
-                try {rData.set(tIdx, CharScanner.parseDouble(tChar, tFrom, tChar.length));}
-                catch (Exception ignored) {}
+                rData.set(tIdx, CharScanner.parseDouble(aIgnoreErr, rAnyErr, tChar, tFrom, tChar.length));
             }
             return rData;
+        }
+        /**
+         * 将字符串转换成 jse 的向量数据 {@link Vector}，认为这个字符串是按照逗号
+         * {@code ","} 或者空格 {@code " "} 分割的数字组成的，会忽略每个数据开头和结尾的任意数量空格。
+         * <p>
+         * 这样设计主要确保支持 lammps 或其他软件的输出文件中使用的空格分割的数据，并也能兼容一般的逗号分割的 csv 文件。
+         * <p>
+         * 此操作进行了专门优化，使用了类似 groovy-json 中的 {@link CharScanner#parseDouble}
+         * 等方法，总体比直接 {@code split} 并用 java 的 {@link Double#parseDouble} 快一倍以上。
+         *
+         * @param aIgnoreErr 在任何读取失败时是否忽略错误，如果忽略错误则统一读取为 {@link Double#NaN}，默认在
+         *        {@link Conf#STRICT_IO} 开启时则不会忽略
+         * @param aStr 需要进行转换的字符串
+         * @return 转换得到的向量 {@link Vector}
+         */
+        public static Vector str2data(boolean aIgnoreErr, String aStr) {
+            boolean[] rAnyErr = {false};
+            Vector.Builder rData = Vector.builder();
+            // 先直接转 char[]，适配 groovy-json 的 CharScanner
+            char[] tChar = aStr.toCharArray();
+            // 直接遍历忽略空格，获取开始和末尾，然后 parseDouble
+            int tFrom = CharScanner.skipWhiteSpace(tChar, 0, tChar.length);
+            boolean tHasComma = false;
+            for (int i = tFrom; i < tChar.length; ++i) {
+                int tCharCode = tChar[i];
+                if (tFrom < 0) {
+                    if (tCharCode > 32) {
+                        if (tCharCode == 44) {
+                            if (tHasComma) {
+                                rData.add(Double.NaN);
+                            } else {
+                                tHasComma = true;
+                            }
+                        } else {
+                            tHasComma = false;
+                            tFrom = i;
+                        }
+                    }
+                } else {
+                    if (tCharCode<=32 || tCharCode==44) {
+                        if (tCharCode == 44) tHasComma = true;
+                        rData.add(CharScanner.parseDouble(aIgnoreErr, rAnyErr, tChar, tFrom, i));
+                        tFrom = -1;
+                    }
+                }
+            }
+            // 最后一个数据
+            if (tFrom >= 0 && tFrom < tChar.length) {
+                rData.add(CharScanner.parseDouble(aIgnoreErr, rAnyErr, tChar, tFrom, tChar.length));
+            } else
+            if (tHasComma) {
+                // 分号结尾补充 nan
+                rData.add(Double.NaN);
+            }
+            return rData.build();
         }
         
         /**
@@ -808,6 +933,124 @@ public class IO {
             TomlBuilder tBuilder = new TomlBuilder();
             tBuilder.call(aList);
             return tBuilder.toString();
+        }
+        
+        /**
+         * 将一个 xml 字符串转换成 {@link Map}，这里直接调用了 {@link XmlSlurper#parse(Reader)}
+         * 实现读取部分。按照 Jackson 的标准进行 Map 转换，虽然某些情况会有信息损失但基本够用并且可以有效返向转换。
+         * <p>
+         * 如果希望无损转换则应该直接使用 {@link XmlSlurper#parse(Reader)}
+         *
+         * @param aText 需要解析的 xml 字符串
+         * @return 解析得到的 {@link Map}
+         * @see IO#xml2map(String)
+         * @see IO.Text#map2xml(Map)
+         */
+        public static Map<?, ?> xml2map(@Language("XML") String aText) throws Exception {
+            return Text.parseXmlRoot((new XmlSlurper()).parseText(aText));
+        }
+        /**
+         * 将一个 {@link Map} 保存成 xml 格式的字符串，这里调用了 {@link MarkupBuilder}
+         * 来实现构造和写入部分。按照 Jackson 的标准进行 Map 转换来保证内置约定的简洁表示。
+         * @param aMap 需要编码成 xml 的 {@link Map}
+         * @return 编码得到的 xml 字符串
+         * @see IO#map2xml(Map, String)
+         * @see IO.Text#xml2map(String)
+         */
+        public static String map2xml(Map<?, ?> aMap) {
+            Writer tWriter = new StringWriter();
+            MarkupBuilder rBuilder = new MarkupBuilder(tWriter);
+            Text.buildXmlRoot(rBuilder, aMap);
+            return tWriter.toString();
+        }
+        
+        static void buildXmlRoot(MarkupBuilder rBuilder, Map<?, ?> aMap) {
+            if (aMap.size() != 1) {
+                aMap = Maps.of("root", aMap);
+            }
+            buildNode_(rBuilder, aMap);
+        }
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        private static void buildNode_(final MarkupBuilder rBuilder, Map<?, ?> aMap) {
+            for (Map.Entry<?, ?> tEntry : aMap.entrySet()) {
+                String tKey = tEntry.getKey().toString();
+                Object tValue = tEntry.getValue();
+                if (tValue instanceof Map) {
+                    final Map tAttrs = new LinkedHashMap();
+                    final Map tChildren = new LinkedHashMap();
+                    for (Map.Entry<?, ?> tSubEntry : ((Map<?, ?>)tValue).entrySet()) {
+                        String tSubKey = tSubEntry.getKey().toString();
+                        Object tSubValue = tSubEntry.getValue();
+                        if (tSubKey.startsWith("@")) {
+                            tAttrs.put(tSubKey.substring(1), tSubValue);
+                        } else {
+                            tChildren.put(tSubKey, tSubValue);
+                        }
+                    }
+                    rBuilder.invokeMethod(tKey, new Object[]{tAttrs, new Closure<Void>(null) {
+                        public Void call() {
+                            buildNode_(rBuilder, tChildren);
+                            return null;
+                        }
+                    }});
+                } else
+                if (tValue instanceof List) {
+                    for (Object tSubValue : (List<?>)tValue) {
+                        buildNode_(rBuilder, Maps.of(tKey, tSubValue));
+                    }
+                } else {
+                    rBuilder.invokeMethod(tKey, tValue);
+                }
+            }
+        }
+        /**
+         * 按照 Jackson 的标准将 {@link GPathResult} 转换成
+         * Map，虽然某些情况会有信息损失但基本够用并且可以有效返向转换。
+         */
+        static Map<?, ?> parseXmlRoot(GPathResult aRoot) {
+            if (aRoot.size()!=1) throw new IllegalArgumentException("root node size MUST be 1");
+            if (!(aRoot instanceof NodeChild)) throw new IllegalArgumentException("root node MUST be NodeChild");
+            return Maps.of(aRoot.name(), parseNode_((NodeChild)aRoot));
+        }
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        private static Object parseNode_(NodeChild aNode) {
+            Map rMap = new LinkedHashMap();
+            // 属性
+            Map<?, ?> tAttr = (aNode).attributes();
+            for (Map.Entry<?, ?> tEntry : tAttr.entrySet()) {
+                rMap.put("@"+tEntry.getKey(), tEntry.getValue());
+            }
+            // 子节点
+            for (Object tObj : aNode.children()) {
+                if (tObj instanceof NodeChild) {
+                    NodeChild tChild = (NodeChild)tObj;
+                    String tName = tChild.name();
+                    Object tValue = parseNode_(tChild);
+                    
+                    Object oValue = rMap.get(tName);
+                    if (oValue == null) {
+                        rMap.put(tName, tValue);
+                    } else
+                    if (oValue instanceof Map) {
+                        List tList = new ArrayList(2);
+                        tList.add(oValue);
+                        tList.add(tValue);
+                        rMap.put(tName, tList);
+                    } else
+                    if (oValue instanceof List) {
+                        ((List)oValue).add(tValue);
+                    }
+                }
+            }
+            // 文本
+            String tText = aNode.text();
+            if (rMap.isEmpty()) {
+                return tText;
+            } else
+            if (!tText.isEmpty()) {
+                rMap.put("#text", tText);
+            }
+            return rMap;
         }
     }
     
@@ -2375,6 +2618,53 @@ public class IO {
             TomlBuilder tBuilder = new TomlBuilder();
             tBuilder.call(aList);
             tBuilder.writeTo(tWriter);
+        }
+    }
+    
+    /**
+     * 将一个 xml 文件转换成 {@link Map}，这里直接调用了 {@link XmlSlurper#parse(Reader)}
+     * 实现读取部分。按照 Jackson 的标准进行 Map 转换，虽然某些情况会有信息损失但基本够用并且可以有效返向转换。
+     * <p>
+     * 如果希望无损转换则应该直接使用 {@link XmlSlurper#parse(Reader)}
+     *
+     * @param aFilePath 需要读取并解析的 xml 文件
+     * @return 解析得到的 {@link Map}
+     * @see IO.Text#xml2map(String)
+     * @see IO#map2xml(Map, String)
+     */
+    public static Map<?, ?> xml2map(String aFilePath) throws Exception {
+        try (Reader tReader = toReader(aFilePath)) {
+            return xml2map(tReader);
+        }
+    }
+    /**
+     * 将一个 xml 文件转换成 {@link Map}，这里直接调用了 {@link XmlSlurper#parse(Reader)}
+     * 实现读取部分。按照 Jackson 的标准进行 Map 转换，虽然某些情况会有信息损失但基本够用并且可以有效返向转换。
+     * <p>
+     * 如果希望无损转换则应该直接使用 {@link XmlSlurper#parse(Reader)}
+     *
+     * @param aReader 需要解析的 xml 文件读取流，不会自动关闭
+     * @return 解析得到的 {@link Map}
+     * @see IO#xml2map(String)
+     */
+    public static Map<?, ?> xml2map(Reader aReader) throws Exception {
+        return Text.parseXmlRoot((new XmlSlurper()).parse(aReader));
+    }
+    /**
+     * 将一个 {@link Map} 保存成 xml 格式的文本文件，这里调用了 {@link MarkupBuilder}
+     * 来实现构造和写入部分。按照 Jackson 的标准进行 Map 转换来保证内置约定的简洁表示。
+     * <p>
+     * 会覆盖已有文件，如果文件不存在会创建，如果输出目录不存在会递归创建。
+     *
+     * @param aMap 需要编码成 xml 的 {@link Map}
+     * @param aFilePath 需要保存的 xml 文件路径
+     * @see IO.Text#map2xml(Map)
+     * @see IO#xml2map(String)
+     */
+    public static void map2xml(Map<?, ?> aMap, String aFilePath) throws Exception {
+        try (Writer tWriter = toWriter(aFilePath)) {
+            MarkupBuilder rBuilder = new MarkupBuilder(tWriter);
+            Text.buildXmlRoot(rBuilder, aMap);
         }
     }
     

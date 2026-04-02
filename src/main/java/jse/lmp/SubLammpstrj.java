@@ -1,6 +1,8 @@
 package jse.lmp;
 
 import jse.atom.*;
+import jse.atom.data.DataXYZ;
+import jse.code.FileEndException;
 import jse.code.IO;
 import jse.code.UT;
 import jse.code.collection.AbstractCollections;
@@ -23,7 +25,24 @@ import java.util.Arrays;
 import static jse.code.CS.*;
 import static jse.lmp.Lammpstrj.*;
 
-/** 每个帧的子 Lammpstrj */
+/**
+ * <a href="https://docs.lammps.org/dump.html">
+ * LAMMPS dump </a> 格式支持，一般来说 lammps dump
+ * 对应多帧的原子数据结构，此类对应其中的单帧数据。
+ * <p>
+ * 使用 {@link Lammpstrj} 来对整个 dump 文件进行多帧的读写以及其他操作
+ * <p>
+ * 通过 {@link #asTable()} 转为 {@link ITable} 从而实现自定义列的读写
+ * <p>
+ * 别称为 {@link SubDump}
+ *
+ * @see IAtomData IAtomData: 原子数据类型通用接口
+ * @see Lammpstrj Lammpstrj: 多帧的 lammps dump 类型
+ * @see #read(String) read(String): 读取指定路径的 lammps dump 原子数据（单帧）
+ * @see #write(String) write(String): 将此 lammps dump 原子数据写入指定路径（单帧）
+ * @see #of(IAtomData) of(IAtomData): 将任意的原子数据转换成 lammps dump 类型（单帧）
+ * @author liqa
+ */
 public class SubLammpstrj extends AbstractSettableAtomData {
     final static String[] BOX_BOUND = {"pp", "pp", "pp"};
     
@@ -52,7 +71,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         mBox = aBox;
         mAtomData = aAtomData;
         
-        for (int i = 0; i < aAtomData.columnNumber(); ++i) {
+        for (int i = 0; i < aAtomData.ncols(); ++i) {
             String tKey = aAtomData.getHead(i);
             if (mKeyX == null) {
                 if (tKey.equalsIgnoreCase("x")) {
@@ -127,7 +146,6 @@ public class SubLammpstrj extends AbstractSettableAtomData {
     // dump 额外的属性
     public long timeStep() {return mTimeStep;}
     public String[] boxBounds() {return mBoxBounds;}
-    /** @deprecated use {@link #box} */ @Deprecated public LmpBox lmpBox() {return box();}
     
     public SubLammpstrj setTimeStep(long aTimeStep) {mTimeStep = aTimeStep; return this;}
     /** Groovy stuffs */
@@ -244,7 +262,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         boolean tIsUnscaled = (mXType==XYZType.NORMAL || mXType==XYZType.UNWRAPPED) && (mYType==XYZType.NORMAL || mYType==XYZType.UNWRAPPED) && (mZType==XYZType.NORMAL || mZType==XYZType.UNWRAPPED);
         if (!tIsScaled && !tIsUnscaled) throw new UnsupportedOperationException("`setBox` with valid atom position for mix scaled/unscaled xyz data");
         
-        final int tAtomNum = atomNumber();
+        final int tAtomNum = this.natoms();
         XYZ tBuf = new XYZ();
         // 先统一调整速度，速度总是没有 scaled
         if (!aKeepAtomPosition && mHasVelocities) {
@@ -317,7 +335,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         if (mKeyY == null) throw new UnsupportedOperationException("`setDenseNormalized` for Lammpstrj without y data");
         if (mKeyZ == null) throw new UnsupportedOperationException("`setDenseNormalized` for Lammpstrj without z data");
         
-        double tScale = MathEX.Fast.cbrt(volume() / atomNumber());
+        double tScale = MathEX.Fast.cbrt(volume() / this.natoms());
         tScale = 1.0 / tScale;
         return (SubLammpstrj)setBoxScale(tScale);
     }
@@ -533,15 +551,15 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         };
     }
     @Override public LmpBox box() {return mBox;}
-    @Override public int atomNumber() {return mAtomData.rowNumber();}
-    @Override public int atomTypeNumber() {return mAtomTypeNum;}
-    @Override public SubLammpstrj setAtomTypeNumber(int aAtomTypeNum) {
+    @Override public int natoms() {return mAtomData.nrows();}
+    @Override public int ntypes() {return mAtomTypeNum;}
+    @Override public SubLammpstrj setNtypes(int aNumTypes) {
         int oTypeNum = mAtomTypeNum;
-        if (aAtomTypeNum == oTypeNum) return this;
-        mAtomTypeNum = aAtomTypeNum;
-        if (aAtomTypeNum<oTypeNum && mKeyType!=null) {
+        if (aNumTypes == oTypeNum) return this;
+        mAtomTypeNum = aNumTypes;
+        if (aNumTypes <oTypeNum && mKeyType!=null) {
             // 现在支持设置更小的值，更大的种类会直接截断
-            mAtomData.col(mKeyType).op().map2this(v -> Math.min(v, aAtomTypeNum));
+            mAtomData.col(mKeyType).op().map2this(v -> Math.min(v, aNumTypes));
             return this;
         }
         return this;
@@ -562,7 +580,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
             SubLammpstrj tSubLammpstrj = (SubLammpstrj)aAtomData;
             return new SubLammpstrj(aTimeStep, Arrays.copyOf(tSubLammpstrj.mBoxBounds, tSubLammpstrj.mBoxBounds.length), tSubLammpstrj.mBox.copy(), tSubLammpstrj.mAtomData.copy());
         } else {
-            final int tAtomNum = aAtomData.atomNumber();
+            final int tAtomNum = aAtomData.natoms();
             Table rAtomData;
             // 一般的情况，需要考虑斜方的模拟盒的情况
             IBox tBox = aAtomData.box();
@@ -650,14 +668,25 @@ public class SubLammpstrj extends AbstractSettableAtomData {
     /// 文件读写
     /**
      * 从文件 lammps 输出的 dump 文件中读取来实现初始化
-     * @author liqa
      * @param aFilePath lammps 输出的 dump 文件路径
-     * @return 读取得到的 SubLammpstrj 对象，只会读取第一帧，如果文件不完整会直接返回 null
+     * @return 读取得到的 {@link SubLammpstrj} 对象，只会读取第一帧
      * @throws IOException 如果读取失败
+     * @author liqa
      */
-    public static SubLammpstrj read(String aFilePath) throws IOException {try (BufferedReader tReader = IO.toReader(aFilePath)) {return read_(tReader);}}
-    /** 改为 {@link BufferedReader} 而不是 {@code List<String>} 来避免过多内存占用；不会自动关闭流，只读取一帧的数据然后停止读取 */
-    static SubLammpstrj read_(BufferedReader aReader) throws IOException {
+    public static SubLammpstrj read(String aFilePath) throws IOException {
+        try (BufferedReader tReader = IO.toReader(aFilePath)) {
+            return read(tReader);
+        }
+    }
+    /**
+     * 提供使用 {@link BufferedReader} 的流式接口
+     * @param aReader 需要的读取流
+     * @return 读取得到的 {@link SubLammpstrj} 对象，只会读取一帧
+     * @throws IOException 如果读取失败
+     * @throws FileEndException 在发现文件似乎不完整时
+     * @author liqa
+     */
+    public static SubLammpstrj read(BufferedReader aReader) throws IOException {
         String tLine;
         String[] tTokens;
         
@@ -668,27 +697,24 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         final Table aAtomData;
         
         // 读取时间步数
-        IO.Text.findLineContaining(aReader, "ITEM: TIMESTEP", true); tLine=aReader.readLine();
-        if (tLine == null) return null;
-        tTokens = IO.Text.splitBlank(tLine);
+        IO.Text.findLineContaining(aReader, "ITEM: TIMESTEP", true); tLine = aReader.readLine();
+        if (tLine == null) {IO.fileEnd("Fail to find `ITEM: TIMESTEP`"); return null;} tTokens = IO.Text.splitBlank(tLine);
         aTimeStep = Long.parseLong(tTokens[0]);
         // 读取原子总数
-        IO.Text.findLineContaining(aReader, "ITEM: NUMBER OF ATOMS", true); tLine=aReader.readLine();
-        if (tLine == null) return null;
-        tTokens = IO.Text.splitBlank(tLine);
+        IO.Text.findLineContaining(aReader, "ITEM: NUMBER OF ATOMS", true); tLine = aReader.readLine();
+        if (tLine == null) {IO.fileEnd("Fail to find `ITEM: NUMBER OF ATOMS`"); return null;} tTokens = IO.Text.splitBlank(tLine);
         tAtomNum = Integer.parseInt(tTokens[0]);
         // 读取模拟盒信息
         tLine = IO.Text.findLineContaining(aReader, "ITEM: BOX BOUNDS", true);
-        if (tLine == null) return null;
-        tTokens = IO.Text.splitBlank(tLine);
+        if (tLine == null) {IO.fileEnd("Fail to find `ITEM: BOX BOUNDS`"); return null;} tTokens = IO.Text.splitBlank(tLine);
         // 斜方支持
         if (tTokens[3].equalsIgnoreCase("xy")) {
             aBoxBounds = new String[] {tTokens[6], tTokens[7], tTokens[8]};
-            tLine=aReader.readLine(); tTokens = IO.Text.splitBlank(tLine);
+            tLine=aReader.readLine(); if (tLine==null) {IO.fileEnd(); return null;} tTokens = IO.Text.splitBlank(tLine);
             double aXlo = Double.parseDouble(tTokens[0]); double aXhi = Double.parseDouble(tTokens[1]); double aXY = Double.parseDouble(tTokens[2]);
-            tLine=aReader.readLine(); tTokens = IO.Text.splitBlank(tLine);
+            tLine=aReader.readLine(); if (tLine==null) {IO.fileEnd(); return null;} tTokens = IO.Text.splitBlank(tLine);
             double aYlo = Double.parseDouble(tTokens[0]); double aYhi = Double.parseDouble(tTokens[1]); double aXZ = Double.parseDouble(tTokens[2]);
-            tLine=aReader.readLine(); tTokens = IO.Text.splitBlank(tLine);
+            tLine=aReader.readLine(); if (tLine==null) {IO.fileEnd(); return null;} tTokens = IO.Text.splitBlank(tLine);
             double aZlo = Double.parseDouble(tTokens[0]); double aZhi = Double.parseDouble(tTokens[1]); double aYZ = Double.parseDouble(tTokens[2]);
             // 注意 dump 和 data 斜方格式不同，需要转换
             aXlo -= Math.min(Math.min(0.0, aXY), Math.min(aXZ, aXY+aXZ));
@@ -698,29 +724,26 @@ public class SubLammpstrj extends AbstractSettableAtomData {
             aBox = new LmpBoxPrism(aXlo, aXhi, aYlo, aYhi, aZlo, aZhi, aXY, aXZ, aYZ);
         } else {
             aBoxBounds = new String[] {tTokens[3], tTokens[4], tTokens[5]};
-            tLine=aReader.readLine(); tTokens = IO.Text.splitBlank(tLine);
+            tLine=aReader.readLine(); if (tLine==null) {IO.fileEnd(); return null;} tTokens = IO.Text.splitBlank(tLine);
             double aXlo = Double.parseDouble(tTokens[0]); double aXhi = Double.parseDouble(tTokens[1]);
-            tLine=aReader.readLine(); tTokens = IO.Text.splitBlank(tLine);
+            tLine=aReader.readLine(); if (tLine==null) {IO.fileEnd(); return null;} tTokens = IO.Text.splitBlank(tLine);
             double aYlo = Double.parseDouble(tTokens[0]); double aYhi = Double.parseDouble(tTokens[1]);
-            tLine=aReader.readLine(); tTokens = IO.Text.splitBlank(tLine);
+            tLine=aReader.readLine(); if (tLine==null) {IO.fileEnd(); return null;} tTokens = IO.Text.splitBlank(tLine);
             double aZlo = Double.parseDouble(tTokens[0]); double aZhi = Double.parseDouble(tTokens[1]);
             aBox = new LmpBox(aXlo, aXhi, aYlo, aYhi, aZlo, aZhi);
         }
         
         // 读取原子信息
         tLine = IO.Text.findLineContaining(aReader, "ITEM: ATOMS", true);
-        if (tLine == null) return null;
-        tTokens = IO.Text.splitBlank(tLine);
+        if (tLine == null) {IO.fileEnd("Fail to find `ITEM: ATOMS`"); return null;} tTokens = IO.Text.splitBlank(tLine);
         String[] tAtomDataKeys = new String[tTokens.length-2];
         System.arraycopy(tTokens, 2, tAtomDataKeys, 0, tAtomDataKeys.length);
-        boolean tIsAtomDataReadFull = true;
         aAtomData = Tables.zeros(tAtomNum, tAtomDataKeys);
         for (IVector tRow : aAtomData.rows()) {
             tLine = aReader.readLine();
-            if (tLine == null) {tIsAtomDataReadFull = false; break;}
+            if (tLine == null) {IO.fileEnd(); return null;}
             tRow.fill(IO.Text.str2data(tLine, tAtomDataKeys.length));
         }
-        if (!tIsAtomDataReadFull) return null;
         
         // 创建 SubLammpstrj 并返回
         return new SubLammpstrj(aTimeStep, aBoxBounds, aBox, aAtomData);
@@ -734,13 +757,19 @@ public class SubLammpstrj extends AbstractSettableAtomData {
      * @param aFilePath 需要输出的路径
      * @throws IOException 如果写入文件失败
      */
-    public void write(String aFilePath) throws IOException {try (IO.IWriteln tWriteln = IO.toWriteln(aFilePath)) {write_(tWriteln);}}
-    /** 改为 {@link IO.IWriteln} 而不是 {@code List<String>} 来避免过多内存占用；不会自动关闭流，只写入一帧的数据然后停止写入 */
-    void write_(IO.IWriteln aWriteln) throws IOException {
+    public void write(String aFilePath) throws IOException {
+        try (IO.IWriteln tWriteln = IO.toWriteln(aFilePath)) {write(tWriteln);}
+    }
+    /**
+     * 提供使用 {@link IO.IWriteln} 的流式接口
+     * @param aWriteln 需要写入的流
+     * @throws IOException 如果写入文件失败
+     */
+    public void write(IO.IWriteln aWriteln) throws IOException {
         aWriteln.writeln("ITEM: TIMESTEP");
         aWriteln.writeln(String.valueOf(mTimeStep));
         aWriteln.writeln("ITEM: NUMBER OF ATOMS");
-        aWriteln.writeln(String.valueOf(atomNumber()));
+        aWriteln.writeln(String.valueOf(this.natoms()));
         if (!isPrism()) {
         aWriteln.writeln("ITEM: BOX BOUNDS "+String.join(" ", boxBounds()));
         aWriteln.writeln(mBox.xlo()+" "+mBox.xhi());
@@ -788,7 +817,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         // 先发送 SubLammpstrj 的必要信息，[AtomNum | AtomDataKeyNum, Box.xlo, Box.xhi, Box.ylo, Box.yhi, Box.zlo, Box.zhi, TimeStep]
         // 为了使用简单并且避免 double 转 long 造成的信息损耗，这里统一用 long[] 来传输信息
         aComm.send(new long[] {
-              UT.Serial.combineI(aSubLammpstrj.atomNumber(), aSubLammpstrj.mAtomData.columnNumber())
+              UT.Serial.combineI(aSubLammpstrj.natoms(), aSubLammpstrj.mAtomData.ncols())
             , Double.doubleToLongBits(aSubLammpstrj.mBox.xlo())
             , Double.doubleToLongBits(aSubLammpstrj.mBox.xhi())
             , Double.doubleToLongBits(aSubLammpstrj.mBox.ylo())
@@ -833,7 +862,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
             }
             // 先发送 SubLammpstrj 的必要信息，[AtomNum | AtomDataKeyNum, Box.xlo, Box.xhi, Box.ylo, Box.yhi, Box.zlo, Box.zhi, TimeStep]
             aComm.bcast(new long[] {
-                  UT.Serial.combineI(aSubLammpstrj.atomNumber(), aSubLammpstrj.mAtomData.columnNumber())
+                  UT.Serial.combineI(aSubLammpstrj.natoms(), aSubLammpstrj.mAtomData.ncols())
                 , Double.doubleToLongBits(aSubLammpstrj.mBox.xlo())
                 , Double.doubleToLongBits(aSubLammpstrj.mBox.xhi())
                 , Double.doubleToLongBits(aSubLammpstrj.mBox.ylo())

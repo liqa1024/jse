@@ -1113,7 +1113,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         });
     }
     
-    @Override public int atomTypeNumber() {return mTypeNum;}
+    @Override public int ntypes() {return mTypeNum;}
     @Override public boolean hasSymbol() {return true;}
     @Override public String symbol(int aType) {return mSymbols[aType-1];}
     public Basis basis(int aType) {return mBasis[0][aType-1];}
@@ -1194,7 +1194,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         final boolean tRequireGrad = rGrad!=null;
         if (aTest && tRequireGrad) throw new IllegalStateException();
         final boolean tTrainBasis = mTrainBasis;
-        final int tThreadNum = threadNumber();
+        final int tThreadNum = nthreads();
         if (tRequireGrad) {
             mGradParaBuf[0] = rGrad;
             for (Vector tGradPara : mGradParaBuf) {
@@ -1622,7 +1622,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     @ApiStatus.Internal
     protected void calNlAndAddData_(IAtomData aAtomData, double aEnergy, @Nullable IMatrix aForces, @Nullable IVector aStress, DataSet rData) {
         IntUnaryOperator tTypeMap = typeMap(aAtomData);
-        final int tAtomNum = aAtomData.atomNumber();
+        final int tAtomNum = aAtomData.natoms();
         // 添加数据时按照种类进行排序，从而提高缓存命中率
         for (int ti = 0; ti < mTypeNum; ++ti) {
             mTypeIlist[ti].clear();
@@ -1634,7 +1634,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         // 统一初始化 type
         IntList rAtomType = new IntList(tAtomNum);
         // 这里简单处理，直接重新构造新的 atomdata
-        AtomDataBuilder<AtomData> tBuilder = AtomData.builder().setBox(aAtomData.box()).setAtomTypeNumber(aAtomData.atomTypeNumber());
+        AtomDataBuilder<AtomData> tBuilder = AtomData.builder().setBox(aAtomData.box()).setNtypes(aAtomData.ntypes());
         for (int ti = 0; ti < mTypeNum; ++ti) {
             IntList tSubIlist = mTypeIlist[ti];
             int tSubSize = tSubIlist.size();
@@ -1795,7 +1795,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             mNormSigma[i].fill(0.0);
         }
         mNormDiv.fill(0);
-        final int tThreadNum = threadNumber();
+        final int tThreadNum = nthreads();
         Vector[][] tMuPar = new Vector[tThreadNum][mTypeNum];
         Vector[][] tSigmaPar = new Vector[tThreadNum][mTypeNum];
         Vector[][] tMaxPar = new Vector[tThreadNum][mTypeNum];
@@ -2061,7 +2061,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
      *
      * @return 参数数目 {@code mParas.size()}
      */
-    public int statParameterNumber() {
+    public int statParameterCount() {
         return mParas.size();
     }
     
@@ -2223,7 +2223,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             }}
         }
         // 打印参数数目信息
-        System.out.printf("N-Paras: %,d\n", statParameterNumber());
+        System.out.printf("N-Paras: %,d\n", statParameterCount());
         // 测试速度并打印速度信息
         try {
             statSpeed(1.0); // 预热 1 s

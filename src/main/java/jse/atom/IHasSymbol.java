@@ -3,7 +3,6 @@ package jse.atom;
 import jse.code.collection.AbstractRandomAccessList;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Collection;
 import java.util.List;
@@ -18,9 +17,7 @@ import java.util.function.IntUnaryOperator;
  */
 public interface IHasSymbol {
     /** @return 原子种类的总数 */
-    int atomTypeNumber();
-    /** @see #atomTypeNumber() */
-    @VisibleForTesting default int ntypes() {return atomTypeNumber();}
+    int ntypes();
     
     /** @return 是否包含元素符号信息 */
     boolean hasSymbol();
@@ -40,7 +37,7 @@ public interface IHasSymbol {
         if (!hasSymbol()) return null;
         return new AbstractRandomAccessList<@Nullable String>() {
             @Override public @Nullable String get(int index) {return symbol(index+1);}
-            @Override public int size() {return atomTypeNumber();}
+            @Override public int size() {return ntypes();}
         };
     }
     
@@ -54,8 +51,8 @@ public interface IHasSymbol {
     default IntUnaryOperator typeMap(IAtomData aAtomData) {
         if (!hasSymbol()) throw new UnsupportedOperationException("`typeMap` for IHasSymbol without symbols");
         if (!aAtomData.hasSymbol()) {
-            int tTypeNum = atomTypeNumber();
-            if (tTypeNum>0 && tTypeNum<aAtomData.atomTypeNumber()) throw new IllegalArgumentException("Invalid atom type number of AtomData: " + aAtomData.atomTypeNumber() + ", target: " + tTypeNum);
+            int tTypeNum = ntypes();
+            if (tTypeNum>0 && tTypeNum<aAtomData.ntypes()) throw new IllegalArgumentException("Invalid atom type number of AtomData: " + aAtomData.ntypes() + ", target: " + tTypeNum);
             return type->type;
         }
         return typeMap_(Objects.requireNonNull(symbols()), aAtomData);
@@ -87,7 +84,7 @@ public interface IHasSymbol {
      * @param aTypeMap 需要检测的种类映射
      */
     default void typeMapCheck(int aTypeNum, IntUnaryOperator aTypeMap) {
-        int tTypeNum = atomTypeNumber();
+        int tTypeNum = ntypes();
         if (tTypeNum <= 0) return;
         for (int tType = 1; tType <= aTypeNum; ++tType) {
             if (tTypeNum < aTypeMap.applyAsInt(tType)) throw new IllegalArgumentException("Invalid atom type number of TypeMap: " + aTypeMap.applyAsInt(tType) + ", limit: " + tTypeNum);

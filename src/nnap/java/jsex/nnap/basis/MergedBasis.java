@@ -40,9 +40,9 @@ public class MergedBasis extends Basis {
             tRCut = Math.max(tBasis.rcut(), tRCut);
             tSize += tBasis.size();
             if (tTypeNum < 0) {
-                tTypeNum = tBasis.atomTypeNumber();
+                tTypeNum = tBasis.ntypes();
             } else {
-                if (tTypeNum != tBasis.atomTypeNumber()) throw new IllegalArgumentException("atom type number mismatch");
+                if (tTypeNum != tBasis.ntypes()) throw new IllegalArgumentException("atom type number mismatch");
             }
             if (tHasSymbols == null) {
                 tHasSymbols = tBasis.hasSymbol();
@@ -59,7 +59,7 @@ public class MergedBasis extends Basis {
                     if (tSymbols_ != null) throw new IllegalArgumentException("symbols mismatch");
                 }
             }
-            tTypeNum = Math.min(tBasis.atomTypeNumber(), tTypeNum);
+            tTypeNum = Math.min(tBasis.ntypes(), tTypeNum);
         }
         mMergedBasis = aMergedBasis;
         mRCut = tRCut;
@@ -152,7 +152,7 @@ public class MergedBasis extends Basis {
     
     @Override public double rcut() {return mRCut;}
     @Override public int size() {return mSize;}
-    @Override public int atomTypeNumber() {return mTypeNum;}
+    @Override public int ntypes() {return mTypeNum;}
     @Override public boolean hasSymbol() {return mSymbols != null;}
     @Override public String symbol(int aType) {return mSymbols==null ? null : mSymbols[aType-1];}
     

@@ -24,20 +24,20 @@ import static jse.math.matrix.AbstractMatrixOperation.ebeCheck;
 
 public abstract class AbstractComplexMatrixOperation implements IComplexMatrixOperation {
     /** 通用的一些运算 */
-    @Override public IComplexMatrix plus        (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebePlus2Dest    (thisMatrix_()::iteratorCol, aRHS::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
-    @Override public IComplexMatrix minus       (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeMinus2Dest   (thisMatrix_()::iteratorCol, aRHS::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
-    @Override public IComplexMatrix lminus      (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeMinus2Dest   (aRHS::iteratorCol, thisMatrix_()::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
-    @Override public IComplexMatrix multiply    (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeMultiply2Dest(thisMatrix_()::iteratorCol, aRHS::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
-    @Override public IComplexMatrix div         (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeDiv2Dest     (thisMatrix_()::iteratorCol, aRHS::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
-    @Override public IComplexMatrix ldiv        (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeDiv2Dest     (aRHS::iteratorCol, thisMatrix_()::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
-    @Override public IComplexMatrix operate     (IComplexMatrix aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, ? super ComplexDouble> aOpt) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeDo2Dest(thisMatrix_()::iteratorCol, aRHS::iteratorCol, rMatrix::setIteratorCol, aOpt); return rMatrix;}
-    @Override public IComplexMatrix plus        (IMatrix        aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebePlus2Dest    (thisMatrix_()::iteratorCol, aRHS::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
-    @Override public IComplexMatrix minus       (IMatrix        aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeMinus2Dest   (thisMatrix_()::iteratorCol, aRHS::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
-    @Override public IComplexMatrix lminus      (IMatrix        aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeMinus2Dest   (aRHS::iteratorCol, thisMatrix_()::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
-    @Override public IComplexMatrix multiply    (IMatrix        aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeMultiply2Dest(thisMatrix_()::iteratorCol, aRHS::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
-    @Override public IComplexMatrix div         (IMatrix        aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeDiv2Dest     (thisMatrix_()::iteratorCol, aRHS::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
-    @Override public IComplexMatrix ldiv        (IMatrix        aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeDiv2Dest     (aRHS::iteratorCol, thisMatrix_()::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
-    @Override public IComplexMatrix operate     (IMatrix        aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, Double> aOpt) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeDo2Dest(thisMatrix_()::iteratorCol, aRHS::iteratorCol, rMatrix::setIteratorCol, aOpt); return rMatrix;}
+    @Override public IComplexMatrix plus        (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebePlus2Dest(thisMatrix_()::iteratorCol, aRHS::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
+    @Override public IComplexMatrix minus       (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeMinus2Dest(thisMatrix_()::iteratorCol, aRHS::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
+    @Override public IComplexMatrix lminus      (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeMinus2Dest(aRHS::iteratorCol, thisMatrix_()::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
+    @Override public IComplexMatrix multiply    (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeMultiply2Dest(thisMatrix_()::iteratorCol, aRHS::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
+    @Override public IComplexMatrix div         (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeDiv2Dest(thisMatrix_()::iteratorCol, aRHS::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
+    @Override public IComplexMatrix ldiv        (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeDiv2Dest(aRHS::iteratorCol, thisMatrix_()::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
+    @Override public IComplexMatrix operate     (IComplexMatrix aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, ? super ComplexDouble> aOpt) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeDo2Dest(thisMatrix_()::iteratorCol, aRHS::iteratorCol, rMatrix::setIteratorCol, aOpt); return rMatrix;}
+    @Override public IComplexMatrix plus        (IMatrix        aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebePlus2Dest(thisMatrix_()::iteratorCol, aRHS::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
+    @Override public IComplexMatrix minus       (IMatrix        aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeMinus2Dest(thisMatrix_()::iteratorCol, aRHS::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
+    @Override public IComplexMatrix lminus      (IMatrix        aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeMinus2Dest(aRHS::iteratorCol, thisMatrix_()::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
+    @Override public IComplexMatrix multiply    (IMatrix        aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeMultiply2Dest(thisMatrix_()::iteratorCol, aRHS::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
+    @Override public IComplexMatrix div         (IMatrix        aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeDiv2Dest(thisMatrix_()::iteratorCol, aRHS::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
+    @Override public IComplexMatrix ldiv        (IMatrix        aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeDiv2Dest(aRHS::iteratorCol, thisMatrix_()::iteratorCol, rMatrix::setIteratorCol); return rMatrix;}
+    @Override public IComplexMatrix operate     (IMatrix        aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, Double> aOpt) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); IComplexMatrix rMatrix = newMatrix_(); DATA.ebeDo2Dest(thisMatrix_()::iteratorCol, aRHS::iteratorCol, rMatrix::setIteratorCol, aOpt); return rMatrix;}
     
     @Override public IComplexMatrix plus        (IComplexDouble aRHS) {IComplexMatrix rMatrix = newMatrix_(); DATA.mapPlus2Dest    (thisMatrix_()::iteratorCol, aRHS, rMatrix::setIteratorCol); return rMatrix;}
     @Override public IComplexMatrix minus       (IComplexDouble aRHS) {IComplexMatrix rMatrix = newMatrix_(); DATA.mapMinus2Dest   (thisMatrix_()::iteratorCol, aRHS, rMatrix::setIteratorCol); return rMatrix;}
@@ -53,20 +53,20 @@ public abstract class AbstractComplexMatrixOperation implements IComplexMatrixOp
     @Override public IComplexMatrix ldiv        (double         aRHS) {IComplexMatrix rMatrix = newMatrix_(); DATA.mapLDiv2Dest    (thisMatrix_()::iteratorCol, aRHS, rMatrix::setIteratorCol); return rMatrix;}
     @Override public IComplexMatrix map         (IUnaryFullOperator<? extends IComplexDouble, ? super ComplexDouble> aOpt) {IComplexMatrix rMatrix = newMatrix_(); DATA.mapDo2Dest(thisMatrix_()::iteratorCol, rMatrix::setIteratorCol, aOpt); return rMatrix;}
     
-    @Override public void plus2this     (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); DATA.ebePlus2This    (thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
-    @Override public void minus2this    (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); DATA.ebeMinus2This   (thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
-    @Override public void lminus2this   (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); DATA.ebeLMinus2This  (thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
-    @Override public void multiply2this (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); DATA.ebeMultiply2This(thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
-    @Override public void div2this      (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); DATA.ebeDiv2This     (thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
-    @Override public void ldiv2this     (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); DATA.ebeLDiv2This    (thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
-    @Override public void operate2this  (IComplexMatrix aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, ? super ComplexDouble> aOpt) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); DATA.ebeDo2This(thisMatrix_()::setIteratorCol, aRHS::iteratorCol, aOpt);}
-    @Override public void plus2this     (IMatrix        aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); DATA.ebePlus2This    (thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
-    @Override public void minus2this    (IMatrix        aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); DATA.ebeMinus2This   (thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
-    @Override public void lminus2this   (IMatrix        aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); DATA.ebeLMinus2This  (thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
-    @Override public void multiply2this (IMatrix        aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); DATA.ebeMultiply2This(thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
-    @Override public void div2this      (IMatrix        aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); DATA.ebeDiv2This     (thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
-    @Override public void ldiv2this     (IMatrix        aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); DATA.ebeLDiv2This    (thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
-    @Override public void operate2this  (IMatrix        aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, Double> aOpt) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); DATA.ebeDo2This(thisMatrix_()::setIteratorCol, aRHS::iteratorCol, aOpt);}
+    @Override public void plus2this     (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); DATA.ebePlus2This(thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
+    @Override public void minus2this    (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); DATA.ebeMinus2This(thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
+    @Override public void lminus2this   (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); DATA.ebeLMinus2This(thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
+    @Override public void multiply2this (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); DATA.ebeMultiply2This(thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
+    @Override public void div2this      (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); DATA.ebeDiv2This(thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
+    @Override public void ldiv2this     (IComplexMatrix aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); DATA.ebeLDiv2This(thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
+    @Override public void operate2this  (IComplexMatrix aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, ? super ComplexDouble> aOpt) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); DATA.ebeDo2This(thisMatrix_()::setIteratorCol, aRHS::iteratorCol, aOpt);}
+    @Override public void plus2this     (IMatrix        aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); DATA.ebePlus2This(thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
+    @Override public void minus2this    (IMatrix        aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); DATA.ebeMinus2This(thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
+    @Override public void lminus2this   (IMatrix        aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); DATA.ebeLMinus2This(thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
+    @Override public void multiply2this (IMatrix        aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); DATA.ebeMultiply2This(thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
+    @Override public void div2this      (IMatrix        aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); DATA.ebeDiv2This(thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
+    @Override public void ldiv2this     (IMatrix        aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); DATA.ebeLDiv2This(thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
+    @Override public void operate2this  (IMatrix        aRHS, IBinaryFullOperator<? extends IComplexDouble, ? super ComplexDouble, Double> aOpt) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); DATA.ebeDo2This(thisMatrix_()::setIteratorCol, aRHS::iteratorCol, aOpt);}
     
     @Override public void plus2this     (IComplexDouble aRHS) {DATA.mapPlus2This    (thisMatrix_()::setIteratorCol, aRHS);}
     @Override public void minus2this    (IComplexDouble aRHS) {DATA.mapMinus2This   (thisMatrix_()::setIteratorCol, aRHS);}
@@ -87,8 +87,8 @@ public abstract class AbstractComplexMatrixOperation implements IComplexMatrixOp
     
     @Override public void fill          (IComplexDouble                     aRHS) {DATA.mapFill2This (thisMatrix_()::setIteratorCol, aRHS);}
     @Override public void fill          (double                             aRHS) {DATA.mapFill2This (thisMatrix_()::setIteratorCol, aRHS);}
-    @Override public void fill          (IComplexMatrix                     aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); DATA.ebeFill2This (thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
-    @Override public void fill          (IMatrix                            aRHS) {ebeCheck(thisMatrix_().rowNumber(), thisMatrix_().columnNumber(), aRHS.rowNumber(), aRHS.columnNumber()); DATA.ebeFill2This (thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
+    @Override public void fill          (IComplexMatrix                     aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); DATA.ebeFill2This(thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
+    @Override public void fill          (IMatrix                            aRHS) {ebeCheck(thisMatrix_().nrows(), thisMatrix_().ncols(), aRHS.nrows(), aRHS.ncols()); DATA.ebeFill2This(thisMatrix_()::setIteratorCol, aRHS::iteratorCol);}
     @Override public void assignCol     (Supplier<? extends IComplexDouble> aSup) {DATA.assign2This  (thisMatrix_()::setIteratorCol, aSup);}
     @Override public void assignCol     (DoubleSupplier                     aSup) {DATA.assign2This  (thisMatrix_()::setIteratorCol, aSup);}
     @Override public void assignRow     (Supplier<? extends IComplexDouble> aSup) {DATA.assign2This  (thisMatrix_()::setIteratorRow, aSup);}
@@ -100,8 +100,8 @@ public abstract class AbstractComplexMatrixOperation implements IComplexMatrixOp
     @Override public void fill          (IComplexMatrixGetter               aRHS) {
         final IComplexMatrix tThis = thisMatrix_();
         final IComplexDoubleSetOnlyIterator si = tThis.setIteratorCol();
-        final int tColNum = tThis.columnNumber();
-        final int tRowNum = tThis.rowNumber();
+        final int tColNum = tThis.ncols();
+        final int tRowNum = tThis.nrows();
         for (int col = 0; col < tColNum; ++col) for (int row = 0; row < tRowNum; ++row) {
             si.nextAndSet(aRHS.get(row, col));
         }
@@ -109,8 +109,8 @@ public abstract class AbstractComplexMatrixOperation implements IComplexMatrixOp
     @Override public void fill          (IMatrixGetter                      aRHS) {
         final IComplexMatrix tThis = thisMatrix_();
         final IComplexDoubleSetOnlyIterator si = tThis.setIteratorCol();
-        final int tColNum = tThis.columnNumber();
-        final int tRowNum = tThis.rowNumber();
+        final int tColNum = tThis.ncols();
+        final int tRowNum = tThis.nrows();
         for (int col = 0; col < tColNum; ++col) for (int row = 0; row < tRowNum; ++row) {
             si.nextAndSet(aRHS.get(row, col));
         }
@@ -119,8 +119,8 @@ public abstract class AbstractComplexMatrixOperation implements IComplexMatrixOp
     @Override public void fill          (@ClosureParams(value=FromString.class, options={"int,int"}) Closure<?> aGroovyTask) {
         final IComplexMatrix tThis = thisMatrix_();
         final IComplexDoubleSetOnlyIterator si = tThis.setIteratorCol();
-        final int tColNum = tThis.columnNumber();
-        final int tRowNum = tThis.rowNumber();
+        final int tColNum = tThis.ncols();
+        final int tRowNum = tThis.nrows();
         for (int col = 0; col < tColNum; ++col) for (int row = 0; row < tRowNum; ++row) {
             // 直接先执行然后检测类型决定如何设置
             Object tObj = aGroovyTask.call(row, col);
@@ -136,7 +136,7 @@ public abstract class AbstractComplexMatrixOperation implements IComplexMatrixOp
     
     @Override public IComplexMatrix transpose() {
         final IComplexMatrix tThis = thisMatrix_();
-        IComplexMatrix rMatrix = newMatrix_(tThis.columnNumber(), tThis.rowNumber());
+        IComplexMatrix rMatrix = newMatrix_(tThis.ncols(), tThis.nrows());
         final IComplexDoubleIterator it = tThis.iteratorCol();
         final IComplexDoubleSetOnlyIterator si = rMatrix.setIteratorRow();
         while (it.hasNext()) {
@@ -148,16 +148,16 @@ public abstract class AbstractComplexMatrixOperation implements IComplexMatrixOp
     @Override public IComplexMatrix refTranspose() {
         return new RefComplexMatrix() {
             private final IComplexMatrix mThis = thisMatrix_();
-            @Override public double getReal(int aRow, int aCol) {rangeCheckRow(aRow, rowNumber()); rangeCheckCol(aCol, columnNumber()); return mThis.getReal(aCol, aRow);}
-            @Override public double getImag(int aRow, int aCol) {rangeCheckRow(aRow, rowNumber()); rangeCheckCol(aCol, columnNumber()); return mThis.getImag(aCol, aRow);}
-            @Override public void set(int aRow, int aCol, double aReal, double aImag) {rangeCheckRow(aRow, rowNumber()); rangeCheckCol(aCol, columnNumber()); mThis.set(aCol, aRow, aReal, aImag);}
-            @Override public void setReal(int aRow, int aCol, double aReal) {rangeCheckRow(aRow, rowNumber()); rangeCheckCol(aCol, columnNumber()); mThis.setReal(aCol, aRow, aReal);}
-            @Override public void setImag(int aRow, int aCol, double aImag) {rangeCheckRow(aRow, rowNumber()); rangeCheckCol(aCol, columnNumber()); mThis.setImag(aCol, aRow, aImag);}
-            @Override public ComplexDouble getAndSet(int aRow, int aCol, double aReal, double aImag) {rangeCheckRow(aRow, rowNumber()); rangeCheckCol(aCol, columnNumber()); return mThis.getAndSet(aCol, aRow, aReal, aImag);}
-            @Override public double getAndSetReal(int aRow, int aCol, double aReal) {rangeCheckRow(aRow, rowNumber()); rangeCheckCol(aCol, columnNumber()); return mThis.getAndSetReal(aCol, aRow, aReal);}
-            @Override public double getAndSetImag(int aRow, int aCol, double aImag) {rangeCheckRow(aRow, rowNumber()); rangeCheckCol(aCol, columnNumber()); return mThis.getAndSetImag(aCol, aRow, aImag);}
-            @Override public int rowNumber() {return mThis.columnNumber();}
-            @Override public int columnNumber() {return mThis.rowNumber();}
+            @Override public double getReal(int aRow, int aCol) {rangeCheckRow(aRow, this.nrows()); rangeCheckCol(aCol, this.ncols()); return mThis.getReal(aCol, aRow);}
+            @Override public double getImag(int aRow, int aCol) {rangeCheckRow(aRow, this.nrows()); rangeCheckCol(aCol, this.ncols()); return mThis.getImag(aCol, aRow);}
+            @Override public void set(int aRow, int aCol, double aReal, double aImag) {rangeCheckRow(aRow, this.nrows()); rangeCheckCol(aCol, this.ncols()); mThis.set(aCol, aRow, aReal, aImag);}
+            @Override public void setReal(int aRow, int aCol, double aReal) {rangeCheckRow(aRow, this.nrows()); rangeCheckCol(aCol, this.ncols()); mThis.setReal(aCol, aRow, aReal);}
+            @Override public void setImag(int aRow, int aCol, double aImag) {rangeCheckRow(aRow, this.nrows()); rangeCheckCol(aCol, this.ncols()); mThis.setImag(aCol, aRow, aImag);}
+            @Override public ComplexDouble getAndSet(int aRow, int aCol, double aReal, double aImag) {rangeCheckRow(aRow, this.nrows()); rangeCheckCol(aCol, this.ncols()); return mThis.getAndSet(aCol, aRow, aReal, aImag);}
+            @Override public double getAndSetReal(int aRow, int aCol, double aReal) {rangeCheckRow(aRow, this.nrows()); rangeCheckCol(aCol, this.ncols()); return mThis.getAndSetReal(aCol, aRow, aReal);}
+            @Override public double getAndSetImag(int aRow, int aCol, double aImag) {rangeCheckRow(aRow, this.nrows()); rangeCheckCol(aCol, this.ncols()); return mThis.getAndSetImag(aCol, aRow, aImag);}
+            @Override public int nrows() {return mThis.ncols();}
+            @Override public int ncols() {return mThis.nrows();}
         };
     }
     
@@ -165,8 +165,8 @@ public abstract class AbstractComplexMatrixOperation implements IComplexMatrixOp
         final IComplexMatrix tThis = thisMatrix_();
         
         final IComplexDoubleIterator it = tThis.iteratorCol();
-        final int tRowNum = tThis.rowNumber();
-        final int tColNum = tThis.columnNumber();
+        final int tRowNum = tThis.nrows();
+        final int tColNum = tThis.ncols();
         for (int col = 0; col < tColNum; ++col) for (int row = 0; row < tRowNum; ++row) {
             it.nextOnly();
             if (col!=row && (it.real()!=0.0 || it.imag()!=0.0)) return false;
@@ -178,7 +178,7 @@ public abstract class AbstractComplexMatrixOperation implements IComplexMatrixOp
     /** 方便内部使用，减少一些重复代码 */
     private IComplexMatrix newMatrix_() {
         final IComplexMatrix tThis = thisMatrix_();
-        return newMatrix_(tThis.rowNumber(), tThis.columnNumber());
+        return newMatrix_(tThis.nrows(), tThis.ncols());
     }
     
     /** stuff to override */

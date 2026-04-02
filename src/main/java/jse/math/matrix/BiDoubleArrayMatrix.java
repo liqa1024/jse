@@ -12,7 +12,7 @@ public abstract class BiDoubleArrayMatrix extends AbstractComplexMatrix implemen
     /** DataShell stuffs */
     @Override public void setInternalData(double[][] aData) {mData = aData;}
     @Override public double[][] internalData() {return mData;}
-    @Override public int internalDataSize() {return columnNumber()*rowNumber();}
+    @Override public int internalDataSize() {return ncols()* nrows();}
     
     protected class BiDoubleArrayMatrixOperation_ extends BiDoubleArrayMatrixOperation {
         @Override protected BiDoubleArrayMatrix thisMatrix_() {return BiDoubleArrayMatrix.this;}
@@ -29,8 +29,8 @@ public abstract class BiDoubleArrayMatrix extends AbstractComplexMatrix implemen
     @Override public BiDoubleArrayMatrix copy() {return (BiDoubleArrayMatrix)super.copy();}
     
     /** stuff to override */
-    protected abstract BiDoubleArrayMatrix newZeros_(int aRowNum, int aColNum);
+    @Override protected abstract BiDoubleArrayMatrix newZeros_(int aRowNum, int aColNum);
     
-    public abstract double @Nullable[][] getIfHasSameOrderData(Object aObj);
+    @Override public abstract double @Nullable[][] getIfHasSameOrderData(Object aObj);
 }
 

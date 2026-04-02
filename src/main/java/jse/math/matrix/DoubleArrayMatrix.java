@@ -6,8 +6,8 @@ import jse.math.vector.Vector;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * 内部存储 double[] 的矩阵，会加速相关的运算
  * @author liqa
- * <p> 内部存储 double[] 的矩阵，会加速相关的运算 </p>
  */
 public abstract class DoubleArrayMatrix extends AbstractMatrix implements IDataShell<double[]> {
     protected double[] mData;
@@ -16,7 +16,7 @@ public abstract class DoubleArrayMatrix extends AbstractMatrix implements IDataS
     /** DataShell stuffs */
     @Override public void setInternalData(double[] aData) {mData = aData;}
     @Override public double[] internalData() {return mData;}
-    @Override public int internalDataSize() {return columnNumber()*rowNumber();}
+    @Override public int internalDataSize() {return ncols()* nrows();}
     
     
     protected class DoubleArrayMatrixOperation_ extends DoubleArrayMatrixOperation {
@@ -34,7 +34,7 @@ public abstract class DoubleArrayMatrix extends AbstractMatrix implements IDataS
     @Override public DoubleArrayMatrix copy() {return (DoubleArrayMatrix)super.copy();}
     
     /** stuff to override */
-    protected abstract DoubleArrayMatrix newZeros_(int aRowNum, int aColNum);
+    @Override protected abstract DoubleArrayMatrix newZeros_(int aRowNum, int aColNum);
     
-    public abstract double @Nullable[] getIfHasSameOrderData(Object aObj);
+    @Override public abstract double @Nullable[] getIfHasSameOrderData(Object aObj);
 }

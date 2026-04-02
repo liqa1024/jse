@@ -3,8 +3,12 @@ package jse.code.collection;
 import jep.NDArray;
 import jse.code.functional.IFloatConsumer;
 //import jse.code.iterator.IFloatIterator;
+import jse.code.iterator.IFloatIterator;
 import jse.math.IDataShell;
 //import jse.math.vector.*;
+import jse.math.vector.FloatVector;
+import jse.math.vector.IFloatVector;
+import jse.math.vector.IFloatVectorGetter;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -81,25 +85,25 @@ public class FloatList implements IDataShell<float[]> {
         if (aMinCapacity > mData.length) grow_(aMinCapacity);
     }
     
-//    public void addAll(IVector aVector) {
-//        final int aSize = aVector.size();
-//        final int tSize = mSize+aSize;
-//        if (tSize > mData.length) grow_(tSize);
-//        float @Nullable[] aData = getIfHasSameOrderData(aVector);
-//        if (aData != null) {
-//            System.arraycopy(aData, IDataShell.internalDataShift(aVector), mData, mSize, aSize);
-//        } else {
-//            IFloatIterator it = aVector.iterator();
-//            for (int i = mSize; i < tSize; ++i) mData[i] = it.next();
-//        }
-//        mSize = tSize;
-//    }
-//    public void addAll(int aSize, IVectorGetter aVectorGetter) {
-//        final int tSize = mSize+aSize;
-//        if (tSize > mData.length) grow_(tSize);
-//        for (int i = mSize, j = 0; i < tSize; ++i, ++j) mData[i] = aVectorGetter.get(j);
-//        mSize = tSize;
-//    }
+    public void addAll(IFloatVector aVector) {
+        final int aSize = aVector.size();
+        final int tSize = mSize+aSize;
+        if (tSize > mData.length) grow_(tSize);
+        float @Nullable[] aData = getIfHasSameOrderData(aVector);
+        if (aData != null) {
+            System.arraycopy(aData, IDataShell.internalDataShift(aVector), mData, mSize, aSize);
+        } else {
+            IFloatIterator it = aVector.iterator();
+            for (int i = mSize; i < tSize; ++i) mData[i] = it.next();
+        }
+        mSize = tSize;
+    }
+    public void addAll(int aSize, IFloatVectorGetter aVectorGetter) {
+        final int tSize = mSize+aSize;
+        if (tSize > mData.length) grow_(tSize);
+        for (int i = mSize, j = 0; i < tSize; ++i, ++j) mData[i] = aVectorGetter.get(j);
+        mSize = tSize;
+    }
     
     public void add(float aValue) {
         if (mData.length <= mSize) grow_(mSize+1);
@@ -128,14 +132,14 @@ public class FloatList implements IDataShell<float[]> {
             @Override public boolean add(Float element) {FloatList.this.add(element); return true;}
         };
     }
-//    public Vector asVec() {
-//        return new Vector(mSize, mData);
-//    }
-//    public Vector copy2vec() {
-//        Vector rVector = Vectors.zeros(mSize);
-//        System.arraycopy(mData, 0, rVector.internalData(), rVector.internalDataShift(), mSize);
-//        return rVector;
-//    }
+    public FloatVector asVec() {
+        return new FloatVector(mSize, mData);
+    }
+    public FloatVector copy2vec() {
+        FloatVector rVector = FloatVector.zeros(mSize);
+        System.arraycopy(mData, 0, rVector.internalData(), rVector.internalDataShift(), mSize);
+        return rVector;
+    }
     @ApiStatus.Experimental
     public FloatList copy() {
         float[] tData = new float[mSize];
@@ -181,9 +185,9 @@ public class FloatList implements IDataShell<float[]> {
     
     /** Groovy stuffs */
     public FloatList append(float aValue) {add(aValue); return this;}
-//    public FloatList appendAll(IVector aVector) {addAll(aVector); return this;}
+    public FloatList appendAll(IFloatVector aVector) {addAll(aVector); return this;}
     @VisibleForTesting public FloatList leftShift(float aValue) {return append(aValue);}
-//    @VisibleForTesting public FloatList leftShift(IVector aVector) {return appendAll(aVector);}
+    @VisibleForTesting public FloatList leftShift(IFloatVector aVector) {return appendAll(aVector);}
     @VisibleForTesting public final float getAt(int aIdx) {return get(aIdx);}
     @VisibleForTesting public final void putAt(int aIdx, float aValue) {set(aIdx, aValue);}
 }
