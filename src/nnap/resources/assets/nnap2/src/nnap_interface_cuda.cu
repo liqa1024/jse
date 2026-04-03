@@ -237,7 +237,7 @@ static __global__ void initGpumdNeiKernel(int number_of_particles, int N1, int N
         rBufNlDx[n1*neighnumMax + i1] = delx;
         rBufNlDy[n1*neighnumMax + i1] = dely;
         rBufNlDz[n1*neighnumMax + i1] = delz;
-        rBufNlType[n1*neighnumMax + i1] = g_type[n2];
+        rBufNlType[n1*neighnumMax + i1] = g_type[n2] + 1; // GPUMD start from 0
         rBufNlIdx[n1*neighnumMax + i1] = n2;
     }
 }
@@ -250,7 +250,7 @@ static __global__ void computeGpumdKernel(int N1, int N2, int neighnumMax,
     const int ii = (int)(blockIdx.x * blockDim.x + threadIdx.x + N1);
     if (ii >= N2) return;
     
-    const int ctype = aBufCType[ii];
+    const int ctype = aBufCType[ii] + 1;// GPUMD start from 0
     const int tNeiNum = aBufNeiNum[ii];
     // TODO: jj*inum + ii
     flt_t *tNlDx = aBufNlDx + ii*neighnumMax;
