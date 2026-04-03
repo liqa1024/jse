@@ -144,7 +144,7 @@ class NNAP_cuda extends NNAP2 {
         if (mJITEngine!=null) throw new IllegalStateException("compileCuda() has already been called");
         // 开始 jit
         mJITEngine = mNNAPGEN.initEngineCuda(Conf.CUDA_BLOCKSIZE, Conf.OPTIM_LEVEL, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_CUDA_COMPILER, Conf.CMAKE_CUDA_FLAGS, Conf.CMAKE_SETTING);
-        mJITEngine.setMethodNames("jse_nnap_statNeiNumLammps", "jse_nnap_lammps2cuda", "jse_nnap_cuda2lammps", "jse_nnap_computeLammpsCuda").compile();
+        mJITEngine.setMethodNames("jse_nnap_statNeiNumLammps", "jse_nnap_lammps2cuda", "jse_nnap_cuda2lammps", "jse_nnap_computeLammpsCuda", "jse_nnap_computeGPUMD").compile();
         mStatNeiNumLammps = mJITEngine.findMethod("jse_nnap_statNeiNumLammps");
         mLammps2Cuda = mJITEngine.findMethod("jse_nnap_lammps2cuda");
         mCuda2Lammps = mJITEngine.findMethod("jse_nnap_cuda2lammps");
