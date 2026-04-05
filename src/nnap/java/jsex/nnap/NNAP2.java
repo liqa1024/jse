@@ -75,7 +75,7 @@ public class NNAP2 implements IPairPotential {
     final IntCPointer mInNums, mOutNums;
     final AnyCPointer mFpHyperParam, mFpParam, mNnParam, mNormParam;
     final IDoubleOrFloatCPointer mOutEng;
-    final IGrowableDoubleOrFloatCPointer mNlDx, mNlDy, mNlDz, mGradNlDx, mGradNlDy, mGradNlDz;
+    final IGrowableDoubleOrFloatCPointer mNlDx, mNlDy, mNlDz, mGradNlDx, mGradNlDy, mGradNlDz, mFpForwardCache, mFpBackwardCache;
     final GrowableIntCPointer mNlType, mNlIdx;
     
     @SuppressWarnings("unchecked")
@@ -129,6 +129,8 @@ public class NNAP2 implements IPairPotential {
         mGradNlDy = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
         mGradNlDz = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
         mOutEng = mSinglePrecision ? FloatCPointer.malloc(1) : DoubleCPointer.malloc(1);
+        mFpForwardCache = mSinglePrecision ? new GrowableFloatCPointer(128) : new GrowableDoubleCPointer(128);
+        mFpBackwardCache = mSinglePrecision ? new GrowableFloatCPointer(128) : new GrowableDoubleCPointer(128);
         // 初始化参数数组
         mFpHyperParam = AnyCPointer.malloc(tModelSize);
         mFpParam = AnyCPointer.malloc(tModelSize);
@@ -175,19 +177,17 @@ public class NNAP2 implements IPairPotential {
             mNormParam.putAt(i, tNormParam);
         }
     }
-    public NNAP2(Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber, String aPrecision) throws Exception {
-        this(null, null, aModelInfo, aThreadNumber, aPrecision);
+    public NNAP2(Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws Exception {
+        this(null, null, aModelInfo, aThreadNumber, null);
         // 直接开始 jit 编译
         compileJIT_();
     }
-    public NNAP2(String aModelPath, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber, String aPrecision) throws Exception {
+    public NNAP2(String aModelPath, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws Exception {
         this(IO.toParentPath(aModelPath), toValidProjectName(IO.toFileName(aModelPath)),
-             aModelPath.endsWith(".yaml") || aModelPath.endsWith(".yml") ? IO.yaml2map(aModelPath) : IO.json2map(aModelPath), aThreadNumber, aPrecision);
+             aModelPath.endsWith(".yaml") || aModelPath.endsWith(".yml") ? IO.yaml2map(aModelPath) : IO.json2map(aModelPath), aThreadNumber, null);
         // 直接开始 jit 编译
         compileJIT_();
     }
-    public NNAP2(String aModelPath, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws Exception {this(aModelPath, aThreadNumber, null);}
-    public NNAP2(Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws Exception {this(aModelInfo, aThreadNumber, null);}
     public NNAP2(Map<?, ?> aModelInfo) throws Exception {this(aModelInfo, 1);}
     public NNAP2(String aModelPath) throws Exception {this(aModelPath, 1);}
     
@@ -245,6 +245,7 @@ public class NNAP2 implements IPairPotential {
         mDataIn.free();
         
         mOutEng.free();
+        mFpForwardCache.free(); mFpBackwardCache.free();
         mDataOut.free();
         
         if (mJITEngine!=null) mJITEngine.shutdown();
@@ -306,6 +307,7 @@ public class NNAP2 implements IPairPotential {
             int tNeiNum = buildNL_(nl, mBasis[cType-1].rcut(), false);
             mInNums.putAt(0, tNeiNum);
             mInNums.putAt(1, cType);
+            mFpForwardCache.ensureCapacity(mBasis[cType-1].forwardCacheSize(tNeiNum, false));
             // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
             mDataIn.putAt(0, mInNums);
             mDataIn.putAt(1, mNlDx);
@@ -317,6 +319,7 @@ public class NNAP2 implements IPairPotential {
             mDataIn.putAt(7, mNnParam);
             mDataIn.putAt(8, mNormParam.getAt(cType-1));
             mDataOut.putAt(0, mOutEng);
+            mDataOut.putAt(1, mFpForwardCache);
             // 调用 jit 方法获取结果
             int tCode = mCalEnergy.invoke(mDataIn, mDataOut);
             if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
@@ -340,6 +343,8 @@ public class NNAP2 implements IPairPotential {
             int tNeiNum = buildNL_(nl, mBasis[cType-1].rcut(), true);
             mInNums.putAt(0, tNeiNum);
             mInNums.putAt(1, cType);
+            mFpForwardCache.ensureCapacity(mBasis[cType-1].forwardCacheSize(tNeiNum, true));
+            mFpBackwardCache.ensureCapacity(mBasis[cType-1].backwardCacheSize(tNeiNum, false));
             // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
             mDataIn.putAt(0, mInNums);
             mDataIn.putAt(1, mNlDx);
@@ -354,6 +359,8 @@ public class NNAP2 implements IPairPotential {
             mDataOut.putAt(1, mGradNlDx);
             mDataOut.putAt(2, mGradNlDy);
             mDataOut.putAt(3, mGradNlDz);
+            mDataOut.putAt(4, mFpForwardCache);
+            mDataOut.putAt(5, mFpBackwardCache);
             // 调用 jit 方法获取结果
             int tCode = mCalEnergyForce.invoke(mDataIn, mDataOut);
             if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
@@ -392,6 +399,10 @@ public class NNAP2 implements IPairPotential {
         mGradNlDx.ensureCapacity(aNeiNum);
         mGradNlDy.ensureCapacity(aNeiNum);
         mGradNlDz.ensureCapacity(aNeiNum);
+        for (int i = 0; i < mSymbols.length; ++i) {
+            mFpForwardCache.ensureCapacity(mBasis[i].forwardCacheSize(aNeiNum, true));
+            mFpBackwardCache.ensureCapacity(mBasis[i].backwardCacheSize(aNeiNum, false));
+        }
     }
     
     void computeLammps(PairNNAP2 aPair) throws Exception {
@@ -446,11 +457,13 @@ public class NNAP2 implements IPairPotential {
         mDataOut.putAt(1, mGradNlDx);
         mDataOut.putAt(2, mGradNlDy);
         mDataOut.putAt(3, mGradNlDz);
-        mDataOut.putAt(4, aPair.engVdwl());
-        mDataOut.putAt(5, aPair.eatom());
-        mDataOut.putAt(6, aPair.virial());
-        mDataOut.putAt(7, aPair.vatom());
-        mDataOut.putAt(8, aPair.cvatom());
+        mDataOut.putAt(4, mFpForwardCache);
+        mDataOut.putAt(5, mFpBackwardCache);
+        mDataOut.putAt(6, aPair.engVdwl());
+        mDataOut.putAt(7, aPair.eatom());
+        mDataOut.putAt(8, aPair.virial());
+        mDataOut.putAt(9, aPair.vatom());
+        mDataOut.putAt(10, aPair.cvatom());
         
         // 调用 jit 方法计算
         int tCode = mComputeLammps.invoke(mDataIn, mDataOut);

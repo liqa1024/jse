@@ -136,8 +136,6 @@ public class MergedBasis2 extends Basis2 {
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
         rGenMap.put("[FP MERGE "+aGenIdx+"]", mMergedBasis.length);
         rGenMap.put(aGenIdx+":NNAPGEN_FP_SIZE", size());
-        rGenMap.put(aGenIdx+":NNAPGEN_FP_SIZE_CACHEF", Math.max(1, forwardCacheSize()));
-        rGenMap.put(aGenIdx+":NNAPGEN_FP_SIZE_CACHEB", Math.max(1, backwardCacheSize()));
         for (int i = 0; i < mMergedBasis.length; ++i) {
             mMergedBasis[i].updateGenMap(rGenMap, aGenIdx, i);
         }
@@ -153,17 +151,17 @@ public class MergedBasis2 extends Basis2 {
         return true;
     }
     
-    @Override public int forwardCacheSize() {
+    @Override public int forwardCacheSize(int aNumNei, boolean aFullCache) {
         int rSize = 0;
         for (MergeableBasis2 tBasis : mMergedBasis) {
-            rSize += tBasis.forwardCacheSize();
+            rSize += tBasis.forwardCacheSize(aNumNei, aFullCache);
         }
         return rSize;
     }
-    @Override public int backwardCacheSize() {
+    @Override public int backwardCacheSize(int aNumNei, boolean aFullCache) {
         int rSize = 0;
         for (MergeableBasis2 tBasis : mMergedBasis) {
-            rSize += tBasis.backwardCacheSize();
+            rSize += tBasis.backwardCacheSize(aNumNei, aFullCache);
         }
         return rSize;
     }

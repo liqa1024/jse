@@ -3,22 +3,21 @@
 
 // >>> NNAPGEN PICK
 // --- NNAPGEN PICK: cpu
-// >>> NNAPGEN REMOVE
-/*
-// <<< NNAPGEN REMOVE
 #include <cmath>
 #define NNAP_ARCH_CPU
 #define NNAP_DEVICE
 #define NNAP_HOST
 // >>> NNAPGEN REMOVE
-*/
+/*
 // <<< NNAPGEN REMOVE
 // --- NNAPGEN PICK: cuda
 #define NNAP_ARCH_CUDA
 #define NNAP_DEVICE __device__
 #define NNAP_HOST __host__
 // <<< NNAPGEN PICK [ARCH]
-
+// >>> NNAPGEN REMOVE
+*/
+// <<< NNAPGEN REMOVE
 
 // >>> NNAPGEN REMOVE
 #define __NNAPGENS_X__ 0
@@ -416,11 +415,10 @@ static inline NNAP_DEVICE void calRnPxyzBatch(int bi, int nb,
     }
 }
 template <int N>
-static inline NNAP_DEVICE void calRnPxyz(flt_t *rRn, flt_t *rRnPx, flt_t *rRnPy, flt_t *rRnPz, flt_t *rCheby2,
+static inline NNAP_DEVICE void calRnPxyz(flt_t *rRnPx, flt_t *rRnPy, flt_t *rRnPz, flt_t *rCheby2,
                                          flt_t aDis, flt_t aRCut, flt_t aDx, flt_t aDy, flt_t aDz) noexcept {
     flt_t tRnX = aDis/aRCut;
     tRnX = ONE - (tRnX+tRnX);
-    chebyshevFull<N>(tRnX, rRn);
     chebyshev2Full<N-1>(tRnX, rCheby2);
     const flt_t tRnPMul = TWO / (aDis*aRCut);
     rRnPx[0] = ZERO; rRnPy[0] = ZERO; rRnPz[0] = ZERO;
@@ -432,12 +430,11 @@ static inline NNAP_DEVICE void calRnPxyz(flt_t *rRn, flt_t *rRnPx, flt_t *rRnPy,
     }
 }
 template <int N>
-static inline NNAP_DEVICE void calRnPxyz(flt_t *rRn, flt_t *rRnPx, flt_t *rRnPy, flt_t *rRnPz, flt_t *rCheby2,
+static inline NNAP_DEVICE void calRnPxyz(flt_t *rRnPx, flt_t *rRnPy, flt_t *rRnPz, flt_t *rCheby2,
                                          flt_t aDis, flt_t aRCutL, flt_t aRCutR, flt_t aDx, flt_t aDy, flt_t aDz) noexcept {
     const flt_t tRCutRL = aRCutR-aRCutL;
     flt_t tRnX = (aDis-aRCutL)/tRCutRL;
     tRnX = ONE - (tRnX+tRnX);
-    chebyshevFull<N>(tRnX, rRn);
     chebyshev2Full<N-1>(tRnX, rCheby2);
     const flt_t tRnPMul = TWO / (aDis*tRCutRL);
     rRnPx[0] = ZERO; rRnPy[0] = ZERO; rRnPz[0] = ZERO;

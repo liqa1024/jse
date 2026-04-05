@@ -176,7 +176,7 @@ static inline NNAP_DEVICE void convertYPPhiPtheta2YPxyz(flt_t aCosTheta, flt_t a
     }
 }
 template <int LMAX>
-static NNAP_DEVICE void calYPxyz(flt_t aDx, flt_t aDy, flt_t aDz, flt_t aDis, flt_t *rY,
+static NNAP_DEVICE void calYPxyz(flt_t aDx, flt_t aDy, flt_t aDz, flt_t aDis, flt_t *aY,
                                  flt_t *rYPx, flt_t *rYPy, flt_t *rYPz, flt_t *rYPtheta, flt_t *rYPphi) noexcept {
     constexpr int tLMAll = (LMAX+1)*(LMAX+1);
     const flt_t dxy = nnap_hypot(aDx, aDy);
@@ -192,8 +192,7 @@ static NNAP_DEVICE void calYPxyz(flt_t aDx, flt_t aDy, flt_t aDz, flt_t aDis, fl
         cosPhi = aDx / dxy;
         sinPhi = aDy / dxy;
     }
-    realSphericalHarmonicsFull4_<LMAX>(cosTheta, sinTheta, cosPhi, sinPhi, rY);
-    calYPphiPtheta<LMAX>(rYPphi, cosPhi, sinPhi, rYPtheta, rY);
+    calYPphiPtheta<LMAX>(rYPphi, cosPhi, sinPhi, rYPtheta, aY);
     if (dxyCloseZero) {
         // fix singularity
         for (int k = 0; k < tLMAll; ++k) rYPphi[k] = ZERO;

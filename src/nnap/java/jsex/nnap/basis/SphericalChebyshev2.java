@@ -225,14 +225,17 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
      */
     @Override public int size() {return mSize;}
     
-    @Override public int forwardCacheSize() {
+    @Override public int forwardCacheSize(int aNumNei, boolean aFullCache) {
         int tPostSize = mPostFuseWeight==null ? 0 : (mPostFuseSize*mLMAll);
         int tBnlmSize = (mWType==WTYPE_FUSE || mWType==WTYPE_EXFUSE) ? ((mNMax+1)*mLMAll) : 0;
-        return (mNMax+1) + mLMAll + tBnlmSize + (mSizeN*mLMAll) + tPostSize;
+        return aFullCache ? (aNumNei*(mNMax+1 + mLMAll + tBnlmSize) + (mSizeN*mLMAll) + tPostSize)
+            : (mNMax+1 + mLMAll + tBnlmSize + (mSizeN*mLMAll) + tPostSize);
     }
-    @Override public int backwardCacheSize() {
+    @Override public int backwardCacheSize(int aNumNei, boolean aFullCache) {
         int tPostSize = mPostFuseWeight==null ? 0 : (mPostFuseSize*mLMAll);
-        return 4*(mNMax+1) + 5*mLMAll + (mSizeN*mLMAll) + tPostSize;
+        int tBnlmSize = (mWType==WTYPE_FUSE || mWType==WTYPE_EXFUSE) ? ((mNMax+1)*mLMAll) : 0;
+        return aFullCache ? (3*aNumNei*(mNMax+1 + 1 + mLMAll) + aNumNei*tBnlmSize + (mNMax+1) + 2*mLMAll + (mSizeN*mLMAll) + tPostSize)
+            : (4*(mNMax+1) + 5*mLMAll + tBnlmSize + (mSizeN*mLMAll) + tPostSize);
     }
     
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdxType, int aGenIdxMerge) {
