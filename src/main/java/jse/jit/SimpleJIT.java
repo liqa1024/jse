@@ -234,7 +234,7 @@ public class SimpleJIT {
             if (mDead) throw new RuntimeException("this JIT engine is dead");
             if (mLibHandle==null) throw new IllegalStateException("Require compile() first.");
             if (mLibHandle.isNull()) throw new NullPointerException();
-            if (!hasMethod(aMethodName)) return null;
+            if (!hasMethod(aMethodName)) throw new IllegalArgumentException("No method name: "+aMethodName);
             return new Method(findMethod0(mLibHandle.mPtr, aMethodName.toString()), this);
         }
         @Override public void shutdown() {
