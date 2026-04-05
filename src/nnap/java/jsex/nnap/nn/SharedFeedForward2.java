@@ -35,26 +35,26 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
     private final Vector mHiddenBiases;
     private final Vector mOutputWeight;
     private final double[] mOutputBias;
-    private final int mHiddenNumber, mHiddenWeightsSize, mSharedHiddenWeightsSize, mHiddenBiasesSize, mSharedHiddenBiasesSize, mOutputWeightSize, mOutputBiasSize;
+    private final int mNumLayers, mHiddenWeightsSize, mSharedHiddenWeightsSize, mHiddenBiasesSize, mSharedHiddenBiasesSize, mOutputWeightSize, mOutputBiasSize;
     
     SharedFeedForward2(int aInputDim, FeedForward2 aSharedFeedForward, int aSharedType, int[] aSharedHiddenDims, Vector aHiddenWeights, Vector aHiddenBiases, Vector aOutputWeight, double[] aOutputBias) {
         mInputDim = aInputDim;
         mShare = aSharedFeedForward;
         mSharedType = aSharedType;
         // 最后值缺省支持
-        if (aSharedHiddenDims.length == mShare.mHiddenNumber) {
+        if (aSharedHiddenDims.length == mShare.mNumLayers) {
             int[] oSharedHiddenDims = aSharedHiddenDims;
             aSharedHiddenDims = new int[oSharedHiddenDims.length+1];
             System.arraycopy(oSharedHiddenDims, 0, aSharedHiddenDims, 0, oSharedHiddenDims.length);
         }
         mSharedHiddenDims = aSharedHiddenDims;
-        mHiddenNumber = mSharedHiddenDims.length-1;
-        if (mHiddenNumber != mShare.mHiddenNumber) throw new IllegalArgumentException("Hidden number mismatch");
+        mNumLayers = mSharedHiddenDims.length-1;
+        if (mNumLayers != mShare.mNumLayers) throw new IllegalArgumentException("Hidden number mismatch");
         if (mInputDim != mShare.mInputDim) throw new IllegalArgumentException("Input dimensions mismatch for shared nn");
         int tHiddenWeightsSize = 0, tSharedHiddenWeightsSize = 0;
         int tHiddenBiasesSize = 0, tSharedHiddenBiasesSize = 0;
         int tColNum = mInputDim;
-        for (int i = 0; i < mHiddenNumber; ++i) {
+        for (int i = 0; i < mNumLayers; ++i) {
             int tHiddenDim = mShare.mHiddenDims[i];
             int tSharedHiddenDim = mSharedHiddenDims[i];
             if (tSharedHiddenDim<0 || tSharedHiddenDim>tHiddenDim) throw new IllegalArgumentException("invalid shared dimension: "+tSharedHiddenDim+" vs "+tHiddenDim);
@@ -71,9 +71,9 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
         mHiddenBiases = aHiddenBiases==null ? Vectors.zeros(mHiddenBiasesSize) : aHiddenBiases;
         if (mHiddenWeights.internalDataSize() != mHiddenWeightsSize) throw new IllegalArgumentException("The size of hidden weights mismatch");
         if (mHiddenBiases.internalDataSize() != mHiddenBiasesSize) throw new IllegalArgumentException("The size of hidden biases mismatch");
-        int tSharedOutputDim = mSharedHiddenDims[mHiddenNumber];
+        int tSharedOutputDim = mSharedHiddenDims[mNumLayers];
         if (tSharedOutputDim<0 || tSharedOutputDim>1) throw new IllegalArgumentException("invalid shared dimension: "+tSharedOutputDim+" vs "+1);
-        mOutputWeightSize = tSharedOutputDim==1 ? 0 : mShare.mHiddenDims[mHiddenNumber-1];
+        mOutputWeightSize = tSharedOutputDim==1 ? 0 : mShare.mHiddenDims[mNumLayers -1];
         mOutputBiasSize = tSharedOutputDim==1 ? 0 : 1;
         mOutputWeight = aOutputWeight==null ? Vectors.zeros(mOutputWeightSize) : aOutputWeight;
         mOutputBias = aOutputBias==null ? new double[mOutputBiasSize] : aOutputBias;
@@ -89,7 +89,7 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
         double aOutputBias = mShare.mOutputBias[0];
         int tColNum = mInputDim;
         int tShift = 0, tShiftShare = 0;
-        for (int i = 0; i < mHiddenNumber; ++i) {
+        for (int i = 0; i < mNumLayers; ++i) {
             int tHiddenDim = mShare.mHiddenDims[i];
             int tSharedHiddenDim = mSharedHiddenDims[i];
             int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
@@ -101,7 +101,7 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
             tColNum = tHiddenDim;
         }
         tShift = 0; tShiftShare = 0;
-        for (int i = 0; i < mHiddenNumber; ++i) {
+        for (int i = 0; i < mNumLayers; ++i) {
             int tHiddenDim = mShare.mHiddenDims[i];
             int tSharedHiddenDim = mSharedHiddenDims[i];
             int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
@@ -110,7 +110,7 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
             tShift += tNoSharedHiddenDim;
             tShiftShare += tHiddenDim;
         }
-        if (mSharedHiddenDims[mHiddenNumber]==0) {
+        if (mSharedHiddenDims[mNumLayers]==0) {
             aOutputWeight.fill(mOutputWeight);
             aOutputBias = mOutputBias[0];
         }
@@ -121,7 +121,7 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
     public void initParameters(boolean aIncludeShare) {
         int tColNum = mInputDim;
         int tShift = 0, tShiftShare = 0;
-        for (int i = 0; i < mHiddenNumber; ++i) {
+        for (int i = 0; i < mNumLayers; ++i) {
             int tHiddenDim = mShare.mHiddenDims[i];
             int tSharedHiddenDim = mSharedHiddenDims[i];
             int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
@@ -139,7 +139,7 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
         }
         tShift = 0; tShiftShare = 0;
         tColNum = mInputDim;
-        for (int i = 0; i < mHiddenNumber; ++i) {
+        for (int i = 0; i < mNumLayers; ++i) {
             int tHiddenDim = mShare.mHiddenDims[i];
             int tSharedHiddenDim = mSharedHiddenDims[i];
             int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
@@ -155,7 +155,7 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
         }
         double tBound = MathEX.Fast.sqrt(3.0 / tColNum); // Kaiming 均匀初始化，注意输出层没有激活函数因此权重需要调整
         double tBoundB = MathEX.Fast.sqrt(1.0 / tColNum); // 偏置也使用 Kaiming 均匀初始化，和 pytorch 默认保持一致
-        if (mSharedHiddenDims[mHiddenNumber]==0) {
+        if (mSharedHiddenDims[mNumLayers]==0) {
             mOutputWeight.assign(() -> RANDOM.nextDouble(-tBound, tBound));
             mOutputBias[0] = RANDOM.nextDouble(-tBoundB, tBoundB);
         } else
@@ -182,13 +182,13 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
             aSharedHiddenDims[i] = ((Number)tSharedHiddenDims.get(i)).intValue();
         }
         // 最后值缺省支持
-        if (aSharedHiddenDims.length == tSharedNN.mHiddenNumber) {
+        if (aSharedHiddenDims.length == tSharedNN.mNumLayers) {
             int[] oSharedHiddenDims = aSharedHiddenDims;
             aSharedHiddenDims = new int[oSharedHiddenDims.length+1];
             System.arraycopy(oSharedHiddenDims, 0, aSharedHiddenDims, 0, oSharedHiddenDims.length);
         }
         int tHiddenNumber = aSharedHiddenDims.length-1;
-        if (tHiddenNumber != tSharedNN.mHiddenNumber) throw new IllegalArgumentException("Hidden number mismatch");
+        if (tHiddenNumber != tSharedNN.mNumLayers) throw new IllegalArgumentException("Hidden number mismatch");
         int tHiddenWeightsSize = 0;
         int tHiddenBiasesSize = 0;
         int tColNum = aInputDim;
@@ -250,10 +250,10 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
         rSaveTo.put("share", mSharedType);
         rSaveTo.put("shared_hidden_dims", AbstractCollections.from(mSharedHiddenDims));
         rSaveTo.put("input_dim", mInputDim);
-        List<List<List<Double>>> rHiddenWeights = new ArrayList<>(mHiddenNumber);
+        List<List<List<Double>>> rHiddenWeights = new ArrayList<>(mNumLayers);
         int tColNum = mInputDim;
         int tShift = 0;
-        for (int i = 0; i < mHiddenNumber; ++i) {
+        for (int i = 0; i < mNumLayers; ++i) {
             int tHiddenDim = mShare.mHiddenDims[i];
             int tSharedHiddenDim = mSharedHiddenDims[i];
             int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
@@ -266,9 +266,9 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
             tColNum = tHiddenDim;
         }
         rSaveTo.put("hidden_weights", rHiddenWeights);
-        List<List<Double>> rHiddenBiases = new ArrayList<>(mHiddenNumber);
+        List<List<Double>> rHiddenBiases = new ArrayList<>(mNumLayers);
         tShift = 0;
-        for (int i = 0; i < mHiddenNumber; ++i) {
+        for (int i = 0; i < mNumLayers; ++i) {
             int tHiddenDim = mShare.mHiddenDims[i];
             int tSharedHiddenDim = mSharedHiddenDims[i];
             int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
@@ -276,7 +276,7 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
             tShift += tNoSharedHiddenDim;
         }
         rSaveTo.put("hidden_biases", rHiddenBiases);
-        if (mSharedHiddenDims[mHiddenNumber]==0) {
+        if (mSharedHiddenDims[mNumLayers]==0) {
             rSaveTo.put("output_weight", mOutputWeight.asList());
             rSaveTo.put("output_bias", mOutputBias[0]);
         }
@@ -287,9 +287,6 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
         return mHiddenWeightsSize+mOutputWeightSize + mHiddenBiasesSize+mOutputBiasSize;
     }
     @Override public int gradCacheSize() {
-        return mHiddenBiasesSize+mSharedHiddenBiasesSize;
-    }
-    @Override public int hiddenCacheSize() {
         return mHiddenBiasesSize+mSharedHiddenBiasesSize;
     }
     public int parameterWeightSize() {
@@ -347,19 +344,24 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
     }
     
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
+        int tHiddenDimMax = -1;
+        for (int i = 0; i < mNumLayers; ++i) {
+            tHiddenDimMax = Math.max(tHiddenDimMax, mShare.mHiddenDims[i]);
+        }
         rGenMap.put("[NN USE "+aGenIdx+"]", "shared_feed_forward");
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SHARED_TYPE", mSharedType);
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_IN", mInputDim);
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_CACHEG", gradCacheSize());
-        rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_CACHEH", hiddenCacheSize());
+        rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_HMAX", tHiddenDimMax);
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_HW", mHiddenWeightsSize);
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_SHW", mSharedHiddenWeightsSize);
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_HB", mHiddenBiasesSize);
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_SHB", mSharedHiddenBiasesSize);
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_OW", mOutputWeightSize);
-        rGenMap.put("[NN HIDDEN LAYERS "+aGenIdx+"]", mHiddenNumber);
+        rGenMap.put(aGenIdx+":NNAPGEN_NN_NLAYERS", mNumLayers);
+        rGenMap.put("[NN HIDDEN LAYERS "+aGenIdx+"]", mNumLayers);
         int tInSize = mInputDim;
-        for (int i = 0; i < mHiddenNumber; ++i) {
+        for (int i = 0; i < mNumLayers; ++i) {
             int tOutSize = mShare.mHiddenDims[i];
             rGenMap.put(aGenIdx+":"+i+":NNAPGEN_NN_IN_SIZE", tInSize);
             rGenMap.put(aGenIdx+":"+i+":NNAPGEN_NN_OUT_SIZE", tOutSize);
@@ -371,8 +373,8 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
     @Override public boolean hasSameGenMap(NeuralNetwork2 aNN) {
         if (!(aNN instanceof SharedFeedForward2)) return false;
         SharedFeedForward2 tNN = (SharedFeedForward2)aNN;
-        if (mHiddenNumber!=tNN.mHiddenNumber || mInputDim!=tNN.mInputDim) return false;
-        for (int i = 0; i < mHiddenNumber; ++i) {
+        if (mNumLayers !=tNN.mNumLayers || mInputDim!=tNN.mInputDim) return false;
+        for (int i = 0; i < mNumLayers; ++i) {
             if (mSharedHiddenDims[i]!=tNN.mSharedHiddenDims[i]) return false;
         }
         return mShare.hasSameGenMap(tNN.mShare);

@@ -27,13 +27,13 @@ public class FeedForward2 extends NeuralNetwork2 {
     final Vector mHiddenBiases;
     final Vector mOutputWeight;
     final double[] mOutputBias;
-    final int mHiddenNumber, mHiddenWeightsSize, mHiddenBiasesSize, mOutputWeightSize;
+    final int mNumLayers, mHiddenWeightsSize, mHiddenBiasesSize, mOutputWeightSize;
     
     FeedForward2(int aInputDim, int[] aHiddenDims, Vector aHiddenWeights, Vector aHiddenBiases, Vector aOutputWeight, double[] aOutputBias) {
         mInputDim = aInputDim;
         mHiddenDims = aHiddenDims;
-        mHiddenNumber = aHiddenDims.length;
-        if (mHiddenNumber == 0) throw new IllegalArgumentException("At least one hidden layer is required");
+        mNumLayers = aHiddenDims.length;
+        if (mNumLayers == 0) throw new IllegalArgumentException("At least one hidden layer is required");
         int tHiddenWeightsSize = 0;
         int tHiddenBiasesSize = 0;
         int tColNum = aInputDim;
@@ -48,7 +48,7 @@ public class FeedForward2 extends NeuralNetwork2 {
         mHiddenBiases = aHiddenBiases==null ? Vectors.zeros(mHiddenBiasesSize) : aHiddenBiases;
         if (mHiddenWeights.internalDataSize() != mHiddenWeightsSize) throw new IllegalArgumentException("The size of hidden weights mismatch");
         if (mHiddenBiases.internalDataSize() != mHiddenBiasesSize) throw new IllegalArgumentException("The size of hidden biases mismatch");
-        mOutputWeightSize = mHiddenDims[mHiddenNumber-1];
+        mOutputWeightSize = mHiddenDims[mNumLayers -1];
         mOutputWeight = aOutputWeight==null ? Vectors.zeros(mOutputWeightSize) : aOutputWeight;
         mOutputBias = aOutputBias==null ? new double[1] : aOutputBias;
         if (mOutputWeight.internalDataSize() != mOutputWeightSize) throw new IllegalArgumentException("The size of output weight mismatch");
@@ -135,10 +135,10 @@ public class FeedForward2 extends NeuralNetwork2 {
         rSaveTo.put("type", "feed_forward");
         rSaveTo.put("input_dim", mInputDim);
         rSaveTo.put("hidden_dims", AbstractCollections.from(mHiddenDims));
-        List<List<List<Double>>> rHiddenWeights = new ArrayList<>(mHiddenNumber);
+        List<List<List<Double>>> rHiddenWeights = new ArrayList<>(mNumLayers);
         int tColNum = mInputDim;
         int tShift = 0;
-        for (int i = 0; i < mHiddenNumber; ++i) {
+        for (int i = 0; i < mNumLayers; ++i) {
             int tHiddenDim = mHiddenDims[i];
             List<List<Double>> tWeights = new ArrayList<>(tHiddenDim);
             rHiddenWeights.add(tWeights);
@@ -149,9 +149,9 @@ public class FeedForward2 extends NeuralNetwork2 {
             tColNum = tHiddenDim;
         }
         rSaveTo.put("hidden_weights", rHiddenWeights);
-        List<List<Double>> rHiddenBiases = new ArrayList<>(mHiddenNumber);
+        List<List<Double>> rHiddenBiases = new ArrayList<>(mNumLayers);
         tShift = 0;
-        for (int i = 0; i < mHiddenNumber; ++i) {
+        for (int i = 0; i < mNumLayers; ++i) {
             int tHiddenDim = mHiddenDims[i];
             rHiddenBiases.add(mHiddenBiases.subVec(tShift, tShift+tHiddenDim).asList());
             tShift += tHiddenDim;
@@ -165,9 +165,6 @@ public class FeedForward2 extends NeuralNetwork2 {
         return mHiddenWeightsSize+mOutputWeightSize + mHiddenBiasesSize+1;
     }
     @Override public int gradCacheSize() {
-        return mHiddenBiasesSize;
-    }
-    @Override public int hiddenCacheSize() {
         return mHiddenBiasesSize;
     }
     public int parameterWeightSize() {
@@ -225,16 +222,21 @@ public class FeedForward2 extends NeuralNetwork2 {
     }
     
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
+        int tHiddenDimMax = -1;
+        for (int i = 0; i < mNumLayers; ++i) {
+            tHiddenDimMax = Math.max(tHiddenDimMax, mHiddenDims[i]);
+        }
         rGenMap.put("[NN USE "+aGenIdx+"]", "feed_forward");
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_IN", mInputDim);
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_CACHEG", gradCacheSize());
-        rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_CACHEH", hiddenCacheSize());
+        rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_HMAX", tHiddenDimMax);
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_HW", mHiddenWeightsSize);
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_HB", mHiddenBiasesSize);
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_OW", mOutputWeightSize);
-        rGenMap.put("[NN HIDDEN LAYERS "+aGenIdx+"]", mHiddenNumber);
+        rGenMap.put(aGenIdx+":NNAPGEN_NN_NLAYERS", mNumLayers);
+        rGenMap.put("[NN HIDDEN LAYERS "+aGenIdx+"]", mNumLayers);
         int tInSize = mInputDim;
-        for (int i = 0; i < mHiddenNumber; ++i) {
+        for (int i = 0; i < mNumLayers; ++i) {
             int tOutSize = mHiddenDims[i];
             rGenMap.put(aGenIdx+":"+i+":NNAPGEN_NN_IN_SIZE", tInSize);
             rGenMap.put(aGenIdx+":"+i+":NNAPGEN_NN_OUT_SIZE", tOutSize);
@@ -245,8 +247,8 @@ public class FeedForward2 extends NeuralNetwork2 {
     @Override public boolean hasSameGenMap(NeuralNetwork2 aNN) {
         if (!(aNN instanceof FeedForward2)) return false;
         FeedForward2 tNN = (FeedForward2)aNN;
-        if (mHiddenNumber!=tNN.mHiddenNumber || mInputDim!=tNN.mInputDim) return false;
-        for (int i = 0; i < mHiddenNumber; ++i) {
+        if (mNumLayers !=tNN.mNumLayers || mInputDim!=tNN.mInputDim) return false;
+        for (int i = 0; i < mNumLayers; ++i) {
             if (mHiddenDims[i]!=tNN.mHiddenDims[i]) return false;
         }
         return true;

@@ -126,16 +126,14 @@ static NNAP_DEVICE void chebyBackwardBatch(int bi, int nb,
 }
 
 
-template <int WTYPE, int NMAX, int FSIZE, int FSTYLE, int SIZE_N, int FULL_CACHE>
+template <int WTYPE, int NMAX, int FSIZE, int FSTYLE, int SIZE_N, int REQUIRE_CACHE>
 static NNAP_DEVICE void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rFp,
                                      flt_t **rForwardCache, flt_t aRCut, flt_t *aFuseWeight) noexcept {
     // init cache
-    flt_t *rRn = NULL;
+    flt_t bRn[REQUIRE_CACHE ? 1 : (NMAX+1)]; flt_t *rRn = REQUIRE_CACHE ? NULL : bRn;
     flt_t *rNlRn = NULL;
-    if (FULL_CACHE) {
+    if (REQUIRE_CACHE) {
         rNlRn = *rForwardCache; *rForwardCache += aNeiNum*(NMAX+1);
-    } else {
-        rRn = *rForwardCache; *rForwardCache += (NMAX+1);
     }
     // clear fp first
     fill<SIZE_N>(rFp, ZERO);
@@ -149,7 +147,7 @@ static NNAP_DEVICE void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
         // cal fc
         flt_t fc = calFc(dis, aRCut);
         // cal Rn
-        if (FULL_CACHE) rRn = rNlRn + j*(NMAX+1);
+        if (REQUIRE_CACHE) rRn = rNlRn + j*(NMAX+1);
         calRn<NMAX>(rRn, dis, aRCut);
         // cal fp
         if (WTYPE==WTYPE_FUSE) {
@@ -177,28 +175,25 @@ static NNAP_DEVICE void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
     }
 }
 
-template <int WTYPE, int NMAX, int FSIZE, int FSTYLE, int SIZE_N, int FULL_CACHE>
+template <int WTYPE, int NMAX, int FSIZE, int FSTYLE, int SIZE_N, int REQUIRE_CACHE>
 static NNAP_DEVICE void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aGradFp,
                                       flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
                                       flt_t **aForwardCache, flt_t **rBackwardCache, flt_t aRCut, flt_t *aFuseWeight) noexcept {
     // init cache
     flt_t *tNlRn = *aForwardCache; *aForwardCache += aNeiNum*(NMAX+1);
-    flt_t *rRnPx = NULL, *rRnPy = NULL, *rRnPz = NULL, *rCheby2 = NULL;
+    flt_t bRnPx[REQUIRE_CACHE ? 1 : (NMAX+1)]; flt_t *rRnPx = REQUIRE_CACHE ? NULL : bRnPx;
+    flt_t bRnPy[REQUIRE_CACHE ? 1 : (NMAX+1)]; flt_t *rRnPy = REQUIRE_CACHE ? NULL : bRnPy;
+    flt_t bRnPz[REQUIRE_CACHE ? 1 : (NMAX+1)]; flt_t *rRnPz = REQUIRE_CACHE ? NULL : bRnPz;
+    flt_t rCheby2[NMAX+1];
     flt_t *rNlRnPx = NULL, *rNlRnPy = NULL, *rNlRnPz = NULL;
     flt_t *rNlFcPx = NULL, *rNlFcPy = NULL, *rNlFcPz = NULL;
-    if (FULL_CACHE) {
+    if (REQUIRE_CACHE) {
         rNlRnPx = *rBackwardCache; *rBackwardCache += aNeiNum*(NMAX+1);
         rNlRnPy = *rBackwardCache; *rBackwardCache += aNeiNum*(NMAX+1);
         rNlRnPz = *rBackwardCache; *rBackwardCache += aNeiNum*(NMAX+1);
         rNlFcPx = *rBackwardCache; *rBackwardCache += aNeiNum;
         rNlFcPy = *rBackwardCache; *rBackwardCache += aNeiNum;
         rNlFcPz = *rBackwardCache; *rBackwardCache += aNeiNum;
-        rCheby2 = *rBackwardCache; *rBackwardCache += (NMAX+1);
-    } else {
-        rRnPx = *rBackwardCache; *rBackwardCache += (NMAX+1);
-        rRnPy = *rBackwardCache; *rBackwardCache += (NMAX+1);
-        rRnPz = *rBackwardCache; *rBackwardCache += (NMAX+1);
-        rCheby2 = *rBackwardCache; *rBackwardCache += (NMAX+1);
     }
     // loop for neighbor
     for (int j = 0; j < aNeiNum; ++j) {
@@ -213,13 +208,13 @@ static NNAP_DEVICE void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, 
         // cal fcPxyz
         flt_t fcPx, fcPy, fcPz;
         flt_t fc = calFcPxyz(&fcPx, &fcPy, &fcPz, dis, aRCut, dx, dy, dz);
-        if (FULL_CACHE) {
+        if (REQUIRE_CACHE) {
             rNlFcPx[j] = fcPx;
             rNlFcPy[j] = fcPy;
             rNlFcPz[j] = fcPz;
         }
         // cal RnPxyz
-        if (FULL_CACHE) {
+        if (REQUIRE_CACHE) {
             rRnPx = rNlRnPx + j*(NMAX+1);
             rRnPy = rNlRnPy + j*(NMAX+1);
             rRnPz = rNlRnPz + j*(NMAX+1);

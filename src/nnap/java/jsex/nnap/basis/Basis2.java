@@ -91,7 +91,7 @@ public abstract class Basis2 implements ISavable {
     public abstract boolean hasSameGenMap(Basis2 aBasis);
     
     /** @return 前向传播中需要的缓存大小 */
-    public abstract int forwardCacheSize(int aNumNei, boolean aFullCache);
+    public abstract int forwardCacheSize(int aNumNei);
     /** @return 反向传播中需要的缓存大小 */
-    public abstract int backwardCacheSize(int aNumNei, boolean aFullCache);
+    public abstract int backwardCacheSize(int aNumNei);
 }

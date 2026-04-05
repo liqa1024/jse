@@ -36,8 +36,8 @@ public class SharedBasis2 extends Basis2 {
         return mSharedType==tBasis.mSharedType && mSharedBasis.hasSameGenMap(tBasis.mSharedBasis);
     }
     
-    @Override public int forwardCacheSize(int aNumNei, boolean aFullCache) {return mSharedBasis.forwardCacheSize(aNumNei, aFullCache);}
-    @Override public int backwardCacheSize(int aNumNei, boolean aFullCache) {return mSharedBasis.backwardCacheSize(aNumNei, aFullCache);}
+    @Override public int forwardCacheSize(int aNumNei) {return mSharedBasis.forwardCacheSize(aNumNei);}
+    @Override public int backwardCacheSize(int aNumNei) {return mSharedBasis.backwardCacheSize(aNumNei);}
     
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override public void save(Map rSaveTo) {

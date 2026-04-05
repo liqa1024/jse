@@ -71,8 +71,6 @@ public abstract class NeuralNetwork2 implements ISavable {
     public abstract int parameterSize();
     /** @return 梯度缓存的大小 */
     public abstract int gradCacheSize();
-    /** @return 中间隐藏层计算需要的缓存大小 */
-    public abstract int hiddenCacheSize();
     
     /** 更新内部 code gen 的 map，将参数编码进 jit */
     public abstract void updateGenMap(Map<String, Object> rGenMap, int aGenIdx);

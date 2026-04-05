@@ -151,17 +151,17 @@ public class MergedBasis2 extends Basis2 {
         return true;
     }
     
-    @Override public int forwardCacheSize(int aNumNei, boolean aFullCache) {
+    @Override public int forwardCacheSize(int aNumNei) {
         int rSize = 0;
         for (MergeableBasis2 tBasis : mMergedBasis) {
-            rSize += tBasis.forwardCacheSize(aNumNei, aFullCache);
+            rSize += tBasis.forwardCacheSize(aNumNei);
         }
         return rSize;
     }
-    @Override public int backwardCacheSize(int aNumNei, boolean aFullCache) {
+    @Override public int backwardCacheSize(int aNumNei) {
         int rSize = 0;
         for (MergeableBasis2 tBasis : mMergedBasis) {
-            rSize += tBasis.backwardCacheSize(aNumNei, aFullCache);
+            rSize += tBasis.backwardCacheSize(aNumNei);
         }
         return rSize;
     }
