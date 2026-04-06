@@ -44,16 +44,16 @@ public class JNIUtil {
     }
     
     /** 当前 {@link JNIUtil} JNI 库的根目录，结尾一定存在 {@code '/'} */
-    public final static String HOME = JAR_DIR+"jniutil/" + UT.Code.uniqueID(VERSION_NUMBER) + "/";
+    public final static String HOME;
     /** 当前 {@link JNIUtil} JNI 库的头文件所在文件夹，结尾一定存在 {@code '/'} */
-    public final static String INCLUDE_DIR = HOME+"include/";
+    public final static String INCLUDE_DIR;
     /** 当前 {@link JNIUtil} JNI 库的头文件名称 */
     public final static String HEADER_NAME = "jniutil.h";
     /** 当前 {@link JNIUtil} JNI 库的头文件路径 */
-    public final static String HEADER_PATH = INCLUDE_DIR+HEADER_NAME;
+    public final static String HEADER_PATH;
     
     /** jse 自动下载的一些离线包的路径，这里采用 jar 包所在的绝对路径 */
-    public final static String PKG_DIR = JAR_DIR+".jnipkg/";
+    public final static String PKG_DIR;
     
     /** {@link JNIUtil} 内部定义的常量，这里重新定义一次从而避免 JNI 通讯 */
     public final static int
@@ -110,6 +110,11 @@ public class JNIUtil {
     
     static {
         InitHelper.INITIALIZED = true;
+        
+        HOME = JAR_DIR+"jniutil/" + UT.Code.uniqueID(VERSION_NUMBER) + "/";
+        INCLUDE_DIR = HOME+"include/";
+        HEADER_PATH = INCLUDE_DIR+HEADER_NAME;
+        PKG_DIR = JAR_DIR+".jnipkg/";
         
         // windows 上建议使用微软构建的 jdk
         if (Conf.JDK_CHECK && IS_WINDOWS) {
