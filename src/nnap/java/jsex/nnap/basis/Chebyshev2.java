@@ -1,13 +1,9 @@
 package jsex.nnap.basis;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.ImmutableBiMap;
 import jse.code.UT;
-import jse.math.matrix.Matrices;
 import jse.math.matrix.RowMatrix;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -18,27 +14,12 @@ import java.util.Map;
 public class Chebyshev2 extends WTypeBasis2 {
     public final static int DEFAULT_NMAX = 5;
     public final static double DEFAULT_RCUT = 6.0; // 现在默认值统一为 6
-    /** 仅对不影响整体且有部分关键势还在使用的 Chebyshev 保留兼容 */
-    public final static int FUSE_STYLE_LIMITED = 0, FUSE_STYLE_EXTENSIVE = 1;
-    final static BiMap<String, Integer> ALL_FUSE_STYLE = ImmutableBiMap.<String, Integer>builder()
-        .put("limited", FUSE_STYLE_LIMITED)
-        .put("extensive", FUSE_STYLE_EXTENSIVE)
-        .build();
     
-    final int mFuseStyle;
     final double mRCut;
     final int mSize;
     
-    Chebyshev2(int aTypeNum, int aNMax, double aRCut, int aWType, int aFuseStyle, @Nullable RowMatrix aFuseWeight) {
+    Chebyshev2(int aTypeNum, int aNMax, double aRCut, int aWType, @Nullable RowMatrix aFuseWeight) {
         super(aTypeNum, aNMax, aWType, aFuseWeight);
-        if (!ALL_FUSE_STYLE.containsValue(aFuseStyle)) throw new IllegalArgumentException("Input fuse_style MUST be in {0, 1}, input: "+ aFuseStyle);
-        mFuseStyle = aFuseStyle;
-        // Chebyshev 对 extensive 保留兼容
-        if (mFuseWeight!=null && mFuseStyle==FUSE_STYLE_EXTENSIVE) {
-            mFuseSize = mFuseWeight.ncols()/(aNMax+1);
-            if (mFuseWeight.ncols()!=mFuseSize*(aNMax+1)) throw new IllegalArgumentException("Column number of fuse weight mismatch");
-            mSizeN = getSizeN_(mWType, mTypeNum, mNMax, mFuseSize);
-        }
         mRCut = aRCut;
         mSize = mSizeN;
     }
@@ -49,9 +30,6 @@ public class Chebyshev2 extends WTypeBasis2 {
         rSaveTo.put("nmax", mNMax);
         rSaveTo.put("rcut", mRCut);
         rSaveTo.put("wtype", ALL_WTYPE.inverse().get(mWType));
-        if (mFuseWeight!=null && mFuseStyle!=FUSE_STYLE_LIMITED) {
-            rSaveTo.put("fuse_style", ALL_FUSE_STYLE.inverse().get(mFuseStyle));
-        }
         if (mFuseWeight!=null) {
             rSaveTo.put("fuse_size", mFuseSize);
             rSaveTo.put("fuse_weight", mFuseWeight.asListRows());
@@ -61,60 +39,16 @@ public class Chebyshev2 extends WTypeBasis2 {
     @SuppressWarnings({"rawtypes"})
     public static Chebyshev2 load(int aTypeNum, Map aMap) {
         int aNMax = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue();
+        if (!UT.Code.getWithDefault(aMap, "limited", "fuse_style").equals("limited")) throw new IllegalArgumentException("no limited fuse_style is invalid now.");
         if (aMap.containsKey("rfunc_scales")) throw new IllegalArgumentException("rfunc_scales is invalid now.");
         if (aMap.containsKey("system_scales")) throw new IllegalArgumentException("system_scales is invalid now.");
         int aWType = getWType_(aMap);
-        int aFuseStyle = getFuseStyle_(aMap);
-        RowMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aFuseStyle, aTypeNum, aNMax);
+        RowMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aTypeNum);
         return new Chebyshev2(
             aTypeNum, aNMax,
             ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
-            aWType, aFuseStyle, aFuseWeight
+            aWType, aFuseWeight
         );
-    }
-    
-    @SuppressWarnings({"rawtypes"})
-    static int getFuseStyle_(Map aMap) {
-        @Nullable Object tStyle = UT.Code.get(aMap, "fuse_style");
-        if (tStyle == null) return FUSE_STYLE_LIMITED;
-        if (tStyle instanceof Number) return ((Number)tStyle).intValue();
-        @Nullable Integer tOut = ALL_FUSE_STYLE.get(tStyle.toString());
-        if (tOut == null) throw new IllegalArgumentException("Input wtype MUST be in {limited, extensive}, input: "+tStyle);
-        return tOut;
-    }
-    @SuppressWarnings("rawtypes")
-    static @Nullable RowMatrix getFuseWeight_(Map aMap, int aWType, int aFuseStyle, int aTypeNum, int aNMax) {
-        if (aWType!=WTYPE_FUSE && aWType!=WTYPE_EXFUSE) return null;
-        Object tFuseSize = UT.Code.get(aMap, "fuse_size");
-        Object tFuseWeight = aMap.get("fuse_weight");
-        if (tFuseWeight!=null) {
-            if (tFuseSize==null) {
-                // 如果没有 fuse_size 则是旧版，按列读取
-                return Matrices.fromCols((List<?>)tFuseWeight);
-            }
-            // 否则按行读取
-            RowMatrix tMat = Matrices.fromRows((List<?>)tFuseWeight);
-            if (aFuseStyle==FUSE_STYLE_LIMITED) {
-                if (tMat.ncols()!=((Number)tFuseSize).intValue()) throw new IllegalArgumentException("Column number of fuse weight mismatch");
-            } else
-            if (aFuseStyle==FUSE_STYLE_EXTENSIVE) {
-                if (tMat.ncols()!=((Number)tFuseSize).intValue()*(aNMax+1)) throw new IllegalArgumentException("Column number of fuse weight mismatch");
-            } else {
-                throw new IllegalStateException();
-            }
-            return tMat;
-        }
-        if (tFuseSize==null) throw new IllegalArgumentException("Key `fuse_weight` or `fuse_size` required for fuse wtype");
-        int tColNum;
-        if (aFuseStyle==FUSE_STYLE_LIMITED) {
-            tColNum = ((Number)tFuseSize).intValue();
-        } else
-        if (aFuseStyle==FUSE_STYLE_EXTENSIVE) {
-            tColNum = ((Number)tFuseSize).intValue()*(aNMax+1);
-        } else {
-            throw new IllegalStateException();
-        }
-        return RowMatrix.zeros(aTypeNum, tColNum);
     }
     
     /** @return {@inheritDoc} */
@@ -136,11 +70,10 @@ public class Chebyshev2 extends WTypeBasis2 {
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdxType, int aGenIdxMerge) {
         super.updateGenMap(rGenMap, aGenIdxType, aGenIdxMerge);
         rGenMap.put("[FP USE "+aGenIdxType+":"+aGenIdxMerge+"]", "chebyshev");
-        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_FSTYLE", mFuseStyle);
     }
     @Override public boolean hasSameGenMap(MergeableBasis2 aBasis) {
         if (!(aBasis instanceof Chebyshev2)) return false;
         Chebyshev2 tBasis = (Chebyshev2)aBasis;
-        return super.hasSameGenMap(aBasis) && mFuseStyle==tBasis.mFuseStyle;
+        return super.hasSameGenMap(aBasis);
     }
 }

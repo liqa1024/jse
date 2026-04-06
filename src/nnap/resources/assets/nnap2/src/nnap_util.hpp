@@ -49,9 +49,6 @@ static constexpr int WTYPE_FUSE    = 4;
 static constexpr int WTYPE_RFUSE   = 5; // unused
 static constexpr int WTYPE_EXFUSE  = 6;
 
-static constexpr int FSTYLE_LIMITED = 0;
-static constexpr int FSTYLE_EXTENSIVE = 1;
-
 static constexpr int TRUE = 1;
 static constexpr int FALSE = 0;
 

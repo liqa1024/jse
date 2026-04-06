@@ -29,8 +29,8 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
     final int mWType;
     final int mInternalWType;
     final @Nullable RowMatrix mFuseWeight;
-    int mSizeN;
-    int mFuseSize;
+    final int mSizeN;
+    final int mFuseSize;
     
     WTypeBasis2(int aTypeNum, int aNMax, int aWType, @Nullable RowMatrix aFuseWeight) {
         if (aTypeNum <= 0) throw new IllegalArgumentException("Inpute ntypes MUST be Positive, input: "+aTypeNum);
