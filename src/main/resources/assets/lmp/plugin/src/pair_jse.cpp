@@ -209,7 +209,7 @@ jlong PairJSE::atomMass() {
 }
 jlong PairJSE::atomExtract(jstring name) {
     const char *name_c = mEnv->GetStringUTFChars(name, NULL);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) return NULL;
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) return 0;
     jlong ptr = (jlong)(intptr_t) atom->extract(name_c);
     mEnv->ReleaseStringUTFChars(name, name_c);
     return ptr;

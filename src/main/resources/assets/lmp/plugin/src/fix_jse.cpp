@@ -345,7 +345,7 @@ jlong FixJSE::atomMass() {
 }
 jlong FixJSE::atomExtract(jstring name) {
     const char *name_c = mEnv->GetStringUTFChars(name, NULL);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) return NULL;
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) return 0;
     jlong ptr = (jlong)(intptr_t) atom->extract(name_c);
     mEnv->ReleaseStringUTFChars(name, name_c);
     return ptr;
@@ -451,21 +451,21 @@ jint FixJSE::listInum() {
 jlong FixJSE::listIlist() {
     if (mNL == NULL) {
         throwExceptionLMP(mEnv, "No neighbor list in this fix");
-        return NULL;
+        return 0;
     }
     return (jlong)(intptr_t) mNL->ilist;
 }
 jlong FixJSE::listNumneigh() {
     if (mNL == NULL) {
         throwExceptionLMP(mEnv, "No neighbor list in this fix");
-        return NULL;
+        return 0;
     }
     return (jlong)(intptr_t) mNL->numneigh;
 }
 jlong FixJSE::listFirstneigh() {
     if (mNL == NULL) {
         throwExceptionLMP(mEnv, "No neighbor list in this fix");
-        return NULL;
+        return 0;
     }
     return (jlong)(intptr_t) mNL->firstneigh;
 }
