@@ -99,7 +99,7 @@ public class Thermo extends Table {
             while ((tLine = aReader.readLine()) != null) {
                 // 现在改为字符串判断而不是靠不稳定的 str2data 来判断结束
                 if (IO.Text.containsIgnoreCase(tLine, "Loop time of")) break;
-                rDataRows.add(IO.Text.str2data(tLine, tHeads.length));
+                rDataRows.add(IO.Text.str2data(true, tLine, tHeads.length));
             }
         }
         if (aHeads == null) return null;

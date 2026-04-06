@@ -275,11 +275,17 @@ public class CharScanner {
         return parseLongFromTo(ignoreErr, anyErr, digitChars, 0, digitChars.length);
     }
     
-    public static float parseFloat(boolean ignoreErr, boolean[] anyErr, char[] buffer, int from, int to) {
-        return (float) parseDouble(ignoreErr, anyErr, buffer, from, to);
+    public static float parseFloat(boolean ignoreErr, boolean[] anyErr, char[] digitChars) {
+        return parseFloatFromTo(ignoreErr, anyErr, digitChars, 0, digitChars.length);
+    }
+    public static float parseFloatFromTo(boolean ignoreErr, boolean[] anyErr, char[] buffer, int from, int to) {
+        return (float) parseDoubleFromTo(ignoreErr, anyErr, buffer, from, to);
     }
     
-    public static double parseDouble(boolean ignoreErr, boolean[] anyErr, char[] buffer, int from, int to) {
+    public static double parseDouble(boolean ignoreErr, boolean[] anyErr, char[] digitChars) {
+        return parseDoubleFromTo(ignoreErr, anyErr, digitChars, 0, digitChars.length);
+    }
+    public static double parseDoubleFromTo(boolean ignoreErr, boolean[] anyErr, char[] buffer, int from, int to) {
         double value;
         boolean simple = true;
         int digitsPastPoint = 0;
@@ -357,7 +363,10 @@ public class CharScanner {
         return value;
     }
     
-    public static Number parseNumber(boolean ignoreErr, boolean[] anyErr, char[] buffer, int from, int to) {
+    public static Number parseNumber(boolean ignoreErr, boolean[] anyErr, char[] digitChars) {
+        return parseNumberFromTo(ignoreErr, anyErr, digitChars, 0, digitChars.length);
+    }
+    public static Number parseNumberFromTo(boolean ignoreErr, boolean[] anyErr, char[] buffer, int from, int to) {
         Number value;
         boolean simple = true;
         int digitsPastPoint = 0;

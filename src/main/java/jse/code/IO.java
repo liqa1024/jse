@@ -300,15 +300,44 @@ public class IO {
             return rStr.toString();
         }
         
+        /**
+         * 将单个字符串转为 int 值，要求前后不能含有任何空格
+         * @param aStr 需要进行转换的字符串
+         * @return 转换得到的数字
+         */
+        public static int str2int(String aStr) {
+            return str2int(!Conf.STRICT_IO, aStr);
+        }
+        /**
+         * 将单个字符串转为 int 值，要求前后不能含有任何空格
+         * @param aIgnoreErr 在转换失败时是否忽略错误，如果忽略错误则返回 {@code 0}，默认在
+         *        {@link Conf#STRICT_IO} 开启时则不会忽略
+         * @param aStr 需要进行转换的字符串
+         * @return 转换得到的数字
+         */
+        public static int str2int(boolean aIgnoreErr, String aStr) {
+            boolean[] rAnyErr = {false};
+            return CharScanner.parseInt(aIgnoreErr, rAnyErr, aStr.toCharArray());
+        }
         
-        private static boolean charIsDigitDecimal_(int aChar) {
-            switch(aChar) {
-            case '-': case '+': case '.': {
-                return true;
-            }
-            default: {
-                return CharScanner.isDigit(aChar);
-            }}
+        /**
+         * 将单个字符串转为 double 值，要求前后不能含有任何空格
+         * @param aStr 需要进行转换的字符串
+         * @return 转换得到的数字
+         */
+        public static double str2double(String aStr) {
+            return str2double(!Conf.STRICT_IO, aStr);
+        }
+        /**
+         * 将单个字符串转为 double 值，要求前后不能含有任何空格
+         * @param aIgnoreErr 在转换失败时是否忽略错误，如果忽略错误则返回 {@link Double#NaN}，默认在
+         *        {@link Conf#STRICT_IO} 开启时则不会忽略
+         * @param aStr 需要进行转换的字符串
+         * @return 转换得到的数字
+         */
+        public static double str2double(boolean aIgnoreErr, String aStr) {
+            boolean[] rAnyErr = {false};
+            return CharScanner.parseDouble(aIgnoreErr, rAnyErr, aStr.toCharArray());
         }
         
         /**
@@ -334,12 +363,7 @@ public class IO {
             boolean[] rAnyErr = {false};
             // 先直接转 char[]，适配 groovy-json 的 CharScanner
             char[] tChar = aStr.toCharArray();
-            // 先判断开头，这样可以避免抛出错误带来的性能损失
-            if (!charIsDigitDecimal_(tChar[0])) {
-                if (aIgnoreErr) return null;
-                throw new NumberFormatException("Invalid number start char: "+tChar[0]);
-            }
-            return CharScanner.parseNumber(aIgnoreErr, rAnyErr, tChar, 0, tChar.length);
+            return CharScanner.parseNumber(aIgnoreErr, rAnyErr, tChar);
         }
         
         /**
@@ -468,7 +492,7 @@ public class IO {
                 } else {
                     if (tCharCode<=32 || tCharCode==44) {
                         if (tCharCode == 44) tHasComma = true;
-                        rData.set(tIdx, CharScanner.parseDouble(aIgnoreErr, rAnyErr, tChar, tFrom, i));
+                        rData.set(tIdx, CharScanner.parseDoubleFromTo(aIgnoreErr, rAnyErr, tChar, tFrom, i));
                         tFrom = -1;
                         ++tIdx;
                         if (tIdx == aLength) return rData;
@@ -477,7 +501,7 @@ public class IO {
             }
             // 最后一个数据
             if (tFrom >= 0 && tFrom < tChar.length) {
-                rData.set(tIdx, CharScanner.parseDouble(aIgnoreErr, rAnyErr, tChar, tFrom, tChar.length));
+                rData.set(tIdx, CharScanner.parseDoubleFromTo(aIgnoreErr, rAnyErr, tChar, tFrom, tChar.length));
             }
             return rData;
         }
@@ -521,14 +545,14 @@ public class IO {
                 } else {
                     if (tCharCode<=32 || tCharCode==44) {
                         if (tCharCode == 44) tHasComma = true;
-                        rData.add(CharScanner.parseDouble(aIgnoreErr, rAnyErr, tChar, tFrom, i));
+                        rData.add(CharScanner.parseDoubleFromTo(aIgnoreErr, rAnyErr, tChar, tFrom, i));
                         tFrom = -1;
                     }
                 }
             }
             // 最后一个数据
             if (tFrom >= 0 && tFrom < tChar.length) {
-                rData.add(CharScanner.parseDouble(aIgnoreErr, rAnyErr, tChar, tFrom, tChar.length));
+                rData.add(CharScanner.parseDoubleFromTo(aIgnoreErr, rAnyErr, tChar, tFrom, tChar.length));
             } else
             if (tHasComma) {
                 // 分号结尾补充 nan
@@ -3317,7 +3341,7 @@ public class IO {
             while ((tLine = tReader.readLine()) != null) {
                 // 跳过注释行
                 if (tLine.startsWith("#")) continue;
-                rBuilder.addRow(Text.str2data(tLine, tColNum));
+                rBuilder.addRow(Text.str2data(true, tLine, tColNum));
             }
             // 返回结果
             rBuilder.trimToSize();
@@ -3393,7 +3417,7 @@ public class IO {
             while ((tLine = tReader.readLine()) != null) {
                 // 跳过注释行
                 if (tLine.startsWith("#")) continue;
-                rRows.add(Text.str2data(tLine, tColNum));
+                rRows.add(Text.str2data(true, tLine, tColNum));
             }
             // 返回结果
             return Tables.fromRows(rRows, tHeads);

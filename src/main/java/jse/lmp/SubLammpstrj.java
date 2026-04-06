@@ -742,7 +742,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         for (IVector tRow : aAtomData.rows()) {
             tLine = aReader.readLine();
             if (tLine == null) {IO.fileEnd(); return null;}
-            tRow.fill(IO.Text.str2data(tLine, tAtomDataKeys.length));
+            tRow.fill(IO.Text.str2data(true, tLine, tAtomDataKeys.length));
         }
         
         // 创建 SubLammpstrj 并返回
