@@ -160,6 +160,7 @@ static NNAP_DEVICE void backwardCnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
     flt_t bGradBnlm[(WTYPE==WTYPE_FUSE||WTYPE==WTYPE_EXFUSE) ? (REQUIRE_CACHE ? 1 : tSizeBnlm) : 1];
     flt_t *rGradBnlm = NULL, *rNlGradBnlm = NULL;
     if (WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) {
+        *aForwardCache += aNeiNum*tSizeBnlm;
         if (REQUIRE_CACHE) {
             rNlGradBnlm = *rBackwardCache; *rBackwardCache += aNeiNum*tSizeBnlm;
         } else {
