@@ -134,6 +134,7 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
             tCol.div2this(tCol.operation().norm1() / mTypeNum);
         }
     }
+    
     @Override public IVector parameters() {
         if (mWType!=WTYPE_FUSE && mWType!=WTYPE_EXFUSE) return null;
         assert mFuseWeight != null;
@@ -144,7 +145,20 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
         assert mFuseWeight != null;
         return mFuseWeight.internalDataSize();
     }
-    @Override public boolean hasParameters() {return mWType==WTYPE_FUSE || mWType==WTYPE_EXFUSE;}
+    
+    @Override public IVector fittableParameters() {
+        if (mWType!=WTYPE_FUSE && mWType!=WTYPE_EXFUSE) return null;
+        assert mFuseWeight != null;
+        return mFuseWeight.asVecRow();
+    }
+    @Override public int fittableParameterSize() {
+        if (mWType!=WTYPE_FUSE && mWType!=WTYPE_EXFUSE) return 0;
+        assert mFuseWeight != null;
+        return mFuseWeight.internalDataSize();
+    }
+    @Override public boolean hasFittableParameters() {
+        return mWType==WTYPE_FUSE || mWType==WTYPE_EXFUSE;
+    }
     
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdxType, int aGenIdxMerge) {
         rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_SIZE", size());

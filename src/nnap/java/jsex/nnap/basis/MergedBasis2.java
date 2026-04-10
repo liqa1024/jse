@@ -16,10 +16,11 @@ import java.util.Map;
 public class MergedBasis2 extends Basis2 {
     private final MergeableBasis2[] mMergedBasis;
     private final double mRCut;
-    private final int mSize, mTotParaSize, mTotHyperParaSize;
-    private final @Nullable IVector[] mParas;
+    private final int mSize, mTotParaSize, mTotHyperParaSize, mTotFitParaSize;
+    private final IVector[] mParas;
     private final IVector[] mHyperParas;
-    private final int[] mParaSizes, mHyperParaSizes;
+    private final @Nullable IVector[] mFitParas;
+    private final int[] mParaSizes, mHyperParaSizes, mFitParaSizes;
     
     public MergedBasis2(MergeableBasis2... aMergedBasis) {
         if (aMergedBasis ==null || aMergedBasis.length==0) throw new IllegalArgumentException("Merge basis can not be null or empty");
@@ -38,11 +39,13 @@ public class MergedBasis2 extends Basis2 {
         // init para stuff
         mParas = new IVector[mMergedBasis.length];
         mHyperParas = new IVector[mMergedBasis.length];
+        mFitParas = new IVector[mMergedBasis.length];
         mParaSizes = new int[mMergedBasis.length];
         mHyperParaSizes = new int[mMergedBasis.length];
-        int tTotParaSize = 0, tTotHyperParaSize = 0;
+        mFitParaSizes = new int[mMergedBasis.length];
+        int tTotParaSize = 0, tTotHyperParaSize = 0, tTotFitParaSize = 0;
         for (int i = 0; i < mMergedBasis.length; ++i) {
-            IVector tPara = mMergedBasis[i].hasParameters() ? mMergedBasis[i].parameters() : null;
+            IVector tPara = mMergedBasis[i].parameters();
             mParas[i] = tPara;
             int tSizePara = mMergedBasis[i].parameterSize();
             mParaSizes[i] = tSizePara;
@@ -52,12 +55,42 @@ public class MergedBasis2 extends Basis2 {
             int tSizeHyperPara = mMergedBasis[i].hyperParameterSize();
             mHyperParaSizes[i] = tSizeHyperPara;
             tTotHyperParaSize += tSizeHyperPara;
+            IVector tFitPara = mMergedBasis[i].hasFittableParameters() ? mMergedBasis[i].fittableParameters() : null;
+            mFitParas[i] = tFitPara;
+            int tSizeFitPara = mMergedBasis[i].fittableParameterSize();
+            mFitParaSizes[i] = tSizeFitPara;
+            tTotFitParaSize += tSizeFitPara;
         }
         mTotParaSize = tTotParaSize;
         mTotHyperParaSize = tTotHyperParaSize;
+        mTotFitParaSize = tTotFitParaSize;
     }
     public int mergeSize() {
         return mMergedBasis.length;
+    }
+    
+    @Override public IVector parameters() {
+        return new RefVector() {
+            @Override public double get(int aIdx) {
+                int tIdx = aIdx;
+                for (int i = 0; i < mMergedBasis.length; ++i) {
+                    int tParaSize = mParaSizes[i];
+                    if (tIdx < tParaSize) {
+                        IVector tPara = mParas[i];
+                        assert tPara != null;
+                        return tPara.get(tIdx);
+                    }
+                    tIdx -= tParaSize;
+                }
+                throw new IndexOutOfBoundsException(String.valueOf(aIdx));
+            }
+            @Override public int size() {
+                return mTotParaSize;
+            }
+        };
+    }
+    @Override public int parameterSize() {
+        return mTotParaSize;
     }
     
     @Override public IVector hyperParameters() {
@@ -86,46 +119,46 @@ public class MergedBasis2 extends Basis2 {
     @Override public void initParameters() {
         for (MergeableBasis2 tBasis : mMergedBasis) tBasis.initParameters();
     }
-    @Override public IVector parameters() {
+    @Override public IVector fittableParameters() {
         return new RefVector() {
             @Override public double get(int aIdx) {
                 int tIdx = aIdx;
                 for (int i = 0; i < mMergedBasis.length; ++i) {
-                    int tParaSize = mParaSizes[i];
-                    if (tIdx < tParaSize) {
-                        IVector tPara = mParas[i];
-                        assert tPara != null;
-                        return tPara.get(tIdx);
+                    int tFitParaSize = mFitParaSizes[i];
+                    if (tIdx < tFitParaSize) {
+                        IVector tFitPara = mFitParas[i];
+                        assert tFitPara != null;
+                        return tFitPara.get(tIdx);
                     }
-                    tIdx -= tParaSize;
+                    tIdx -= tFitParaSize;
                 }
                 throw new IndexOutOfBoundsException(String.valueOf(aIdx));
             }
             @Override public void set(int aIdx, double aValue) {
                 int tIdx = aIdx;
                 for (int i = 0; i < mMergedBasis.length; ++i) {
-                    int tParaSize = mParaSizes[i];
-                    if (tIdx < tParaSize) {
-                        IVector tPara = mParas[i];
-                        assert tPara != null;
-                        tPara.set(tIdx, aValue);
+                    int tFitParaSize = mFitParaSizes[i];
+                    if (tIdx < tFitParaSize) {
+                        IVector tFitPara = mFitParas[i];
+                        assert tFitPara != null;
+                        tFitPara.set(tIdx, aValue);
                         return;
                     }
-                    tIdx -= tParaSize;
+                    tIdx -= tFitParaSize;
                 }
                 throw new IndexOutOfBoundsException(String.valueOf(aIdx));
             }
             @Override public int size() {
-                return mTotParaSize;
+                return mTotFitParaSize;
             }
         };
     }
-    @Override public int parameterSize() {
-        return mTotParaSize;
+    @Override public int fittableParameterSize() {
+        return mTotFitParaSize;
     }
-    @Override public boolean hasParameters() {
+    @Override public boolean hasFittableParameters() {
         for (MergeableBasis2 tBasis : mMergedBasis) {
-            if (tBasis.hasParameters()) return true;
+            if (tBasis.hasFittableParameters()) return true;
         }
         return false;
     }

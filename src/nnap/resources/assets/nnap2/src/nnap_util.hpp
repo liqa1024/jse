@@ -369,6 +369,15 @@ static inline NNAP_DEVICE void calRn(flt_t *rRn, flt_t aDis, flt_t aRCutL, flt_t
     chebyshevFull<N>(tRnX, rRn);
 }
 
+template <int N, int NP>
+static inline NNAP_DEVICE void calRnp(flt_t *rRnp, flt_t *aRn, flt_t aFc, flt_t *aRFuseWeight) noexcept {
+    flt_t *tWeight = aRFuseWeight;
+    for (int np = 0; np < NP; ++np) {
+        rRnp[np] = aFc * dot<N+1>(aRn, tWeight);
+        tWeight += (N+1);
+    }
+}
+
 static inline NNAP_DEVICE flt_t calFcPxyz(flt_t *rFcPx, flt_t *rFcPy, flt_t *rFcPz,
                                           flt_t aDis, flt_t aRCut, flt_t aDx, flt_t aDy, flt_t aDz) noexcept {
     const flt_t fcMul = ONE - pow2(aDis/aRCut);
@@ -440,6 +449,20 @@ static inline NNAP_DEVICE void calRnPxyz(flt_t *rRnPx, flt_t *rRnPy, flt_t *rRnP
         rRnPx[n] = tRnP*aDx;
         rRnPy[n] = tRnP*aDy;
         rRnPz[n] = tRnP*aDz;
+    }
+}
+
+template <int N, int NP>
+static inline NNAP_DEVICE void calRnpPxyz(flt_t *rRnpPx, flt_t *rRnpPy, flt_t *rRnpPz, flt_t *aRn, flt_t aFc,
+                                          flt_t *aRnPx, flt_t *aRnPy, flt_t *aRnPz,
+                                          flt_t aFcPx, flt_t aFcPy, flt_t aFcPz, flt_t *aRFuseWeight) noexcept {
+    flt_t *tWeight = aRFuseWeight;
+    for (int np = 0; np < NP; ++np) {
+        const flt_t tRnWeight = dot<N+1>(aRn, tWeight);
+        rRnpPx[np] = aFc*dot<N+1>(aRnPx, tWeight) + aFcPx*tRnWeight;
+        rRnpPy[np] = aFc*dot<N+1>(aRnPy, tWeight) + aFcPy*tRnWeight;
+        rRnpPz[np] = aFc*dot<N+1>(aRnPz, tWeight) + aFcPz*tRnWeight;
+        tWeight += (N+1);
     }
 }
 

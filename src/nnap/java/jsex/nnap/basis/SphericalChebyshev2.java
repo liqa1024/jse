@@ -38,6 +38,9 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
     final int mPostFuseSize;
     final double[] mPostFuseScale;
     
+    final int mSizeNP;
+    final RowMatrix mRFuseWeight;
+    
     private SphericalChebyshev2(int aTypeNum, int aNMax, int aLMax, int aLMaxMax, boolean aNoRadial, int aL3Max, int aL4Max, double aRCut,
                                 int aWType, @Nullable RowMatrix aFuseWeight, @Nullable Vector aPostFuseWeight, double @Nullable[] aPostFuseScale) {
         super(aTypeNum, aNMax, aWType, aFuseWeight);
@@ -67,9 +70,167 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
         mPostFuseScale = aPostFuseScale==null ? new double[]{1.0} : aPostFuseScale;
         if (mPostFuseScale.length!=1) throw new IllegalArgumentException("Size of post fuse scale mismatch");
         mSize = mPostFuseWeight==null ? (mSizeN*mSizeL) : (mPostFuseSize*mSizeL);
+        
+        mSizeNP = mPostFuseWeight==null ? mSizeN : mPostFuseSize;
+        mRFuseWeight = RowMatrix.zeros(mSizeNP*mTypeNum, mNMax+1);
+        updateRFuseWeight_();
     }
     SphericalChebyshev2(int aTypeNum, int aNMax, int aLMax, boolean aNoRadial, int aL3Max, int aL4Max, double aRCut, int aWType, RowMatrix aFuseWeight, Vector aPostFuseWeight, double[] aPostFuseScale) {
         this(aTypeNum, aNMax, aLMax, Math.max(Math.max(aLMax, aL3Max), aL4Max), aNoRadial, aL3Max, aL4Max, aRCut, aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale);
+    }
+    
+    private void updateRFuseWeight_() {
+        // 简单总是清空旧值
+        mRFuseWeight.fill(0.0);
+        if (mPostFuseWeight==null) {
+            switch(mWType) {
+            case WTYPE_FUSE: {
+                assert mFuseWeight!=null;
+                for (int type = 1; type <= mTypeNum; ++type) {
+                    for (int k = 0; k < mFuseSize; ++k) {
+                        double wt = mFuseWeight.get(type-1, k);
+                        for (int n = 0; n <= mNMax; ++n) {
+                            mRFuseWeight.set((type-1)*mSizeN + k*(mNMax+1) + n, n, wt);
+                        }
+                    }
+                }
+                return;
+            }
+            case WTYPE_EXFUSE: {
+                assert mFuseWeight!=null;
+                for (int type = 1; type <= mTypeNum; ++type) {
+                    for (int n = 0; n <= mNMax; ++n) {
+                        mRFuseWeight.set((type-1)*mSizeN + n, n, 1.0); // ex term
+                    }
+                    for (int k = 0; k < mFuseSize; ++k) {
+                        double wt = mFuseWeight.get(type-1, k);
+                        for (int n = 0; n <= mNMax; ++n) {
+                            mRFuseWeight.set((type-1)*mSizeN + (k+1)*(mNMax+1) + n, n, wt);
+                        }
+                    }
+                }
+                return;
+            }
+            case WTYPE_FULL: {
+                for (int type = 1; type <= mTypeNum; ++type) {
+                    for (int n = 0; n <= mNMax; ++n) {
+                        mRFuseWeight.set((type-1)*mSizeN + (type-1)*(mNMax+1) + n, n, 1.0);
+                    }
+                }
+                return;
+            }
+            case WTYPE_EXFULL: {
+                for (int type = 1; type <= mTypeNum; ++type) {
+                    for (int n = 0; n <= mNMax; ++n) {
+                        mRFuseWeight.set((type-1)*mSizeN + n, n, 1.0); // ex term
+                        mRFuseWeight.set((type-1)*mSizeN + type*(mNMax+1) + n, n, 1.0);
+                    }
+                }
+                return;
+            }
+            case WTYPE_NONE: {
+                for (int type = 1; type <= mTypeNum; ++type) {
+                    for (int n = 0; n <= mNMax; ++n) {
+                        mRFuseWeight.set((type-1)*mSizeN + n, n, 1.0);
+                    }
+                }
+                return;
+            }
+            case WTYPE_DEFAULT: {
+                for (int type = 1; type <= mTypeNum; ++type) {
+                    double wt = ((type&1)==1) ? type : (-type);
+                    for (int n = 0; n <= mNMax; ++n) {
+                        mRFuseWeight.set((type-1)*mSizeN + n, n, 1.0);
+                        mRFuseWeight.set((type-1)*mSizeN + (mNMax+1) + n, n, wt);
+                    }
+                }
+                return;
+            }}
+        } else {
+            switch(mWType) {
+            case WTYPE_FUSE: {
+                assert mFuseWeight!=null;
+                for (int type = 1; type <= mTypeNum; ++type) {
+                    for (int np = 0; np < mPostFuseSize; ++np) {
+                        IVector tRow = mRFuseWeight.row((type-1)*mPostFuseSize + np);
+                        tRow.fill(0.0);
+                        for (int k = 0; k < mFuseSize; ++k) {
+                            double wt = mFuseWeight.get(type-1, k);
+                            int tShift = np*mSizeN + k*(mNMax+1);
+                            tRow.op().mplus2this(mPostFuseWeight.subVec(tShift, tShift+(mNMax+1)), wt);
+                        }
+                    }
+                }
+                mRFuseWeight.multiply2this(mPostFuseScale[0]);
+                return;
+            }
+            case WTYPE_EXFUSE: {
+                assert mFuseWeight!=null;
+                for (int type = 1; type <= mTypeNum; ++type) {
+                    for (int np = 0; np < mPostFuseSize; ++np) {
+                        IVector tRow = mRFuseWeight.row((type-1)*mPostFuseSize + np);
+                        int tShift = np*mSizeN;
+                        tRow.fill(mPostFuseWeight.subVec(tShift, tShift+(mNMax+1))); // ex term
+                        for (int k = 0; k < mFuseSize; ++k) {
+                            double wt = mFuseWeight.get(type-1, k);
+                            tShift = np*mSizeN + (k+1)*(mNMax+1);
+                            tRow.op().mplus2this(mPostFuseWeight.subVec(tShift, tShift+(mNMax+1)), wt);
+                        }
+                    }
+                }
+                mRFuseWeight.multiply2this(mPostFuseScale[0]);
+                return;
+            }
+            case WTYPE_FULL: {
+                for (int type = 1; type <= mTypeNum; ++type) {
+                    for (int np = 0; np < mPostFuseSize; ++np) {
+                        IVector tRow = mRFuseWeight.row((type-1)*mPostFuseSize + np);
+                        int tShift = np*mSizeN + (type-1)*(mNMax+1);
+                        tRow.fill(mPostFuseWeight.subVec(tShift, tShift+(mNMax+1)));
+                    }
+                }
+                mRFuseWeight.multiply2this(mPostFuseScale[0]);
+                return;
+            }
+            case WTYPE_EXFULL: {
+                for (int type = 1; type <= mTypeNum; ++type) {
+                    for (int np = 0; np < mPostFuseSize; ++np) {
+                        IVector tRow = mRFuseWeight.row((type-1)*mPostFuseSize + np);
+                        int tShift = np*mSizeN;
+                        tRow.fill(mPostFuseWeight.subVec(tShift, tShift+(mNMax+1))); // ex term
+                        tShift = np*mSizeN + type*(mNMax+1);
+                        tRow.plus2this(mPostFuseWeight.subVec(tShift, tShift+(mNMax+1)));
+                    }
+                }
+                mRFuseWeight.multiply2this(mPostFuseScale[0]);
+                return;
+            }
+            case WTYPE_NONE: {
+                for (int type = 1; type <= mTypeNum; ++type) {
+                    for (int np = 0; np < mPostFuseSize; ++np) {
+                        IVector tRow = mRFuseWeight.row((type-1)*mPostFuseSize + np);
+                        int tShift = np*mSizeN;
+                        tRow.fill(mPostFuseWeight.subVec(tShift, tShift+(mNMax+1)));
+                    }
+                }
+                mRFuseWeight.multiply2this(mPostFuseScale[0]);
+                return;
+            }
+            case WTYPE_DEFAULT: {
+                for (int type = 1; type <= mTypeNum; ++type) {
+                    double wt = ((type&1)==1) ? type : (-type);
+                    for (int np = 0; np < mPostFuseSize; ++np) {
+                        IVector tRow = mRFuseWeight.row((type-1)*mPostFuseSize + np);
+                        int tShift = np*mSizeN;
+                        tRow.fill(mPostFuseWeight.subVec(tShift, tShift+(mNMax+1)));
+                        tShift = np*mSizeN + (mNMax+1);
+                        tRow.op().mplus2this(mPostFuseWeight.subVec(tShift, tShift+(mNMax+1)), wt);
+                    }
+                }
+                mRFuseWeight.multiply2this(mPostFuseScale[0]);
+                return;
+            }}
+        }
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -159,9 +320,31 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
         }
         // 在这个经验设定下，scale 设置为此值确保输出的基组值数量级一致
         mPostFuseScale[0] = MathEX.Fast.sqrt(1.0 / mSizeN);
+        // 参数更新
+        updateRFuseWeight_();
     }
+    
     @Override public IVector parameters() {
-        final IVector tPara = super.parameters();
+        return mRFuseWeight.asVecRow();
+    }
+    @Override public int parameterSize() {
+        return mRFuseWeight.internalDataSize();
+    }
+    
+    @Override public IVector hyperParameters() {
+        return new RefVector() {
+            @Override public double get(int aIdx) {
+                if (aIdx==0) return mRCut;
+                if (aIdx==1) return mPostFuseScale[0];
+                throw new IndexOutOfBoundsException(String.valueOf(aIdx));
+            }
+            @Override public int size() {return 2;}
+        };
+    }
+    @Override public int hyperParameterSize() {return 2;}
+    
+    @Override public IVector fittableParameters() {
+        final IVector tPara = super.fittableParameters();
         if (mPostFuseWeight == null) return tPara;
         // 补充对于 PostFuseWeight 的参数
         if (tPara == null) return mPostFuseWeight;
@@ -195,26 +378,14 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
             }
         };
     }
-    @Override public int parameterSize() {
-        int tParaSize = super.parameterSize();
+    @Override public int fittableParameterSize() {
+        int tParaSize = super.fittableParameterSize();
         if (mPostFuseWeight == null) return tParaSize;
         return tParaSize + mPostFuseWeight.size();
     }
-    @Override public boolean hasParameters() {
-        return super.hasParameters() || mPostFuseWeight!=null;
+    @Override public boolean hasFittableParameters() {
+        return super.hasFittableParameters() || mPostFuseWeight!=null;
     }
-    
-    @Override public IVector hyperParameters() {
-        return new RefVector() {
-            @Override public double get(int aIdx) {
-                if (aIdx==0) return mRCut;
-                if (aIdx==1) return mPostFuseScale[0];
-                throw new IndexOutOfBoundsException(String.valueOf(aIdx));
-            }
-            @Override public int size() {return 2;}
-        };
-    }
-    @Override public int hyperParameterSize() {return 2;}
     
     /** @return {@inheritDoc} */
     @Override public double rcut() {return mRCut;}
@@ -226,14 +397,10 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
     @Override public int size() {return mSize;}
     
     @Override public int forwardCacheSize(int aNumNei) {
-        int tPostSize = mPostFuseWeight==null ? 0 : (mPostFuseSize*mLMAll);
-        int tBnlmSize = (mWType==WTYPE_FUSE || mWType==WTYPE_EXFUSE) ? ((mNMax+1)*mLMAll) : 0;
-        return (aNumNei*(mNMax+1 + mLMAll + tBnlmSize) + (mSizeN*mLMAll) + tPostSize);
+        return aNumNei*(mNMax+1 + mSizeNP + mLMAll) + (mSizeNP*mLMAll);
     }
     @Override public int backwardCacheSize(int aNumNei) {
-        int tPostSize = mPostFuseWeight==null ? 0 : (mPostFuseSize*mLMAll);
-        int tBnlmSize = (mWType==WTYPE_FUSE || mWType==WTYPE_EXFUSE) ? ((mNMax+1)*mLMAll) : 0;
-        return (3*aNumNei*(mNMax+1 + 1 + mLMAll) + aNumNei*tBnlmSize + (mSizeN*mLMAll) + tPostSize);
+        return 3*aNumNei*(mNMax+1 + 1 + mSizeNP + mLMAll) + (mSizeNP*mLMAll);
     }
     
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdxType, int aGenIdxMerge) {
@@ -245,11 +412,12 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
         rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_L4MAX", mL4Max);
         rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_PFFLAG", mPostFuseWeight==null?0:1);
         rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_PFSIZE", mPostFuseSize);
+        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_SIZE_NP", mSizeNP);
     }
     @Override public boolean hasSameGenMap(MergeableBasis2 aBasis) {
         if (!(aBasis instanceof SphericalChebyshev2)) return false;
         SphericalChebyshev2 tBasis = (SphericalChebyshev2)aBasis;
         return super.hasSameGenMap(aBasis) && mLMax==tBasis.mLMax && mNoRadial==tBasis.mNoRadial && mL3Max==tBasis.mL3Max && mL4Max==tBasis.mL4Max
-                                           && (mPostFuseWeight!=null)==(tBasis.mPostFuseWeight!=null) && mPostFuseSize==tBasis.mPostFuseSize;
+                                           && (mPostFuseWeight!=null)==(tBasis.mPostFuseWeight!=null) && mPostFuseSize==tBasis.mPostFuseSize && mSizeNP==tBasis.mSizeNP;
     }
 }

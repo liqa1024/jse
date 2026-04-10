@@ -68,17 +68,22 @@ public abstract class Basis2 implements ISavable {
     /** 随机初始化内部可能存在的可拟合参数 */
     public void initParameters() {/**/}
     
+    /** @return 内部参数组成的向量 */
+    public IVector parameters() {return ZL_VEC;}
+    /** @return 内部参数的长度 */
+    public int parameterSize() {return 0;}
+    
     /** @return 内部超参数组成的向量 */
     public IVector hyperParameters() {return ZL_VEC;}
     /** @return 内部超参数的长度 */
     public int hyperParameterSize() {return 0;}
     
     /** @return 内部可能存在的可拟合参数组成的向量 */
-    public @Nullable IVector parameters() {return null;}
+    public @Nullable IVector fittableParameters() {return null;}
     /** @return 内部可能存在的可拟合参数的长度 */
-    public int parameterSize() {return 0;}
+    public int fittableParameterSize() {return 0;}
     /** @return 是否确实存在可拟合的参数 */
-    public boolean hasParameters() {return false;}
+    public boolean hasFittableParameters() {return false;}
     
     /** @return 基组需要的近邻截断半径 */
     public abstract double rcut();

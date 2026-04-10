@@ -9,6 +9,7 @@
 #define __NNAPGENX_FP_SIZE__ 84
 #define __NNAPGENXX_FP_WTYPE__ JSE_NNAP::WTYPE_DEFAULT
 #define __NNAPGENXX_FP_SIZE_N__ 12
+#define __NNAPGENXX_FP_SIZE_NP__ 8
 #define __NNAPGENXX_FP_NMAX__ 5
 #define __NNAPGENXX_FP_LMAX__ 6
 #define __NNAPGENXX_FP_NORADIAL__ 0
@@ -48,10 +49,9 @@ static NNAP_DEVICE int fpForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *
 // >>> NNAPGEN PICK
 // --- NNAPGEN PICK: spherical_chebyshev
     sphForward<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_LMAX__, __NNAPGENXX_FP_NORADIAL__, __NNAPGENXX_FP_L3MAX__, __NNAPGENXX_FP_L4MAX__,
-               __NNAPGENXX_FP_FSIZE__, __NNAPGENXX_FP_SIZE_N__, __NNAPGENXX_FP_PFFLAG__, __NNAPGENXX_FP_PFSIZE__, REQUIRE_CACHE>(
+               __NNAPGENXX_FP_SIZE_NP__, REQUIRE_CACHE>(
         aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rSubFp,
-        REQUIRE_CACHE?(&rSubFpForwardCache):NULL, tSubFpHyperParam[0], tSubFpParam,
-        tSubFpParam+__NNAPGENXX_FP_SIZE_FW__, tSubFpHyperParam[1]
+        REQUIRE_CACHE?(&rSubFpForwardCache):NULL, tSubFpHyperParam[0], tSubFpParam
     );
 // --- NNAPGEN PICK: chebyshev
     chebyForward<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_FSIZE__, __NNAPGENXX_FP_SIZE_N__, REQUIRE_CACHE>(
@@ -131,11 +131,10 @@ static NNAP_DEVICE int fpBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int 
 // >>> NNAPGEN PICK
 // --- NNAPGEN PICK: spherical_chebyshev
     sphBackward<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_LMAX__, __NNAPGENXX_FP_NORADIAL__, __NNAPGENXX_FP_L3MAX__, __NNAPGENXX_FP_L4MAX__,
-                __NNAPGENXX_FP_FSIZE__, __NNAPGENXX_FP_SIZE_N__, __NNAPGENXX_FP_PFFLAG__, __NNAPGENXX_FP_PFSIZE__, REQUIRE_CACHE>(
+                __NNAPGENXX_FP_SIZE_NP__, REQUIRE_CACHE>(
         aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, tSubGradFp,
         rGradNlDx, rGradNlDy, rGradNlDz,
-        &aSubFpForwardCache, REQUIRE_CACHE?(&rSubFpBackwardCache):NULL, tSubFpHyperParam[0], tSubFpParam,
-        tSubFpParam+__NNAPGENXX_FP_SIZE_FW__, tSubFpHyperParam[1]
+        &aSubFpForwardCache, REQUIRE_CACHE?(&rSubFpBackwardCache):NULL, tSubFpHyperParam[0], tSubFpParam
     );
 // --- NNAPGEN PICK: chebyshev
     chebyBackward<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_FSIZE__, __NNAPGENXX_FP_SIZE_N__, REQUIRE_CACHE>(
