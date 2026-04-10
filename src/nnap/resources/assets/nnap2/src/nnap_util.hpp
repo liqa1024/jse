@@ -46,7 +46,7 @@ static constexpr int WTYPE_SINGLE  = 1; // unused
 static constexpr int WTYPE_FULL    = 2;
 static constexpr int WTYPE_EXFULL  = 3;
 static constexpr int WTYPE_FUSE    = 4;
-static constexpr int WTYPE_RFUSE   = 5; // unused
+static constexpr int WTYPE_RFUSE   = 5;
 static constexpr int WTYPE_EXFUSE  = 6;
 
 static constexpr int TRUE = 1;
@@ -370,7 +370,7 @@ static inline NNAP_DEVICE void calRn(flt_t *rRn, flt_t aDis, flt_t aRCutL, flt_t
 }
 
 template <int N, int NP>
-static inline NNAP_DEVICE void calRnp(flt_t *rRnp, flt_t *aRn, flt_t aFc, flt_t *aRFuseWeight) noexcept {
+static inline NNAP_DEVICE void calRnp(flt_t *rRnp, flt_t aFc, flt_t *aRn, flt_t *aRFuseWeight) noexcept {
     flt_t *tWeight = aRFuseWeight;
     for (int np = 0; np < NP; ++np) {
         rRnp[np] = aFc * dot<N+1>(aRn, tWeight);
@@ -453,16 +453,24 @@ static inline NNAP_DEVICE void calRnPxyz(flt_t *rRnPx, flt_t *rRnPy, flt_t *rRnP
 }
 
 template <int N, int NP>
-static inline NNAP_DEVICE void calRnpPxyz(flt_t *rRnpPx, flt_t *rRnpPy, flt_t *rRnpPz, flt_t *aRn, flt_t aFc,
+static inline NNAP_DEVICE void calRnpPxyz(flt_t *rRnpPx, flt_t *rRnpPy, flt_t *rRnpPz, flt_t aFc, flt_t *aRn,
+                                          flt_t aFcPx, flt_t aFcPy, flt_t aFcPz,
                                           flt_t *aRnPx, flt_t *aRnPy, flt_t *aRnPz,
-                                          flt_t aFcPx, flt_t aFcPy, flt_t aFcPz, flt_t *aRFuseWeight) noexcept {
+                                          flt_t *aRFuseWeight) noexcept {
     flt_t *tWeight = aRFuseWeight;
     for (int np = 0; np < NP; ++np) {
-        const flt_t tRnWeight = dot<N+1>(aRn, tWeight);
-        rRnpPx[np] = aFc*dot<N+1>(aRnPx, tWeight) + aFcPx*tRnWeight;
-        rRnpPy[np] = aFc*dot<N+1>(aRnPy, tWeight) + aFcPy*tRnWeight;
-        rRnpPz[np] = aFc*dot<N+1>(aRnPz, tWeight) + aFcPz*tRnWeight;
+        flt_t tRnWeight = 0.0, tRnPxWeight = 0.0, tRnPyWeight = 0.0, tRnPzWeight = 0.0;
+        for (int n = 0; n <= N; ++n) {
+            const flt_t tW = tWeight[n];
+            tRnWeight += aRn[n] * tW;
+            tRnPxWeight += aRnPx[n] * tW;
+            tRnPyWeight += aRnPy[n] * tW;
+            tRnPzWeight += aRnPz[n] * tW;
+        }
         tWeight += (N+1);
+        rRnpPx[np] = aFc*tRnPxWeight + aFcPx*tRnWeight;
+        rRnpPy[np] = aFc*tRnPyWeight + aFcPy*tRnWeight;
+        rRnpPz[np] = aFc*tRnPzWeight + aFcPz*tRnWeight;
     }
 }
 

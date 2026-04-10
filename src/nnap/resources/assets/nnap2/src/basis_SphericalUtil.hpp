@@ -161,7 +161,7 @@ static NNAP_DEVICE void calYPphiPtheta(flt_t *rYPphi, flt_t aCosPhi, flt_t aSinP
 }
 template <int N>
 static inline NNAP_DEVICE void convertYPPhiPtheta2YPxyz(flt_t aCosTheta, flt_t aSinTheta, flt_t aCosPhi, flt_t aSinPhi, flt_t aDis, flt_t aDxy, int aDxyCloseZero,
-                                            flt_t *rYPx, flt_t *rYPy, flt_t *rYPz, flt_t *aYPtheta, flt_t *aYPphi) noexcept {
+                                                        flt_t *rYPx, flt_t *rYPy, flt_t *rYPz, flt_t *aYPtheta, flt_t *aYPphi) noexcept {
     const flt_t thetaPx = -aCosTheta * aCosPhi / aDis;
     const flt_t thetaPy = -aCosTheta * aSinPhi / aDis;
     const flt_t thetaPz =  aSinTheta / aDis;
@@ -203,6 +203,31 @@ static NNAP_DEVICE void calYPxyz(flt_t aDx, flt_t aDy, flt_t aDz, flt_t aDis, fl
 }
 
 
+template <int NMAX, int LMAX>
+static inline NNAP_DEVICE void mplusCnlm(flt_t *rCnlm, flt_t *aY, flt_t aFc, flt_t *aRn) noexcept {
+    constexpr int tLMAll = (LMAX+1)*(LMAX+1);
+    flt_t *tCnlm = rCnlm;
+    for (int n = 0; n <= NMAX; ++n) {
+        mplus<tLMAll>(tCnlm, aRn[n]*aFc, aY);
+        tCnlm += tLMAll;
+    }
+}
+template <int NMAX, int LMAX>
+static inline NNAP_DEVICE void mplusCnlmEx(flt_t *rCnlmEx, flt_t *rCnlm, flt_t *aY, flt_t aFc, flt_t *aRn) noexcept {
+    constexpr int tLMAll = (LMAX+1)*(LMAX+1);
+    flt_t *tCnlmEx = rCnlmEx;
+    flt_t *tCnlm = rCnlm;
+    for (int n = 0; n <= NMAX; ++n) {
+        const flt_t tMul = aRn[n]*aFc;
+        for (int k = 0; k < tLMAll; ++k) {
+            const flt_t tSubY = aY[k];
+            tCnlmEx[k] += tMul * tSubY;
+            tCnlm[k] += tMul * tSubY;
+        }
+        tCnlmEx += tLMAll;
+        tCnlm += tLMAll;
+    }
+}
 template <int SIZE_NP, int LMAX>
 static inline NNAP_DEVICE void mplusAnlm(flt_t *rAnlm, flt_t *aY, flt_t *aRnp) noexcept {
     constexpr int tLMAll = (LMAX+1)*(LMAX+1);
@@ -213,6 +238,60 @@ static inline NNAP_DEVICE void mplusAnlm(flt_t *rAnlm, flt_t *aY, flt_t *aRnp) n
     }
 }
 
+template <int NMAX, int LMAX, int EXFLAG>
+static NNAP_DEVICE void gradCnlm2xyz_(int j, flt_t *aGradCnlmEx, flt_t *aGradCnlm, flt_t *rGradY,
+                                      flt_t *aY, flt_t aFc, flt_t *aRn,
+                                      flt_t aFcPx, flt_t aFcPy, flt_t aFcPz,
+                                      flt_t *aRnPx, flt_t *aRnPy, flt_t *aRnPz,
+                                      flt_t *aYPx, flt_t *aYPy, flt_t *aYPz,
+                                      flt_t *rFx, flt_t *rFy, flt_t *rFz) noexcept {
+    constexpr int tLMAll = (LMAX+1)*(LMAX+1);
+    // clear gradY here
+    fill<tLMAll>(rGradY, ZERO);
+    flt_t tGradFc = ZERO;
+    flt_t rFxj = ZERO, rFyj = ZERO, rFzj = ZERO;
+    flt_t *tGradCnlmEx = aGradCnlmEx;
+    flt_t *tGradCnlm = aGradCnlm;
+    for (int n = 0; n <= NMAX; ++n) {
+        const flt_t tRnn = aRn[n];
+        const flt_t tMul = aFc * tRnn;
+        flt_t tGradRn = ZERO;
+        for (int k = 0; k < tLMAll; ++k) {
+            flt_t subGradBnlm = tGradCnlm[k];
+            if (EXFLAG) subGradBnlm += tGradCnlmEx[k];
+            rGradY[k] += tMul * subGradBnlm;
+            tGradRn += aY[k] * subGradBnlm;
+        }
+        tGradCnlm += tLMAll;
+        if (EXFLAG) tGradCnlmEx += tLMAll;
+        
+        tGradFc += tRnn * tGradRn;
+        tGradRn *= aFc;
+        rFxj += tGradRn*aRnPx[n];
+        rFyj += tGradRn*aRnPy[n];
+        rFzj += tGradRn*aRnPz[n];
+    }
+    for (int k = 0; k < tLMAll; ++k) {
+        const flt_t subGradY = rGradY[k];
+        rFxj += subGradY*aYPx[k];
+        rFyj += subGradY*aYPy[k];
+        rFzj += subGradY*aYPz[k];
+    }
+    rFxj += aFcPx*tGradFc;
+    rFyj += aFcPy*tGradFc;
+    rFzj += aFcPz*tGradFc;
+    rFx[j] += rFxj; rFy[j] += rFyj; rFz[j] += rFzj;
+}
+template <int NMAX, int LMAX>
+static inline NNAP_DEVICE void gradCnlm2xyz(int j, flt_t *aGradBnlm, flt_t *rGradY, flt_t *aY, flt_t aFc, flt_t *aRn, flt_t aFcPx, flt_t aFcPy, flt_t aFcPz,
+                                            flt_t *aRnPx, flt_t *aRnPy, flt_t *aRnPz, flt_t *aYPx, flt_t *aYPy, flt_t *aYPz, flt_t *rFx, flt_t *rFy, flt_t *rFz) noexcept {
+gradCnlm2xyz_<NMAX, LMAX, FALSE>(j, NULL, aGradBnlm, rGradY, aY, aFc, aRn, aFcPx, aFcPy, aFcPz, aRnPx, aRnPy, aRnPz, aYPx, aYPy, aYPz, rFx, rFy, rFz);
+}
+template <int NMAX, int LMAX>
+static inline NNAP_DEVICE void gradCnlmEx2xyz(int j, flt_t *aGradCnlmEx, flt_t *aGradCnlm, flt_t *rGradY, flt_t *aY, flt_t aFc, flt_t *aRn, flt_t aFcPx, flt_t aFcPy, flt_t aFcPz,
+                                              flt_t *aRnPx, flt_t *aRnPy, flt_t *aRnPz, flt_t *aYPx, flt_t *aYPy, flt_t *aYPz, flt_t *rFx, flt_t *rFy, flt_t *rFz) noexcept {
+gradCnlm2xyz_<NMAX, LMAX, TRUE>(j, aGradCnlmEx, aGradCnlm, rGradY, aY, aFc, aRn, aFcPx, aFcPy, aFcPz, aRnPx, aRnPy, aRnPz, aYPx, aYPy, aYPz, rFx, rFy, rFz);
+}
 template <int SIZE_NP, int LMAX>
 static inline NNAP_DEVICE void gradAnlm2xyz(int j, flt_t *aGradAnlm, flt_t *rGradY, flt_t *aY, flt_t *aRnp,
                                             flt_t *aRnpPx, flt_t *aRnpPy, flt_t *aRnpPz,

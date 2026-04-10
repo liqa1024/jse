@@ -14,7 +14,7 @@ import java.util.Map;
 import static jse.code.CS.RANDOM;
 
 abstract class WTypeBasis2 extends MergeableBasis2 {
-    public final static int WTYPE_DEFAULT = 0, WTYPE_NONE = -1, WTYPE_FULL = 2, WTYPE_EXFULL = 3, WTYPE_FUSE = 4, WTYPE_EXFUSE = 6;
+    public final static int WTYPE_DEFAULT = 0, WTYPE_NONE = -1, WTYPE_FULL = 2, WTYPE_EXFULL = 3, WTYPE_FUSE = 4, WTYPE_RFUSE = 5, WTYPE_EXFUSE = 6;
     final static BiMap<String, Integer> ALL_WTYPE = ImmutableBiMap.<String, Integer>builder()
         .put("default", WTYPE_DEFAULT)
         .put("none", WTYPE_NONE)

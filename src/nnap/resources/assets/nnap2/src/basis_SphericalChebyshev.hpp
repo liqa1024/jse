@@ -31,14 +31,27 @@ static NNAP_DEVICE void calAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *a
         // cal Rn
         if (REQUIRE_CACHE) rRn = rNlRn + j*(NMAX+1);
         calRn<NMAX>(rRn, dis, aRCut);
-        // cal Rnp
-        if (REQUIRE_CACHE) rRnp = rNlRnp + j*SIZE_NP;
-        calRnp<NMAX, SIZE_NP>(rRnp, rRn, fc, aRFuseWeight + (type-1)*(SIZE_NP*(NMAX+1)));
         // cal Y
         if (REQUIRE_CACHE) rY = rNlY + j*tLMAll;
         calY<LMAXMAX>(dx, dy, dz, dis, rY);
-        // cal anlm
-        mplusAnlm<SIZE_NP, LMAXMAX>(rAnlm, rY, rRnp);
+        if (WTYPE==WTYPE_NONE) {
+            mplusCnlm<NMAX, LMAXMAX>(rAnlm, rY, fc, rRn);
+        } else
+        if (WTYPE==WTYPE_FULL) {
+            flt_t *tCnlm = rAnlm + (type-1)*(NMAX+1)*tLMAll;
+            mplusCnlm<NMAX, LMAXMAX>(tCnlm, rY, fc, rRn);
+        } else
+        if (WTYPE==WTYPE_EXFULL) {
+            flt_t *tCnlm = rAnlm + type*(NMAX+1)*tLMAll;
+            mplusCnlmEx<NMAX, LMAXMAX>(rAnlm, tCnlm, rY, fc, rRn);
+        } else
+        if (WTYPE==WTYPE_RFUSE) {
+            // cal Rnp
+            if (REQUIRE_CACHE) rRnp = rNlRnp + j*SIZE_NP;
+            calRnp<NMAX, SIZE_NP>(rRnp, fc, rRn, aRFuseWeight + (type-1)*(SIZE_NP*(NMAX+1)));
+            // cal anlm
+            mplusAnlm<SIZE_NP, LMAXMAX>(rAnlm, rY, rRnp);
+        }
     }
 }
 
@@ -118,9 +131,8 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
         flt_t dis = nnap_sqrt(dx*dx + dy*dy + dz*dz);
         // check rcut for merge
         if (dis >= aRCut) continue;
-        // get Rn Rnp Y
+        // get Rn Y
         flt_t *tRn = tNlRn + j*(NMAX+1);
-        flt_t *tRnp = tNlRnp + j*SIZE_NP;
         flt_t *tY = tNlY + j*tLMAll;
         // cal fcPxyz
         flt_t fcPx, fcPy, fcPz;
@@ -137,13 +149,6 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
             rRnPz = rNlRnPz + j*(NMAX+1);
         }
         calRnPxyz<NMAX>(rRnPx, rRnPy, rRnPz, rCheby2, dis, aRCut, dx, dy, dz);
-        // cal RnpPxyz
-        if (REQUIRE_CACHE) {
-            rRnpPx = rNlRnpPx + j*SIZE_NP;
-            rRnpPy = rNlRnpPy + j*SIZE_NP;
-            rRnpPz = rNlRnpPz + j*SIZE_NP;
-        }
-        calRnpPxyz<NMAX, SIZE_NP>(rRnpPx, rRnpPy, rRnpPz, tRn, fc, rRnPx, rRnPy, rRnPz, fcPx, fcPy, fcPz, aRFuseWeight + (type-1)*(SIZE_NP*(NMAX+1)));
         // cal YlmPxyz
         if (REQUIRE_CACHE) {
             rYPx = rNlYPx + j*tLMAll;
@@ -152,7 +157,29 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
         }
         calYPxyz<LMAXMAX>(dx, dy, dz, dis, tY, rYPx, rYPy, rYPz, rYPtheta, rYPphi);
         // cal fxyz
-        gradAnlm2xyz<SIZE_NP, LMAXMAX>(j, aGradAnlm, rYPtheta, tY, tRnp, rRnpPx, rRnpPy, rRnpPz, rYPx, rYPy, rYPz, rGradNlDx, rGradNlDy, rGradNlDz);
+        if (WTYPE==WTYPE_NONE) {
+            gradCnlm2xyz<NMAX, LMAXMAX>(j, aGradAnlm, rYPtheta, tY, fc, tRn, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rYPx, rYPy, rYPz, rGradNlDx, rGradNlDy, rGradNlDz);
+        } else
+        if (WTYPE==WTYPE_FULL) {
+            flt_t *tGradCnlm = aGradAnlm + (type-1)*(NMAX+1)*tLMAll;
+            gradCnlm2xyz<NMAX, LMAXMAX>(j, tGradCnlm, rYPtheta, tY, fc, tRn, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rYPx, rYPy, rYPz, rGradNlDx, rGradNlDy, rGradNlDz);
+        } else
+        if (WTYPE==WTYPE_EXFULL) {
+            flt_t *tGradCnlm = aGradAnlm + type*(NMAX+1)*tLMAll;
+            gradCnlmEx2xyz<NMAX, LMAXMAX>(j, aGradAnlm, tGradCnlm, rYPtheta, tY, fc, tRn, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rYPx, rYPy, rYPz, rGradNlDx, rGradNlDy, rGradNlDz);
+        } else
+        if (WTYPE==WTYPE_RFUSE) {
+            // get Rnp here
+            flt_t *tRnp = tNlRnp + j*SIZE_NP;
+            // cal RnpPxyz here
+            if (REQUIRE_CACHE) {
+                rRnpPx = rNlRnpPx + j*SIZE_NP;
+                rRnpPy = rNlRnpPy + j*SIZE_NP;
+                rRnpPz = rNlRnpPz + j*SIZE_NP;
+            }
+            calRnpPxyz<NMAX, SIZE_NP>(rRnpPx, rRnpPy, rRnpPz, fc, tRn, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, aRFuseWeight + (type-1)*(SIZE_NP*(NMAX+1)));
+            gradAnlm2xyz<SIZE_NP, LMAXMAX>(j, aGradAnlm, rYPtheta, tY, tRnp, rRnpPx, rRnpPy, rRnpPz, rYPx, rYPy, rYPz, rGradNlDx, rGradNlDy, rGradNlDz);
+        }
     }
 }
 template <int WTYPE, int NMAX, int LMAX, int NORADIAL, int L3MAX, int L4MAX, int SIZE_NP, int REQUIRE_CACHE>

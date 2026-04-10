@@ -26,6 +26,8 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
     public final static int DEFAULT_L4MAX = 0;
     public final static double DEFAULT_RCUT = 6.0; // 现在默认值统一为 6
     
+    final int mInternalWType2;
+    
     final int mLMax, mL3Max, mL4Max;
     final boolean mNoRadial;
     final double mRCut;
@@ -74,6 +76,20 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
         mSizeNP = mPostFuseWeight==null ? mSizeN : mPostFuseSize;
         mRFuseWeight = RowMatrix.zeros(mSizeNP*mTypeNum, mNMax+1);
         updateRFuseWeight_();
+        
+        if (mPostFuseWeight==null) {
+            switch(mInternalWType) {
+            case WTYPE_EXFULL: case WTYPE_FULL: case WTYPE_NONE: {
+                mInternalWType2 = mInternalWType;
+                break;
+            }
+            default: {
+                mInternalWType2 = WTYPE_RFUSE;
+                break;
+            }}
+        } else {
+            mInternalWType2 = WTYPE_RFUSE;
+        }
     }
     SphericalChebyshev2(int aTypeNum, int aNMax, int aLMax, boolean aNoRadial, int aL3Max, int aL4Max, double aRCut, int aWType, RowMatrix aFuseWeight, Vector aPostFuseWeight, double[] aPostFuseScale) {
         this(aTypeNum, aNMax, aLMax, Math.max(Math.max(aLMax, aL3Max), aL4Max), aNoRadial, aL3Max, aL4Max, aRCut, aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale);
@@ -83,7 +99,7 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
         // 简单总是清空旧值
         mRFuseWeight.fill(0.0);
         if (mPostFuseWeight==null) {
-            switch(mWType) {
+            switch(mInternalWType) {
             case WTYPE_FUSE: {
                 assert mFuseWeight!=null;
                 for (int type = 1; type <= mTypeNum; ++type) {
@@ -147,7 +163,7 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
                 return;
             }}
         } else {
-            switch(mWType) {
+            switch(mInternalWType) {
             case WTYPE_FUSE: {
                 assert mFuseWeight!=null;
                 for (int type = 1; type <= mTypeNum; ++type) {
@@ -413,6 +429,7 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
         rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_PFFLAG", mPostFuseWeight==null?0:1);
         rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_PFSIZE", mPostFuseSize);
         rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_SIZE_NP", mSizeNP);
+        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_WTYPE", mInternalWType2);
     }
     @Override public boolean hasSameGenMap(MergeableBasis2 aBasis) {
         if (!(aBasis instanceof SphericalChebyshev2)) return false;
