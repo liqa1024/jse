@@ -24,15 +24,14 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
     
     final int mLMax, mL3Max, mL4Max;
     final boolean mNoRadial;
-    final double mRCut;
     
     final int mSizeL;
     final int mLMaxMax, mLMAll;
     final int mSize;
     
-    private SphericalChebyshev2(int aTypeNum, int aNMax, int aLMax, int aLMaxMax, boolean aNoRadial, int aL3Max, int aL4Max, double aRCut,
+    private SphericalChebyshev2(double aRCut, int aNumTypes, int aNMax, int aLMax, int aLMaxMax, boolean aNoRadial, int aL3Max, int aL4Max,
                                 int aWType, @Nullable RowMatrix aFuseWeight, @Nullable Vector aPostFuseWeight, double @Nullable[] aPostFuseScale) {
-        super(aTypeNum, aNMax, aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale);
+        super(aRCut, aNumTypes, aNMax, aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale);
         if (aLMaxMax<0 || aLMaxMax>12) throw new IllegalArgumentException("Input lmax MUST be in [0, 12], input: "+aLMaxMax);
         if (aL3Max<0 || aL3Max>6) throw new IllegalArgumentException("Input l3max MUST be in [0, 6], input: "+aL3Max);
         if (aL4Max<0 || aL4Max>3) throw new IllegalArgumentException("Input l4max MUST be in [0, 3], input: "+aL3Max);
@@ -40,7 +39,6 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
         mL3Max = aL3Max;
         mL4Max = aL4Max;
         mNoRadial = aNoRadial;
-        mRCut = aRCut;
         
         mSizeL = (mNoRadial?mLMax:(mLMax+1)) + L3NCOLS[mL3Max] + L4NCOLS[mL4Max];
         mLMaxMax = aLMaxMax;
@@ -49,8 +47,8 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
         
         mSize = mSizeNP*mSizeL;
     }
-    SphericalChebyshev2(int aTypeNum, int aNMax, int aLMax, boolean aNoRadial, int aL3Max, int aL4Max, double aRCut, int aWType, RowMatrix aFuseWeight, Vector aPostFuseWeight, double[] aPostFuseScale) {
-        this(aTypeNum, aNMax, aLMax, Math.max(Math.max(aLMax, aL3Max), aL4Max), aNoRadial, aL3Max, aL4Max, aRCut, aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale);
+    SphericalChebyshev2(double aRCut, int aNumTypes, int aNMax, int aLMax, boolean aNoRadial, int aL3Max, int aL4Max, int aWType, RowMatrix aFuseWeight, Vector aPostFuseWeight, double[] aPostFuseScale) {
+        this(aRCut, aNumTypes, aNMax, aLMax, Math.max(Math.max(aLMax, aL3Max), aL4Max), aNoRadial, aL3Max, aL4Max, aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale);
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -63,12 +61,11 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
         }
         rSaveTo.put("l3max", mL3Max);
         rSaveTo.put("l4max", mL4Max);
-        rSaveTo.put("rcut", mRCut);
         super.save_(rSaveTo);
     }
     
     @SuppressWarnings({"rawtypes"})
-    public static SphericalChebyshev2 load(int aTypeNum, Map aMap) {
+    public static SphericalChebyshev2 load(int aNumTypes, Map aMap) {
         int aNMax = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue();
         int aLMax = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_LMAX, "lmax")).intValue();
         int aL3Max = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_L3MAX, "l3max")).intValue();
@@ -79,9 +76,9 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
         if (aMap.containsKey("rfunc_scales")) throw new IllegalArgumentException("rfunc_scales is invalid now.");
         if (aMap.containsKey("system_scales")) throw new IllegalArgumentException("system_scales is invalid now.");
         int aWType = getWType_(aMap);
-        RowMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aTypeNum);
+        RowMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aNumTypes);
         int tFuseSize = getFuseSize(aWType, aFuseWeight);
-        int tSizeN = getSizeN_(aWType, aTypeNum, aNMax, tFuseSize);
+        int tSizeN = getSizeN_(aWType, aNumTypes, aNMax, tFuseSize);
         Vector aPostFuseWeight = getPostFuseWeight_(aMap, tSizeN);
         double[] aPostFuseScale = aPostFuseWeight==null ? null : new double[1];
         if (aPostFuseWeight!=null) {
@@ -89,16 +86,14 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
             aPostFuseScale[0] = tPostFuseScale==null ? 1.0 : ((Number)tPostFuseScale).doubleValue();
         }
         return new SphericalChebyshev2(
-            aTypeNum, aNMax,
+            ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
+            aNumTypes, aNMax,
             aLMax, (Boolean)UT.Code.getWithDefault(aMap, false, "noradial"),
             aL3Max, aL4Max,
-            ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
             aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale
         );
     }
     
-    /** @return {@inheritDoc} */
-    @Override public double rcut() {return mRCut;}
     /**
      * @return {@inheritDoc}；如果只有一个种类则为
      * {@code (nmax+1)(lmax+1)}，如果超过一个种类则为

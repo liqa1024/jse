@@ -87,13 +87,19 @@ class NNAPGEN {
     }
     
     private Map<String, Object> initGenMap_() {
-        final int tTypeNum = mBasis.length;
+        final int tNumTypes = mBasis.length;
         Map<String, Object> rGenMap = new LinkedHashMap<>();
+        // 一些公用参数
+        rGenMap.put("NNAPGEN_NTYPES", tNumTypes);
+        if (NNAP2.Conf.USE_TABLE) {
+            rGenMap.put("[USE TABLE]", true);
+            rGenMap.put("NNAPGEN_TABLE_SIZE", NNAP2.Conf.TABLE_SIZE);
+        }
         // 代码生成，先针对相同系数的进行优化合并
         List<List<Integer>> tSwitchListFp = new ArrayList<>(); // [position][type]
         List<List<Integer>> tSwitchListNN = new ArrayList<>();
         List<List<Integer>> tSwitchListFpNN = new ArrayList<>();
-        for (int type = 1; type <= tTypeNum; ++type) {
+        for (int type = 1; type <= tNumTypes; ++type) {
             final int ti = type-1;
             updateSwitchList_(tSwitchListFp, type, caseList -> mBasis[ti].hasSameGenMap(mBasis[caseList.get(0)-1]));
             updateSwitchList_(tSwitchListNN, type, caseList -> mNN[ti].hasSameGenMap(mNN[caseList.get(0)-1]));
@@ -113,15 +119,15 @@ class NNAPGEN {
     }
     
     @SuppressWarnings("SameParameterValue")
-    IJITEngine initEngine(boolean aSinglePrecision, int aOptimLevel, String aCmakeCxxCompiler, String aCmakeCxxFlags, Map<String, String> aCmakeSetting) {
+    IJITEngine initEngine(boolean aSinglePrecision) {
         Map<String, Object> rGenMap = initGenMap_();
         rGenMap.put("[PRECISION]", aSinglePrecision ? "single" : "double");
         rGenMap.put("[ARCH]", "cpu");
         String tUniqueID = UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, NNAP2.VERSION,
-                                            rGenMap, aOptimLevel, aCmakeCxxCompiler, aCmakeCxxFlags, aCmakeSetting);
+                                            rGenMap, NNAP2.Conf.OPTIM_LEVEL, NNAP2.Conf.CMAKE_CXX_COMPILER, NNAP2.Conf.CMAKE_CXX_FLAGS, NNAP2.Conf.CMAKE_SETTING);
         return SimpleJIT.engine()
-            .setCmakeCxxCompiler(aCmakeCxxCompiler).setCmakeCxxFlags(aCmakeCxxFlags)
-            .setCmakeSettings(aCmakeSetting).setOptimLevel(aOptimLevel)
+            .setCmakeCxxCompiler(NNAP2.Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(NNAP2.Conf.CMAKE_CXX_FLAGS)
+            .setCmakeSettings(NNAP2.Conf.CMAKE_SETTING).setOptimLevel(NNAP2.Conf.OPTIM_LEVEL)
             .setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID)
             .setSrcDirIniter((wd, engine) -> {
                 for (String tName : SRC_NAME) {
@@ -135,17 +141,17 @@ class NNAPGEN {
             });
     }
     @SuppressWarnings("SameParameterValue")
-    IJITEngine initEngineCuda(int aBlockSize, int aOptimLevel, String aCmakeCxxCompiler, String aCmakeCxxFlags, String aCmakeCudaCompiler, String aCmakeCudaFlags, Map<String, String> aCmakeSetting) {
+    IJITEngine initEngineCuda() {
         Map<String, Object> rGenMap = initGenMap_();
-        rGenMap.put("NNAPGEN_CUDA_BLOCKSIZE", aBlockSize);
+        rGenMap.put("NNAPGEN_CUDA_BLOCKSIZE", NNAP_cuda.Conf.CUDA_BLOCKSIZE);
         rGenMap.put("[PRECISION]", "single");
         rGenMap.put("[ARCH]", "cuda");
         String tUniqueID = UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, NNAP2.VERSION,
-                                            rGenMap, aOptimLevel, aCmakeCxxCompiler, aCmakeCxxFlags, aCmakeCudaCompiler, aCmakeCudaFlags, aCmakeSetting);
+                                            rGenMap, NNAP_cuda.Conf.OPTIM_LEVEL, NNAP_cuda.Conf.CMAKE_CXX_COMPILER, NNAP_cuda.Conf.CMAKE_CXX_FLAGS, NNAP_cuda.Conf.CMAKE_CUDA_COMPILER, NNAP_cuda.Conf.CMAKE_CUDA_FLAGS, NNAP_cuda.Conf.CMAKE_SETTING);
         return CudaJIT.engine()
-            .setCmakeCudaCompiler(aCmakeCudaCompiler).setCmakeCudaFlags(aCmakeCudaFlags)
-            .setCmakeCxxCompiler(aCmakeCxxCompiler).setCmakeCxxFlags(aCmakeCxxFlags)
-            .setCmakeSettings(aCmakeSetting).setOptimLevel(aOptimLevel)
+            .setCmakeCudaCompiler(NNAP_cuda.Conf.CMAKE_CUDA_COMPILER).setCmakeCudaFlags(NNAP_cuda.Conf.CMAKE_CUDA_FLAGS)
+            .setCmakeCxxCompiler(NNAP_cuda.Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(NNAP_cuda.Conf.CMAKE_CXX_FLAGS)
+            .setCmakeSettings(NNAP_cuda.Conf.CMAKE_SETTING).setOptimLevel(NNAP_cuda.Conf.OPTIM_LEVEL)
             .setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID)
             .setSrcDirIniter((wd, engine) -> {
                 for (String tName : SRC_NAME) {

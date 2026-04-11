@@ -52,15 +52,26 @@ public class NNAP2 implements IPairPotential {
          */
         public static int OPTIM_LEVEL = OS.envI("JSE_NNAP_OPTIM_LEVEL", IJITEngine.OPTIM_BASE);
         /**
-         * 设置 NNAP 内部计算的默认精度，默认为 double
+         * 设置 NNAP 内部计算的默认精度，默认为 {@code double}，
+         * 仅对 cpu 情况有效
          */
         public static String PRECISION = OS.env("JSE_NNAP_PRECISION", "double");
+        /**
+         * 设置 NNAP 内部的径向函数是否使用查表的方式加速计算，
+         * 默认为 {@code false}
+         */
+        public static boolean USE_TABLE = OS.envZ("JSE_NNAP_USE_TABLE", false);
+        /**
+         * 设置 NNAP 内部的径向函数使用的查表大小，默认为 {@code 2048}，
+         * 这个值会让精度维持在单精度水平
+         */
+        public static int TABLE_SIZE = OS.envI("JSE_NNAP_TABLE_SIZE", 2048);
     }
     public final static int VERSION = 6;
     
     final String[] mSymbols;
     final @Nullable String mUnits;
-    final boolean mSinglePrecision;
+    final boolean mSingle;
     boolean mDead = false;
     final int mThreadNumber;
     final Basis2[] mBasis;
@@ -69,7 +80,7 @@ public class NNAP2 implements IPairPotential {
     @Override public boolean hasSymbol() {return true;}
     @Override public String symbol(int aType) {return mSymbols[aType-1];}
     public String units() {return mUnits;}
-    public String precision() {return mSinglePrecision ? "single" : "double";}
+    public String precision() {return mSingle ? "single" : "double";}
     // 现在所有数据都改为 c 指针
     final AnyCPointer mDataIn, mDataOut;
     final IntCPointer mInNums, mOutNums;
@@ -89,10 +100,10 @@ public class NNAP2 implements IPairPotential {
         mUnits = UT.Code.toString(aModelInfo.get("units"));
         String tPrecision = aPrecision!=null?aPrecision:Conf.PRECISION;
         if (tPrecision.equals("single")) {
-            mSinglePrecision = true;
+            mSingle = true;
         } else
         if (tPrecision.equals("double")) {
-            mSinglePrecision = false;
+            mSingle = false;
         } else {
             throw new IllegalArgumentException("NNAP precision MUST be 'double' or 'single', input: " + tPrecision);
         }
@@ -120,34 +131,34 @@ public class NNAP2 implements IPairPotential {
         mDataOut = AnyCPointer.calloc(32);
         mInNums = IntCPointer.calloc(32);
         mOutNums = IntCPointer.calloc(32);
-        mNlDx = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
-        mNlDy = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
-        mNlDz = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
+        mNlDx = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
+        mNlDy = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
+        mNlDz = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
         mNlType = new GrowableIntCPointer(16);
         mNlIdx = new GrowableIntCPointer(16);
-        mGradNlDx = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
-        mGradNlDy = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
-        mGradNlDz = mSinglePrecision ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
-        mOutEng = mSinglePrecision ? FloatCPointer.malloc(1) : DoubleCPointer.malloc(1);
-        mFpForwardCache = mSinglePrecision ? new GrowableFloatCPointer(128) : new GrowableDoubleCPointer(128);
-        mFpBackwardCache = mSinglePrecision ? new GrowableFloatCPointer(128) : new GrowableDoubleCPointer(128);
+        mGradNlDx = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
+        mGradNlDy = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
+        mGradNlDz = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
+        mOutEng = mSingle ? FloatCPointer.malloc(1) : DoubleCPointer.malloc(1);
+        mFpForwardCache = mSingle ? new GrowableFloatCPointer(128) : new GrowableDoubleCPointer(128);
+        mFpBackwardCache = mSingle ? new GrowableFloatCPointer(128) : new GrowableDoubleCPointer(128);
         // 初始化参数数组
         mFpHyperParam = AnyCPointer.malloc(tModelSize);
         mFpParam = AnyCPointer.malloc(tModelSize);
         mNnParam = AnyCPointer.malloc(tModelSize);
         for (int i = 0; i < tModelSize; ++i) {
             int tSize = mBasis[i].hyperParameterSize();
-            IDoubleOrFloatCPointer tFpHyperParam = mSinglePrecision ? FloatCPointer.malloc(Math.max(1, tSize)) : DoubleCPointer.malloc(Math.max(1, tSize));
+            IDoubleOrFloatCPointer tFpHyperParam = mSingle ? FloatCPointer.malloc(Math.max(1, tSize)) : DoubleCPointer.malloc(Math.max(1, tSize));
             fill_(tFpHyperParam, mBasis[i].hyperParameters());
             mFpHyperParam.putAt(i, tFpHyperParam);
             
             tSize = mBasis[i].parameterSize();
-            IDoubleOrFloatCPointer tFpParam = mSinglePrecision ? FloatCPointer.malloc(Math.max(1, tSize)) : DoubleCPointer.malloc(Math.max(1, tSize));
+            IDoubleOrFloatCPointer tFpParam = mSingle ? FloatCPointer.malloc(Math.max(1, tSize)) : DoubleCPointer.malloc(Math.max(1, tSize));
             fill_(tFpParam, mBasis[i].parameters());
             mFpParam.putAt(i, tFpParam);
             
             tSize = mNN[i].parameterSize();
-            IDoubleOrFloatCPointer tNnParam = mSinglePrecision ? FloatCPointer.malloc(Math.max(1, tSize)) : DoubleCPointer.malloc(Math.max(1, tSize));
+            IDoubleOrFloatCPointer tNnParam = mSingle ? FloatCPointer.malloc(Math.max(1, tSize)) : DoubleCPointer.malloc(Math.max(1, tSize));
             fill_(tNnParam, mNN[i].parameters());
             mNnParam.putAt(i, tNnParam);
         }
@@ -169,7 +180,7 @@ public class NNAP2 implements IPairPotential {
             IVector aNormMu = tNormMu==null ? null : Vectors.from(tNormMu);
             
             int tSize = mBasis[i].size()*2 + 2;
-            IDoubleOrFloatCPointer tNormParam = mSinglePrecision ? FloatCPointer.malloc(tSize) : DoubleCPointer.malloc(tSize);
+            IDoubleOrFloatCPointer tNormParam = mSingle ? FloatCPointer.malloc(tSize) : DoubleCPointer.malloc(tSize);
             tNormParam.putAtD(0, (aNormMuEng+aRefEng));
             tNormParam.putAtD(1, aNormSigmaEng);
             fill_(tNormParam.plus(2), aNormMu);
@@ -217,7 +228,7 @@ public class NNAP2 implements IPairPotential {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         if (mJITEngine!=null) throw new IllegalStateException("compileJIT() has already been called");
         // 开始 jit
-        mJITEngine = mNNAPGEN.initEngine(mSinglePrecision, Conf.OPTIM_LEVEL, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING);
+        mJITEngine = mNNAPGEN.initEngine(mSingle);
         mJITEngine.setMethodNames(NAME_CAL_ENERGY, NAME_CAL_ENERGYFORCE, NAME_STAT_NEINUM_LAMMPS, NAME_COMPUTE_LAMMPS).compile();
         mCalEnergy = mJITEngine.findMethod(NAME_CAL_ENERGY);
         mCalEnergyForce = mJITEngine.findMethod(NAME_CAL_ENERGYFORCE);

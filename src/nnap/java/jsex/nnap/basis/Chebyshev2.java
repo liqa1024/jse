@@ -16,32 +16,29 @@ public class Chebyshev2 extends WTypeBasis2 {
     public final static int DEFAULT_NMAX = 5;
     public final static double DEFAULT_RCUT = 6.0; // 现在默认值统一为 6
     
-    final double mRCut;
     final int mSize;
     
-    Chebyshev2(int aTypeNum, int aNMax, double aRCut, int aWType, @Nullable RowMatrix aFuseWeight, @Nullable Vector aPostFuseWeight, double @Nullable[] aPostFuseScale) {
-        super(aTypeNum, aNMax, aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale);
-        mRCut = aRCut;
+    Chebyshev2(double aRCut, int aNumTypes, int aNMax, int aWType, @Nullable RowMatrix aFuseWeight, @Nullable Vector aPostFuseWeight, double @Nullable[] aPostFuseScale) {
+        super(aRCut, aNumTypes, aNMax, aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale);
         mSize = mSizeNP;
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override public void save(Map rSaveTo) {
         rSaveTo.put("type", "chebyshev");
-        rSaveTo.put("rcut", mRCut);
         super.save_(rSaveTo);
     }
     
     @SuppressWarnings({"rawtypes"})
-    public static Chebyshev2 load(int aTypeNum, Map aMap) {
+    public static Chebyshev2 load(int aNumTypes, Map aMap) {
         int aNMax = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue();
         if (!UT.Code.getWithDefault(aMap, "limited", "fuse_style").equals("limited")) throw new IllegalArgumentException("no limited fuse_style is invalid now.");
         if (aMap.containsKey("rfunc_scales")) throw new IllegalArgumentException("rfunc_scales is invalid now.");
         if (aMap.containsKey("system_scales")) throw new IllegalArgumentException("system_scales is invalid now.");
         int aWType = getWType_(aMap);
-        RowMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aTypeNum);
+        RowMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aNumTypes);
         int tFuseSize = getFuseSize(aWType, aFuseWeight);
-        int tSizeN = getSizeN_(aWType, aTypeNum, aNMax, tFuseSize);
+        int tSizeN = getSizeN_(aWType, aNumTypes, aNMax, tFuseSize);
         Vector aPostFuseWeight = getPostFuseWeight_(aMap, tSizeN);
         double[] aPostFuseScale = aPostFuseWeight==null ? null : new double[1];
         if (aPostFuseWeight!=null) {
@@ -49,14 +46,12 @@ public class Chebyshev2 extends WTypeBasis2 {
             aPostFuseScale[0] = tPostFuseScale==null ? 1.0 : ((Number)tPostFuseScale).doubleValue();
         }
         return new Chebyshev2(
-            aTypeNum, aNMax,
             ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
+            aNumTypes, aNMax,
             aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale
         );
     }
     
-    /** @return {@inheritDoc} */
-    public double rcut() {return mRCut;}
     /**
      * @return {@inheritDoc}；如果只有一个种类则为
      * {@code (nmax+1)}，如果超过一个种类则为

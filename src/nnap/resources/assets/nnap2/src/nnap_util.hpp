@@ -19,7 +19,22 @@
 */
 // <<< NNAPGEN REMOVE
 
+// >>> NNAPGEN IF
+// --- NNAPGEN HAS: [USE TABLE]
+#define NNAP_USE_TABLE
+#define NNAP_TABLE_SIZE __NNAPGEN_TABLE_SIZE__
 // >>> NNAPGEN REMOVE
+/*
+// <<< NNAPGEN REMOVE
+// --- NNAPGEN ELSE:
+#define NNAP_TABLE_SIZE -1
+// <<< NNAPGEN IF
+// >>> NNAPGEN REMOVE
+*/
+// <<< NNAPGEN REMOVE
+
+// >>> NNAPGEN REMOVE
+#define __NNAPGEN_NTYPES__ 2
 #define __NNAPGENS_X__ 0
 // <<< NNAPGEN REMOVE
 
@@ -225,6 +240,21 @@ static inline NNAP_DEVICE void mplusEx(flt_t *rArrayLEx, flt_t *rArrayL, flt_t a
         rArrayL[i] += tRHS;
     }
 }
+
+#ifdef NNAP_USE_TABLE
+static inline NNAP_DEVICE void tableInit(flt_t aX, flt_t &ix, int &il, int &ir) noexcept {
+    ix = aX * (flt_t)NNAP_TABLE_SIZE;
+    il = (int)ix;
+    ir = il + 1;
+}
+static inline NNAP_DEVICE flt_t calRFuncFromTable(flt_t ix, int il, int ir, flt_t *aRFuncTable) noexcept {
+    if (il < 0) return aRFuncTable[0];
+    if (ir > NNAP_TABLE_SIZE) return aRFuncTable[NNAP_TABLE_SIZE];
+    const flt_t fl = aRFuncTable[il];
+    const flt_t fr = aRFuncTable[ir];
+    return fl + (ix-(flt_t)il) * (fr-fl);
+}
+#endif
 
 template <int N>
 static inline NNAP_DEVICE void chebyshevFull(flt_t aX, flt_t *rDest) noexcept {
