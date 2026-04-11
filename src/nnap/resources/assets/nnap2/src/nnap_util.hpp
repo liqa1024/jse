@@ -213,6 +213,14 @@ static inline NNAP_DEVICE flt_t dot(flt_t *aArrayL, flt_t *aArrayR) noexcept {
     }
     return rDot;
 }
+template <int N>
+static inline NNAP_DEVICE flt_t dotEx(flt_t *aArrayLEx, flt_t *aArrayL, flt_t *aArrayR) noexcept {
+    flt_t rDot = ZERO;
+    for (int i = 0; i < N; ++i) {
+        rDot += (aArrayLEx[i] + aArrayL[i])*aArrayR[i];
+    }
+    return rDot;
+}
 
 template <int N>
 static inline NNAP_DEVICE void plus(flt_t *rArrayL, flt_t *aArrayR) noexcept {
@@ -220,6 +228,15 @@ static inline NNAP_DEVICE void plus(flt_t *rArrayL, flt_t *aArrayR) noexcept {
         rArrayL[i] += aArrayR[i];
     }
 }
+template <int N>
+static inline NNAP_DEVICE void plusEx(flt_t *rArrayLEx, flt_t *rArrayL, flt_t *aArrayR) noexcept {
+    for (int i = 0; i < N; ++i) {
+        const flt_t tRHS = aArrayR[i];
+        rArrayLEx[i] += tRHS;
+        rArrayL[i] += tRHS;
+    }
+}
+
 template <int N>
 static inline NNAP_DEVICE void mplus(flt_t *rArrayL, flt_t aMul, flt_t *aArrayR) noexcept {
     for (int i = 0; i < N; ++i) {
@@ -257,6 +274,27 @@ static inline NNAP_DEVICE flt_t calRFuncFromTable(flt_t ix, int il, int ir, flt_
 #endif
 
 template <int N>
+static inline NNAP_DEVICE void chebyshevFull(flt_t aX, flt_t aMul, flt_t *rDest) noexcept {
+    if (N < 0) return;
+    rDest[0] = aMul;
+    if (N == 0) return;
+    rDest[1] = aMul*aX;
+    for (int n = 2; n <= N; ++n) {
+        rDest[n] = TWO*aX*rDest[n-1] - rDest[n-2];
+    }
+}
+template <int N>
+static inline NNAP_DEVICE void chebyshev2Full(flt_t aX, flt_t aMul, flt_t *rDest) noexcept {
+    if (N < 0) return;
+    rDest[0] = aMul;
+    if (N == 0) return;
+    rDest[1] = TWO*aMul*aX;
+    for (int n = 2; n <= N; ++n) {
+        rDest[n] = TWO*aX*rDest[n-1] - rDest[n-2];
+    }
+}
+
+template <int N>
 static inline NNAP_DEVICE void chebyshevFull(flt_t aX, flt_t *rDest) noexcept {
     if (N < 0) return;
     rDest[0] = ONE;
@@ -277,6 +315,9 @@ static inline NNAP_DEVICE void chebyshev2Full(flt_t aX, flt_t *rDest) noexcept {
     }
 }
 
+static inline NNAP_DEVICE flt_t calFc(flt_t aX) noexcept {
+    return pow4(ONE - pow2(aX));
+}
 static inline NNAP_DEVICE flt_t calFc(flt_t aDis, flt_t aRCut) noexcept {
     return pow4(ONE - pow2(aDis/aRCut));
 }
@@ -285,6 +326,13 @@ static inline NNAP_DEVICE flt_t calFc(flt_t aDis, flt_t aRCutL, flt_t aRCutR) no
     return pow4(ONE - pow2(tX+tX - ONE));
 }
 
+template <int N>
+static inline NNAP_DEVICE void calRnFc(flt_t *rRn, flt_t aDis, flt_t aRCut) noexcept {
+    const flt_t tX = aDis/aRCut;
+    const flt_t fc = calFc(tX);
+    const flt_t tRnX = ONE - (tX+tX);
+    chebyshevFull<N>(tRnX, fc, rRn);
+}
 template <int N>
 static inline NNAP_DEVICE void calRn(flt_t *rRn, flt_t aDis, flt_t aRCut) noexcept {
     flt_t tRnX = aDis/aRCut;
@@ -298,6 +346,28 @@ static inline NNAP_DEVICE void calRn(flt_t *rRn, flt_t aDis, flt_t aRCutL, flt_t
     chebyshevFull<N>(tRnX, rRn);
 }
 
+
+template <int N, int NP, int MPLUS>
+static inline NNAP_DEVICE void calRnp_(flt_t *rRnp, flt_t *aRn, flt_t *aRFuseWeight) noexcept {
+    flt_t *tWeight = aRFuseWeight;
+    for (int np = 0; np < NP; ++np) {
+        const flt_t tDot = dot<N+1>(aRn, tWeight);
+        if (MPLUS) {
+            rRnp[np] += tDot;
+        } else {
+            rRnp[np] = tDot;
+        }
+        tWeight += (N+1);
+    }
+}
+template <int N, int NP>
+static inline NNAP_DEVICE void calRnp(flt_t *rRnp, flt_t *aRn, flt_t *aRFuseWeight) noexcept {
+    calRnp_<N, NP, FALSE>(rRnp, aRn, aRFuseWeight);
+}
+template <int N, int NP>
+static inline NNAP_DEVICE void mplusRnp(flt_t *rRnp, flt_t *aRn, flt_t *aRFuseWeight) noexcept {
+    calRnp_<N, NP, TRUE>(rRnp, aRn, aRFuseWeight);
+}
 template <int N, int NP, int MPLUS>
 static inline NNAP_DEVICE void calRnp_(flt_t *rRnp, flt_t aFc, flt_t *aRn, flt_t *aRFuseWeight) noexcept {
     flt_t *tWeight = aRFuseWeight;
@@ -320,6 +390,16 @@ static inline NNAP_DEVICE void mplusRnp(flt_t *rRnp, flt_t aFc, flt_t *aRn, flt_
     calRnp_<N, NP, TRUE>(rRnp, aFc, aRn, aRFuseWeight);
 }
 
+static inline NNAP_DEVICE flt_t calFcGrad(flt_t aX, flt_t aRCut, flt_t *rFcGrad) noexcept {
+    const flt_t fcMul = ONE - pow2(aX);
+    const flt_t fcMul3 = pow3(fcMul);
+    *rFcGrad = ((flt_t)8.0) * fcMul3 / (aRCut*aRCut);
+    return fcMul*fcMul3;
+}
+static inline NNAP_DEVICE flt_t calFcGrad(flt_t aDis, flt_t aRCut) noexcept {
+    const flt_t fcMul3 = pow3(ONE - pow2(aDis/aRCut));
+    return ((flt_t)8.0) * fcMul3 / (aRCut*aRCut);
+}
 static inline NNAP_DEVICE flt_t calFcPxyz(flt_t *rFcPx, flt_t *rFcPy, flt_t *rFcPz,
                                           flt_t aDis, flt_t aRCut, flt_t aDx, flt_t aDy, flt_t aDz) noexcept {
     const flt_t fcMul = ONE - pow2(aDis/aRCut);
@@ -343,6 +423,31 @@ static inline NNAP_DEVICE flt_t calFcPxyz(flt_t *rFcPx, flt_t *rFcPy, flt_t *rFc
     return fcMul*fcMul3;
 }
 
+template <int N>
+static inline NNAP_DEVICE void calRnFcGrad(flt_t *rRnGrad, flt_t *rCheby2, flt_t aDis, flt_t aRCut) noexcept {
+    const flt_t tX = aDis/aRCut;
+    flt_t fcGrad;
+    flt_t tCheby2Mul = calFcGrad(tX, aRCut, &fcGrad);
+    tCheby2Mul *= TWO / (aDis*aRCut);
+    
+    const flt_t tRnX = ONE - (tX+tX);
+    chebyshevFull<N>(tRnX, fcGrad, rRnGrad);
+    chebyshev2Full<N-1>(tRnX, tCheby2Mul, rCheby2);
+    for (int n = 1; n <= N; ++n) {
+        rRnGrad[n] += ((flt_t)n)*rCheby2[n-1];
+    }
+}
+template <int N>
+static inline NNAP_DEVICE void calRnGrad(flt_t *rRnGrad, flt_t *rCheby2, flt_t aDis, flt_t aRCut) noexcept {
+    flt_t tRnX = aDis/aRCut;
+    tRnX = ONE - (tRnX+tRnX);
+    chebyshev2Full<N-1>(tRnX, rCheby2);
+    const flt_t tRnPMul = TWO / (aDis*aRCut);
+    rRnGrad[0] = ZERO;
+    for (int n = 1; n <= N; ++n) {
+        rRnGrad[n] = ((flt_t)n)*tRnPMul*rCheby2[n-1];
+    }
+}
 template <int N>
 static inline NNAP_DEVICE void calRnPxyz(flt_t *rRnPx, flt_t *rRnPy, flt_t *rRnPz, flt_t *rCheby2,
                                          flt_t aDis, flt_t aRCut, flt_t aDx, flt_t aDy, flt_t aDz) noexcept {
@@ -375,6 +480,28 @@ static inline NNAP_DEVICE void calRnPxyz(flt_t *rRnPx, flt_t *rRnPy, flt_t *rRnP
     }
 }
 
+template <int N, int NP>
+static inline NNAP_DEVICE void calRnpGrad(flt_t *rRnpGrad, flt_t *aRnGrad, flt_t *aRFuseWeight) noexcept {
+    flt_t *tWeight = aRFuseWeight;
+    for (int np = 0; np < NP; ++np) {
+        rRnpGrad[np] = dot<N+1>(aRnGrad, tWeight);
+        tWeight += (N+1);
+    }
+}
+template <int N, int NP>
+static inline NNAP_DEVICE void calRnpGrad(flt_t *rRnpGrad, flt_t aFc, flt_t *aRn, flt_t aFcGrad, flt_t *aRnGrad, flt_t *aRFuseWeight) noexcept {
+    flt_t *tWeight = aRFuseWeight;
+    for (int np = 0; np < NP; ++np) {
+        flt_t tRnWeight = 0.0, tRnGradWeight = 0.0;
+        for (int n = 0; n <= N; ++n) {
+            const flt_t tW = tWeight[n];
+            tRnWeight += aRn[n] * tW;
+            tRnGradWeight += aRnGrad[n] * tW;
+        }
+        tWeight += (N+1);
+        rRnpGrad[np] = aFc*tRnGradWeight + aFcGrad*tRnWeight;
+    }
+}
 template <int N, int NP>
 static inline NNAP_DEVICE void calRnpPxyz(flt_t *rRnpPx, flt_t *rRnpPy, flt_t *rRnpPz, flt_t aFc, flt_t *aRn,
                                           flt_t aFcPx, flt_t aFcPy, flt_t aFcPz,
