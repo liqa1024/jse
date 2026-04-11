@@ -157,27 +157,6 @@ static inline NNAP_DEVICE int numericEqual(float aLHS, float aRHS) noexcept {
 
 
 template <int N>
-static inline NNAP_DEVICE void fillBatch(int bi, int nb,
-        flt_t *rBatchArray, flt_t aValue) noexcept {
-    for (int i = 0; i < N; ++i) {
-        rBatchArray[i*nb + bi] = aValue;
-    }
-}
-template <int N>
-static inline NNAP_DEVICE void fillBatchL(int bi, int nb,
-        flt_t *rBatchArray, flt_t *aArrayR) noexcept {
-    for (int i = 0; i < N; ++i) {
-        rBatchArray[i*nb + bi] = aArrayR[i];
-    }
-}
-template <int N>
-static inline NNAP_DEVICE void fillBatchR(int bi, int nb,
-        flt_t *rArray, flt_t *aBatchArrayR) noexcept {
-    for (int i = 0; i < N; ++i) {
-        rArray[i] = aBatchArrayR[i*nb + bi];
-    }
-}
-template <int N>
 static inline NNAP_DEVICE void fill(flt_t *rArray, flt_t aValue) noexcept {
     for (int i = 0; i < N; ++i) {
         rArray[i] = aValue;
@@ -212,23 +191,6 @@ static inline NNAP_DEVICE flt_t dot(flt_t *aArray) noexcept {
     return rDot;
 }
 template <int N>
-static inline NNAP_DEVICE flt_t dotBatchL(int bi, int nb,
-        flt_t *aBatchArrayL, flt_t *aArrayR) noexcept {
-    flt_t rDot = ZERO;
-    for (int i = 0; i < N; ++i) {
-        rDot += aBatchArrayL[i*nb + bi]*aArrayR[i];
-    }
-    return rDot;
-}
-static inline NNAP_DEVICE flt_t dotBatchL(int bi, int nb,
-        flt_t *aBatchArrayL, flt_t *aArrayR, int aSize) noexcept {
-    flt_t rDot = ZERO;
-    for (int i = 0; i < aSize; ++i) {
-        rDot += aBatchArrayL[i*nb + bi]*aArrayR[i];
-    }
-    return rDot;
-}
-template <int N>
 static inline NNAP_DEVICE flt_t dot(flt_t *aArrayL, flt_t *aArrayR) noexcept {
     flt_t rDot = ZERO;
     for (int i = 0; i < N; ++i) {
@@ -238,24 +200,9 @@ static inline NNAP_DEVICE flt_t dot(flt_t *aArrayL, flt_t *aArrayR) noexcept {
 }
 
 template <int N>
-static inline NNAP_DEVICE void mplusBatch(int bi, int nb,
-        flt_t *rBatchArrayL, flt_t aMul, flt_t *aBatchArrayR) noexcept {
+static inline NNAP_DEVICE void plus(flt_t *rArrayL, flt_t *aArrayR) noexcept {
     for (int i = 0; i < N; ++i) {
-        rBatchArrayL[i*nb + bi] += aMul*aBatchArrayR[i*nb + bi];
-    }
-}
-template <int N>
-static inline NNAP_DEVICE void mplusBatchL(int bi, int nb,
-        flt_t *rBatchArrayL, flt_t aMul, flt_t *aArrayR) noexcept {
-    for (int i = 0; i < N; ++i) {
-        rBatchArrayL[i*nb + bi] += aMul*aArrayR[i];
-    }
-}
-template <int N>
-static inline NNAP_DEVICE void mplusBatchR(int bi, int nb,
-        flt_t *rArrayL, flt_t aMul, flt_t *aBatchArrayR) noexcept {
-    for (int i = 0; i < N; ++i) {
-        rArrayL[i] += aMul*aBatchArrayR[i*nb + bi];
+        rArrayL[i] += aArrayR[i];
     }
 }
 template <int N>
@@ -270,56 +217,15 @@ static inline NNAP_DEVICE void mplus(flt_t *rArrayL, flt_t *aArrayMul1, flt_t *a
         rArrayL[i] += aArrayMul1[i]*aArrayMul2[i];
     }
 }
-
 template <int N>
-static inline NNAP_DEVICE void mplus2BatchL(int bi, int nb,
-        flt_t *rBatchArrayL1, flt_t *rBatchArrayL2, flt_t aMul1, flt_t aMul2, flt_t *aArrayR) noexcept {
+static inline NNAP_DEVICE void mplusEx(flt_t *rArrayLEx, flt_t *rArrayL, flt_t aMul, flt_t *aArrayR) noexcept {
     for (int i = 0; i < N; ++i) {
-        const flt_t tRHS = aArrayR[i];
-        rBatchArrayL1[i*nb + bi] += aMul1*tRHS;
-        rBatchArrayL2[i*nb + bi] += aMul2*tRHS;
-    }
-}
-template <int N>
-static inline NNAP_DEVICE void mplus2Batch(int bi, int nb,
-        flt_t *rBatchArrayL1, flt_t *rBatchArrayL2, flt_t aMul1, flt_t aMul2, flt_t *aBatchArrayR) noexcept {
-    for (int i = 0; i < N; ++i) {
-        const flt_t tRHS = aBatchArrayR[i*nb + bi];
-        rBatchArrayL1[i*nb + bi] += aMul1*tRHS;
-        rBatchArrayL2[i*nb + bi] += aMul2*tRHS;
-    }
-}
-template <int N>
-static inline NNAP_DEVICE void mplus2(flt_t *rArrayL1, flt_t *rArrayL2, flt_t aMul1, flt_t aMul2, flt_t *aArrayR) noexcept {
-    for (int i = 0; i < N; ++i) {
-        const flt_t tRHS = aArrayR[i];
-        rArrayL1[i] += aMul1*tRHS;
-        rArrayL2[i] += aMul2*tRHS;
+        const flt_t tRHS = aMul*aArrayR[i];
+        rArrayLEx[i] += tRHS;
+        rArrayL[i] += tRHS;
     }
 }
 
-template <int N>
-static inline NNAP_DEVICE void chebyshevFullBatch(int bi, int nb,
-        flt_t aX, flt_t *rBatchDest) noexcept {
-    if (N < 0) return;
-    rBatchDest[0*nb + bi] = ONE;
-    if (N == 0) return;
-    rBatchDest[1*nb + bi] = aX;
-    for (int n = 2; n <= N; ++n) {
-        rBatchDest[n*nb + bi] = TWO*aX*rBatchDest[(n-1)*nb + bi] - rBatchDest[(n-2)*nb + bi];
-    }
-}
-template <int N>
-static inline NNAP_DEVICE void chebyshev2FullBatch(int bi, int nb,
-        flt_t aX, flt_t *rBatchDest) noexcept {
-    if (N < 0) return;
-    rBatchDest[0*nb + bi] = ONE;
-    if (N == 0) return;
-    rBatchDest[1*nb + bi] = TWO*aX;
-    for (int n = 2; n <= N; ++n) {
-        rBatchDest[n*nb + bi] = TWO*aX*rBatchDest[(n-1)*nb + bi] - rBatchDest[(n-2)*nb + bi];
-    }
-}
 template <int N>
 static inline NNAP_DEVICE void chebyshevFull(flt_t aX, flt_t *rDest) noexcept {
     if (N < 0) return;
@@ -350,13 +256,6 @@ static inline NNAP_DEVICE flt_t calFc(flt_t aDis, flt_t aRCutL, flt_t aRCutR) no
 }
 
 template <int N>
-static inline NNAP_DEVICE void calRnBatch(int bi, int nb,
-        flt_t *rBatchRn, flt_t aDis, flt_t aRCut) noexcept {
-    flt_t tRnX = aDis/aRCut;
-    tRnX = ONE - (tRnX+tRnX);
-    chebyshevFullBatch<N>(bi, nb, tRnX, rBatchRn);
-}
-template <int N>
 static inline NNAP_DEVICE void calRn(flt_t *rRn, flt_t aDis, flt_t aRCut) noexcept {
     flt_t tRnX = aDis/aRCut;
     tRnX = ONE - (tRnX+tRnX);
@@ -369,13 +268,26 @@ static inline NNAP_DEVICE void calRn(flt_t *rRn, flt_t aDis, flt_t aRCutL, flt_t
     chebyshevFull<N>(tRnX, rRn);
 }
 
-template <int N, int NP>
-static inline NNAP_DEVICE void calRnp(flt_t *rRnp, flt_t aFc, flt_t *aRn, flt_t *aRFuseWeight) noexcept {
+template <int N, int NP, int MPLUS>
+static inline NNAP_DEVICE void calRnp_(flt_t *rRnp, flt_t aFc, flt_t *aRn, flt_t *aRFuseWeight) noexcept {
     flt_t *tWeight = aRFuseWeight;
     for (int np = 0; np < NP; ++np) {
-        rRnp[np] = aFc * dot<N+1>(aRn, tWeight);
+        const flt_t tDot = dot<N+1>(aRn, tWeight);
+        if (MPLUS) {
+            rRnp[np] += aFc*tDot;
+        } else {
+            rRnp[np] = aFc*tDot;
+        }
         tWeight += (N+1);
     }
+}
+template <int N, int NP>
+static inline NNAP_DEVICE void calRnp(flt_t *rRnp, flt_t aFc, flt_t *aRn, flt_t *aRFuseWeight) noexcept {
+    calRnp_<N, NP, FALSE>(rRnp, aFc, aRn, aRFuseWeight);
+}
+template <int N, int NP>
+static inline NNAP_DEVICE void mplusRnp(flt_t *rRnp, flt_t aFc, flt_t *aRn, flt_t *aRFuseWeight) noexcept {
+    calRnp_<N, NP, TRUE>(rRnp, aFc, aRn, aRFuseWeight);
 }
 
 static inline NNAP_DEVICE flt_t calFcPxyz(flt_t *rFcPx, flt_t *rFcPy, flt_t *rFcPz,
@@ -401,25 +313,6 @@ static inline NNAP_DEVICE flt_t calFcPxyz(flt_t *rFcPx, flt_t *rFcPy, flt_t *rFc
     return fcMul*fcMul3;
 }
 
-template <int N>
-static inline NNAP_DEVICE void calRnPxyzBatch(int bi, int nb,
-        flt_t *rBatchRn, flt_t *rBatchRnPx, flt_t *rBatchRnPy, flt_t *rBatchRnPz, flt_t *rBatchCheby2,
-        flt_t aDis, flt_t aRCut, flt_t aDx, flt_t aDy, flt_t aDz) noexcept {
-    flt_t tRnX = aDis/aRCut;
-    tRnX = ONE - (tRnX+tRnX);
-    chebyshevFullBatch<N>(bi, nb, tRnX, rBatchRn);
-    chebyshev2FullBatch<N-1>(bi, nb, tRnX, rBatchCheby2);
-    const flt_t tRnPMul = TWO / (aDis*aRCut);
-    rBatchRnPx[0*nb + bi] = ZERO;
-    rBatchRnPy[0*nb + bi] = ZERO;
-    rBatchRnPz[0*nb + bi] = ZERO;
-    for (int n = 1; n <= N; ++n) {
-        const flt_t tRnP = ((flt_t)n)*tRnPMul*rBatchCheby2[(n-1)*nb + bi];
-        rBatchRnPx[n*nb + bi] = tRnP*aDx;
-        rBatchRnPy[n*nb + bi] = tRnP*aDy;
-        rBatchRnPz[n*nb + bi] = tRnP*aDz;
-    }
-}
 template <int N>
 static inline NNAP_DEVICE void calRnPxyz(flt_t *rRnPx, flt_t *rRnPy, flt_t *rRnPz, flt_t *rCheby2,
                                          flt_t aDis, flt_t aRCut, flt_t aDx, flt_t aDy, flt_t aDz) noexcept {

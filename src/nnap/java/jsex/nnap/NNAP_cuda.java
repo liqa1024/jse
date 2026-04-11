@@ -19,6 +19,7 @@ import static jse.cptr.CPointer.NULL;
 @ApiStatus.Experimental
 class NNAP_cuda extends NNAP2 {
     public final static class Conf {
+        public static boolean DEV = false;
         /**
          * 自定义 nnap cuda 中使用的 block_size 值，这可能会影响速度；
          * 默认为 {@code 192}
@@ -61,6 +62,7 @@ class NNAP_cuda extends NNAP2 {
     
     NNAP_cuda(@Nullable String aLibDir, @Nullable String aProjectName, Map<?, ?> aModelInfo) throws Exception {
         super(aLibDir, aProjectName, aModelInfo, 1, "single");
+        if (!Conf.DEV) throw new UnsupportedOperationException();
         mFltBuf = new GrowableFloatCPointer(128);
         mIntBuf = new GrowableIntCPointer(1024);
         mCudaX = new GrowableFloatCudaPointer(128);

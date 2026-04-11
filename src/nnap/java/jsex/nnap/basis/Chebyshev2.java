@@ -2,6 +2,7 @@ package jsex.nnap.basis;
 
 import jse.code.UT;
 import jse.math.matrix.RowMatrix;
+import jse.math.vector.Vector;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
@@ -18,22 +19,17 @@ public class Chebyshev2 extends WTypeBasis2 {
     final double mRCut;
     final int mSize;
     
-    Chebyshev2(int aTypeNum, int aNMax, double aRCut, int aWType, @Nullable RowMatrix aFuseWeight) {
-        super(aTypeNum, aNMax, aWType, aFuseWeight);
+    Chebyshev2(int aTypeNum, int aNMax, double aRCut, int aWType, @Nullable RowMatrix aFuseWeight, @Nullable Vector aPostFuseWeight, double @Nullable[] aPostFuseScale) {
+        super(aTypeNum, aNMax, aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale);
         mRCut = aRCut;
-        mSize = mSizeN;
+        mSize = mSizeNP;
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override public void save(Map rSaveTo) {
         rSaveTo.put("type", "chebyshev");
-        rSaveTo.put("nmax", mNMax);
         rSaveTo.put("rcut", mRCut);
-        rSaveTo.put("wtype", ALL_WTYPE.inverse().get(mWType));
-        if (mFuseWeight!=null) {
-            rSaveTo.put("fuse_size", mFuseSize);
-            rSaveTo.put("fuse_weight", mFuseWeight.asListRows());
-        }
+        super.save_(rSaveTo);
     }
     
     @SuppressWarnings({"rawtypes"})
@@ -44,10 +40,18 @@ public class Chebyshev2 extends WTypeBasis2 {
         if (aMap.containsKey("system_scales")) throw new IllegalArgumentException("system_scales is invalid now.");
         int aWType = getWType_(aMap);
         RowMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aTypeNum);
+        int tFuseSize = getFuseSize(aWType, aFuseWeight);
+        int tSizeN = getSizeN_(aWType, aTypeNum, aNMax, tFuseSize);
+        Vector aPostFuseWeight = getPostFuseWeight_(aMap, tSizeN);
+        double[] aPostFuseScale = aPostFuseWeight==null ? null : new double[1];
+        if (aPostFuseWeight!=null) {
+            Object tPostFuseScale = aMap.get("post_fuse_scale");
+            aPostFuseScale[0] = tPostFuseScale==null ? 1.0 : ((Number)tPostFuseScale).doubleValue();
+        }
         return new Chebyshev2(
             aTypeNum, aNMax,
             ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
-            aWType, aFuseWeight
+            aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale
         );
     }
     
@@ -64,7 +68,7 @@ public class Chebyshev2 extends WTypeBasis2 {
         return aNumNei*(mNMax+1);
     }
     @Override public int backwardCacheSize(int aNumNei) {
-        return 3*aNumNei*(mNMax+1 + 1);
+        return 3*aNumNei*(mNMax+1 + 1 + mSizeNP);
     }
     
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdxType, int aGenIdxMerge) {
@@ -73,7 +77,6 @@ public class Chebyshev2 extends WTypeBasis2 {
     }
     @Override public boolean hasSameGenMap(MergeableBasis2 aBasis) {
         if (!(aBasis instanceof Chebyshev2)) return false;
-        Chebyshev2 tBasis = (Chebyshev2)aBasis;
         return super.hasSameGenMap(aBasis);
     }
 }
