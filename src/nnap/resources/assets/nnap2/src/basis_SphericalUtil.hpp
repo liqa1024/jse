@@ -208,15 +208,6 @@ static inline NNAP_DEVICE void mplusAnlmEx(flt_t *rAnlmEx, flt_t *rAnlm, flt_t *
         tAnlm += tLMAll;
     }
 }
-template <int NMAX, int SIZE_K, int LMAX>
-static inline NNAP_DEVICE void mplusAnlmFuse(flt_t *rAnlm, flt_t *aBnlm, flt_t *aFuseWeight) noexcept {
-    constexpr int tSizeBnlm = (NMAX+1)*(LMAX+1)*(LMAX+1);
-    flt_t *tAnlm = rAnlm;
-    for (int k = 0; k < SIZE_K; ++k) {
-        mplus<tSizeBnlm>(tAnlm, aFuseWeight[k], aBnlm);
-        tAnlm += tSizeBnlm;
-    }
-}
 
 
 template <int SIZE_NP, int LMAX>
@@ -283,16 +274,7 @@ static inline NNAP_DEVICE void gradAnlm2xyzEx(int j, flt_t *aGradAnlmEx, flt_t *
     rGradNlDy[j] += rGradj*dy + rGradThetaj*thetaPy + rGradPhij*phiPy;
     rGradNlDz[j] += rGradj*dz + rGradThetaj*thetaPz;
 }
-template <int NMAX, int SIZE_K, int LMAX>
-static NNAP_DEVICE void calGradBnlmFuse(flt_t *aGradAnlm, flt_t *rGradBnlm, flt_t *aFuseWeight) noexcept {
-    constexpr int tSizeBnlm = (NMAX+1)*(LMAX+1)*(LMAX+1);
-    fill<tSizeBnlm>(rGradBnlm, ZERO);
-    flt_t *tGradAnlm = aGradAnlm;
-    for (int k = 0; k < SIZE_K; ++k) {
-        mplus<tSizeBnlm>(rGradBnlm, aFuseWeight[k], tGradAnlm);
-        tGradAnlm += tSizeBnlm;
-    }
-}
+
 
 template <int L>
 static inline NNAP_DEVICE void calL2Sub_(flt_t *aCnlm, flt_t *rFp) noexcept {

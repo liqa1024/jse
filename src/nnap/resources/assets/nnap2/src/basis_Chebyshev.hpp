@@ -35,10 +35,6 @@ static NNAP_DEVICE void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
         if (WTYPE==WTYPE_EXFULL) {
             flt_t *tFp = rFp + type*(NMAX+1);
             plusEx<NMAX+1>(rFp, tFp, rRn);
-        } else
-        if (WTYPE==WTYPE_DEFAULT || WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) {
-            constexpr int tSizeK = SIZE_NP / (NMAX+1);
-            mplusRnpFuse<NMAX, tSizeK>(rFp, rRn, aParams + (type-1)*tSizeK);
         }
     }
 }
@@ -84,11 +80,6 @@ static NNAP_DEVICE void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, 
         if (WTYPE==WTYPE_EXFULL) {
             flt_t *tGradFp = aGradFp + type*(NMAX+1);
             gradFp2xyzEx<NMAX+1>(j, aGradFp, tGradFp, rRnGrad, dx, dy, dz, rGradNlDx, rGradNlDy, rGradNlDz);
-        } else
-        if (WTYPE==WTYPE_DEFAULT || WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) {
-            constexpr int tSizeK = SIZE_NP / (NMAX+1);
-            flt_t *tParams = aParams + (type-1)*tSizeK;
-            gradFp2xyzFuse<NMAX, tSizeK>(j, aGradFp, rRnGrad, tParams, dx, dy, dz, rGradNlDx, rGradNlDy, rGradNlDz);
         }
     }
 }

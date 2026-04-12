@@ -319,14 +319,6 @@ static inline NNAP_DEVICE void mplusRnp(flt_t *rRnp, flt_t *aRn, flt_t *aRFuseWe
         tWeight += (N+1);
     }
 }
-template <int N, int K>
-static inline NNAP_DEVICE void mplusRnpFuse(flt_t *rRnp, flt_t *aRn, flt_t *aFuseWeight) noexcept {
-    flt_t *tRnp = rRnp;
-    for (int k = 0; k < K; ++k) {
-        mplus<N+1>(tRnp, aFuseWeight[k], aRn);
-        tRnp += (N+1);
-    }
-}
 
 static inline NNAP_DEVICE flt_t calFcGrad(flt_t *rFcGrad, flt_t aX, flt_t aRCut) noexcept {
     const flt_t fcMul = ONE - pow2(aX);
