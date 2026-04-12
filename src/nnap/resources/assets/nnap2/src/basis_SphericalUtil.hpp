@@ -198,14 +198,19 @@ static inline NNAP_DEVICE void mplusAnlm(flt_t *rAnlm, flt_t *aY, flt_t *aRnp) n
     }
 }
 template <int SIZE_NP, int LMAX>
-static inline NNAP_DEVICE void mplusAnlmEx(flt_t *rAnlmEx, flt_t *rAnlm, flt_t *aY, flt_t *aRnp) noexcept {
+static inline NNAP_DEVICE void mplusAnlmWt(flt_t *rAnlm, flt_t *rAnlmWt, flt_t aWt, flt_t *aY, flt_t *aRnp) noexcept {
     constexpr int tLMAll = (LMAX+1)*(LMAX+1);
-    flt_t *tAnlmEx = rAnlmEx;
     flt_t *tAnlm = rAnlm;
+    flt_t *tAnlmWt = rAnlmWt;
     for (int np = 0; np < SIZE_NP; ++np) {
-        mplusEx<tLMAll>(tAnlmEx, tAnlm, aRnp[np], aY);
-        tAnlmEx += tLMAll;
+        const flt_t tRnpnp = aRnp[np];
+        for (int k = 0; k < tLMAll; ++k) {
+            const flt_t tRHS = tRnpnp*aY[k];
+            tAnlm[k] += tRHS;
+            tAnlmWt[k] += aWt*tRHS;
+        }
         tAnlm += tLMAll;
+        tAnlmWt += tLMAll;
     }
 }
 
@@ -242,7 +247,7 @@ static inline NNAP_DEVICE void gradAnlm2xyz(int j, flt_t *aGradAnlm, flt_t *rGra
     rGradNlDz[j] += rGradj*dz + rGradThetaj*thetaPz;
 }
 template <int SIZE_NP, int LMAX>
-static inline NNAP_DEVICE void gradAnlm2xyzEx(int j, flt_t *aGradAnlmEx, flt_t *aGradAnlm, flt_t *rGradY, flt_t *aY, flt_t *aRnp,
+static inline NNAP_DEVICE void gradAnlm2xyzWt(int j, flt_t *aGradAnlm, flt_t *aGradAnlmWt, flt_t aWt, flt_t *rGradY, flt_t *aY, flt_t *aRnp,
                                               flt_t *aRnpGrad, flt_t *aYPtheta, flt_t *aYPphi,
                                               flt_t dx, flt_t dy, flt_t dz, flt_t thetaPx, flt_t thetaPy, flt_t thetaPz, flt_t phiPx, flt_t phiPy,
                                               flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz) noexcept {
@@ -250,18 +255,18 @@ static inline NNAP_DEVICE void gradAnlm2xyzEx(int j, flt_t *aGradAnlmEx, flt_t *
     // clear gradY here
     fill<tLMAll>(rGradY, ZERO);
     flt_t rGradj = ZERO;
-    flt_t *tGradAnlmEx = aGradAnlmEx;
     flt_t *tGradAnlm = aGradAnlm;
+    flt_t *tGradAnlmWt = aGradAnlmWt;
     for (int np = 0; np < SIZE_NP; ++np) {
         const flt_t tRnpnp = aRnp[np];
         flt_t tGradRnp = ZERO;
         for (int k = 0; k < tLMAll; ++k) {
-            const flt_t subGradAnlm = tGradAnlm[k] + tGradAnlmEx[k];
+            const flt_t subGradAnlm = tGradAnlm[k] + aWt*tGradAnlmWt[k];
             rGradY[k] += tRnpnp * subGradAnlm;
             tGradRnp += aY[k] * subGradAnlm;
         }
         tGradAnlm += tLMAll;
-        tGradAnlmEx += tLMAll;
+        tGradAnlmWt += tLMAll;
         rGradj += tGradRnp*aRnpGrad[np];
     }
     flt_t rGradThetaj = ZERO, rGradPhij = ZERO;

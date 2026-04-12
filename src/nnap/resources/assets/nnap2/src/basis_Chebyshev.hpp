@@ -22,7 +22,7 @@ static NNAP_DEVICE void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
         // cal Rn
         calRn<NMAX>(rRn, dis, aRCut);
         // Rn to fp
-        if (WTYPE==WTYPE_RFUSE) {
+        if (WTYPE==WTYPE_RFUSE || WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) {
             mplusRnp<NMAX, SIZE_NP>(rFp, rRn, aParams + (type-1)*(SIZE_NP*(NMAX+1)));
         } else
         if (WTYPE==WTYPE_NONE) {
@@ -33,8 +33,13 @@ static NNAP_DEVICE void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
             plus<NMAX+1>(tFp, rRn);
         } else
         if (WTYPE==WTYPE_EXFULL) {
-            flt_t *tFp = rFp + type*(NMAX+1);
-            plusEx<NMAX+1>(rFp, tFp, rRn);
+            flt_t *tFpWt = rFp + type*(NMAX+1);
+            plusWt<NMAX+1>(rFp, tFpWt, ONE, rRn);
+        } else
+        if (WTYPE==WTYPE_DEFAULT) {
+            double wt = ((type&1)==1) ? type : (-type);
+            flt_t *tFpWt = rFp + (NMAX+1);
+            plusWt<NMAX+1>(rFp, tFpWt, wt, rRn);
         }
     }
 }
@@ -64,7 +69,7 @@ static NNAP_DEVICE void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, 
         if (REQUIRE_CACHE) rRnGrad = rNlRnGrad + j*(NMAX+1);
         calRnGrad<NMAX>(rRnGrad, rCheby2, dis, aRCut);
         // RnGrad to grad xyz
-        if (WTYPE==WTYPE_RFUSE) {
+        if (WTYPE==WTYPE_RFUSE || WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) {
             // cal RnpGrad here
             if (REQUIRE_CACHE) rRnpGrad = rNlRnpGrad + j*SIZE_NP;
             calRnpGrad<NMAX, SIZE_NP>(rRnpGrad, rRnGrad, aParams + (type-1)*(SIZE_NP*(NMAX+1)));
@@ -78,8 +83,13 @@ static NNAP_DEVICE void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, 
             gradFp2xyz<NMAX+1>(j, tGradFp, rRnGrad, dx, dy, dz, rGradNlDx, rGradNlDy, rGradNlDz);
         } else
         if (WTYPE==WTYPE_EXFULL) {
-            flt_t *tGradFp = aGradFp + type*(NMAX+1);
-            gradFp2xyzEx<NMAX+1>(j, aGradFp, tGradFp, rRnGrad, dx, dy, dz, rGradNlDx, rGradNlDy, rGradNlDz);
+            flt_t *tGradFpWt = aGradFp + type*(NMAX+1);
+            gradFp2xyzWt<NMAX+1>(j, aGradFp, tGradFpWt, ONE, rRnGrad, dx, dy, dz, rGradNlDx, rGradNlDy, rGradNlDz);
+        } else
+        if (WTYPE==WTYPE_DEFAULT) {
+            double wt = ((type&1)==1) ? type : (-type);
+            flt_t *tGradFpWt = aGradFp + (NMAX+1);
+            gradFp2xyzWt<NMAX+1>(j, aGradFp, tGradFpWt, wt, rRnGrad, dx, dy, dz, rGradNlDx, rGradNlDy, rGradNlDz);
         }
     }
 }

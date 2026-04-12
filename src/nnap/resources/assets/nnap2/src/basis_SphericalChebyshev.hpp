@@ -33,7 +33,7 @@ static NNAP_DEVICE void calAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *a
         if (REQUIRE_CACHE) rRn = rNlRn + j*(NMAX+1);
         calRn<NMAX>(rRn, dis, aRCut);
         // to anlm
-        if (WTYPE==WTYPE_RFUSE) {
+        if (WTYPE==WTYPE_RFUSE || WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) {
             // cal Rnp
             if (REQUIRE_CACHE) rRnp = rNlRnp + j*SIZE_NP;
             calRnp<NMAX, SIZE_NP>(rRnp, rRn, aParams + (type-1)*(SIZE_NP*(NMAX+1)));
@@ -43,12 +43,17 @@ static NNAP_DEVICE void calAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *a
             mplusAnlm<NMAX+1, LMAXMAX>(rAnlm, rY, rRn);
         } else
         if (WTYPE==WTYPE_FULL) {
-            flt_t *tCnlm = rAnlm + (type-1)*(NMAX+1)*tLMAll;
-            mplusAnlm<NMAX+1, LMAXMAX>(tCnlm, rY, rRn);
+            flt_t *tAnlm = rAnlm + (type-1)*(NMAX+1)*tLMAll;
+            mplusAnlm<NMAX+1, LMAXMAX>(tAnlm, rY, rRn);
         } else
         if (WTYPE==WTYPE_EXFULL) {
-            flt_t *tCnlm = rAnlm + type*(NMAX+1)*tLMAll;
-            mplusAnlmEx<NMAX+1, LMAXMAX>(rAnlm, tCnlm, rY, rRn);
+            flt_t *tAnlmWt = rAnlm + type*(NMAX+1)*tLMAll;
+            mplusAnlmWt<NMAX+1, LMAXMAX>(rAnlm, tAnlmWt, ONE, rY, rRn);
+        } else
+        if (WTYPE==WTYPE_DEFAULT) {
+            double wt = ((type&1)==1) ? type : (-type);
+            flt_t *tAnlmWt = rAnlm + (NMAX+1)*tLMAll;
+            mplusAnlmWt<NMAX+1, LMAXMAX>(rAnlm, tAnlmWt, wt, rY, rRn);
         }
     }
 }
@@ -130,7 +135,7 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
         if (REQUIRE_CACHE) rRnGrad = rNlRnGrad + j*(NMAX+1);
         calRnGrad<NMAX>(rRnGrad, rCheby2, dis, aRCut);
         // grad anlm to gred xyz
-        if (WTYPE==WTYPE_RFUSE) {
+        if (WTYPE==WTYPE_RFUSE || WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) {
             // get Rnp here
             flt_t *tRnp = tNlRnp + j*SIZE_NP;
             // cal RnpGrad here
@@ -148,16 +153,24 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
             );
         } else
         if (WTYPE==WTYPE_FULL) {
-            flt_t *tGradCnlm = aGradAnlm + (type-1)*(NMAX+1)*tLMAll;
+            flt_t *tGradAnlm = aGradAnlm + (type-1)*(NMAX+1)*tLMAll;
             gradAnlm2xyz<NMAX+1, LMAXMAX>(j,
-                tGradCnlm, rGradY, tY, tRn, rRnGrad, rYPtheta, rYPphi,
+                tGradAnlm, rGradY, tY, tRn, rRnGrad, rYPtheta, rYPphi,
                 dx, dy, dz, thetaPx, thetaPy, thetaPz, phiPx, phiPy, rGradNlDx, rGradNlDy, rGradNlDz
             );
         } else
         if (WTYPE==WTYPE_EXFULL) {
-            flt_t *tGradCnlm = aGradAnlm + type*(NMAX+1)*tLMAll;
-            gradAnlm2xyzEx<NMAX+1, LMAXMAX>(j,
-                aGradAnlm, tGradCnlm, rGradY, tY, tRn, rRnGrad, rYPtheta, rYPphi,
+            flt_t *tGradAnlmWt = aGradAnlm + type*(NMAX+1)*tLMAll;
+            gradAnlm2xyzWt<NMAX+1, LMAXMAX>(j,
+                aGradAnlm, tGradAnlmWt, ONE, rGradY, tY, tRn, rRnGrad, rYPtheta, rYPphi,
+                dx, dy, dz, thetaPx, thetaPy, thetaPz, phiPx, phiPy, rGradNlDx, rGradNlDy, rGradNlDz
+            );
+        } else
+        if (WTYPE==WTYPE_DEFAULT) {
+            double wt = ((type&1)==1) ? type : (-type);
+            flt_t *tGradAnlmWt = aGradAnlm + (NMAX+1)*tLMAll;
+            gradAnlm2xyzWt<NMAX+1, LMAXMAX>(j,
+                aGradAnlm, tGradAnlmWt, wt, rGradY, tY, tRn, rRnGrad, rYPtheta, rYPphi,
                 dx, dy, dz, thetaPx, thetaPy, thetaPz, phiPx, phiPy, rGradNlDx, rGradNlDy, rGradNlDz
             );
         }

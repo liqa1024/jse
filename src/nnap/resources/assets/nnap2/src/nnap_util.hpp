@@ -199,14 +199,6 @@ static inline NNAP_DEVICE flt_t dot(flt_t *aArrayL, flt_t *aArrayR) noexcept {
     }
     return rDot;
 }
-template <int N>
-static inline NNAP_DEVICE flt_t dotEx(flt_t *aArrayLEx, flt_t *aArrayL, flt_t *aArrayR) noexcept {
-    flt_t rDot = ZERO;
-    for (int i = 0; i < N; ++i) {
-        rDot += (aArrayLEx[i] + aArrayL[i]) * aArrayR[i];
-    }
-    return rDot;
-}
 
 template <int N>
 static inline NNAP_DEVICE void plus(flt_t *rArrayL, flt_t *aArrayR) noexcept {
@@ -215,11 +207,11 @@ static inline NNAP_DEVICE void plus(flt_t *rArrayL, flt_t *aArrayR) noexcept {
     }
 }
 template <int N>
-static inline NNAP_DEVICE void plusEx(flt_t *rArrayLEx, flt_t *rArrayL, flt_t *aArrayR) noexcept {
+static inline NNAP_DEVICE void plusWt(flt_t *rArrayL, flt_t *rArrayLWt, flt_t aWt, flt_t *aArrayR) noexcept {
     for (int i = 0; i < N; ++i) {
         const flt_t tRHS = aArrayR[i];
-        rArrayLEx[i] += tRHS;
         rArrayL[i] += tRHS;
+        rArrayLWt[i] += aWt*tRHS;
     }
 }
 
@@ -227,20 +219,6 @@ template <int N>
 static inline NNAP_DEVICE void mplus(flt_t *rArrayL, flt_t aMul, flt_t *aArrayR) noexcept {
     for (int i = 0; i < N; ++i) {
         rArrayL[i] += aMul*aArrayR[i];
-    }
-}
-template <int N>
-static inline NNAP_DEVICE void mplus(flt_t *rArrayL, flt_t *aArrayMul1, flt_t *aArrayMul2) noexcept {
-    for (int i = 0; i < N; ++i) {
-        rArrayL[i] += aArrayMul1[i]*aArrayMul2[i];
-    }
-}
-template <int N>
-static inline NNAP_DEVICE void mplusEx(flt_t *rArrayLEx, flt_t *rArrayL, flt_t aMul, flt_t *aArrayR) noexcept {
-    for (int i = 0; i < N; ++i) {
-        const flt_t tRHS = aMul*aArrayR[i];
-        rArrayLEx[i] += tRHS;
-        rArrayL[i] += tRHS;
     }
 }
 

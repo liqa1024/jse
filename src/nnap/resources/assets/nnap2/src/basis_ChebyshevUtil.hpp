@@ -13,10 +13,13 @@ static NNAP_DEVICE void gradFp2xyz(int j, flt_t *aGradFp, flt_t *aRnpGrad,
     rGradNlDx[j] += rGradj*aDx; rGradNlDy[j] += rGradj*aDy; rGradNlDz[j] += rGradj*aDz;
 }
 template <int SIZE_NP>
-static NNAP_DEVICE void gradFp2xyzEx(int j, flt_t *aGradFpEx, flt_t *aGradFp, flt_t *aRnpGrad,
+static NNAP_DEVICE void gradFp2xyzWt(int j, flt_t *aGradFp, flt_t *aGradFpWt, flt_t aWt, flt_t *aRnpGrad,
                                      flt_t aDx, flt_t aDy, flt_t aDz,
                                      flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz) noexcept {
-    const flt_t rGradj = dotEx<SIZE_NP>(aGradFpEx, aGradFp, aRnpGrad);
+    flt_t rGradj = ZERO;
+    for (int np = 0; np < SIZE_NP; ++np) {
+        rGradj += (aGradFp[np] + aWt*aGradFpWt[np]) * aRnpGrad[np];
+    }
     rGradNlDx[j] += rGradj*aDx; rGradNlDy[j] += rGradj*aDy; rGradNlDz[j] += rGradj*aDz;
 }
 

@@ -93,15 +93,7 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
             mTypedWType = aWType;
         }
         if (mPostFuseWeight==null) {
-            switch(mTypedWType) {
-            case WTYPE_EXFULL: case WTYPE_FULL: case WTYPE_NONE: {
-                mInternalWType = mTypedWType;
-                break;
-            }
-            default: {
-                mInternalWType = WTYPE_RFUSE;
-                break;
-            }}
+            mInternalWType = mTypedWType;
         } else {
             mInternalWType = WTYPE_RFUSE;
         }
