@@ -19,20 +19,6 @@
 */
 // <<< NNAPGEN REMOVE
 
-// >>> NNAPGEN IF
-// --- NNAPGEN HAS: [USE TABLE]
-#define NNAP_USE_TABLE
-#define NNAP_TABLE_SIZE __NNAPGEN_TABLE_SIZE__
-// >>> NNAPGEN REMOVE
-/*
-// <<< NNAPGEN REMOVE
-// --- NNAPGEN ELSE:
-#define NNAP_TABLE_SIZE -1
-// <<< NNAPGEN IF
-// >>> NNAPGEN REMOVE
-*/
-// <<< NNAPGEN REMOVE
-
 // >>> NNAPGEN REMOVE
 #define __NNAPGEN_NTYPES__ 2
 #define __NNAPGENS_X__ 0

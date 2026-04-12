@@ -91,10 +91,6 @@ class NNAPGEN {
         Map<String, Object> rGenMap = new LinkedHashMap<>();
         // 一些公用参数
         rGenMap.put("NNAPGEN_NTYPES", tNumTypes);
-        if (NNAP2.Conf.USE_TABLE) {
-            rGenMap.put("[USE TABLE]", true);
-            rGenMap.put("NNAPGEN_TABLE_SIZE", NNAP2.Conf.TABLE_SIZE);
-        }
         // 代码生成，先针对相同系数的进行优化合并
         List<List<Integer>> tSwitchListFp = new ArrayList<>(); // [position][type]
         List<List<Integer>> tSwitchListNN = new ArrayList<>();

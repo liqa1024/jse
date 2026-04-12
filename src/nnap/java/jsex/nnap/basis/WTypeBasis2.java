@@ -2,7 +2,6 @@ package jsex.nnap.basis;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
-import jse.cache.VectorCache;
 import jse.code.UT;
 import jse.math.MathEX;
 import jse.math.matrix.Matrices;
@@ -11,7 +10,6 @@ import jse.math.vector.IVector;
 import jse.math.vector.RefVector;
 import jse.math.vector.Vector;
 import jse.math.vector.Vectors;
-import jsex.nnap.NNAP2;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -46,8 +44,6 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
     
     final int mSizeNP;
     final RowMatrix mRFuseWeight;
-    
-    final RowMatrix mRFuncTable;
     
     WTypeBasis2(double aRCut, int aNumTypes, int aNMax, int aWType, @Nullable RowMatrix aFuseWeight, @Nullable Vector aPostFuseWeight, double @Nullable[] aPostFuseScale) {
         if (aNumTypes <= 0) throw new IllegalArgumentException("Inpute ntypes MUST be Positive, input: "+ aNumTypes);
@@ -110,73 +106,6 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
             mInternalWType = WTYPE_RFUSE;
         }
         updateRFuseWeight_(false);
-        
-        if (NNAP2.Conf.USE_TABLE) {
-            mRFuncTable = RowMatrix.zeros(mSizeNP*mNumTypes*2, NNAP2.Conf.TABLE_SIZE+1);
-            updateRFuncTable_(false);
-        } else {
-            mRFuncTable = null;
-        }
-    }
-    
-    void updateRFuncTable_(boolean aCheck) {
-        // 注意这边 grad 是不严格存储，主要为了满足直接乘 dxyz 就是对应的梯度来方便使用
-        if (aCheck) {
-            if (mTypedWType!=WTYPE_FUSE && mTypedWType!=WTYPE_EXFUSE && mPostFuseWeight==null) return;
-        }
-        Vector tRn = VectorCache.getVec(mNMax+1);
-        Vector tRnGrad = VectorCache.getVec(mNMax+1);
-        final double dx = 1.0 / NNAP2.Conf.TABLE_SIZE;
-        for (int i = 0; i <= NNAP2.Conf.TABLE_SIZE; ++i) {
-            double x = i * dx;
-            double fc = calFc(x);
-            double fcGrad = calFcGrad(x, mRCut);
-            calRn(tRn, mNMax, x);
-            calRnGrad(tRnGrad, mNMax, x, mRCut);
-            for (int t = 0; t < mNumTypes; ++t) {
-                for (int np = 0; np < mSizeNP; ++np) {
-                    IVector tRow = mRFuseWeight.row(t*mSizeNP + np);
-                    double tDot = tRow.operation().dot(tRn);
-                    double tDotGrad = tRow.operation().dot(tRnGrad);
-                    mRFuncTable.set(t*mSizeNP + np, i, fc*tDot);
-                    mRFuncTable.set(mSizeNP*mNumTypes + t*mSizeNP + np, i, fc*tDotGrad + fcGrad*tDot);
-                }
-            }
-        }
-        VectorCache.returnVec(tRnGrad);
-        VectorCache.returnVec(tRn);
-    }
-    static double pow2(double value) {
-        return value * value;
-    }
-    static double pow3(double value) {
-        return value * value * value;
-    }
-    static double pow4(double value) {
-        double value2 = value * value;
-        return value2 * value2;
-    }
-    static double calFc(double aX) {
-        return pow4(1.0 - pow2(aX));
-    }
-    static double calFcGrad(double aX, double aRCut) {
-        double fcMul3 = pow3(1.0 - pow2(aX));
-        return 8.0 * fcMul3 / (aRCut*aRCut);
-    }
-    static void calRn(IVector rRn, int aNMax, double aX) {
-        double tRnX = 1.0 - (aX+aX);
-        for (int n = 0; n <= aNMax; ++n) {
-            rRn.set(n, MathEX.Func.chebyshev(n, tRnX));
-        }
-    }
-    static void calRnGrad(IVector rRnGrad, int aNMax, double aX, double aRCut) {
-        double tRnX = 1.0 - (aX+aX);
-        double tRnPMul = 2.0 / (aX*aRCut*aRCut);
-        rRnGrad.set(0, 0.0);
-        for (int n = 1; n <= aNMax; ++n) {
-            double tCheby2 = MathEX.Func.chebyshev2(n-1, tRnX);
-            rRnGrad.set(n, n*tRnPMul*tCheby2);
-        }
     }
     
     void updateRFuseWeight_(boolean aCheck) {
@@ -462,14 +391,13 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
         initPostFuseWeight_();
         // 参数更新
         updateRFuseWeight_(true);
-        if (NNAP2.Conf.USE_TABLE) updateRFuncTable_(true);
     }
     
     @Override public IVector parameters() {
-        return NNAP2.Conf.USE_TABLE ? mRFuncTable.asVecRow() : mRFuseWeight.asVecRow();
+        return mRFuseWeight.asVecRow();
     }
     @Override public int parameterSize() {
-        return NNAP2.Conf.USE_TABLE ? mRFuncTable.internalDataSize() : mRFuseWeight.internalDataSize();
+        return mRFuseWeight.internalDataSize();
     }
     
     @Override public IVector fittableParameters() {

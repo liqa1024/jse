@@ -56,16 +56,6 @@ public class NNAP2 implements IPairPotential {
          * 仅对 cpu 情况有效
          */
         public static String PRECISION = OS.env("JSE_NNAP_PRECISION", "double");
-        /**
-         * 设置 NNAP 内部的径向函数是否使用查表的方式加速计算，
-         * 默认为 {@code false}
-         */
-        public static boolean USE_TABLE = OS.envZ("JSE_NNAP_USE_TABLE", false);
-        /**
-         * 设置 NNAP 内部的径向函数使用的查表大小，默认为 {@code 2048}，
-         * 这个值会让精度维持在单精度水平
-         */
-        public static int TABLE_SIZE = OS.envI("JSE_NNAP_TABLE_SIZE", 2048);
     }
     public final static int VERSION = 6;
     
