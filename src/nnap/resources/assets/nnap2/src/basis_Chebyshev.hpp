@@ -31,13 +31,13 @@ static NNAP_DEVICE void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
             }
 #else
             // cal Rn
-            calRnFc<NMAX>(rRn, dis, aRCut);
+            calRn<NMAX>(rRn, dis, aRCut);
             // cal Rnp to fp
             mplusRnp<NMAX, SIZE_NP>(rFp, rRn, aParams + (type-1)*(SIZE_NP*(NMAX+1)));
 #endif
         } else {
             // cal Rn
-            calRnFc<NMAX>(rRn, dis, aRCut);
+            calRn<NMAX>(rRn, dis, aRCut);
             if (WTYPE==WTYPE_NONE) {
                 plus<NMAX+1>(rFp, rRn);
             } else
@@ -89,7 +89,7 @@ static NNAP_DEVICE void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, 
 #else
             // cal RnGrad
             if (REQUIRE_CACHE) rRnGrad = rNlRnGrad + j*(NMAX+1);
-            calRnFcGrad<NMAX>(rRnGrad, rCheby2, dis, aRCut);
+            calRnGrad<NMAX>(rRnGrad, rCheby2, dis, aRCut);
             // cal RnpGrad here
             if (REQUIRE_CACHE) rRnpGrad = rNlRnpGrad + j*SIZE_NP;
             calRnpGrad<NMAX, SIZE_NP>(rRnpGrad, rRnGrad, aParams + (type-1)*(SIZE_NP*(NMAX+1)));
@@ -98,7 +98,7 @@ static NNAP_DEVICE void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, 
         } else {
             // cal RnGrad
             if (REQUIRE_CACHE) rRnGrad = rNlRnGrad + j*(NMAX+1);
-            calRnFcGrad<NMAX>(rRnGrad, rCheby2, dis, aRCut);
+            calRnGrad<NMAX>(rRnGrad, rCheby2, dis, aRCut);
             if (WTYPE==WTYPE_NONE) {
                 gradFp2xyz<NMAX+1>(j, aGradFp, rRnGrad, dx, dy, dz, rGradNlDx, rGradNlDy, rGradNlDz);
             } else

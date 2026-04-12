@@ -28,7 +28,7 @@ static NNAP_DEVICE void calAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *a
         if (dis >= aRCut) continue;
         // cal Y
         if (REQUIRE_CACHE) rY = rNlY + j*tLMAll;
-        calY<LMAXMAX>(dx, dy, dz, dis, rY);
+        calY<LMAXMAX>(rY, dx, dy, dz, dis);
         if (WTYPE==WTYPE_RFUSE) {
 #ifdef NNAP_USE_TABLE
             flt_t ix; int il, ir;
@@ -41,33 +41,29 @@ static NNAP_DEVICE void calAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *a
                 tTable += (NNAP_TABLE_SIZE+1);
             }
 #else
-            // cal fc
-            flt_t fc = calFc(dis, aRCut);
             // cal Rn
             if (REQUIRE_CACHE) rRn = rNlRn + j*(NMAX+1);
             calRn<NMAX>(rRn, dis, aRCut);
             // cal Rnp
             if (REQUIRE_CACHE) rRnp = rNlRnp + j*SIZE_NP;
-            calRnp<NMAX, SIZE_NP>(rRnp, fc, rRn, aParams + (type-1)*(SIZE_NP*(NMAX+1)));
+            calRnp<NMAX, SIZE_NP>(rRnp, rRn, aParams + (type-1)*(SIZE_NP*(NMAX+1)));
 #endif
             // cal anlm
             mplusAnlm<SIZE_NP, LMAXMAX>(rAnlm, rY, rRnp);
         } else {
-            // cal fc
-            flt_t fc = calFc(dis, aRCut);
             // cal Rn
             if (REQUIRE_CACHE) rRn = rNlRn + j*(NMAX+1);
             calRn<NMAX>(rRn, dis, aRCut);
             if (WTYPE==WTYPE_NONE) {
-                mplusCnlm<NMAX, LMAXMAX>(rAnlm, rY, fc, rRn);
+                mplusAnlm<NMAX+1, LMAXMAX>(rAnlm, rY, rRn);
             } else
             if (WTYPE==WTYPE_FULL) {
                 flt_t *tCnlm = rAnlm + (type-1)*(NMAX+1)*tLMAll;
-                mplusCnlm<NMAX, LMAXMAX>(tCnlm, rY, fc, rRn);
+                mplusAnlm<NMAX+1, LMAXMAX>(tCnlm, rY, rRn);
             } else
             if (WTYPE==WTYPE_EXFULL) {
                 flt_t *tCnlm = rAnlm + type*(NMAX+1)*tLMAll;
-                mplusCnlmEx<NMAX, LMAXMAX>(rAnlm, tCnlm, rY, fc, rRn);
+                mplusAnlmEx<NMAX+1, LMAXMAX>(rAnlm, tCnlm, rY, rRn);
             }
         }
     }
@@ -111,35 +107,18 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
     flt_t *tNlRn = *aForwardCache; *aForwardCache += aNeiNum*(NMAX+1);
     flt_t *tNlRnp = *aForwardCache; *aForwardCache += aNeiNum*SIZE_NP;
     flt_t *tNlY  = *aForwardCache; *aForwardCache += aNeiNum*tLMAll;
-    flt_t bRnPx[REQUIRE_CACHE ? 1 : (NMAX+1)]; flt_t *rRnPx = REQUIRE_CACHE ? NULL : bRnPx;
-    flt_t bRnPy[REQUIRE_CACHE ? 1 : (NMAX+1)]; flt_t *rRnPy = REQUIRE_CACHE ? NULL : bRnPy;
-    flt_t bRnPz[REQUIRE_CACHE ? 1 : (NMAX+1)]; flt_t *rRnPz = REQUIRE_CACHE ? NULL : bRnPz;
+    flt_t bRnGrad[REQUIRE_CACHE ? 1 : (NMAX+1)]; flt_t *rRnGrad = REQUIRE_CACHE ? NULL : bRnGrad;
     flt_t rCheby2[NMAX+1];
-    flt_t bRnpPx[REQUIRE_CACHE ? 1 : SIZE_NP]; flt_t *rRnpPx = REQUIRE_CACHE ? NULL : bRnpPx;
-    flt_t bRnpPy[REQUIRE_CACHE ? 1 : SIZE_NP]; flt_t *rRnpPy = REQUIRE_CACHE ? NULL : bRnpPy;
-    flt_t bRnpPz[REQUIRE_CACHE ? 1 : SIZE_NP]; flt_t *rRnpPz = REQUIRE_CACHE ? NULL : bRnpPz;
-    flt_t bYPx[REQUIRE_CACHE ? 1 : tLMAll]; flt_t *rYPx = REQUIRE_CACHE ? NULL : bYPx;
-    flt_t bYPy[REQUIRE_CACHE ? 1 : tLMAll]; flt_t *rYPy = REQUIRE_CACHE ? NULL : bYPy;
-    flt_t bYPz[REQUIRE_CACHE ? 1 : tLMAll]; flt_t *rYPz = REQUIRE_CACHE ? NULL : bYPz;
-    flt_t rYPtheta[tLMAll];
-    flt_t rYPphi[tLMAll];
-    flt_t *rNlRnPx = NULL, *rNlRnPy = NULL, *rNlRnPz = NULL;
-    flt_t *rNlFcPx = NULL, *rNlFcPy = NULL, *rNlFcPz = NULL;
-    flt_t *rNlRnpPx = NULL, *rNlRnpPy = NULL, *rNlRnpPz = NULL;
-    flt_t *rNlYPx = NULL, *rNlYPy = NULL, *rNlYPz = NULL;
+    flt_t bRnpGrad[REQUIRE_CACHE ? 1 : SIZE_NP]; flt_t *rRnpGrad = REQUIRE_CACHE ? NULL : bRnpGrad;
+    flt_t bYPtheta[REQUIRE_CACHE ? 1 : tLMAll]; flt_t *rYPtheta = REQUIRE_CACHE ? NULL : bYPtheta;
+    flt_t bYPphi[REQUIRE_CACHE ? 1 : tLMAll]; flt_t *rYPphi = REQUIRE_CACHE ? NULL : bYPphi;
+    flt_t rGradY[tLMAll];
+    flt_t *rNlRnGrad = NULL, *rNlRnpGrad = NULL, *rNlYPtheta = NULL, *rNlYPphi = NULL;
     if (REQUIRE_CACHE) {
-        rNlRnPx = *rBackwardCache; *rBackwardCache += aNeiNum*(NMAX+1);
-        rNlRnPy = *rBackwardCache; *rBackwardCache += aNeiNum*(NMAX+1);
-        rNlRnPz = *rBackwardCache; *rBackwardCache += aNeiNum*(NMAX+1);
-        rNlFcPx = *rBackwardCache; *rBackwardCache += aNeiNum;
-        rNlFcPy = *rBackwardCache; *rBackwardCache += aNeiNum;
-        rNlFcPz = *rBackwardCache; *rBackwardCache += aNeiNum;
-        rNlRnpPx = *rBackwardCache; *rBackwardCache += aNeiNum*SIZE_NP;
-        rNlRnpPy = *rBackwardCache; *rBackwardCache += aNeiNum*SIZE_NP;
-        rNlRnpPz = *rBackwardCache; *rBackwardCache += aNeiNum*SIZE_NP;
-        rNlYPx  = *rBackwardCache; *rBackwardCache += aNeiNum*tLMAll;
-        rNlYPy  = *rBackwardCache; *rBackwardCache += aNeiNum*tLMAll;
-        rNlYPz  = *rBackwardCache; *rBackwardCache += aNeiNum*tLMAll;
+        rNlRnGrad = *rBackwardCache; *rBackwardCache += aNeiNum*(NMAX+1);
+        rNlRnpGrad = *rBackwardCache; *rBackwardCache += aNeiNum*SIZE_NP;
+        rNlYPtheta = *rBackwardCache; *rBackwardCache += aNeiNum*tLMAll;
+        rNlYPphi = *rBackwardCache; *rBackwardCache += aNeiNum*tLMAll;
     }
     // loop for neighbor
     for (int j = 0; j < aNeiNum; ++j) {
@@ -151,13 +130,16 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
         if (dis >= aRCut) continue;
         // get Y
         flt_t *tY = tNlY + j*tLMAll;
-        // cal YlmPxyz
+        // cal YlmPthetaPphi
         if (REQUIRE_CACHE) {
-            rYPx = rNlYPx + j*tLMAll;
-            rYPy = rNlYPy + j*tLMAll;
-            rYPz = rNlYPz + j*tLMAll;
+            rYPtheta = rNlYPtheta + j*tLMAll;
+            rYPphi = rNlYPphi + j*tLMAll;
         }
-        calYPxyz<LMAXMAX>(dx, dy, dz, dis, tY, rYPx, rYPy, rYPz, rYPtheta, rYPphi);
+        flt_t thetaPx, thetaPy, thetaPz, phiPx, phiPy;
+        calYPthetaPphi<LMAXMAX>(
+            rYPtheta, rYPphi, tY, dx, dy, dz, dis,
+            thetaPx, thetaPy, thetaPz, phiPx, phiPy
+        );
         if (WTYPE==WTYPE_RFUSE) {
 #ifdef NNAP_USE_TABLE
             flt_t ix; int il, ir;
@@ -165,78 +147,55 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
             flt_t *tParams = aParams + __NNAPGEN_NTYPES__*SIZE_NP*(NNAP_TABLE_SIZE+1);
             // get Rnp here
             flt_t *tRnp = tNlRnp + j*SIZE_NP;
-            // cal RnpPxyz here
-            if (REQUIRE_CACHE) {
-                rRnpPx = rNlRnpPx + j*SIZE_NP;
-                rRnpPy = rNlRnpPy + j*SIZE_NP;
-                rRnpPz = rNlRnpPz + j*SIZE_NP;
-            }
+            // cal RnpGrad here
+            if (REQUIRE_CACHE) rRnpGrad = rNlRnpGrad + j*SIZE_NP;
             flt_t *tTable = tParams + (type-1)*SIZE_NP*(NNAP_TABLE_SIZE+1);
             for (int np = 0; np < SIZE_NP; ++np) {
-                const flt_t rRnpGrad = calRFuncFromTable(ix, il, ir, tTable);
-                rRnpPx[np] = rRnpGrad*dx;
-                rRnpPy[np] = rRnpGrad*dy;
-                rRnpPz[np] = rRnpGrad*dz;
+                rRnpGrad[np] = calRFuncFromTable(ix, il, ir, tTable);
                 tTable += (NNAP_TABLE_SIZE+1);
             }
 #else
-            // cal fcPxyz
-            flt_t fcPx, fcPy, fcPz;
-            flt_t fc = calFcPxyz(&fcPx, &fcPy, &fcPz, dis, aRCut, dx, dy, dz);
-            if (REQUIRE_CACHE) {
-                rNlFcPx[j] = fcPx;
-                rNlFcPy[j] = fcPy;
-                rNlFcPz[j] = fcPz;
-            }
             // get Rn
             flt_t *tRn = tNlRn + j*(NMAX+1);
-            // cal RnPxyz
-            if (REQUIRE_CACHE) {
-                rRnPx = rNlRnPx + j*(NMAX+1);
-                rRnPy = rNlRnPy + j*(NMAX+1);
-                rRnPz = rNlRnPz + j*(NMAX+1);
-            }
-            calRnPxyz<NMAX>(rRnPx, rRnPy, rRnPz, rCheby2, dis, aRCut, dx, dy, dz);
+            // cal RnGrad
+            if (REQUIRE_CACHE) rRnGrad = rNlRnGrad + j*(NMAX+1);
+            calRnGrad<NMAX>(rRnGrad, rCheby2, dis, aRCut);
             // get Rnp here
             flt_t *tRnp = tNlRnp + j*SIZE_NP;
-            // cal RnpPxyz here
-            if (REQUIRE_CACHE) {
-                rRnpPx = rNlRnpPx + j*SIZE_NP;
-                rRnpPy = rNlRnpPy + j*SIZE_NP;
-                rRnpPz = rNlRnpPz + j*SIZE_NP;
-            }
-            calRnpPxyz<NMAX, SIZE_NP>(rRnpPx, rRnpPy, rRnpPz, fc, tRn, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, aParams + (type-1)*(SIZE_NP*(NMAX+1)));
+            // cal RnpGrad here
+            if (REQUIRE_CACHE) rRnpGrad = rNlRnpGrad + j*SIZE_NP;
+            calRnpGrad<NMAX, SIZE_NP>(rRnpGrad, rRnGrad, aParams + (type-1)*(SIZE_NP*(NMAX+1)));
 #endif
-            gradAnlm2xyz<SIZE_NP, LMAXMAX>(j, aGradAnlm, rYPtheta, tY, tRnp, rRnpPx, rRnpPy, rRnpPz, rYPx, rYPy, rYPz, rGradNlDx, rGradNlDy, rGradNlDz);
+            gradAnlm2xyz<SIZE_NP, LMAXMAX>(j,
+                aGradAnlm, rGradY, tY, tRnp, rRnpGrad, rYPtheta, rYPphi,
+                dx, dy, dz, thetaPx, thetaPy, thetaPz, phiPx, phiPy, rGradNlDx, rGradNlDy, rGradNlDz
+            );
         } else {
-            // cal fcPxyz
-            flt_t fcPx, fcPy, fcPz;
-            flt_t fc = calFcPxyz(&fcPx, &fcPy, &fcPz, dis, aRCut, dx, dy, dz);
-            if (REQUIRE_CACHE) {
-                rNlFcPx[j] = fcPx;
-                rNlFcPy[j] = fcPy;
-                rNlFcPz[j] = fcPz;
-            }
             // get Rn
             flt_t *tRn = tNlRn + j*(NMAX+1);
-            // cal RnPxyz
-            if (REQUIRE_CACHE) {
-                rRnPx = rNlRnPx + j*(NMAX+1);
-                rRnPy = rNlRnPy + j*(NMAX+1);
-                rRnPz = rNlRnPz + j*(NMAX+1);
-            }
-            calRnPxyz<NMAX>(rRnPx, rRnPy, rRnPz, rCheby2, dis, aRCut, dx, dy, dz);
+            // cal RnGrad
+            if (REQUIRE_CACHE) rRnGrad = rNlRnGrad + j*(NMAX+1);
+            calRnGrad<NMAX>(rRnGrad, rCheby2, dis, aRCut);
             // cal fxyz
             if (WTYPE==WTYPE_NONE) {
-                gradCnlm2xyz<NMAX, LMAXMAX>(j, aGradAnlm, rYPtheta, tY, fc, tRn, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rYPx, rYPy, rYPz, rGradNlDx, rGradNlDy, rGradNlDz);
+                gradAnlm2xyz<NMAX+1, LMAXMAX>(j,
+                    aGradAnlm, rGradY, tY, tRn, rRnGrad, rYPtheta, rYPphi,
+                    dx, dy, dz, thetaPx, thetaPy, thetaPz, phiPx, phiPy, rGradNlDx, rGradNlDy, rGradNlDz
+                );
             } else
             if (WTYPE==WTYPE_FULL) {
                 flt_t *tGradCnlm = aGradAnlm + (type-1)*(NMAX+1)*tLMAll;
-                gradCnlm2xyz<NMAX, LMAXMAX>(j, tGradCnlm, rYPtheta, tY, fc, tRn, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rYPx, rYPy, rYPz, rGradNlDx, rGradNlDy, rGradNlDz);
+                gradAnlm2xyz<NMAX+1, LMAXMAX>(j,
+                    tGradCnlm, rGradY, tY, tRn, rRnGrad, rYPtheta, rYPphi,
+                    dx, dy, dz, thetaPx, thetaPy, thetaPz, phiPx, phiPy, rGradNlDx, rGradNlDy, rGradNlDz
+                );
             } else
             if (WTYPE==WTYPE_EXFULL) {
                 flt_t *tGradCnlm = aGradAnlm + type*(NMAX+1)*tLMAll;
-                gradCnlmEx2xyz<NMAX, LMAXMAX>(j, aGradAnlm, tGradCnlm, rYPtheta, tY, fc, tRn, fcPx, fcPy, fcPz, rRnPx, rRnPy, rRnPz, rYPx, rYPy, rYPz, rGradNlDx, rGradNlDy, rGradNlDz);
+                gradAnlmEx2xyz<NMAX+1, LMAXMAX>(j,
+                    aGradAnlm, tGradCnlm, rGradY, tY, tRn, rRnGrad, rYPtheta, rYPphi,
+                    dx, dy, dz, thetaPx, thetaPy, thetaPz, phiPx, phiPy, rGradNlDx, rGradNlDy, rGradNlDz
+                );
             }
         }
     }
