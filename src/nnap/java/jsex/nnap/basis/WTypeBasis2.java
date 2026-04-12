@@ -35,7 +35,7 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
     final int mTypedWType;
     
     final @Nullable RowMatrix mFuseWeight;
-    final int mSizeN;
+    final int mSizeN, mSizeK;
     final int mFuseSize;
     
     final Vector mPostFuseWeight;
@@ -76,9 +76,13 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
         mPostFuseScale = aPostFuseScale==null ? new double[]{1.0} : aPostFuseScale;
         if (mPostFuseScale.length!=1) throw new IllegalArgumentException("Size of post fuse scale mismatch");
         
+        mSizeK = mSizeN/(mNMax+1);
+        if (mSizeN!=mSizeK*(mNMax+1)) throw new IllegalStateException();
         mSizeNP = mPostFuseWeight==null ? mSizeN : mPostFuseSize;
-        mRFuseWeight = RowMatrix.zeros(mSizeNP* mNumTypes, mNMax+1);
-        
+        mRFuseWeight = RowMatrix.zeros(
+            (mPostFuseWeight==null ? mSizeK : mSizeNP)*mNumTypes,
+            mPostFuseWeight==null ? 1 : (mNMax+1)
+        );
         if (mNumTypes ==1) {
             switch(mWType) {
             case WTYPE_EXFULL: case WTYPE_FULL: case WTYPE_NONE: case WTYPE_DEFAULT: {
@@ -93,15 +97,7 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
             mTypedWType = aWType;
         }
         if (mPostFuseWeight==null) {
-            switch(mTypedWType) {
-            case WTYPE_EXFULL: case WTYPE_FULL: case WTYPE_NONE: {
-                mInternalWType = mTypedWType;
-                break;
-            }
-            default: {
-                mInternalWType = WTYPE_RFUSE;
-                break;
-            }}
+            mInternalWType = mTypedWType;
         } else {
             mInternalWType = WTYPE_RFUSE;
         }
@@ -121,9 +117,7 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
                 for (int type = 1; type <= mNumTypes; ++type) {
                     for (int k = 0; k < mFuseSize; ++k) {
                         double wt = mFuseWeight.get(type-1, k);
-                        for (int n = 0; n <= mNMax; ++n) {
-                            mRFuseWeight.set((type-1)*mSizeNP + k*(mNMax+1) + n, n, wt);
-                        }
+                        mRFuseWeight.set((type-1)*mSizeK + k, 0, wt);
                     }
                 }
                 return;
@@ -131,50 +125,38 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
             case WTYPE_EXFUSE: {
                 assert mFuseWeight!=null;
                 for (int type = 1; type <= mNumTypes; ++type) {
-                    for (int n = 0; n <= mNMax; ++n) {
-                        mRFuseWeight.set((type-1)*mSizeNP + n, n, 1.0); // ex term
-                    }
+                    mRFuseWeight.set((type-1)*mSizeK, 0, 1.0); // ex term
                     for (int k = 0; k < mFuseSize; ++k) {
                         double wt = mFuseWeight.get(type-1, k);
-                        for (int n = 0; n <= mNMax; ++n) {
-                            mRFuseWeight.set((type-1)*mSizeNP + (k+1)*(mNMax+1) + n, n, wt);
-                        }
+                        mRFuseWeight.set((type-1)*mSizeK + (k+1), 0, wt);
                     }
                 }
                 return;
             }
             case WTYPE_FULL: {
                 for (int type = 1; type <= mNumTypes; ++type) {
-                    for (int n = 0; n <= mNMax; ++n) {
-                        mRFuseWeight.set((type-1)*mSizeNP + (type-1)*(mNMax+1) + n, n, 1.0);
-                    }
+                    mRFuseWeight.set((type-1)*mSizeK + (type-1), 0, 1.0);
                 }
                 return;
             }
             case WTYPE_EXFULL: {
                 for (int type = 1; type <= mNumTypes; ++type) {
-                    for (int n = 0; n <= mNMax; ++n) {
-                        mRFuseWeight.set((type-1)*mSizeNP + n, n, 1.0); // ex term
-                        mRFuseWeight.set((type-1)*mSizeNP + type*(mNMax+1) + n, n, 1.0);
-                    }
+                    mRFuseWeight.set((type-1)*mSizeK, 0, 1.0); // ex term
+                    mRFuseWeight.set((type-1)*mSizeK + type, 0, 1.0);
                 }
                 return;
             }
             case WTYPE_NONE: {
                 for (int type = 1; type <= mNumTypes; ++type) {
-                    for (int n = 0; n <= mNMax; ++n) {
-                        mRFuseWeight.set((type-1)*mSizeNP + n, n, 1.0);
-                    }
+                    mRFuseWeight.set((type-1)*mSizeK, 0, 1.0);
                 }
                 return;
             }
             case WTYPE_DEFAULT: {
                 for (int type = 1; type <= mNumTypes; ++type) {
                     double wt = ((type&1)==1) ? type : (-type);
-                    for (int n = 0; n <= mNMax; ++n) {
-                        mRFuseWeight.set((type-1)*mSizeNP + n, n, 1.0);
-                        mRFuseWeight.set((type-1)*mSizeNP + (mNMax+1) + n, n, wt);
-                    }
+                    mRFuseWeight.set((type-1)*mSizeK, 0, 1.0);
+                    mRFuseWeight.set((type-1)*mSizeK + 1, 0, wt);
                 }
                 return;
             }}

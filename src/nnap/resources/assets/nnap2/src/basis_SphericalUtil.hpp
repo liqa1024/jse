@@ -208,6 +208,15 @@ static inline NNAP_DEVICE void mplusAnlmEx(flt_t *rAnlmEx, flt_t *rAnlm, flt_t *
         tAnlm += tLMAll;
     }
 }
+template <int NMAX, int SIZE_K, int LMAX>
+static inline NNAP_DEVICE void mplusAnlmFuse(flt_t *rAnlm, flt_t *aBnlm, flt_t *aFuseWeight) noexcept {
+    constexpr int tSizeBnlm = (NMAX+1)*(LMAX+1)*(LMAX+1);
+    flt_t *tAnlm = rAnlm;
+    for (int k = 0; k < SIZE_K; ++k) {
+        mplus<tSizeBnlm>(tAnlm, aFuseWeight[k], aBnlm);
+        tAnlm += tSizeBnlm;
+    }
+}
 
 
 template <int SIZE_NP, int LMAX>
@@ -242,7 +251,7 @@ static inline NNAP_DEVICE void gradAnlm2xyz(int j, flt_t *aGradAnlm, flt_t *rGra
     rGradNlDz[j] += rGradj*dz + rGradThetaj*thetaPz;
 }
 template <int SIZE_NP, int LMAX>
-static inline NNAP_DEVICE void gradAnlmEx2xyz(int j, flt_t *aGradAnlmEx, flt_t *aGradAnlm, flt_t *rGradY, flt_t *aY, flt_t *aRnp,
+static inline NNAP_DEVICE void gradAnlm2xyzEx(int j, flt_t *aGradAnlmEx, flt_t *aGradAnlm, flt_t *rGradY, flt_t *aY, flt_t *aRnp,
                                               flt_t *aRnpGrad, flt_t *aYPtheta, flt_t *aYPphi,
                                               flt_t dx, flt_t dy, flt_t dz, flt_t thetaPx, flt_t thetaPy, flt_t thetaPz, flt_t phiPx, flt_t phiPy,
                                               flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz) noexcept {
@@ -274,7 +283,16 @@ static inline NNAP_DEVICE void gradAnlmEx2xyz(int j, flt_t *aGradAnlmEx, flt_t *
     rGradNlDy[j] += rGradj*dy + rGradThetaj*thetaPy + rGradPhij*phiPy;
     rGradNlDz[j] += rGradj*dz + rGradThetaj*thetaPz;
 }
-
+template <int NMAX, int SIZE_K, int LMAX>
+static NNAP_DEVICE void calGradBnlmFuse(flt_t *aGradAnlm, flt_t *rGradBnlm, flt_t *aFuseWeight) noexcept {
+    constexpr int tSizeBnlm = (NMAX+1)*(LMAX+1)*(LMAX+1);
+    fill<tSizeBnlm>(rGradBnlm, ZERO);
+    flt_t *tGradAnlm = aGradAnlm;
+    for (int k = 0; k < SIZE_K; ++k) {
+        mplus<tSizeBnlm>(rGradBnlm, aFuseWeight[k], tGradAnlm);
+        tGradAnlm += tSizeBnlm;
+    }
+}
 
 template <int L>
 static inline NNAP_DEVICE void calL2Sub_(flt_t *aCnlm, flt_t *rFp) noexcept {

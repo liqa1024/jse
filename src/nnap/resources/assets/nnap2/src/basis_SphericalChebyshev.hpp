@@ -9,6 +9,7 @@ template <int WTYPE, int NMAX, int LMAXMAX, int SIZE_NP, int REQUIRE_CACHE>
 static NNAP_DEVICE void calAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rAnlm,
                                 flt_t **rForwardCache, flt_t aRCut, flt_t *aParams) noexcept {
     constexpr int tLMAll = (LMAXMAX+1)*(LMAXMAX+1);
+    constexpr int tSizeBnlm = (NMAX+1)*tLMAll;
     // init cache
     flt_t bRn[REQUIRE_CACHE ? 1 : (NMAX+1)]; flt_t *rRn = REQUIRE_CACHE ? NULL : bRn;
     flt_t bRnp[REQUIRE_CACHE ? 1 : SIZE_NP]; flt_t *rRnp = REQUIRE_CACHE ? NULL : bRnp;
@@ -19,6 +20,7 @@ static NNAP_DEVICE void calAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *a
         rNlRnp = *rForwardCache; *rForwardCache += aNeiNum*SIZE_NP;
         rNlY  = *rForwardCache; *rForwardCache += aNeiNum*tLMAll;
     }
+    flt_t rBnlm[(WTYPE==WTYPE_DEFAULT || WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) ? tSizeBnlm : 1];
     // loop for neighbor
     for (int j = 0; j < aNeiNum; ++j) {
         int type = aNlType[j];
@@ -37,7 +39,6 @@ static NNAP_DEVICE void calAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *a
             // cal Rnp
             if (REQUIRE_CACHE) rRnp = rNlRnp + j*SIZE_NP;
             calRnp<NMAX, SIZE_NP>(rRnp, rRn, aParams + (type-1)*(SIZE_NP*(NMAX+1)));
-            // cal anlm
             mplusAnlm<SIZE_NP, LMAXMAX>(rAnlm, rY, rRnp);
         } else
         if (WTYPE==WTYPE_NONE) {
@@ -50,6 +51,13 @@ static NNAP_DEVICE void calAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *a
         if (WTYPE==WTYPE_EXFULL) {
             flt_t *tCnlm = rAnlm + type*(NMAX+1)*tLMAll;
             mplusAnlmEx<NMAX+1, LMAXMAX>(rAnlm, tCnlm, rY, rRn);
+        } else
+        if (WTYPE==WTYPE_DEFAULT || WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) {
+            fill<tSizeBnlm>(rBnlm, ZERO);
+            mplusAnlm<NMAX+1, LMAXMAX>(rBnlm, rY, rRn);
+            constexpr int tSizeK = SIZE_NP / (NMAX+1);
+            flt_t *tParams = aParams + (type-1)*tSizeK;
+            mplusAnlmFuse<NMAX, tSizeK, LMAXMAX>(rAnlm, rBnlm, tParams);
         }
     }
 }
@@ -88,6 +96,7 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
                                      flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
                                      flt_t **aForwardCache, flt_t **rBackwardCache, flt_t aRCut, flt_t *aParams) {
     const int tLMAll = (LMAXMAX+1)*(LMAXMAX+1);
+    constexpr int tSizeBnlm = (NMAX+1)*tLMAll;
     // init cache
     flt_t *tNlRn = *aForwardCache; *aForwardCache += aNeiNum*(NMAX+1);
     flt_t *tNlRnp = *aForwardCache; *aForwardCache += aNeiNum*SIZE_NP;
@@ -105,6 +114,7 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
         rNlYPtheta = *rBackwardCache; *rBackwardCache += aNeiNum*tLMAll;
         rNlYPphi = *rBackwardCache; *rBackwardCache += aNeiNum*tLMAll;
     }
+    flt_t rGradBnlm[(WTYPE==WTYPE_DEFAULT || WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) ? tSizeBnlm : 1];
     // loop for neighbor
     for (int j = 0; j < aNeiNum; ++j) {
         // init nl
@@ -157,8 +167,17 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
         } else
         if (WTYPE==WTYPE_EXFULL) {
             flt_t *tGradCnlm = aGradAnlm + type*(NMAX+1)*tLMAll;
-            gradAnlmEx2xyz<NMAX+1, LMAXMAX>(j,
+            gradAnlm2xyzEx<NMAX+1, LMAXMAX>(j,
                 aGradAnlm, tGradCnlm, rGradY, tY, tRn, rRnGrad, rYPtheta, rYPphi,
+                dx, dy, dz, thetaPx, thetaPy, thetaPz, phiPx, phiPy, rGradNlDx, rGradNlDy, rGradNlDz
+            );
+        } else
+        if (WTYPE==WTYPE_DEFAULT || WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) {
+            constexpr int tSizeK = SIZE_NP / (NMAX+1);
+            flt_t *tParams = aParams + (type-1)*tSizeK;
+            calGradBnlmFuse<NMAX, tSizeK, LMAXMAX>(aGradAnlm, rGradBnlm, tParams);
+            gradAnlm2xyz<NMAX+1, LMAXMAX>(j,
+                rGradBnlm, rGradY, tY, tRn, rRnGrad, rYPtheta, rYPphi,
                 dx, dy, dz, thetaPx, thetaPy, thetaPz, phiPx, phiPy, rGradNlDx, rGradNlDy, rGradNlDz
             );
         }
