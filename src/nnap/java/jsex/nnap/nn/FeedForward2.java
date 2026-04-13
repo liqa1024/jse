@@ -55,7 +55,7 @@ public class FeedForward2 extends NeuralNetwork2 {
         if (mOutputBias.length != 1) throw new IllegalArgumentException("The size of output biases mismatch");
     }
     
-    public void initParameters() {
+    @Override public void initParameters() {
         int tColNum = mInputDim;
         int tShift = 0;
         for (int tHiddenDim : mHiddenDims) {
@@ -87,8 +87,8 @@ public class FeedForward2 extends NeuralNetwork2 {
         for (int i = 0; i < aHiddenDims.length; ++i) {
             aHiddenDims[i] = ((Number)tHiddenDims.get(i)).intValue();
         }
-        int tHiddenNumber = aHiddenDims.length;
-        if (tHiddenNumber == 0) throw new IllegalArgumentException("At least one hidden layer is required");
+        int tNumLayers = aHiddenDims.length;
+        if (tNumLayers == 0) throw new IllegalArgumentException("At least one hidden layer is required");
         int tHiddenWeightsSize = 0;
         int tHiddenBiasesSize = 0;
         int tColNum = aInputDim;
@@ -98,11 +98,11 @@ public class FeedForward2 extends NeuralNetwork2 {
             tColNum = tHiddenDim;
         }
         List<?> tHiddenWeights = (List<?>)UT.Code.get(aMap, "hidden_weights");
-        if (tHiddenWeights.size() != tHiddenNumber) throw new IllegalArgumentException("The number of hidden weights mismatch");
+        if (tHiddenWeights.size() != tNumLayers) throw new IllegalArgumentException("The number of hidden weights mismatch");
         Vector aHiddenWeights = Vectors.zeros(tHiddenWeightsSize);
         tColNum = aInputDim;
         int tShift = 0;
-        for (int i = 0; i < tHiddenNumber; ++i) {
+        for (int i = 0; i < tNumLayers; ++i) {
             int tHiddenDim = aHiddenDims[i];
             int tSize = tHiddenDim*tColNum;
             RowMatrix tWeight = Matrices.fromRows((List<?>)tHiddenWeights.get(i));
@@ -113,10 +113,10 @@ public class FeedForward2 extends NeuralNetwork2 {
             tColNum = tHiddenDim;
         }
         List<?> tHiddenBiases = (List<?>)UT.Code.get(aMap, "hidden_biases");
-        if (tHiddenBiases.size() != tHiddenNumber) throw new IllegalArgumentException("The number of hidden biases mismatch");
+        if (tHiddenBiases.size() != tNumLayers) throw new IllegalArgumentException("The number of hidden biases mismatch");
         Vector aHiddenBiases = Vectors.zeros(tHiddenBiasesSize);
         tShift = 0;
-        for (int i = 0; i < tHiddenNumber; ++i) {
+        for (int i = 0; i < tNumLayers; ++i) {
             int tHiddenDim = aHiddenDims[i];
             Vector tBias = Vectors.from((List<? extends Number>)tHiddenBiases.get(i));
             if (tBias.size() != tHiddenDim) throw new IllegalArgumentException("Size of hidden bias '"+i+"' mismatch");
@@ -125,7 +125,7 @@ public class FeedForward2 extends NeuralNetwork2 {
         }
         Vector aOutputWeight = Vectors.from((List<? extends Number>)aMap.get("output_weight"));
         double aOutputBias = ((Number)aMap.get("output_bias")).doubleValue();
-        if (aOutputWeight.size() != aHiddenDims[tHiddenNumber-1]) throw new IllegalArgumentException("Size of output weight mismatch");
+        if (aOutputWeight.size() != aHiddenDims[tNumLayers-1]) throw new IllegalArgumentException("Size of output weight mismatch");
         
         return new FeedForward2(aInputDim, aHiddenDims, aHiddenWeights, aHiddenBiases, aOutputWeight, new double[]{aOutputBias});
     }
@@ -161,23 +161,13 @@ public class FeedForward2 extends NeuralNetwork2 {
         rSaveTo.put("output_bias", mOutputBias[0]);
     }
     
-    @Override public int parameterSize() {
+    @Override public int fittableParameterSize() {
         return mHiddenWeightsSize+mOutputWeightSize + mHiddenBiasesSize+1;
     }
-    @Override public int gradCacheSize() {
-        return mHiddenBiasesSize;
-    }
-    public int parameterWeightSize() {
+    public int fittableParameterWeightSize() {
         return mHiddenWeightsSize+mOutputWeightSize;
     }
-    public int hiddenSize() {
-        return mHiddenBiasesSize;
-    }
-    public int inputSize() {
-        return mInputDim;
-    }
-    
-    @Override public IVector parameters() {
+    @Override public IVector fittableParameters() {
         final int tEndHW = mHiddenWeightsSize;
         final int tEndOW = tEndHW + mOutputWeightSize;
         final int tEndHB = tEndOW + mHiddenBiasesSize;
@@ -221,6 +211,19 @@ public class FeedForward2 extends NeuralNetwork2 {
         };
     }
     
+    @Override public int parameterSize() {
+        return fittableParameterSize();
+    }
+    @Override public int gradCacheSize() {
+        return mHiddenBiasesSize;
+    }
+    public int inputSize() {
+        return mInputDim;
+    }
+    @Override public IVector parameters() {
+        return fittableParameters();
+    }
+    
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
         int tHiddenDimMax = -1;
         for (int i = 0; i < mNumLayers; ++i) {
@@ -245,6 +248,7 @@ public class FeedForward2 extends NeuralNetwork2 {
     }
     
     @Override public boolean hasSameGenMap(NeuralNetwork2 aNN) {
+        if (aNN instanceof SharedFeedForward2) return hasSameGenMap(((SharedFeedForward2)aNN).sharedNeuralNetwork());
         if (!(aNN instanceof FeedForward2)) return false;
         FeedForward2 tNN = (FeedForward2)aNN;
         if (mNumLayers !=tNN.mNumLayers || mInputDim!=tNN.mInputDim) return false;

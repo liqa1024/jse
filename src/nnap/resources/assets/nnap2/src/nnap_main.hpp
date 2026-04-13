@@ -85,14 +85,7 @@ static NNAP_DEVICE int normedNnForward(int cType, flt_t *rFp, flt_t *aNormParam,
 // >>> NNAPGEN PICK
 // --- NNAPGEN PICK: feed_forward
     flt_t tEng = nnForward<__NNAPGENS_CTYPE_GEN__, CACHE_GRAD>(
-        rFp, tHiddenWeights, NULL, tHiddenBiases, NULL,
-        tOutputWeights, tOutputBias, CACHE_GRAD?rNnGradCache:NULL
-    );
-// --- NNAPGEN PICK: shared_feed_forward
-    flt_t *tSharedHiddenWeights = aNnParam[__NNAPGENX_NN_SHARED_TYPE__-1];
-    flt_t *tSharedHiddenBiases = tSharedHiddenWeights + (__NNAPGENX_NN_SIZE_HW__+__NNAPGENX_NN_SIZE_SHW__ + __NNAPGENX_NN_SIZE_OW__);
-    flt_t tEng = nnForward<__NNAPGENS_CTYPE_GEN__, CACHE_GRAD>(
-        rFp, tHiddenWeights, tSharedHiddenWeights, tHiddenBiases, tSharedHiddenBiases,
+        rFp, tHiddenWeights, tHiddenBiases,
         tOutputWeights, tOutputBias, CACHE_GRAD?rNnGradCache:NULL
     );
 // <<< NNAPGEN PICK [NN USE __NNAPGENS_X__]
@@ -160,13 +153,7 @@ static NNAP_DEVICE int normedNnBackward(int cType, flt_t *rGradFp, flt_t *aNormP
 // >>> NNAPGEN PICK
 // --- NNAPGEN PICK: feed_forward
     nnBackward<__NNAPGENS_CTYPE_GEN__>(
-        aInGradEng, rGradFp, tHiddenWeights, NULL,
-        tOutputWeights, aNnGradCache
-    );
-// --- NNAPGEN PICK: shared_feed_forward
-    flt_t *tSharedHiddenWeights = aNnParam[__NNAPGENX_NN_SHARED_TYPE__-1];
-    nnBackward<__NNAPGENS_CTYPE_GEN__>(
-        aInGradEng, rGradFp, tHiddenWeights, tSharedHiddenWeights,
+        aInGradEng, rGradFp, tHiddenWeights,
         tOutputWeights, aNnGradCache
     );
 // <<< NNAPGEN PICK [NN USE __NNAPGENS_X__]

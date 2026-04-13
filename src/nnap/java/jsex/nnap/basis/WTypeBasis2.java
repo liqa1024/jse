@@ -100,7 +100,7 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
         updateRFuseWeight_(false);
     }
     
-    void updateRFuseWeight_(boolean aCheck) {
+    final void updateRFuseWeight_(boolean aCheck) {
         if (aCheck) {
             if (mTypedWType!=WTYPE_FUSE && mTypedWType!=WTYPE_EXFUSE && mPostFuseWeight==null) return;
         }

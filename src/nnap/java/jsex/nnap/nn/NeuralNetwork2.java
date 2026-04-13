@@ -62,13 +62,19 @@ public abstract class NeuralNetwork2 implements ISavable {
         return rNN;
     }
     
-    /** 随机初始化内部可能存在的可拟合参数 */
-    public void initParameters() {/**/}
+    /** 随机初始化内部存在的可拟合参数 */
+    public abstract void initParameters();
+    
+    /** @return 内部参数组成的向量 */
+    public abstract IVector parameters();
+    /** @return 内部参数的长度 */
+    public abstract int parameterSize();
     
     /** @return 内部可拟合参数组成的向量 */
-    public abstract IVector parameters();
+    public abstract IVector fittableParameters();
     /** @return 内部可拟合参数的长度 */
-    public abstract int parameterSize();
+    public abstract int fittableParameterSize();
+    
     /** @return 梯度缓存的大小 */
     public abstract int gradCacheSize();
     
