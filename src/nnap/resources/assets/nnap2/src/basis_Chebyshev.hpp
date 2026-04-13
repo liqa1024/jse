@@ -44,10 +44,15 @@ static NNAP_DEVICE void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
     }
 }
 
-template <int WTYPE, int NMAX, int SIZE_NP, int REQUIRE_CACHE>
+template <int WTYPE, int NMAX, int SIZE_NP, int GRAD_PARAM, int REQUIRE_CACHE>
 static NNAP_DEVICE void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aGradFp,
                                       flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
-                                      flt_t **aForwardCache, flt_t **rBackwardCache, flt_t aRCut, flt_t *aParams) noexcept {
+                                      flt_t **aForwardCache, flt_t **rBackwardCache,
+                                      flt_t aRCut, flt_t *aParams, flt_t *rGradParams) noexcept {
+    if (GRAD_PARAM) {
+        // no param
+        if (WTYPE!=WTYPE_RFUSE && WTYPE!=WTYPE_FUSE && WTYPE!=WTYPE_EXFUSE) return;
+    }
     // init cache
     flt_t bRnGrad[REQUIRE_CACHE ? 1 : (NMAX+1)]; flt_t *rRnGrad = REQUIRE_CACHE ? NULL : bRnGrad;
     flt_t rCheby2[NMAX+1];
@@ -57,6 +62,7 @@ static NNAP_DEVICE void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, 
         rNlRnGrad = *rBackwardCache; *rBackwardCache += aNeiNum*(NMAX+1);
         rNlRnpGrad = *rBackwardCache; *rBackwardCache += aNeiNum*SIZE_NP;
     }
+    flt_t *rRn = rCheby2;
     // loop for neighbor
     for (int j = 0; j < aNeiNum; ++j) {
         // init nl
@@ -65,15 +71,25 @@ static NNAP_DEVICE void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, 
         flt_t dis = nnap_sqrt(dx*dx + dy*dy + dz*dz);
         // check rcut for merge
         if (dis >= aRCut) continue;
-        // cal RnGrad
-        if (REQUIRE_CACHE) rRnGrad = rNlRnGrad + j*(NMAX+1);
-        calRnGrad<NMAX>(rRnGrad, rCheby2, dis, aRCut);
+        if (GRAD_PARAM) {
+            // cal Rn
+            calRn<NMAX>(rRn, dis, aRCut);
+        } else {
+            // cal RnGrad
+            if (REQUIRE_CACHE) rRnGrad = rNlRnGrad + j*(NMAX+1);
+            calRnGrad<NMAX>(rRnGrad, rCheby2, dis, aRCut);
+        }
         // RnGrad to grad xyz
         if (WTYPE==WTYPE_RFUSE || WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) {
-            // cal RnpGrad here
-            if (REQUIRE_CACHE) rRnpGrad = rNlRnpGrad + j*SIZE_NP;
-            calRnpGrad<NMAX, SIZE_NP>(rRnpGrad, rRnGrad, aParams + (type-1)*(SIZE_NP*(NMAX+1)));
-            gradFp2xyz<SIZE_NP>(j, aGradFp, rRnpGrad, dx, dy, dz, rGradNlDx, rGradNlDy, rGradNlDz);
+            const int tParamShift = (type-1)*(SIZE_NP*(NMAX+1));
+            if (GRAD_PARAM) {
+                backwardGradFp<NMAX, SIZE_NP>(aGradFp, rRn, rGradParams+tParamShift);
+            } else {
+                // cal RnpGrad here
+                if (REQUIRE_CACHE) rRnpGrad = rNlRnpGrad + j*SIZE_NP;
+                calRnpGrad<NMAX, SIZE_NP>(rRnpGrad, rRnGrad, aParams+tParamShift);
+                gradFp2xyz<SIZE_NP>(j, aGradFp, rRnpGrad, dx, dy, dz, rGradNlDx, rGradNlDy, rGradNlDz);
+            }
         } else
         if (WTYPE==WTYPE_NONE) {
             gradFp2xyz<NMAX+1>(j, aGradFp, rRnGrad, dx, dy, dz, rGradNlDx, rGradNlDy, rGradNlDz);

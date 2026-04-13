@@ -215,6 +215,22 @@ static inline NNAP_DEVICE void mplusAnlmWt(flt_t *rAnlm, flt_t *rAnlmWt, flt_t a
 }
 
 
+template <int NMAX, int SIZE_NP, int LMAX>
+static inline NNAP_DEVICE void backwardGradAnlm(flt_t *aGradAnlm, flt_t *aY, flt_t *aRn, flt_t *rGradRFuseWeight) noexcept {
+    constexpr int tLMAll = (LMAX+1)*(LMAX+1);
+    flt_t *rGradWeight = rGradRFuseWeight;
+    flt_t *tGradAnlm = aGradAnlm;
+    for (int np = 0; np < SIZE_NP; ++np) {
+        flt_t tGradRnp = ZERO;
+        for (int k = 0; k < tLMAll; ++k) {
+            const flt_t subGradAnlm = tGradAnlm[k];
+            tGradRnp += aY[k] * subGradAnlm;
+        }
+        mplus<NMAX+1>(rGradWeight, tGradRnp, aRn);
+        tGradAnlm += tLMAll;
+        rGradWeight += (NMAX+1);
+    }
+}
 template <int SIZE_NP, int LMAX>
 static inline NNAP_DEVICE void gradAnlm2xyz(int j, flt_t *aGradAnlm, flt_t *rGradY, flt_t *aY, flt_t *aRnp,
                                             flt_t *aRnpGrad, flt_t *aYPtheta, flt_t *aYPphi,

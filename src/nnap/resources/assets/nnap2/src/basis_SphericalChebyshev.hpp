@@ -76,7 +76,10 @@ static NNAP_DEVICE void sphForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int
         rAnlm = bAnlm;
     }
     // do cal
-    calAnlm<WTYPE, NMAX, tLMaxMax, SIZE_NP, REQUIRE_CACHE>(aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rAnlm, rForwardCache, aRCut, aParams);
+    calAnlm<WTYPE, NMAX, tLMaxMax, SIZE_NP, REQUIRE_CACHE>(
+        aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rAnlm,
+        rForwardCache, aRCut, aParams
+    );
     // anlm -> fp
     constexpr int tSizeL2 = NORADIAL?LMAX:(LMAX+1);
     constexpr int tSizeL3 = L3NCOLS[L3MAX];
@@ -87,10 +90,11 @@ static NNAP_DEVICE void sphForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int
     }
 }
 
-template <int WTYPE, int NMAX, int LMAXMAX, int SIZE_NP, int REQUIRE_CACHE>
+template <int WTYPE, int NMAX, int LMAXMAX, int SIZE_NP, int GRAD_PARAM, int REQUIRE_CACHE>
 static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aGradAnlm,
                                      flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
-                                     flt_t **aForwardCache, flt_t **rBackwardCache, flt_t aRCut, flt_t *aParams) {
+                                     flt_t **aForwardCache, flt_t **rBackwardCache,
+                                     flt_t aRCut, flt_t *aParams, flt_t *rGradParams) {
     const int tLMAll = (LMAXMAX+1)*(LMAXMAX+1);
     // init cache
     flt_t *tNlRn = *aForwardCache; *aForwardCache += aNeiNum*(NMAX+1);
@@ -119,32 +123,41 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
         if (dis >= aRCut) continue;
         // get Y
         flt_t *tY = tNlY + j*tLMAll;
-        // cal YlmPthetaPphi
-        if (REQUIRE_CACHE) {
-            rYPtheta = rNlYPtheta + j*tLMAll;
-            rYPphi = rNlYPphi + j*tLMAll;
-        }
         flt_t thetaPx, thetaPy, thetaPz, phiPx, phiPy;
-        calYPthetaPphi<LMAXMAX>(
-            rYPtheta, rYPphi, tY, dx, dy, dz, dis,
-            thetaPx, thetaPy, thetaPz, phiPx, phiPy
-        );
+        if (!GRAD_PARAM) {
+            // cal YlmPthetaPphi
+            if (REQUIRE_CACHE) {
+                rYPtheta = rNlYPtheta + j*tLMAll;
+                rYPphi = rNlYPphi + j*tLMAll;
+            }
+            calYPthetaPphi<LMAXMAX>(
+                rYPtheta, rYPphi, tY, dx, dy, dz, dis,
+                thetaPx, thetaPy, thetaPz, phiPx, phiPy
+            );
+        }
         // get Rn here
         flt_t *tRn = tNlRn + j*(NMAX+1);
-        // cal RnGrad
-        if (REQUIRE_CACHE) rRnGrad = rNlRnGrad + j*(NMAX+1);
-        calRnGrad<NMAX>(rRnGrad, rCheby2, dis, aRCut);
+        if (!GRAD_PARAM) {
+            // cal RnGrad
+            if (REQUIRE_CACHE) rRnGrad = rNlRnGrad + j*(NMAX+1);
+            calRnGrad<NMAX>(rRnGrad, rCheby2, dis, aRCut);
+        }
         // grad anlm to gred xyz
         if (WTYPE==WTYPE_RFUSE || WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) {
-            // get Rnp here
-            flt_t *tRnp = tNlRnp + j*SIZE_NP;
-            // cal RnpGrad here
-            if (REQUIRE_CACHE) rRnpGrad = rNlRnpGrad + j*SIZE_NP;
-            calRnpGrad<NMAX, SIZE_NP>(rRnpGrad, rRnGrad, aParams + (type-1)*(SIZE_NP*(NMAX+1)));
-            gradAnlm2xyz<SIZE_NP, LMAXMAX>(j,
-                aGradAnlm, rGradY, tY, tRnp, rRnpGrad, rYPtheta, rYPphi,
-                dx, dy, dz, thetaPx, thetaPy, thetaPz, phiPx, phiPy, rGradNlDx, rGradNlDy, rGradNlDz
-            );
+            const int tParamShift = (type-1)*(SIZE_NP*(NMAX+1));
+            if (GRAD_PARAM) {
+                backwardGradAnlm<NMAX, SIZE_NP, LMAXMAX>(aGradAnlm, tY, tRn, rGradParams+tParamShift);
+            } else {
+                // get Rnp here
+                flt_t *tRnp = tNlRnp + j*SIZE_NP;
+                // cal RnpGrad here
+                if (REQUIRE_CACHE) rRnpGrad = rNlRnpGrad + j*SIZE_NP;
+                calRnpGrad<NMAX, SIZE_NP>(rRnpGrad, rRnGrad, aParams + tParamShift);
+                gradAnlm2xyz<SIZE_NP, LMAXMAX>(j,
+                    aGradAnlm, rGradY, tY, tRnp, rRnpGrad, rYPtheta, rYPphi,
+                    dx, dy, dz, thetaPx, thetaPy, thetaPz, phiPx, phiPy, rGradNlDx, rGradNlDy, rGradNlDz
+                );
+            }
         } else
         if (WTYPE==WTYPE_NONE) {
             gradAnlm2xyz<NMAX+1, LMAXMAX>(j,
@@ -176,10 +189,15 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
         }
     }
 }
-template <int WTYPE, int NMAX, int LMAX, int NORADIAL, int L3MAX, int L4MAX, int SIZE_NP, int REQUIRE_CACHE>
+template <int WTYPE, int NMAX, int LMAX, int NORADIAL, int L3MAX, int L4MAX, int SIZE_NP, int GRAD_PARAM, int REQUIRE_CACHE>
 static NNAP_DEVICE void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aGradFp,
                                     flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
-                                    flt_t **aForwardCache, flt_t **rBackwardCache, flt_t aRCut, flt_t *aParams) noexcept {
+                                    flt_t **aForwardCache, flt_t **rBackwardCache,
+                                    flt_t aRCut, flt_t *aParams, flt_t *rGradParams) noexcept {
+    if (GRAD_PARAM) {
+        // no param
+        if (WTYPE!=WTYPE_RFUSE && WTYPE!=WTYPE_FUSE && WTYPE!=WTYPE_EXFUSE) return;
+    }
     // const init
     constexpr int tSizeL = (NORADIAL?LMAX:(LMAX+1)) + L3NCOLS[L3MAX] + L4NCOLS[L4MAX];
     constexpr int tLMaxMax = LMAX>L3MAX ? (LMAX>L4MAX?LMAX:L4MAX) : (L3MAX>L4MAX?L3MAX:L4MAX);
@@ -203,7 +221,11 @@ static NNAP_DEVICE void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, in
         calGradSphL3<L3MAX>(tAnlm+tShift, rGradAnlm+tShift, aGradFp+tShiftFp+tSizeL2);
         calGradSphL4<L4MAX>(tAnlm+tShift, rGradAnlm+tShift, aGradFp+tShiftFp+tSizeL2+tSizeL3);
     }
-    backwardAnlm<WTYPE, NMAX, tLMaxMax, SIZE_NP, REQUIRE_CACHE>(aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rGradAnlm, rGradNlDx, rGradNlDy, rGradNlDz, aForwardCache, rBackwardCache, aRCut, aParams);
+    backwardAnlm<WTYPE, NMAX, tLMaxMax, SIZE_NP, GRAD_PARAM, REQUIRE_CACHE>(
+        aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rGradAnlm,
+        rGradNlDx, rGradNlDy, rGradNlDz, aForwardCache, rBackwardCache,
+        aRCut, aParams, rGradParams
+    );
 }
 
 }

@@ -91,10 +91,10 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_calEnergyForce(void *aDataIn, void 
         NULL, rNnGradCache, JSE_NNAP::ONE
     );
     if (code!=0) return code;
-    code = JSE_NNAP::fpBackward<__NNAPGENS_ctype__, JSE_NNAP::FALSE>(
+    code = JSE_NNAP::fpBackward<__NNAPGENS_ctype__, JSE_NNAP::FALSE, JSE_NNAP::FALSE>(
         tNlDx, tNlDy, tNlDz, tNlType, tNeiNum, ctype, rLayers,
-        rGradNlDx, rGradNlDy, rGradNlDz,
-        tFpHyperParam, tFpParam, rFpForwardCache, NULL
+        rGradNlDx, rGradNlDy, rGradNlDz, tFpHyperParam,
+        tFpParam, NULL, rFpForwardCache, NULL
     );
     if (code!=0) return code;
 // <<< NNAPGEN SWITCH (ctype) [FP NN TYPE]
@@ -244,10 +244,10 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammps(void *aDataIn, void *
                 NULL, rNnGradCache, JSE_NNAP::ONE
             );
             if (code!=0) return code;
-            code = JSE_NNAP::fpBackward<__NNAPGENS_typeiNNAP__, JSE_NNAP::FALSE>(
+            code = JSE_NNAP::fpBackward<__NNAPGENS_typeiNNAP__, JSE_NNAP::FALSE, JSE_NNAP::FALSE>(
                 tNlDx, tNlDy, tNlDz, tNlType, tNeiNum, typeiNNAP, rLayers,
-                rGradNlDx, rGradNlDy, rGradNlDz,
-                tFpHyperParam, tFpParam, rFpForwardCache, NULL
+                rGradNlDx, rGradNlDy, rGradNlDz, tFpHyperParam,
+                tFpParam, NULL, rFpForwardCache, NULL
             );
             if (code!=0) return code;
 // <<< NNAPGEN SWITCH (typeiNNAP) [FP NN TYPE]
