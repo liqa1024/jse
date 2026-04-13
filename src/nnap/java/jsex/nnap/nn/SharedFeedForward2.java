@@ -318,9 +318,6 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
     @Override public int parameterSize() {
         return mBase.parameterSize();
     }
-    @Override public int gradCacheSize() {
-        return mBase.gradCacheSize();
-    }
     public int inputSize() {
         return mInputDim;
     }

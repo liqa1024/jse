@@ -75,9 +75,6 @@ public abstract class NeuralNetwork2 implements ISavable {
     /** @return 内部可拟合参数的长度 */
     public abstract int fittableParameterSize();
     
-    /** @return 梯度缓存的大小 */
-    public abstract int gradCacheSize();
-    
     /** 更新内部 code gen 的 map，将参数编码进 jit */
     public abstract void updateGenMap(Map<String, Object> rGenMap, int aGenIdx);
     /** 本基组是否和输入的基组有着相同的 code gen map，相同时则会简单合并简化最终的 jit 代码 */

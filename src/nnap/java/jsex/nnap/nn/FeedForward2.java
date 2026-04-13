@@ -214,9 +214,6 @@ public class FeedForward2 extends NeuralNetwork2 {
     @Override public int parameterSize() {
         return fittableParameterSize();
     }
-    @Override public int gradCacheSize() {
-        return mHiddenBiasesSize;
-    }
     public int inputSize() {
         return mInputDim;
     }
@@ -225,14 +222,8 @@ public class FeedForward2 extends NeuralNetwork2 {
     }
     
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
-        int tHiddenDimMax = -1;
-        for (int i = 0; i < mNumLayers; ++i) {
-            tHiddenDimMax = Math.max(tHiddenDimMax, mHiddenDims[i]);
-        }
         rGenMap.put("[NN USE "+aGenIdx+"]", "feed_forward");
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_IN", mInputDim);
-        rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_CACHEG", gradCacheSize());
-        rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_HMAX", tHiddenDimMax);
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_HW", mHiddenWeightsSize);
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_HB", mHiddenBiasesSize);
         rGenMap.put(aGenIdx+":NNAPGEN_NN_SIZE_OW", mOutputWeightSize);

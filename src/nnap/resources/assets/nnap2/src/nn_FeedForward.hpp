@@ -25,8 +25,6 @@ static inline NNAP_DEVICE flt_t siluGradGrad(flt_t aX, flt_t *rGrad, flt_t *rGra
 #define __NNAPGENXX_NN_IN_SIZE__ 84
 #define __NNAPGENXX_NN_OUT_SIZE__ 32
 #define __NNAPGENX_NN_SIZE_IN__ 84
-#define __NNAPGENX_NN_SIZE_CACHEG__ 32
-#define __NNAPGENX_NN_SIZE_HMAX__ 32
 #define __NNAPGENX_NN_SIZE_HW__ (84*32)
 #define __NNAPGENX_NN_SIZE_HB__ 32
 #define __NNAPGENX_NN_SIZE_OW__ 32
@@ -36,11 +34,11 @@ static inline NNAP_DEVICE flt_t siluGradGrad(flt_t aX, flt_t *rGrad, flt_t *rGra
 
 
 template <int IN_SIZE, int OUT_SIZE, int CACHE_GRAD>
-static NNAP_DEVICE void nnForwardLayer(flt_t *aX, flt_t *rY, flt_t *aWeights, flt_t *aBiases, flt_t *rSiLUGrad) noexcept {
-    flt_t *tWeights = aWeights;
+static NNAP_DEVICE void nnForwardLayer(flt_t *aX, flt_t *rY, flt_t *aWeight, flt_t *aBias, flt_t *rSiLUGrad) noexcept {
+    flt_t *tWeight = aWeight;
     for (int j = 0; j < OUT_SIZE; ++j) {
-        const flt_t tDot = dot<IN_SIZE>(aX, tWeights) + aBiases[j];
-        tWeights += IN_SIZE;
+        const flt_t tDot = dot<IN_SIZE>(aX, tWeight) + aBias[j];
+        tWeight += IN_SIZE;
         if (CACHE_GRAD) {
             flt_t rGrad;
             rY[j] = siluGrad(tDot, &rGrad);
@@ -53,91 +51,94 @@ static NNAP_DEVICE void nnForwardLayer(flt_t *aX, flt_t *rY, flt_t *aWeights, fl
 
 
 template <int CTYPE_GEN, int CACHE_GRAD>
-static NNAP_DEVICE flt_t nnForward(flt_t *aX, flt_t *aHiddenWeights, flt_t *aHiddenBiases,
-                                   flt_t *aOutputWeights, flt_t aOutputBias, flt_t *rGradCache) noexcept {
+static NNAP_DEVICE flt_t nnForward(flt_t *rLayers, flt_t *aWeights, flt_t *aBiases, flt_t *rGradCache) noexcept {
     flt_t rOut;
 // >>> NNAPGEN SWITCH
-    flt_t bHidden1[__NNAPGENX_NN_SIZE_HMAX__];
-    flt_t bHidden2[__NNAPGENX_NN_SIZE_HMAX__];
-    flt_t *tSubX = aX;
-    flt_t *rSubY = bHidden2;
-    flt_t *tmp_ = NULL;
+    flt_t *tSubX = rLayers;
+    flt_t *rSubY = rLayers + __NNAPGENX_NN_SIZE_IN__;
     
-    flt_t *tWeights = aHiddenWeights;
-    flt_t *tBiases = aHiddenBiases;
+    flt_t *tWeight = aWeights;
+    flt_t *tBias = aBiases;
     flt_t *rSiLUGrad = rGradCache;
     
 // >>> NNAPGEN REPEAT
-    nnForwardLayer<__NNAPGENXX_NN_IN_SIZE__, __NNAPGENXX_NN_OUT_SIZE__, CACHE_GRAD>(tSubX, rSubY, tWeights, tBiases, rSiLUGrad);
-    tWeights += __NNAPGENXX_NN_IN_SIZE__*__NNAPGENXX_NN_OUT_SIZE__;
-    tBiases += __NNAPGENXX_NN_OUT_SIZE__;
-    if (__NNAPGENOS_X__==0) {
-        tSubX = rSubY;
-        rSubY = bHidden1;
-    } else {
-        // swap x & y
-        tmp_ = tSubX;
-        tSubX = rSubY;
-        rSubY = tmp_;
-    }
-    if (CACHE_GRAD) {
-        rSiLUGrad += __NNAPGENXX_NN_OUT_SIZE__;
-    }
+    nnForwardLayer<__NNAPGENXX_NN_IN_SIZE__, __NNAPGENXX_NN_OUT_SIZE__, CACHE_GRAD>(tSubX, rSubY, tWeight, tBias, rSiLUGrad);
+    tWeight += __NNAPGENXX_NN_IN_SIZE__*__NNAPGENXX_NN_OUT_SIZE__;
+    tBias += __NNAPGENXX_NN_OUT_SIZE__;
+    tSubX = rSubY;
+    rSubY += __NNAPGENXX_NN_OUT_SIZE__;
+    if (CACHE_GRAD) rSiLUGrad += __NNAPGENXX_NN_OUT_SIZE__;
 // <<< NNAPGEN REPEAT 0..<[NN HIDDEN LAYERS __NNAPGENS_X__]
     
-    rOut = dot<__NNAPGENX_NN_SIZE_OW__>(tSubX, aOutputWeights) + aOutputBias;
+    rOut = dot<__NNAPGENX_NN_SIZE_OW__>(tSubX, tWeight) + tBias[0];
 // <<< NNAPGEN SWITCH (CTYPE_GEN) [NN TYPE]
     return rOut;
 }
 
 
-template <int IN_SIZE, int OUT_SIZE>
-static NNAP_DEVICE void nnBackwardLayer(flt_t *rGradX, flt_t *aGradY, flt_t *aWeights, flt_t *aSiLUGrad) noexcept {
-    flt_t *tWeights = aWeights;
+template <int IN_SIZE, int OUT_SIZE, int REQUIRE_GRAD>
+static NNAP_DEVICE void nnBackwardLayer(flt_t *aX, flt_t *rGradX, flt_t *aGradY, flt_t *aWeight,
+                                        flt_t *rGradWeight, flt_t *rGradBias, flt_t *aSiLUGrad) noexcept {
+    flt_t *tWeight = aWeight;
+    flt_t *tGradWeight = REQUIRE_GRAD ? rGradWeight : NULL;
     for (int j = 0; j < OUT_SIZE; ++j) {
         flt_t tGradZ =  aSiLUGrad[j] * aGradY[j];
-        mplus<IN_SIZE>(rGradX, tGradZ, tWeights);
-        tWeights += IN_SIZE;
+        mplus<IN_SIZE>(rGradX, tGradZ, tWeight);
+        tWeight += IN_SIZE;
+        if (REQUIRE_GRAD) {
+            mplus<IN_SIZE>(tGradWeight, tGradZ, aX);
+            rGradBias[j] += tGradZ;
+            tGradWeight += IN_SIZE;
+        }
     }
 }
 
-template <int CTYPE_GEN>
-static NNAP_DEVICE void nnBackward(flt_t aGradY, flt_t *rGradX, flt_t *aHiddenWeights,
-                                   flt_t *aOutputWeight, flt_t *aGradCache) noexcept {
+template <int CTYPE_GEN, int REQUIRE_GRAD>
+static NNAP_DEVICE void nnBackward(flt_t aGradY, flt_t *aLayers, flt_t *rGradLayers, flt_t *aWeights,
+                                   flt_t *rGradWeights, flt_t *rGradBiases, flt_t *aGradCache) noexcept {
 // >>> NNAPGEN SWITCH
-    flt_t bHidden1[__NNAPGENX_NN_SIZE_HMAX__] = {0};
-    flt_t bHidden2[__NNAPGENX_NN_SIZE_HMAX__] = {0};
-    flt_t *rSubGradX = bHidden2;
+    flt_t *rSubGradX = rGradLayers;
     flt_t *tSubGradY = NULL;
-    flt_t *tmp_ = NULL;
-    flt_t *tWeights = aHiddenWeights;
+    flt_t *tWeight = aWeights;
     flt_t *tSiLUGrad = aGradCache;
+    flt_t *tSubX = REQUIRE_GRAD ? aLayers : NULL;
+    flt_t *tGradWeight = REQUIRE_GRAD ? rGradWeights : NULL;
+    flt_t *tGradBias = REQUIRE_GRAD ? rGradBiases : NULL;
     
     // switch to last layer
-    tWeights += __NNAPGENX_NN_SIZE_HW__;
-    tSiLUGrad += __NNAPGENX_NN_SIZE_CACHEG__;
+    tWeight += __NNAPGENX_NN_SIZE_HW__;
+    tSiLUGrad += __NNAPGENX_NN_SIZE_HB__;
+    rSubGradX += (__NNAPGENX_NN_SIZE_IN__+__NNAPGENX_NN_SIZE_HB__);
+    if (REQUIRE_GRAD) {
+        tGradWeight += __NNAPGENX_NN_SIZE_HW__;
+        tGradBias += __NNAPGENX_NN_SIZE_HB__;
+        tSubX += (__NNAPGENX_NN_SIZE_IN__+__NNAPGENX_NN_SIZE_HB__);
+    }
     
     // begin backward
-    mplus<__NNAPGENX_NN_SIZE_OW__>(rSubGradX, aGradY, aOutputWeight);
-// >>> NNAPGEN REPEAT
-    tWeights -= __NNAPGENXX_NN_IN_SIZE__*__NNAPGENXX_NN_OUT_SIZE__;
-    tSiLUGrad -= __NNAPGENXX_NN_OUT_SIZE__;
-    if (__NNAPGENOS_X__==0) {
-        tSubGradY = rSubGradX;
-        rSubGradX = rGradX;
-    } else {
-        if (__NNAPGENOS_X__==__NNAPGENX_NN_NLAYERS__-1) {
-            tSubGradY = rSubGradX;
-            rSubGradX = bHidden1;
-        } else {
-            // swap x & y
-            tmp_ = tSubGradY;
-            tSubGradY = rSubGradX;
-            rSubGradX = tmp_;
-            fill<__NNAPGENXX_NN_IN_SIZE__>(rSubGradX, ZERO);
-        }
+    rSubGradX -= __NNAPGENX_NN_SIZE_OW__;
+    mplus<__NNAPGENX_NN_SIZE_OW__>(rSubGradX, aGradY, tWeight);
+    if (REQUIRE_GRAD) {
+        tSubX -= __NNAPGENX_NN_SIZE_OW__;
+        // output weight
+        mplus<__NNAPGENX_NN_SIZE_OW__>(tGradWeight, aGradY, tSubX);
+        // output bias
+        tGradBias[0] += aGradY;
     }
-    nnBackwardLayer<__NNAPGENXX_NN_IN_SIZE__, __NNAPGENXX_NN_OUT_SIZE__>(rSubGradX, tSubGradY, tWeights, tSiLUGrad);
+// >>> NNAPGEN REPEAT
+    tWeight -= __NNAPGENXX_NN_IN_SIZE__*__NNAPGENXX_NN_OUT_SIZE__;
+    tSiLUGrad -= __NNAPGENXX_NN_OUT_SIZE__;
+    tSubGradY = rSubGradX;
+    rSubGradX -= __NNAPGENXX_NN_IN_SIZE__;
+    if (REQUIRE_GRAD) {
+        tGradWeight -= __NNAPGENXX_NN_IN_SIZE__*__NNAPGENXX_NN_OUT_SIZE__;
+        tGradBias -= __NNAPGENXX_NN_OUT_SIZE__;
+        tSubX -= __NNAPGENXX_NN_IN_SIZE__;
+    }
+    nnBackwardLayer<__NNAPGENXX_NN_IN_SIZE__, __NNAPGENXX_NN_OUT_SIZE__, REQUIRE_GRAD>(
+        tSubX, rSubGradX, tSubGradY, tWeight,
+        tGradWeight, tGradBias, tSiLUGrad
+    );
 // <<< NNAPGEN REPEAT [NN HIDDEN LAYERS __NNAPGENS_X__]<..0
 
 // <<< NNAPGEN SWITCH (CTYPE_GEN) [NN TYPE]

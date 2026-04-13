@@ -65,7 +65,7 @@ static NNAP_DEVICE int fpForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *
 }
 
 template <int CTYPE_GEN, int CACHE_GRAD>
-static NNAP_DEVICE int normedNnForward(int cType, flt_t *rFp, flt_t *aNormParam, flt_t **aNnParam,
+static NNAP_DEVICE int normedNnForward(int cType, flt_t *rLayers, flt_t *aNormParam, flt_t **aNnParam,
                                        flt_t *rNnGradCache, flt_t *rOutEng) noexcept {
     flt_t tNormMuEng = aNormParam[0];
     flt_t tNormSigmaEng = aNormParam[1];
@@ -76,22 +76,48 @@ static NNAP_DEVICE int normedNnForward(int cType, flt_t *rFp, flt_t *aNormParam,
     flt_t *tNormSigma = tNormMu + __NNAPGENX_NN_SIZE_IN__;
     // norm fp here
     for (int i = 0; i < __NNAPGENX_NN_SIZE_IN__; ++i) {
-        rFp[i] = (rFp[i] - tNormMu[i]) / tNormSigma[i];
+        rLayers[i] = (rLayers[i] - tNormMu[i]) / tNormSigma[i];
     }
-    flt_t *tHiddenWeights = aNnParam[cType-1];
-    flt_t *tOutputWeights = tHiddenWeights + __NNAPGENX_NN_SIZE_HW__;
-    flt_t *tHiddenBiases = tOutputWeights + __NNAPGENX_NN_SIZE_OW__;
-    flt_t tOutputBias = tHiddenBiases[__NNAPGENX_NN_SIZE_HB__];
+    flt_t *tWeights = aNnParam[cType-1];
+    flt_t *tBiases = tWeights + (__NNAPGENX_NN_SIZE_HW__+__NNAPGENX_NN_SIZE_OW__);
 // >>> NNAPGEN PICK
 // --- NNAPGEN PICK: feed_forward
     flt_t tEng = nnForward<__NNAPGENS_CTYPE_GEN__, CACHE_GRAD>(
-        rFp, tHiddenWeights, tHiddenBiases,
-        tOutputWeights, tOutputBias, CACHE_GRAD?rNnGradCache:NULL
+        rLayers, tWeights, tBiases, CACHE_GRAD?rNnGradCache:NULL
     );
 // <<< NNAPGEN PICK [NN USE __NNAPGENS_X__]
     // denorm energy here
     tEng = tEng*tNormSigmaEng + tNormMuEng;
     *rOutEng = tEng;
+    flag = 0;
+// <<< NNAPGEN SWITCH (CTYPE_GEN) [NN TYPE]
+    if (flag) return 1;
+    return 0;
+}
+
+template <int CTYPE_GEN, int REQUIRE_GRAD>
+static NNAP_DEVICE int normedNnBackward(int cType, flt_t *aLayers, flt_t *rGradLayers, flt_t *aNormParam, flt_t **aNnParam,
+                                        flt_t **rGradNnParam, flt_t *aNnGradCache, flt_t aInGradEng) noexcept {
+    flt_t tNormSigmaEng = aNormParam[1];
+    int flag = 1;
+// >>> NNAPGEN SWITCH
+    // denorm energy here
+    aInGradEng = aInGradEng*tNormSigmaEng;
+    flt_t *tWeights = aNnParam[cType-1];
+    flt_t *rGradWeights = REQUIRE_GRAD ? rGradNnParam[cType-1] : NULL;
+    flt_t *rGradBiases = REQUIRE_GRAD ? (rGradWeights + (__NNAPGENX_NN_SIZE_HW__+__NNAPGENX_NN_SIZE_OW__)) : NULL;
+// >>> NNAPGEN PICK
+// --- NNAPGEN PICK: feed_forward
+    nnBackward<__NNAPGENS_CTYPE_GEN__, REQUIRE_GRAD>(
+        aInGradEng, aLayers, rGradLayers, tWeights,
+        rGradWeights, rGradBiases, aNnGradCache
+    );
+// <<< NNAPGEN PICK [NN USE __NNAPGENS_X__]
+    flt_t *tNormSigma = aNormParam + (2+__NNAPGENX_NN_SIZE_IN__);
+    // denorm fp here
+    for (int i = 0; i < __NNAPGENX_NN_SIZE_IN__; ++i) {
+        rGradLayers[i] /= tNormSigma[i];
+    }
     flag = 0;
 // <<< NNAPGEN SWITCH (CTYPE_GEN) [NN TYPE]
     if (flag) return 1;
@@ -137,33 +163,6 @@ static NNAP_DEVICE int fpBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int 
 // <<< NNAPGEN REPEAT 0..<[FP MERGE __NNAPGENS_X__]
     flag = 0;
 // <<< NNAPGEN SWITCH (CTYPE_GEN) [FP TYPE]
-    if (flag) return 1;
-    return 0;
-}
-
-template <int CTYPE_GEN>
-static NNAP_DEVICE int normedNnBackward(int cType, flt_t *rGradFp, flt_t *aNormParam, flt_t **aNnParam, flt_t *aNnGradCache, flt_t aInGradEng) noexcept {
-    flt_t tNormSigmaEng = aNormParam[1];
-    int flag = 1;
-// >>> NNAPGEN SWITCH
-    // denorm energy here
-    aInGradEng = aInGradEng*tNormSigmaEng;
-    flt_t *tHiddenWeights = aNnParam[cType-1];
-    flt_t *tOutputWeights = tHiddenWeights + __NNAPGENX_NN_SIZE_HW__;
-// >>> NNAPGEN PICK
-// --- NNAPGEN PICK: feed_forward
-    nnBackward<__NNAPGENS_CTYPE_GEN__>(
-        aInGradEng, rGradFp, tHiddenWeights,
-        tOutputWeights, aNnGradCache
-    );
-// <<< NNAPGEN PICK [NN USE __NNAPGENS_X__]
-    flt_t *tNormSigma = aNormParam + (2+__NNAPGENX_NN_SIZE_IN__);
-    // denorm fp here
-    for (int i = 0; i < __NNAPGENX_NN_SIZE_IN__; ++i) {
-        rGradFp[i] /= tNormSigma[i];
-    }
-    flag = 0;
-// <<< NNAPGEN SWITCH (CTYPE_GEN) [NN TYPE]
     if (flag) return 1;
     return 0;
 }
