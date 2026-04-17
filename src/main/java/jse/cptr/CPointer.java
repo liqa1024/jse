@@ -188,11 +188,10 @@ public class CPointer implements ICPointer {
     protected native static void free0(long aPtr);
     
     /**
-     * 拷贝一份 c 指针包装类，注意此方法不会实际拷贝内部
-     * c 指针对应的内存，因此返回对象内部存储了相同的 c 指针
-     * @return 拷贝的 c 指针包装类，包含相同的 c 指针
+     * {@inheritDoc}
+     * @return {@inheritDoc}
      */
-    public CPointer copy() {
+    @Override public CPointer copy() {
         return new CPointer(mPtr);
     }
     @Override public final boolean equals(Object aRHS) {

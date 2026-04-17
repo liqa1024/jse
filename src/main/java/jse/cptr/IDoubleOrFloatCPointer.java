@@ -89,6 +89,31 @@ public interface IDoubleOrFloatCPointer extends ICPointer {
     /**
      * 方便使用的兼容接口
      * <p>
+     * 将给定输入数值填充到此 c 指针对应的内存中
+     * <p>
+     * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
+     *
+     * @param aValue 需要填充的数值
+     * @param aCount 需要读取的 aData 的长度
+     */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
+    void fillD(double aValue, long aCount);
+    /**
+     * 方便使用的兼容接口
+     * <p>
+     * 将给定输入数值填充到此 c 指针对应的内存中
+     * <p>
+     * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
+     *
+     * @param aValue 需要填充的数值
+     * @param aCount 需要读取的 aData 的长度
+     */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
+    void fillF(float aValue, long aCount);
+    
+    /**
+     * 方便使用的兼容接口
+     * <p>
      * 将此 c 指针对应的内存数值写入 jse 的 {@code IDataShell<double[]>} 中
      * <p>
      * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
@@ -241,4 +266,5 @@ public interface IDoubleOrFloatCPointer extends ICPointer {
     @Override void previous();
     @Override void leftShift(long aCount);
     @Override IDoubleOrFloatCPointer minus(long aCount);
+    @Override IDoubleOrFloatCPointer copy();
 }

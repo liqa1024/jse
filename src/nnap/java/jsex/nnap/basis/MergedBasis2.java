@@ -1,9 +1,12 @@
 package jsex.nnap.basis;
 
+import jse.code.Conf;
 import jse.code.collection.NewCollections;
+import jse.cptr.IDoubleOrFloatCPointer;
+import jse.math.IDataShell;
 import jse.math.vector.IVector;
 import jse.math.vector.RefVector;
-import org.jetbrains.annotations.Nullable;
+import jse.math.vector.ShiftVector;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -17,9 +20,6 @@ public class MergedBasis2 extends Basis2 {
     private final MergeableBasis2[] mMergedBasis;
     private final double mRCut;
     private final int mSize, mTotParaSize, mTotHyperParaSize, mTotFitParaSize;
-    private final IVector[] mParas;
-    private final IVector[] mHyperParas;
-    private final @Nullable IVector[] mFitParas;
     private final int[] mParaSizes, mHyperParaSizes, mFitParaSizes;
     
     public MergedBasis2(MergeableBasis2... aMergedBasis) {
@@ -37,26 +37,17 @@ public class MergedBasis2 extends Basis2 {
         mRCut = tRCut;
         mSize = tSize;
         // init para stuff
-        mParas = new IVector[mMergedBasis.length];
-        mHyperParas = new IVector[mMergedBasis.length];
-        mFitParas = new IVector[mMergedBasis.length];
         mParaSizes = new int[mMergedBasis.length];
         mHyperParaSizes = new int[mMergedBasis.length];
         mFitParaSizes = new int[mMergedBasis.length];
         int tTotParaSize = 0, tTotHyperParaSize = 0, tTotFitParaSize = 0;
         for (int i = 0; i < mMergedBasis.length; ++i) {
-            IVector tPara = mMergedBasis[i].parameters();
-            mParas[i] = tPara;
             int tSizePara = mMergedBasis[i].parameterSize();
             mParaSizes[i] = tSizePara;
             tTotParaSize += tSizePara;
-            IVector tHyperPara = mMergedBasis[i].hyperParameters();
-            mHyperParas[i] = tHyperPara;
             int tSizeHyperPara = mMergedBasis[i].hyperParameterSize();
             mHyperParaSizes[i] = tSizeHyperPara;
             tTotHyperParaSize += tSizeHyperPara;
-            IVector tFitPara = mMergedBasis[i].hasFittableParameters() ? mMergedBasis[i].fittableParameters() : null;
-            mFitParas[i] = tFitPara;
             int tSizeFitPara = mMergedBasis[i].fittableParameterSize();
             mFitParaSizes[i] = tSizeFitPara;
             tTotFitParaSize += tSizeFitPara;
@@ -69,48 +60,23 @@ public class MergedBasis2 extends Basis2 {
         return mMergedBasis.length;
     }
     
-    @Override public IVector parameters() {
-        return new RefVector() {
-            @Override public double get(int aIdx) {
-                int tIdx = aIdx;
-                for (int i = 0; i < mMergedBasis.length; ++i) {
-                    int tParaSize = mParaSizes[i];
-                    if (tIdx < tParaSize) {
-                        IVector tPara = mParas[i];
-                        assert tPara != null;
-                        return tPara.get(tIdx);
-                    }
-                    tIdx -= tParaSize;
-                }
-                throw new IndexOutOfBoundsException(String.valueOf(aIdx));
-            }
-            @Override public int size() {
-                return mTotParaSize;
-            }
-        };
+    @Override public void mountParameter(IDoubleOrFloatCPointer aPtr) {
+        IDoubleOrFloatCPointer tPtr = aPtr.copy();
+        for (int i = 0; i < mMergedBasis.length; ++i) {
+            mMergedBasis[i].mountParameter(tPtr);
+            tPtr.rightShift(mParaSizes[i]);
+        }
     }
     @Override public int parameterSize() {
         return mTotParaSize;
     }
     
-    @Override public IVector hyperParameters() {
-        return new RefVector() {
-            @Override public double get(int aIdx) {
-                int tIdx = aIdx;
-                for (int i = 0; i < mMergedBasis.length; ++i) {
-                    int tHyperParaSize = mHyperParaSizes[i];
-                    if (tIdx < tHyperParaSize) {
-                        IVector tHyperPara = mHyperParas[i];
-                        return tHyperPara.get(tIdx);
-                    }
-                    tIdx -= tHyperParaSize;
-                }
-                throw new IndexOutOfBoundsException(String.valueOf(aIdx));
-            }
-            @Override public int size() {
-                return mTotHyperParaSize;
-            }
-        };
+    @Override public void mountHyperParameter(IDoubleOrFloatCPointer aPtr) {
+        IDoubleOrFloatCPointer tPtr = aPtr.copy();
+        for (int i = 0; i < mMergedBasis.length; ++i) {
+            mMergedBasis[i].mountHyperParameter(tPtr);
+            tPtr.rightShift(mHyperParaSizes[i]);
+        }
     }
     @Override public int hyperParameterSize() {
         return mTotHyperParaSize;
@@ -119,48 +85,22 @@ public class MergedBasis2 extends Basis2 {
     @Override public void initParameters() {
         for (MergeableBasis2 tBasis : mMergedBasis) tBasis.initParameters();
     }
-    @Override public IVector fittableParameters() {
-        return new RefVector() {
-            @Override public double get(int aIdx) {
-                int tIdx = aIdx;
-                for (int i = 0; i < mMergedBasis.length; ++i) {
-                    int tFitParaSize = mFitParaSizes[i];
-                    if (tIdx < tFitParaSize) {
-                        IVector tFitPara = mFitParas[i];
-                        assert tFitPara != null;
-                        return tFitPara.get(tIdx);
-                    }
-                    tIdx -= tFitParaSize;
-                }
-                throw new IndexOutOfBoundsException(String.valueOf(aIdx));
-            }
-            @Override public void set(int aIdx, double aValue) {
-                int tIdx = aIdx;
-                for (int i = 0; i < mMergedBasis.length; ++i) {
-                    int tFitParaSize = mFitParaSizes[i];
-                    if (tIdx < tFitParaSize) {
-                        IVector tFitPara = mFitParas[i];
-                        assert tFitPara != null;
-                        tFitPara.set(tIdx, aValue);
-                        return;
-                    }
-                    tIdx -= tFitParaSize;
-                }
-                throw new IndexOutOfBoundsException(String.valueOf(aIdx));
-            }
-            @Override public int size() {
-                return mTotFitParaSize;
-            }
-        };
+    @Override public void mountFittableParameter(IDataShell<double[]> aData) {
+        if (Conf.OPERATION_CHECK) {
+            if (mTotFitParaSize != aData.internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+        } else {
+            if (mTotFitParaSize > aData.internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+        }
+        double[] tData = aData.internalData();
+        int tShift = aData.internalDataShift();
+        for (int i = 0; i < mMergedBasis.length; ++i) {
+            int tSize = mFitParaSizes[i];
+            mMergedBasis[i].mountFittableParameter(new ShiftVector(tSize, tShift, tData));
+            tShift += tSize;
+        }
     }
     @Override public int fittableParameterSize() {
         return mTotFitParaSize;
-    }
-    @Override public boolean hasFittableParameters() {
-        for (MergeableBasis2 tBasis : mMergedBasis) {
-            if (tBasis.hasFittableParameters()) return true;
-        }
-        return false;
     }
     
     @Override public double rcut() {return mRCut;}

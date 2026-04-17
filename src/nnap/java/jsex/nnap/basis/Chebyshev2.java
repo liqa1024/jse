@@ -1,7 +1,6 @@
 package jsex.nnap.basis;
 
 import jse.code.UT;
-import jse.math.matrix.RowMatrix;
 import jse.math.vector.Vector;
 import org.jetbrains.annotations.Nullable;
 
@@ -18,7 +17,7 @@ public class Chebyshev2 extends WTypeBasis2 {
     
     final int mSize;
     
-    Chebyshev2(double aRCut, int aNumTypes, int aNMax, int aWType, @Nullable RowMatrix aFuseWeight, @Nullable Vector aPostFuseWeight, double @Nullable[] aPostFuseScale) {
+    Chebyshev2(double aRCut, int aNumTypes, int aNMax, int aWType, @Nullable Vector aFuseWeight, @Nullable Vector aPostFuseWeight, double @Nullable[] aPostFuseScale) {
         super(aRCut, aNumTypes, aNMax, aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale);
         mSize = mSizeNP;
     }
@@ -36,8 +35,8 @@ public class Chebyshev2 extends WTypeBasis2 {
         if (aMap.containsKey("rfunc_scales")) throw new IllegalArgumentException("rfunc_scales is invalid now.");
         if (aMap.containsKey("system_scales")) throw new IllegalArgumentException("system_scales is invalid now.");
         int aWType = getWType_(aMap);
-        RowMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aNumTypes);
-        int tFuseSize = getFuseSize(aWType, aFuseWeight);
+        Vector aFuseWeight = getFuseWeight_(aMap, aWType, aNumTypes);
+        int tFuseSize = getFuseSize(aWType, aNumTypes, aFuseWeight);
         int tSizeN = getSizeN_(aWType, aNumTypes, aNMax, tFuseSize);
         Vector aPostFuseWeight = getPostFuseWeight_(aMap, tSizeN);
         double[] aPostFuseScale = aPostFuseWeight==null ? null : new double[1];

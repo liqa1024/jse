@@ -2,6 +2,7 @@ package jsex.nnap.nn;
 
 import jse.code.UT;
 import jse.code.collection.AbstractCollections;
+import jse.cptr.IDoubleOrFloatCPointer;
 import jse.math.MathEX;
 import jse.math.matrix.Matrices;
 import jse.math.matrix.RowMatrix;
@@ -31,14 +32,17 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
     
     private final int mInputDim;
     private final int[] mSharedHiddenDims;
-    private final Vector mNoSharedHiddenWeights, mInternalHiddenWeights;
-    private final Vector mNoSharedHiddenBiases, mInternalHiddenBiases;
+    private final Vector mNoSharedHiddenWeights;
+    private final Vector mNoSharedHiddenBiases;
     private final Vector mNoSharedOutputWeight;
     private final double[] mNoSharedOutputBias;
     private final int mNumLayers;
     private final int mNoSharedHiddenWeightsSize;
     private final int mNoSharedHiddenBiasesSize;
     private final int mNoSharedOutputWeightSize, mNoSharedOutputBiasSize;
+    
+    private IDoubleOrFloatCPointer mInternalHiddenWeights = null, mInternalHiddenBiases = null;
+    private IDoubleOrFloatCPointer mInternalOutputWeight = null, mInternalOutputBias = null;
     
     SharedFeedForward2(int aInputDim, FeedForward2 aBase, int aSharedType, int[] aSharedHiddenDims, Vector aNoSharedHiddenWeights, Vector aNoSharedHiddenBiases, Vector aNoSharedOutputWeight, double[] aNoSharedOutputBias) {
         mInputDim = aInputDim;
@@ -80,37 +84,43 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
         mNoSharedOutputBias = aNoSharedOutputBias ==null ? new double[mNoSharedOutputBiasSize] : aNoSharedOutputBias;
         if (mNoSharedOutputWeight.internalDataSize() != mNoSharedOutputWeightSize) throw new IllegalArgumentException("The size of output weight mismatch");
         if (mNoSharedOutputBias.length != mNoSharedOutputBiasSize) throw new IllegalArgumentException("The size of output biases mismatch");
-        
-        mInternalHiddenWeights = Vectors.zeros(mBase.mHiddenWeightsSize);
-        mInternalHiddenBiases = Vectors.zeros(mBase.mHiddenBiasesSize);
-        updateHiddenWeights_();
     }
     
-    final void updateHiddenWeights_() {
-        mInternalHiddenWeights.fill(mBase.mHiddenWeights);
-        mInternalHiddenBiases.fill(mBase.mHiddenBiases);
+    @SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
+    final void updateParameters_() {
+        mInternalHiddenWeights.fillD(mBase.mHiddenWeights);
+        mInternalHiddenBiases.fillD(mBase.mHiddenBiases);
         int tColNum = mInputDim;
-        int tShift = 0, tShiftShare = 0;
+        int tShift = 0;
+        IDoubleOrFloatCPointer tPtr = mInternalHiddenWeights.copy();
         for (int i = 0; i < mNumLayers; ++i) {
             int tHiddenDim = mBase.mHiddenDims[i];
             int tSharedHiddenDim = mSharedHiddenDims[i];
             int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
             // shared last
             int tSize = tNoSharedHiddenDim*tColNum;
-            mInternalHiddenWeights.subVec(tShiftShare, tShiftShare+tSize).fill(mNoSharedHiddenWeights.subVec(tShift, tShift+tSize));
+            tPtr.fillD(mNoSharedHiddenWeights.subVec(tShift, tShift+tSize));
             tShift += tSize;
-            tShiftShare += tHiddenDim*tColNum;
+            tPtr.rightShift(tHiddenDim*tColNum);
             tColNum = tHiddenDim;
         }
-        tShift = 0; tShiftShare = 0;
+        tShift = 0;
+        tPtr = mInternalHiddenBiases.copy();
         for (int i = 0; i < mNumLayers; ++i) {
             int tHiddenDim = mBase.mHiddenDims[i];
             int tSharedHiddenDim = mSharedHiddenDims[i];
             int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
             // shared last
-            mInternalHiddenBiases.subVec(tShiftShare, tShiftShare+tNoSharedHiddenDim).fill(mNoSharedHiddenBiases.subVec(tShift, tShift+tNoSharedHiddenDim));
+            tPtr.fillD(mNoSharedHiddenBiases.subVec(tShift, tShift+tNoSharedHiddenDim));
             tShift += tNoSharedHiddenDim;
-            tShiftShare += tHiddenDim;
+            tPtr.rightShift(tHiddenDim);
+        }
+        if (mSharedHiddenDims[mNumLayers]==0) {
+            mInternalOutputWeight.fillD(mNoSharedOutputWeight);
+            mInternalOutputBias.setD(mNoSharedOutputBias[0]);
+        } else {
+            mInternalOutputWeight.fillD(mBase.mOutputWeight);
+            mInternalOutputBias.setD(mBase.mOutputBias[0]);
         }
     }
     
@@ -145,7 +155,7 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
             mNoSharedOutputWeight.assign(() -> RANDOM.nextDouble(-tBound, tBound));
             mNoSharedOutputBias[0] = RANDOM.nextDouble(-tBoundB, tBoundB);
         }
-        updateHiddenWeights_();
+        updateParameters_();
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -321,40 +331,16 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
     public int inputSize() {
         return mInputDim;
     }
-    @Override public IVector parameters() {
-        final int tEndHW = mBase.mHiddenWeightsSize;
-        final int tEndOW = tEndHW + mBase.mOutputWeightSize;
-        final int tEndHB = tEndOW + mBase.mHiddenBiasesSize;
-        final int tEndOB = tEndHB + 1;
-        return new RefVector() {
-            @Override public double get(int aIdx) {
-                if (aIdx < tEndHW) {
-                    return mInternalHiddenWeights.get(aIdx);
-                } else
-                if (aIdx < tEndOW) {
-                    if (mSharedHiddenDims[mNumLayers]==0) {
-                        return mNoSharedOutputWeight.get(aIdx-tEndHW);
-                    } else {
-                        return mBase.mOutputWeight.get(aIdx-tEndHW);
-                    }
-                } else
-                if (aIdx < tEndHB) {
-                    return mInternalHiddenBiases.get(aIdx-tEndOW);
-                } else
-                if (aIdx < tEndOB) {
-                    if (mSharedHiddenDims[mNumLayers]==0) {
-                        return mNoSharedOutputBias[0];
-                    } else {
-                        return mBase.mOutputBias[0];
-                    }
-                } else {
-                    throw new IndexOutOfBoundsException(String.valueOf(aIdx));
-                }
-            }
-            @Override public int size() {
-                return tEndOB;
-            }
-        };
+    @Override public void mountParameter(IDoubleOrFloatCPointer aPtr) {
+        mInternalHiddenWeights = aPtr.copy();
+        mInternalOutputWeight = mInternalHiddenWeights.plus(mBase.mHiddenWeightsSize);
+        mInternalHiddenBiases = mInternalOutputWeight.plus(mBase.mOutputWeightSize);
+        mInternalOutputBias = mInternalHiddenBiases.plus(mBase.mHiddenBiasesSize);
+        updateParameters_();
+    }
+    
+    @Override public int forwardCacheSize() {
+        return mBase.forwardCacheSize();
     }
     
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {

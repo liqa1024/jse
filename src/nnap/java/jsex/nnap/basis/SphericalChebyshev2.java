@@ -1,7 +1,6 @@
 package jsex.nnap.basis;
 
 import jse.code.UT;
-import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,7 +29,7 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
     final int mSize;
     
     private SphericalChebyshev2(double aRCut, int aNumTypes, int aNMax, int aLMax, int aLMaxMax, boolean aNoRadial, int aL3Max, int aL4Max,
-                                int aWType, @Nullable RowMatrix aFuseWeight, @Nullable Vector aPostFuseWeight, double @Nullable[] aPostFuseScale) {
+                                int aWType, @Nullable Vector aFuseWeight, @Nullable Vector aPostFuseWeight, double @Nullable[] aPostFuseScale) {
         super(aRCut, aNumTypes, aNMax, aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale);
         if (aLMaxMax<0 || aLMaxMax>12) throw new IllegalArgumentException("Input lmax MUST be in [0, 12], input: "+aLMaxMax);
         if (aL3Max<0 || aL3Max>6) throw new IllegalArgumentException("Input l3max MUST be in [0, 6], input: "+aL3Max);
@@ -47,7 +46,7 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
         
         mSize = mSizeNP*mSizeL;
     }
-    SphericalChebyshev2(double aRCut, int aNumTypes, int aNMax, int aLMax, boolean aNoRadial, int aL3Max, int aL4Max, int aWType, RowMatrix aFuseWeight, Vector aPostFuseWeight, double[] aPostFuseScale) {
+    SphericalChebyshev2(double aRCut, int aNumTypes, int aNMax, int aLMax, boolean aNoRadial, int aL3Max, int aL4Max, int aWType, Vector aFuseWeight, Vector aPostFuseWeight, double[] aPostFuseScale) {
         this(aRCut, aNumTypes, aNMax, aLMax, Math.max(Math.max(aLMax, aL3Max), aL4Max), aNoRadial, aL3Max, aL4Max, aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale);
     }
     
@@ -76,8 +75,8 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
         if (aMap.containsKey("rfunc_scales")) throw new IllegalArgumentException("rfunc_scales is invalid now.");
         if (aMap.containsKey("system_scales")) throw new IllegalArgumentException("system_scales is invalid now.");
         int aWType = getWType_(aMap);
-        RowMatrix aFuseWeight = getFuseWeight_(aMap, aWType, aNumTypes);
-        int tFuseSize = getFuseSize(aWType, aFuseWeight);
+        Vector aFuseWeight = getFuseWeight_(aMap, aWType, aNumTypes);
+        int tFuseSize = getFuseSize(aWType, aNumTypes, aFuseWeight);
         int tSizeN = getSizeN_(aWType, aNumTypes, aNMax, tFuseSize);
         Vector aPostFuseWeight = getPostFuseWeight_(aMap, tSizeN);
         double[] aPostFuseScale = aPostFuseWeight==null ? null : new double[1];

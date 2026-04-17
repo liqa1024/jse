@@ -2,6 +2,7 @@ package jsex.nnap.nn;
 
 import jse.code.UT;
 import jse.code.collection.AbstractCollections;
+import jse.cptr.IDoubleOrFloatCPointer;
 import jse.math.MathEX;
 import jse.math.matrix.Matrices;
 import jse.math.matrix.RowMatrix;
@@ -29,6 +30,9 @@ public class FeedForward2 extends NeuralNetwork2 {
     final double[] mOutputBias;
     final int mNumLayers, mHiddenWeightsSize, mHiddenBiasesSize, mOutputWeightSize;
     
+    private IDoubleOrFloatCPointer mInternalHiddenWeights = null, mInternalHiddenBiases = null;
+    private IDoubleOrFloatCPointer mInternalOutputWeight = null, mInternalOutputBias = null;
+    
     FeedForward2(int aInputDim, int[] aHiddenDims, Vector aHiddenWeights, Vector aHiddenBiases, Vector aOutputWeight, double[] aOutputBias) {
         mInputDim = aInputDim;
         mHiddenDims = aHiddenDims;
@@ -55,6 +59,13 @@ public class FeedForward2 extends NeuralNetwork2 {
         if (mOutputBias.length != 1) throw new IllegalArgumentException("The size of output biases mismatch");
     }
     
+    final void updateParameters_() {
+        mInternalHiddenWeights.fillD(mHiddenWeights);
+        mInternalHiddenBiases.fillD(mHiddenBiases);
+        mInternalOutputWeight.fillD(mOutputWeight);
+        mInternalOutputBias.setD(mOutputBias[0]);
+    }
+    
     @Override public void initParameters() {
         int tColNum = mInputDim;
         int tShift = 0;
@@ -77,6 +88,7 @@ public class FeedForward2 extends NeuralNetwork2 {
         mOutputWeight.assign(() -> RANDOM.nextDouble(-tBound, tBound));
         double tBoundB = MathEX.Fast.sqrt(1.0 / tColNum); // 偏置也使用 Kaiming 均匀初始化，和 pytorch 默认保持一致
         mOutputBias[0] = RANDOM.nextDouble(-tBoundB, tBoundB);
+        updateParameters_();
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -217,8 +229,16 @@ public class FeedForward2 extends NeuralNetwork2 {
     public int inputSize() {
         return mInputDim;
     }
-    @Override public IVector parameters() {
-        return fittableParameters();
+    @Override public void mountParameter(IDoubleOrFloatCPointer aPtr) {
+        mInternalHiddenWeights = aPtr.copy();
+        mInternalOutputWeight = mInternalHiddenWeights.plus(mHiddenWeightsSize);
+        mInternalHiddenBiases = mInternalOutputWeight.plus(mOutputWeightSize);
+        mInternalOutputBias = mInternalHiddenBiases.plus(mHiddenBiasesSize);
+        updateParameters_();
+    }
+    
+    @Override public int forwardCacheSize() {
+        return mInputDim+mHiddenBiasesSize + mHiddenBiasesSize;
     }
     
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {

@@ -95,6 +95,10 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
                                      flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
                                      flt_t **aForwardCache, flt_t **rBackwardCache,
                                      flt_t aRCut, flt_t *aParams, flt_t *rGradParams) {
+    if (GRAD_PARAM) {
+        // no param
+        if (WTYPE!=WTYPE_RFUSE && WTYPE!=WTYPE_FUSE && WTYPE!=WTYPE_EXFUSE) return;
+    }
     const int tLMAll = (LMAXMAX+1)*(LMAXMAX+1);
     // init cache
     flt_t *tNlRn = *aForwardCache; *aForwardCache += aNeiNum*(NMAX+1);

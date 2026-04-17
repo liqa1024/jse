@@ -176,6 +176,24 @@ public class DoubleCPointer extends CPointer implements IDoubleOrFloatCPointer {
         if (isNull()) throw new NullPointerException();
         fill2(mPtr, aValue, aCount);
     }
+    /**
+     * {@inheritDoc}
+     * @param aData {@inheritDoc}
+     * @param aCount {@inheritDoc}
+     */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
+    @Override public void fillD(double aData, long aCount) {
+        fill(aData, aCount);
+    }
+    /**
+     * {@inheritDoc}
+     * @param aData {@inheritDoc}
+     * @param aCount {@inheritDoc}
+     */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
+    @Override public void fillF(float aData, long aCount) {
+        fill((double)aData, aCount);
+    }
     private native static void fill2(long rPtr, double aValue, long aCount);
     
     

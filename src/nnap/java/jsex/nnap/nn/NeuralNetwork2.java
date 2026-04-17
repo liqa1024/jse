@@ -1,6 +1,7 @@
 package jsex.nnap.nn;
 
 import jse.code.io.ISavable;
+import jse.cptr.IDoubleOrFloatCPointer;
 import jse.math.vector.IVector;
 import jsex.nnap.basis.Basis2;
 import org.jetbrains.annotations.ApiStatus;
@@ -65,8 +66,12 @@ public abstract class NeuralNetwork2 implements ISavable {
     /** 随机初始化内部存在的可拟合参数 */
     public abstract void initParameters();
     
-    /** @return 内部参数组成的向量 */
-    public abstract IVector parameters();
+    /**
+     * 挂载内部的参量到一个指针，从而自动同步修改
+     * <p>
+     * 输入指针包装是临时的，因此需要内部拷贝或等价形式
+     */
+    public abstract void mountParameter(IDoubleOrFloatCPointer aPtr);
     /** @return 内部参数的长度 */
     public abstract int parameterSize();
     
@@ -74,6 +79,9 @@ public abstract class NeuralNetwork2 implements ISavable {
     public abstract IVector fittableParameters();
     /** @return 内部可拟合参数的长度 */
     public abstract int fittableParameterSize();
+    
+    /** @return 前向传播中需要的缓存大小 */
+    public abstract int forwardCacheSize();
     
     /** 更新内部 code gen 的 map，将参数编码进 jit */
     public abstract void updateGenMap(Map<String, Object> rGenMap, int aGenIdx);

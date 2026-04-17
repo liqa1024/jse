@@ -85,4 +85,11 @@ public interface ICPointer extends IPointer {
      * @return 移动后的指针对象
      */
     ICPointer minus(long aCount);
+    
+    /**
+     * 拷贝一份 c 指针包装类，注意此方法不会实际拷贝内部
+     * c 指针对应的内存，因此返回对象内部存储了相同的 c 指针
+     * @return 拷贝的 c 指针包装类，包含相同的 c 指针
+     */
+    ICPointer copy();
 }

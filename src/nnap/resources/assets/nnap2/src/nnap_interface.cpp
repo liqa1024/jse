@@ -42,6 +42,7 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_calEnergy(void *aDataIn, void *rDat
     return 0;
 }
 
+
 JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_calEnergyForce(void *aDataIn, void *rDataOut) {
     void **tDataIn = (void **)aDataIn;
     void **tDataOut = (void **)rDataOut;
@@ -100,6 +101,88 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_calEnergyForce(void *aDataIn, void 
 // <<< NNAPGEN SWITCH (ctype) [FP NN TYPE]
     return 0;
 }
+
+
+JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_forwardEnergy(void *aDataIn, void *rDataOut) {
+    void **tDataIn = (void **)aDataIn;
+    void **tDataOut = (void **)rDataOut;
+    
+    int *tNums = (int *)tDataIn[0];
+    JSE_NNAP::flt_t *tNlDx = (JSE_NNAP::flt_t *)tDataIn[1];
+    JSE_NNAP::flt_t *tNlDy = (JSE_NNAP::flt_t *)tDataIn[2];
+    JSE_NNAP::flt_t *tNlDz = (JSE_NNAP::flt_t *)tDataIn[3];
+    int *tNlType = (int *)tDataIn[4];
+    JSE_NNAP::flt_t **tFpHyperParam = (JSE_NNAP::flt_t **)tDataIn[5];
+    JSE_NNAP::flt_t **tFpParam = (JSE_NNAP::flt_t **)tDataIn[6];
+    JSE_NNAP::flt_t **tNnParam = (JSE_NNAP::flt_t **)tDataIn[7];
+    JSE_NNAP::flt_t *tNormParam = (JSE_NNAP::flt_t *)tDataIn[8];
+    
+    JSE_NNAP::flt_t *rOutEng = (JSE_NNAP::flt_t *)tDataOut[0];
+    JSE_NNAP::flt_t *rFpForwardCache = (JSE_NNAP::flt_t *)tDataOut[1];
+    JSE_NNAP::flt_t *rNnForwardCache = (JSE_NNAP::flt_t *)tDataOut[2];
+    
+    int tNeiNum = tNums[0];
+    int ctype = tNums[1];
+    
+    int code;
+    // >>> NNAPGEN SWITCH
+    JSE_NNAP::flt_t *rLayers = rNnForwardCache;
+    JSE_NNAP::flt_t *rNnGradCache = rLayers + (__NNAPGENX_NN_SIZE_IN__+__NNAPGENX_NN_SIZE_HB__);
+    code = JSE_NNAP::fpForward<__NNAPGENS_ctype__, JSE_NNAP::TRUE>(
+        tNlDx, tNlDy, tNlDz, tNlType, tNeiNum, ctype, rLayers,
+        tFpHyperParam, tFpParam, rFpForwardCache
+    );
+    if (code!=0) return code;
+    code = JSE_NNAP::normedNnForward<__NNAPGENS_ctype__, JSE_NNAP::TRUE>(
+        ctype, rLayers, tNormParam, tNnParam, rNnGradCache, rOutEng
+    );
+    if (code!=0) return code;
+    // <<< NNAPGEN SWITCH (ctype) [FP NN TYPE]
+    return 0;
+}
+JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_backwardEnergy(void *aDataIn, void *rDataOut) {
+    void **tDataIn = (void **)aDataIn;
+    void **tDataOut = (void **)rDataOut;
+    
+    int *tNums = (int *)tDataIn[0];
+    JSE_NNAP::flt_t *tNlDx = (JSE_NNAP::flt_t *)tDataIn[1];
+    JSE_NNAP::flt_t *tNlDy = (JSE_NNAP::flt_t *)tDataIn[2];
+    JSE_NNAP::flt_t *tNlDz = (JSE_NNAP::flt_t *)tDataIn[3];
+    int *tNlType = (int *)tDataIn[4];
+    JSE_NNAP::flt_t **tFpHyperParam = (JSE_NNAP::flt_t **)tDataIn[5];
+    JSE_NNAP::flt_t **tFpParam = (JSE_NNAP::flt_t **)tDataIn[6];
+    JSE_NNAP::flt_t **tNnParam = (JSE_NNAP::flt_t **)tDataIn[7];
+    JSE_NNAP::flt_t *tNormParam = (JSE_NNAP::flt_t *)tDataIn[8];
+    JSE_NNAP::flt_t *tFpForwardCache = (JSE_NNAP::flt_t *)tDataIn[9];
+    JSE_NNAP::flt_t *tNnForwardCache = (JSE_NNAP::flt_t *)tDataIn[10];
+    
+    JSE_NNAP::flt_t *tGradEng = (JSE_NNAP::flt_t *)tDataOut[0];
+    JSE_NNAP::flt_t **rGradFpParam = (JSE_NNAP::flt_t **)tDataOut[1];
+    JSE_NNAP::flt_t **rGradNnParam = (JSE_NNAP::flt_t **)tDataOut[2];
+    
+    int tNeiNum = tNums[0];
+    int ctype = tNums[1];
+    
+    int code;
+    // >>> NNAPGEN SWITCH
+    JSE_NNAP::flt_t *tLayers = tNnForwardCache;
+    JSE_NNAP::flt_t *tNnGradCache = tLayers + (__NNAPGENX_NN_SIZE_IN__+__NNAPGENX_NN_SIZE_HB__);
+    JSE_NNAP::flt_t rGradLayers[__NNAPGENX_NN_SIZE_IN__+__NNAPGENX_NN_SIZE_HB__] = {0};
+    code = JSE_NNAP::normedNnBackward<__NNAPGENS_ctype__, JSE_NNAP::TRUE>(
+        ctype, tLayers, rGradLayers, tNormParam, tNnParam,
+        rGradNnParam, tNnGradCache, tGradEng[0]
+    );
+    if (code!=0) return code;
+    code = JSE_NNAP::fpBackward<__NNAPGENS_ctype__, JSE_NNAP::TRUE, JSE_NNAP::FALSE>(
+        tNlDx, tNlDy, tNlDz, tNlType, tNeiNum, ctype, rGradLayers,
+        NULL, NULL, NULL, tFpHyperParam,
+        tFpParam, rGradFpParam, tFpForwardCache, NULL
+    );
+    if (code!=0) return code;
+    // <<< NNAPGEN SWITCH (ctype) [FP NN TYPE]
+    return 0;
+}
+
 
 #define JSE_LMP_NEIGHMASK 0x1FFFFFFF
 

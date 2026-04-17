@@ -1,44 +1,43 @@
 package jsex.nnap.basis;
 
 import jse.code.io.ISavable;
-import jse.math.vector.IVector;
-import jse.math.vector.RefVector;
-import org.jetbrains.annotations.Nullable;
+import jse.cptr.IDoubleOrFloatCPointer;
+import jse.math.IDataShell;
 
 import java.util.Map;
-
-import static jse.code.CS.ZL_VEC;
 
 public abstract class MergeableBasis2 implements ISavable {
     /** 随机初始化内部可能存在的可拟合参数 */
     public void initParameters() {/**/}
     
-    /** @return 内部参数组成的向量 */
-    public IVector parameters() {return ZL_VEC;}
+    /**
+     * 挂载内部的参量到一个指针，从而自动同步修改
+     * <p>
+     * 输入指针包装是临时的，因此需要内部拷贝或等价形式
+     */
+    public void mountParameter(IDoubleOrFloatCPointer aPtr) {}
     /** @return 内部参数的长度 */
     public int parameterSize() {return 0;}
     
-    /** @return 内部超参数组成的向量 */
-    public IVector hyperParameters() {
-        return new RefVector() {
-            @Override public double get(int aIdx) {
-                if (aIdx==0) return rcut();
-                throw new IndexOutOfBoundsException(String.valueOf(aIdx));
-            }
-            @Override public int size() {return 1;}
-        };
+    /**
+     * 挂载内部超参数到一个指针，这里认为超参数不会改变，因此实现中会直接设置数值
+     * <p>
+     * 输入指针包装是临时的，因此需要内部拷贝或等价形式
+     */
+    public void mountHyperParameter(IDoubleOrFloatCPointer aPtr) {
+        aPtr.setD(rcut());
     }
     /** @return 内部超参数的长度 */
     public int hyperParameterSize() {
         return 1;
     }
     
-    /** @return 内部可能存在的可拟合参数组成的向量 */
-    public @Nullable IVector fittableParameters() {return null;}
+    /**
+     * 挂载内部的可拟合参数到一个数组，从而自动同步修改
+     */
+    public void mountFittableParameter(IDataShell<double[]> aData) {}
     /** @return 内部可能存在的可拟合参数的长度 */
     public int fittableParameterSize() {return 0;}
-    /** @return 是否确实存在可拟合的参数 */
-    public boolean hasFittableParameters() {return false;}
     
     /** @return 基组需要的近邻截断半径 */
     public abstract double rcut();
