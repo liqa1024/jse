@@ -2,6 +2,7 @@ package jsex.nnap.nn;
 
 import jse.code.io.ISavable;
 import jse.cptr.IDoubleOrFloatCPointer;
+import jse.math.IDataShell;
 import jse.math.vector.IVector;
 import jsex.nnap.basis.Basis2;
 import org.jetbrains.annotations.ApiStatus;
@@ -63,22 +64,43 @@ public abstract class NeuralNetwork2 implements ISavable {
         return rNN;
     }
     
-    /** 随机初始化内部存在的可拟合参数 */
-    public abstract void initParameters();
-    
     /**
      * 挂载内部的参量到一个指针，从而自动同步修改
      * <p>
      * 输入指针包装是临时的，因此需要内部拷贝或等价形式
      */
-    public abstract void mountParameter(IDoubleOrFloatCPointer aPtr);
+    public abstract void mountCptrParameter(IDoubleOrFloatCPointer aPtr);
+    /**
+     * 挂载内部的参量的梯度到一个指针，从而自动同步修改
+     * <p>
+     * 输入指针包装是临时的，因此需要内部拷贝或等价形式
+     */
+    public abstract void mountGradCptrParameter(IDoubleOrFloatCPointer aPtr);
     /** @return 内部参数的长度 */
+    public abstract int cptrParameterSize();
+    
+    /** 随机初始化内部存在的可拟合参数 */
+    public abstract void initParameters();
+    
+    /**
+     * 挂载内部的可拟合参数到一个数组，从而自动同步修改
+     */
+    public abstract void mountParameter(IDataShell<double[]> aData);
+    /**
+     * 挂载内部的可拟合参数的梯度到一个数组，从而自动同步修改
+     */
+    public abstract void mountGradParameter(IDataShell<double[]> aData);
+    /** @return 内部可拟合参数的长度 */
     public abstract int parameterSize();
     
-    /** @return 内部可拟合参数组成的向量 */
-    public abstract IVector fittableParameters();
-    /** @return 内部可拟合参数的长度 */
-    public abstract int fittableParameterSize();
+    /** 更新同步内部参数 */
+    public abstract void updateParameters();
+    /**
+     * 反向传播参数梯度到可拟合参数
+     * <p>
+     * 注意输入指针包装是临时的，因此可能需要内部拷贝或等价形式
+     */
+    public abstract void backwardParameter();
     
     /** @return 前向传播中需要的缓存大小 */
     public abstract int forwardCacheSize();

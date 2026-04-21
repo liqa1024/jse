@@ -96,19 +96,19 @@ class NNAP_cuda extends NNAP2 {
         mCudaCudaNnParam = CudaPointer.malloc(tTypeNum*AnyCPointer.TYPE_SIZE);
         mCudaCudaNormParam = CudaPointer.malloc(tTypeNum*AnyCPointer.TYPE_SIZE);
         for (int i = 0; i < tTypeNum; ++i) {
-            int tSize = mBasis[i].hyperParameterSize();
+            int tSize = mBasis[i].cptrHyperParameterSize();
             FloatCPointer tSubParam = mFpHyperParam.getAsFloatCPointerAt(i);
             FloatCudaPointer tSubCudaParam = FloatCudaPointer.malloc(Math.max(1, tSize));
             tSubCudaParam.fill(tSubParam, tSize);
             mCudaFpHyperParam.putAt(i, tSubCudaParam);
             
-            tSize = mBasis[i].parameterSize();
+            tSize = mBasis[i].cptrParameterSize();
             tSubParam = mFpParam.getAsFloatCPointerAt(i);
             tSubCudaParam = FloatCudaPointer.malloc(Math.max(1, tSize));
             tSubCudaParam.fill(tSubParam, tSize);
             mCudaFpParam.putAt(i, tSubCudaParam);
             
-            tSize = mNN[i].parameterSize();
+            tSize = mNN[i].cptrParameterSize();
             tSubParam = mNnParam.getAsFloatCPointerAt(i);
             tSubCudaParam = FloatCudaPointer.malloc(Math.max(1, tSize));
             tSubCudaParam.fill(tSubParam, tSize);

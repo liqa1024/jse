@@ -198,15 +198,22 @@ static NNAP_DEVICE void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, in
                                     flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
                                     flt_t **aForwardCache, flt_t **rBackwardCache,
                                     flt_t aRCut, flt_t *aParams, flt_t *rGradParams) noexcept {
-    if (GRAD_PARAM) {
-        // no param
-        if (WTYPE!=WTYPE_RFUSE && WTYPE!=WTYPE_FUSE && WTYPE!=WTYPE_EXFUSE) return;
-    }
     // const init
     constexpr int tSizeL = (NORADIAL?LMAX:(LMAX+1)) + L3NCOLS[L3MAX] + L4NCOLS[L4MAX];
     constexpr int tLMaxMax = LMAX>L3MAX ? (LMAX>L4MAX?LMAX:L4MAX) : (L3MAX>L4MAX?L3MAX:L4MAX);
     constexpr int tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
     constexpr int tSizeAnlm = SIZE_NP*tLMAll;
+    if (GRAD_PARAM) {
+        // no param
+        if (WTYPE!=WTYPE_RFUSE && WTYPE!=WTYPE_FUSE && WTYPE!=WTYPE_EXFUSE) {
+            // aForwardCache shift required
+            *aForwardCache += tSizeAnlm;
+            *aForwardCache += aNeiNum*(NMAX+1);
+            *aForwardCache += aNeiNum*SIZE_NP;
+            *aForwardCache += aNeiNum*tLMAll;
+            return;
+        }
+    }
     // init cache
     flt_t *tAnlm = *aForwardCache; *aForwardCache += tSizeAnlm;
     flt_t bGradAnlm[REQUIRE_CACHE ? 1 : tSizeAnlm] = {0};

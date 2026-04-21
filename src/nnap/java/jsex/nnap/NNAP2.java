@@ -10,6 +10,9 @@ import jse.code.collection.NewCollections;
 import jse.jit.IJITEngine;
 import jse.jit.IJITMethod;
 import jse.cptr.*;
+import jse.math.vector.IVector;
+import jse.math.vector.Vector;
+import jse.math.vector.Vectors;
 import jsex.nnap.basis.Basis2;
 import jsex.nnap.nn.NeuralNetwork2;
 import org.apache.groovy.util.Maps;
@@ -72,14 +75,17 @@ public class NNAP2 implements IPairPotential {
     // 现在所有数据都改为 c 指针
     final AnyCPointer mDataIn, mDataOut;
     final IntCPointer mInNums, mOutNums;
-    final IDoubleOrFloatCPointer mTotParam;
     final AnyCPointer mFpHyperParam, mFpParam, mNnParam, mNormParam;
     final IDoubleOrFloatCPointer mOutEng;
     final IGrowableDoubleOrFloatCPointer mNlDx, mNlDy, mNlDz, mGradNlDx, mGradNlDy, mGradNlDz, mFpForwardCache, mFpBackwardCache;
     final GrowableIntCPointer mNlType, mNlIdx;
     
-    IDoubleOrFloatCPointer mGradTotParam = null;
+    final int mTotCParamSize, mTotGradCParamSize, mTotParamSize;
+    final IDoubleOrFloatCPointer mTotCParam;
+    IDoubleOrFloatCPointer mGradTotCParam = null;
     AnyCPointer mGradFpParam, mGradNnParam;
+    final Vector mTotParam;
+    Vector mGradTotParam = null;
     
     @SuppressWarnings("unchecked")
     NNAP2(@Nullable String aLibDir, @Nullable String aProjectName, Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber, @Nullable String aPrecision) throws Exception {
@@ -135,31 +141,49 @@ public class NNAP2 implements IPairPotential {
         mFpForwardCache = mSingle ? new GrowableFloatCPointer(128) : new GrowableDoubleCPointer(128);
         mFpBackwardCache = mSingle ? new GrowableFloatCPointer(128) : new GrowableDoubleCPointer(128);
         // 初始化参数数组
-        int tTotParamSize = 0;
+        int tTotCParamSize = 0, tTotGradCParamSize = 0, tTotParamSize = 0;
         for (int i = 0; i < tModelSize; ++i) {
-            tTotParamSize += mBasis[i].hyperParameterSize();
+            tTotCParamSize += mBasis[i].cptrHyperParameterSize();
+            tTotCParamSize += mBasis[i].cptrParameterSize();
+            tTotCParamSize += mNN[i].cptrParameterSize();
+            tTotCParamSize += mBasis[i].size()*2 + 2; // norm size
+            
+            tTotGradCParamSize += mBasis[i].cptrParameterSize();
+            tTotGradCParamSize += mNN[i].cptrParameterSize();
+            
             tTotParamSize += mBasis[i].parameterSize();
             tTotParamSize += mNN[i].parameterSize();
-            // norm size
-            tTotParamSize += mBasis[i].size()*2 + 2;
         }
-        mTotParam = mSingle ? FloatCPointer.malloc(tTotParamSize) : DoubleCPointer.malloc(tTotParamSize);
+        mTotCParamSize = tTotCParamSize;
+        mTotGradCParamSize = tTotGradCParamSize;
+        mTotParamSize = tTotParamSize;
+        mTotCParam = mSingle ? FloatCPointer.malloc(mTotCParamSize) : DoubleCPointer.malloc(mTotCParamSize);
+        mTotParam = Vectors.zeros(mTotParamSize);
         mFpHyperParam = AnyCPointer.malloc(tModelSize);
         mFpParam = AnyCPointer.malloc(tModelSize);
         mNnParam = AnyCPointer.malloc(tModelSize);
-        IDoubleOrFloatCPointer tParam = mTotParam.copy();
+        IDoubleOrFloatCPointer tParam = mTotCParam.copy();
+        int tShift = 0;
         for (int i = 0; i < tModelSize; ++i) {
             mFpParam.putAt(i, tParam);
-            mBasis[i].mountParameter(tParam);
-            tParam.rightShift(mBasis[i].parameterSize());
+            mBasis[i].mountCptrParameter(tParam);
+            tParam.rightShift(mBasis[i].cptrParameterSize());
             mFpHyperParam.putAt(i, tParam);
-            mBasis[i].mountHyperParameter(tParam);
-            tParam.rightShift(mBasis[i].hyperParameterSize());
+            mBasis[i].mountCptrHyperParameter(tParam);
+            tParam.rightShift(mBasis[i].cptrHyperParameterSize());
+            
+            int tSize = mBasis[i].parameterSize();
+            mBasis[i].mountParameter(mTotParam.subVec(tShift, tShift+tSize));
+            tShift += tSize;
         }
         for (int i = 0; i < tModelSize; ++i) {
             mNnParam.putAt(i, tParam);
-            mNN[i].mountParameter(tParam);
-            tParam.rightShift(mNN[i].parameterSize());
+            mNN[i].mountCptrParameter(tParam);
+            tParam.rightShift(mNN[i].cptrParameterSize());
+            
+            int tSize = mNN[i].parameterSize();
+            mNN[i].mountParameter(mTotParam.subVec(tShift, tShift+tSize));
+            tShift += tSize;
         }
         // 归一化系数读取
         mNormParam = AnyCPointer.malloc(tModelSize);
@@ -246,10 +270,10 @@ public class NNAP2 implements IPairPotential {
         mNlType.free();
         mDataIn.free();
         
-        mTotParam.free();
+        mTotCParam.free();
         mFpHyperParam.free(); mFpParam.free(); mNnParam.free(); mNormParam.free();
-        if (mGradTotParam != null) {
-            mGradTotParam.free();
+        if (mGradTotCParam != null) {
+            mGradTotCParam.free();
             mGradFpParam.free(); mGradNnParam.free();
         }
         
@@ -473,28 +497,66 @@ public class NNAP2 implements IPairPotential {
         if (tCode>0) throw new IllegalStateException("Exit code: "+tCode);
     }
     
-    private void validGradParam_() {
+    public IVector parameters() {
+        return mTotParam;
+    }
+    public IVector gradParameters() {
+        if (mGradTotParam == null) throw new IllegalStateException("No grad in NNAP, invoke `requireGrad()` first.");
+        return mGradTotParam;
+    }
+    public void updateParameters() {
+        int tModelSize = mSymbols.length;
+        for (int i = 0; i < tModelSize; ++i) {
+            mBasis[i].updateParameters();
+        }
+        for (int i = 0; i < tModelSize; ++i) {
+            mNN[i].updateParameters();
+        }
+    }
+    public void backwardParameter() {
+        if (mGradTotParam == null) throw new IllegalStateException("No grad in NNAP, invoke `requireGrad()` first.");
+        int tModelSize = mSymbols.length;
+        for (int i = 0; i < tModelSize; ++i) {
+            mBasis[i].backwardParameter();
+        }
+        for (int i = 0; i < tModelSize; ++i) {
+            mNN[i].backwardParameter();
+        }
+    }
+    public void requireGrad() {
         if (mGradTotParam != null) return;
         int tModelSize = mSymbols.length;
-        int tTotParamSize = 0;
-        for (int i = 0; i < tModelSize; ++i) {
-            tTotParamSize += mBasis[i].parameterSize();
-            tTotParamSize += mNN[i].parameterSize();
-        }
-        mGradTotParam = mSingle ? FloatCPointer.malloc(tTotParamSize) : DoubleCPointer.malloc(tTotParamSize);
+        mGradTotCParam = mSingle ? FloatCPointer.malloc(mTotGradCParamSize) : DoubleCPointer.malloc(mTotGradCParamSize);
+        mGradTotParam = Vectors.zeros(mTotParamSize);
         mGradFpParam = AnyCPointer.malloc(tModelSize);
         mGradNnParam = AnyCPointer.malloc(tModelSize);
-        IDoubleOrFloatCPointer tGradParam = mGradTotParam.copy();
+        IDoubleOrFloatCPointer tGradParam = mGradTotCParam.copy();
+        int tShift = 0;
         for (int i = 0; i < tModelSize; ++i) {
             mGradFpParam.putAt(i, tGradParam);
-            tGradParam.rightShift(mBasis[i].parameterSize());
+            mBasis[i].mountGradCptrParameter(tGradParam);
+            tGradParam.rightShift(mBasis[i].cptrParameterSize());
+            
+            int tSize = mBasis[i].parameterSize();
+            mBasis[i].mountGradParameter(mGradTotParam.subVec(tShift, tShift+tSize));
+            tShift += tSize;
         }
         for (int i = 0; i < tModelSize; ++i) {
             mGradNnParam.putAt(i, tGradParam);
-            tGradParam.rightShift(mNN[i].parameterSize());
+            mNN[i].mountGradCptrParameter(tGradParam);
+            tGradParam.rightShift(mNN[i].cptrParameterSize());
+            
+            int tSize = mNN[i].parameterSize();
+            mNN[i].mountGradParameter(mGradTotParam.subVec(tShift, tShift+tSize));
+            tShift += tSize;
         }
     }
-    // 注意此方法依旧线程不安全（mInNums, mOutEng）
+    public void zeroGrad() {
+        if (mGradTotParam == null) throw new IllegalStateException("No grad in NNAP, invoke `requireGrad()` first.");
+        mGradTotCParam.fillD(0.0, mTotGradCParamSize);
+        mGradTotParam.fill(0.0);
+    }
+    
     public double forwardEnergy(IDoubleOrFloatCPointer aNlDx, IDoubleOrFloatCPointer aNlDy, IDoubleOrFloatCPointer aNlDz, IntCPointer aNlType,
                                 int aNumNei, int aCType, IGrowableDoubleOrFloatCPointer rCaches) throws Exception {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
@@ -522,9 +584,9 @@ public class NNAP2 implements IPairPotential {
         return mOutEng.getD();
     }
     public void backwardEnergy(double aGradEng, IDoubleOrFloatCPointer aNlDx, IDoubleOrFloatCPointer aNlDy, IDoubleOrFloatCPointer aNlDz, IntCPointer aNlType,
-                               int aNumNei, int aCType, IDoubleOrFloatCPointer aCaches, IDoubleOrFloatCPointer rGradParam) throws Exception {
+                               int aNumNei, int aCType, IDoubleOrFloatCPointer aCaches) throws Exception {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
-        validGradParam_();
+        if (mGradTotParam == null) throw new IllegalStateException("No grad in NNAP, invoke `requireGrad()` first.");
         mInNums.putAt(0, aNumNei);
         mInNums.putAt(1, aCType);
         mOutEng.setD(aGradEng);
@@ -541,16 +603,6 @@ public class NNAP2 implements IPairPotential {
         mDataIn.putAt(9, aCaches);
         mDataIn.putAt(10, aCaches.plus(mBasis[aCType-1].forwardCacheSize(aNumNei)));
         mDataOut.putAt(0, mOutEng);
-        // 约定的参数顺序
-        IDoubleOrFloatCPointer tSubGradParam = rGradParam.copy();
-        for (int i = 0; i < mSymbols.length; ++i) {
-            mGradFpParam.putAt(i, tSubGradParam);
-            tSubGradParam.rightShift(mBasis[i].parameterSize());
-        }
-        for (int i = 0; i < mSymbols.length; ++i) {
-            mGradNnParam.putAt(i, tSubGradParam);
-            tSubGradParam.rightShift(mNN[i].parameterSize());
-        }
         mDataOut.putAt(1, mGradFpParam);
         mDataOut.putAt(2, mGradNnParam);
         // 调用 jit 方法获取结果

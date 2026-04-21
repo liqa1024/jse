@@ -1,8 +1,10 @@
 package jsex.nnap.nn;
 
+import jse.code.Conf;
 import jse.code.UT;
 import jse.code.collection.AbstractCollections;
 import jse.cptr.IDoubleOrFloatCPointer;
+import jse.math.IDataShell;
 import jse.math.MathEX;
 import jse.math.matrix.Matrices;
 import jse.math.matrix.RowMatrix;
@@ -24,16 +26,18 @@ import static jse.code.CS.RANDOM;
 public class FeedForward2 extends NeuralNetwork2 {
     final int mInputDim;
     final int[] mHiddenDims;
-    final Vector mHiddenWeights;
-    final Vector mHiddenBiases;
-    final Vector mOutputWeight;
-    final double[] mOutputBias;
+    DoubleArrayVector mHiddenWeights, mHiddenBiases;
+    DoubleArrayVector mOutputWeight, mOutputBias;
+    DoubleArrayVector mGradHiddenWeights = null, mGradHiddenBiases = null;
+    DoubleArrayVector mGradOutputWeight = null, mGradOutputBias = null;
     final int mNumLayers, mHiddenWeightsSize, mHiddenBiasesSize, mOutputWeightSize;
     
     private IDoubleOrFloatCPointer mInternalHiddenWeights = null, mInternalHiddenBiases = null;
     private IDoubleOrFloatCPointer mInternalOutputWeight = null, mInternalOutputBias = null;
+    private IDoubleOrFloatCPointer mInternalGradHiddenWeights = null, mInternalGradHiddenBiases = null;
+    private IDoubleOrFloatCPointer mInternalGradOutputWeight = null, mInternalGradOutputBias = null;
     
-    FeedForward2(int aInputDim, int[] aHiddenDims, Vector aHiddenWeights, Vector aHiddenBiases, Vector aOutputWeight, double[] aOutputBias) {
+    FeedForward2(int aInputDim, int[] aHiddenDims, Vector aHiddenWeights, Vector aHiddenBiases, Vector aOutputWeight, Vector aOutputBias) {
         mInputDim = aInputDim;
         mHiddenDims = aHiddenDims;
         mNumLayers = aHiddenDims.length;
@@ -50,20 +54,36 @@ public class FeedForward2 extends NeuralNetwork2 {
         mHiddenBiasesSize = tHiddenBiasesSize;
         mHiddenWeights = aHiddenWeights==null ? Vectors.zeros(mHiddenWeightsSize) : aHiddenWeights;
         mHiddenBiases = aHiddenBiases==null ? Vectors.zeros(mHiddenBiasesSize) : aHiddenBiases;
-        if (mHiddenWeights.internalDataSize() != mHiddenWeightsSize) throw new IllegalArgumentException("The size of hidden weights mismatch");
-        if (mHiddenBiases.internalDataSize() != mHiddenBiasesSize) throw new IllegalArgumentException("The size of hidden biases mismatch");
+        if (mHiddenWeights.size() != mHiddenWeightsSize) throw new IllegalArgumentException("The size of hidden weights mismatch");
+        if (mHiddenBiases.size() != mHiddenBiasesSize) throw new IllegalArgumentException("The size of hidden biases mismatch");
         mOutputWeightSize = mHiddenDims[mNumLayers -1];
         mOutputWeight = aOutputWeight==null ? Vectors.zeros(mOutputWeightSize) : aOutputWeight;
-        mOutputBias = aOutputBias==null ? new double[1] : aOutputBias;
-        if (mOutputWeight.internalDataSize() != mOutputWeightSize) throw new IllegalArgumentException("The size of output weight mismatch");
-        if (mOutputBias.length != 1) throw new IllegalArgumentException("The size of output biases mismatch");
+        mOutputBias = aOutputBias==null ? Vectors.zeros(1) : aOutputBias;
+        if (mOutputWeight.size() != mOutputWeightSize) throw new IllegalArgumentException("The size of output weight mismatch");
+        if (mOutputBias.size() != 1) throw new IllegalArgumentException("The size of output biases mismatch");
     }
     
+    @Override public void updateParameters() {
+        updateParameters_();
+    }
+    @Override public void backwardParameter() {
+        if (mGradHiddenWeights==null) throw new IllegalStateException();
+        for (int i = 0; i < mHiddenWeightsSize; ++i) {
+            mGradHiddenWeights.add(i, mInternalGradHiddenWeights.getAtD(i));
+        }
+        for (int i = 0; i < mOutputWeightSize; ++i) {
+            mGradOutputWeight.add(i, mInternalGradOutputWeight.getAtD(i));
+        }
+        for (int i = 0; i < mHiddenBiasesSize; ++i) {
+            mGradHiddenBiases.add(i, mInternalGradHiddenBiases.getAtD(i));
+        }
+        mGradOutputBias.add(0, mInternalGradOutputBias.getD());
+    }
     final void updateParameters_() {
         mInternalHiddenWeights.fillD(mHiddenWeights);
-        mInternalHiddenBiases.fillD(mHiddenBiases);
         mInternalOutputWeight.fillD(mOutputWeight);
-        mInternalOutputBias.setD(mOutputBias[0]);
+        mInternalHiddenBiases.fillD(mHiddenBiases);
+        mInternalOutputBias.setD(mOutputBias.get(0));
     }
     
     @Override public void initParameters() {
@@ -87,7 +107,7 @@ public class FeedForward2 extends NeuralNetwork2 {
         double tBound = MathEX.Fast.sqrt(3.0 / tColNum); // Kaiming 均匀初始化，注意输出层没有激活函数因此权重需要调整
         mOutputWeight.assign(() -> RANDOM.nextDouble(-tBound, tBound));
         double tBoundB = MathEX.Fast.sqrt(1.0 / tColNum); // 偏置也使用 Kaiming 均匀初始化，和 pytorch 默认保持一致
-        mOutputBias[0] = RANDOM.nextDouble(-tBoundB, tBoundB);
+        mOutputBias.set(0, RANDOM.nextDouble(-tBoundB, tBoundB));
         updateParameters_();
     }
     
@@ -136,10 +156,11 @@ public class FeedForward2 extends NeuralNetwork2 {
             tShift += tHiddenDim;
         }
         Vector aOutputWeight = Vectors.from((List<? extends Number>)aMap.get("output_weight"));
-        double aOutputBias = ((Number)aMap.get("output_bias")).doubleValue();
+        Vector aOutputBias = Vectors.zeros(1);
+        aOutputBias.set(0, ((Number)aMap.get("output_bias")).doubleValue());
         if (aOutputWeight.size() != aHiddenDims[tNumLayers-1]) throw new IllegalArgumentException("Size of output weight mismatch");
         
-        return new FeedForward2(aInputDim, aHiddenDims, aHiddenWeights, aHiddenBiases, aOutputWeight, new double[]{aOutputBias});
+        return new FeedForward2(aInputDim, aHiddenDims, aHiddenWeights, aHiddenBiases, aOutputWeight, aOutputBias);
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -170,71 +191,78 @@ public class FeedForward2 extends NeuralNetwork2 {
         }
         rSaveTo.put("hidden_biases", rHiddenBiases);
         rSaveTo.put("output_weight", mOutputWeight.asList());
-        rSaveTo.put("output_bias", mOutputBias[0]);
+        rSaveTo.put("output_bias", mOutputBias.get(0));
     }
     
-    @Override public int fittableParameterSize() {
+    @Override public int parameterSize() {
         return mHiddenWeightsSize+mOutputWeightSize + mHiddenBiasesSize+1;
     }
     public int fittableParameterWeightSize() {
         return mHiddenWeightsSize+mOutputWeightSize;
     }
-    @Override public IVector fittableParameters() {
-        final int tEndHW = mHiddenWeightsSize;
-        final int tEndOW = tEndHW + mOutputWeightSize;
-        final int tEndHB = tEndOW + mHiddenBiasesSize;
-        final int tEndOB = tEndHB + 1;
-        return new RefVector() {
-            @Override public double get(int aIdx) {
-                if (aIdx < tEndHW) {
-                    return mHiddenWeights.get(aIdx);
-                } else
-                if (aIdx < tEndOW) {
-                    return mOutputWeight.get(aIdx-tEndHW);
-                } else
-                if (aIdx < tEndHB) {
-                    return mHiddenBiases.get(aIdx-tEndOW);
-                } else
-                if (aIdx < tEndOB) {
-                    return mOutputBias[0];
-                } else {
-                    throw new IndexOutOfBoundsException(String.valueOf(aIdx));
-                }
-            }
-            @Override public void set(int aIdx, double aValue) {
-                if (aIdx < tEndHW) {
-                    mHiddenWeights.set(aIdx, aValue);
-                } else
-                if (aIdx < tEndOW) {
-                    mOutputWeight.set(aIdx-tEndHW, aValue);
-                } else
-                if (aIdx < tEndHB) {
-                    mHiddenBiases.set(aIdx-tEndOW, aValue);
-                } else
-                if (aIdx < tEndOB) {
-                    mOutputBias[0] = aValue;
-                } else {
-                    throw new IndexOutOfBoundsException(String.valueOf(aIdx));
-                }
-            }
-            @Override public int size() {
-                return tEndOB;
-            }
-        };
+    @Override public void mountParameter(IDataShell<double[]> aData) {
+        if (Conf.OPERATION_CHECK) {
+            if (parameterSize() != aData.internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+        } else {
+            if (parameterSize() > aData.internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+        }
+        double[] tData = aData.internalData();
+        int tShift = aData.internalDataShift();
+        
+        IVector oVec = mHiddenWeights;
+        mHiddenWeights = new ShiftVector(mHiddenWeightsSize, tShift, tData);
+        tShift += mHiddenWeightsSize;
+        mHiddenWeights.fill(oVec);
+        
+        oVec = mOutputWeight;
+        mOutputWeight = new ShiftVector(mOutputWeightSize, tShift, tData);
+        tShift += mOutputWeightSize;
+        mOutputWeight.fill(oVec);
+        
+        oVec = mHiddenBiases;
+        mHiddenBiases = new ShiftVector(mHiddenBiasesSize, tShift, tData);
+        tShift += mHiddenBiasesSize;
+        mHiddenBiases.fill(oVec);
+        
+        double tOutputBias = mOutputBias.get(0);
+        mOutputBias = new ShiftVector(1, tShift, tData);
+        mOutputBias.set(0, tOutputBias);
+    }
+    @Override public void mountGradParameter(IDataShell<double[]> aData) {
+        if (Conf.OPERATION_CHECK) {
+            if (parameterSize() != aData.internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+        } else {
+            if (parameterSize() > aData.internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+        }
+        double[] tData = aData.internalData();
+        int tShift = aData.internalDataShift();
+        mGradHiddenWeights = new ShiftVector(mHiddenWeightsSize, tShift, tData);
+        tShift += mHiddenWeightsSize;
+        mGradOutputWeight = new ShiftVector(mOutputWeightSize, tShift, tData);
+        tShift += mOutputWeightSize;
+        mGradHiddenBiases = new ShiftVector(mHiddenBiasesSize, tShift, tData);
+        tShift += mHiddenBiasesSize;
+        mGradOutputBias = new ShiftVector(1, tShift, tData);
     }
     
-    @Override public int parameterSize() {
-        return fittableParameterSize();
+    @Override public int cptrParameterSize() {
+        return parameterSize();
     }
     public int inputSize() {
         return mInputDim;
     }
-    @Override public void mountParameter(IDoubleOrFloatCPointer aPtr) {
+    @Override public void mountCptrParameter(IDoubleOrFloatCPointer aPtr) {
         mInternalHiddenWeights = aPtr.copy();
         mInternalOutputWeight = mInternalHiddenWeights.plus(mHiddenWeightsSize);
         mInternalHiddenBiases = mInternalOutputWeight.plus(mOutputWeightSize);
         mInternalOutputBias = mInternalHiddenBiases.plus(mHiddenBiasesSize);
         updateParameters_();
+    }
+    @Override public void mountGradCptrParameter(IDoubleOrFloatCPointer aPtr) {
+        mInternalGradHiddenWeights = aPtr.copy();
+        mInternalGradOutputWeight = mInternalGradHiddenWeights.plus(mHiddenWeightsSize);
+        mInternalGradHiddenBiases = mInternalGradOutputWeight.plus(mOutputWeightSize);
+        mInternalGradOutputBias = mInternalGradHiddenBiases.plus(mHiddenBiasesSize);
     }
     
     @Override public int forwardCacheSize() {
