@@ -97,9 +97,9 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
     @Override public void fill          (IMatrixGetter aRHS) {
         final IMatrix tThis = thisMatrix_();
         final IDoubleSetOnlyIterator si = tThis.setIteratorCol();
-        final int tColNum = tThis.ncols();
-        final int tRowNum = tThis.nrows();
-        for (int col = 0; col < tColNum; ++col) for (int row = 0; row < tRowNum; ++row) {
+        final int tNumCols = tThis.ncols();
+        final int tNumRows = tThis.nrows();
+        for (int col = 0; col < tNumCols; ++col) for (int row = 0; row < tNumRows; ++row) {
             si.nextAndSet(aRHS.get(row, col));
         }
     }
@@ -128,16 +128,19 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         // 先判断大小是否合适
         matmul2thisCheck(rThis.nrows(), rThis.ncols(), aRHS.nrows(), aRHS.ncols());
         // 获取必要数据（mid == col）
-        final int tRowNum = rThis.nrows();
-        final int tColNum = rThis.ncols();
+        final int tNumRows = rThis.nrows();
+        final int tNumCols = rThis.ncols();
         // 特殊情况，这里是不去处理
-        if (tColNum == 0) return;
+        if (tNumCols == 0) return;
         // 尝试使用 native 接口
         if (Conf.NATIVE_OPERATION) {
-            Vector tRow = VectorCache.getVec(tColNum);
+            Vector tRow = VectorCache.getVec(tNumCols);
             RowMatrix tThis = rThis.toBufRow();
             ColumnMatrix tRHS = aRHS.toBufCol();
-            ARRAY.Native.matmulRC2This(tThis.internalData(), 0, tRHS.internalData(), 0, tRow.internalData(), tRowNum, tColNum);
+            ARRAY.Native.matmulRC2This(
+                tThis.internalData(), tThis.internalDataShift(), tRHS.internalData(), tRHS.internalDataShift(),
+                tRow.internalData(), tNumRows, tNumCols
+            );
             aRHS.releaseBuf(tRHS, true);
             rThis.releaseBuf(tThis);
             VectorCache.returnVec(tRow);
@@ -147,13 +150,13 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         ColumnMatrix tRHS = aRHS.toBufCol();
         double[] rData = tRHS.internalData();
         // 注意 mid == col，可以直接展开
-        switch(tColNum) {
+        switch(tNumCols) {
         case 1: {
             rThis.multiply2this(rData[0]);
             break;
         }
         case 2: {
-            for (int row = 0; row < tRowNum; ++row) {
+            for (int row = 0; row < tNumRows; ++row) {
                 double tRow0 = rThis.get(row, 0);
                 double tRow1 = rThis.get(row, 1);
                 rThis.set(row, 0, tRow0*rData[0] + tRow1*rData[1]);
@@ -162,7 +165,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
             break;
         }
         case 3: {
-            for (int row = 0; row < tRowNum; ++row) {
+            for (int row = 0; row < tNumRows; ++row) {
                 double tRow0 = rThis.get(row, 0);
                 double tRow1 = rThis.get(row, 1);
                 double tRow2 = rThis.get(row, 2);
@@ -173,7 +176,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
             break;
         }
         case 4: {
-            for (int row = 0; row < tRowNum; ++row) {
+            for (int row = 0; row < tNumRows; ++row) {
                 double tRow0 = rThis.get(row, 0);
                 double tRow1 = rThis.get(row, 1);
                 double tRow2 = rThis.get(row, 2);
@@ -186,7 +189,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
             break;
         }
         case 5: {
-            for (int row = 0; row < tRowNum; ++row) {
+            for (int row = 0; row < tNumRows; ++row) {
                 double tRow0 = rThis.get(row, 0);
                 double tRow1 = rThis.get(row, 1);
                 double tRow2 = rThis.get(row, 2);
@@ -201,7 +204,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
             break;
         }
         case 6: {
-            for (int row = 0; row < tRowNum; ++row) {
+            for (int row = 0; row < tNumRows; ++row) {
                 double tRow0 = rThis.get(row, 0);
                 double tRow1 = rThis.get(row, 1);
                 double tRow2 = rThis.get(row, 2);
@@ -218,7 +221,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
             break;
         }
         case 7: {
-            for (int row = 0; row < tRowNum; ++row) {
+            for (int row = 0; row < tNumRows; ++row) {
                 double tRow0 = rThis.get(row, 0);
                 double tRow1 = rThis.get(row, 1);
                 double tRow2 = rThis.get(row, 2);
@@ -237,7 +240,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
             break;
         }
         case 8: {
-            for (int row = 0; row < tRowNum; ++row) {
+            for (int row = 0; row < tNumRows; ++row) {
                 double tRow0 = rThis.get(row, 0);
                 double tRow1 = rThis.get(row, 1);
                 double tRow2 = rThis.get(row, 2);
@@ -258,12 +261,12 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
             break;
         }
         default: {
-            Vector tRow = VectorCache.getVec(tColNum);
+            Vector tRow = VectorCache.getVec(tNumCols);
             double[] rowData = tRow.internalData();
-            for (int row = 0; row < tRowNum; ++row) {
+            for (int row = 0; row < tNumRows; ++row) {
                 tRow.fill(rThis.row(row));
-                for (int col = 0, rs = 0; col < tColNum; ++col, rs+=tColNum) {
-                    rThis.set(row, col, ARRAY.dot(rowData, 0, rData, rs, tColNum));
+                for (int col = 0, rs = 0; col < tNumCols; ++col, rs+=tNumCols) {
+                    rThis.set(row, col, ARRAY.dot(rowData, 0, rData, rs, tNumCols));
                 }
             }
             VectorCache.returnVec(tRow);
@@ -276,16 +279,19 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         // 先判断大小是否合适
         lmatmul2thisCheck(rThis.nrows(), rThis.ncols(), aRHS.nrows(), aRHS.ncols());
         // 获取必要数据（mid == row）
-        final int tRowNum = rThis.nrows();
-        final int tColNum = rThis.ncols();
+        final int tNumRows = rThis.nrows();
+        final int tNumCols = rThis.ncols();
         // 特殊情况，这里是不去处理
-        if (tRowNum == 0) return;
+        if (tNumRows == 0) return;
         // 尝试使用 native 接口
         if (Conf.NATIVE_OPERATION) {
             ColumnMatrix tThis = rThis.toBufCol();
             RowMatrix tRHS = aRHS.toBufRow();
-            Vector tCol = VectorCache.getVec(tRowNum);
-            ARRAY.Native.lmatmulCR2This(tThis.internalData(), 0, tRHS.internalData(), 0, tCol.internalData(), tRowNum, tColNum);
+            Vector tCol = VectorCache.getVec(tNumRows);
+            ARRAY.Native.lmatmulCR2This(
+                tThis.internalData(), tThis.internalDataShift(), tRHS.internalData(), tRHS.internalDataShift(),
+                tCol.internalData(), tNumRows, tNumCols
+            );
             VectorCache.returnVec(tCol);
             aRHS.releaseBuf(tRHS, true);
             rThis.releaseBuf(tThis);
@@ -295,14 +301,14 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         RowMatrix tRHS = aRHS.toBufRow();
         double[] rData = tRHS.internalData();
         // 注意 mid == row，可以直接展开
-        switch(tRowNum) {
+        switch(tNumRows) {
         case 1: {
             // 可以直接这样处理，因为两个 double 相乘满足交换律
             rThis.multiply2this(rData[0]);
             break;
         }
         case 2: {
-            for (int col = 0; col < tColNum; ++col) {
+            for (int col = 0; col < tNumCols; ++col) {
                 double tCol0 = rThis.get(0, col);
                 double tCol1 = rThis.get(1, col);
                 rThis.set(0, col, rData[0]*tCol0 + rData[1]*tCol1);
@@ -311,7 +317,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
             break;
         }
         case 3: {
-            for (int col = 0; col < tColNum; ++col) {
+            for (int col = 0; col < tNumCols; ++col) {
                 double tCol0 = rThis.get(0, col);
                 double tCol1 = rThis.get(1, col);
                 double tCol2 = rThis.get(2, col);
@@ -322,7 +328,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
             break;
         }
         case 4: {
-            for (int col = 0; col < tColNum; ++col) {
+            for (int col = 0; col < tNumCols; ++col) {
                 double tCol0 = rThis.get(0, col);
                 double tCol1 = rThis.get(1, col);
                 double tCol2 = rThis.get(2, col);
@@ -335,7 +341,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
             break;
         }
         case 5: {
-            for (int col = 0; col < tColNum; ++col) {
+            for (int col = 0; col < tNumCols; ++col) {
                 double tCol0 = rThis.get(0, col);
                 double tCol1 = rThis.get(1, col);
                 double tCol2 = rThis.get(2, col);
@@ -350,7 +356,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
             break;
         }
         case 6: {
-            for (int col = 0; col < tColNum; ++col) {
+            for (int col = 0; col < tNumCols; ++col) {
                 double tCol0 = rThis.get(0, col);
                 double tCol1 = rThis.get(1, col);
                 double tCol2 = rThis.get(2, col);
@@ -367,7 +373,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
             break;
         }
         case 7: {
-            for (int col = 0; col < tColNum; ++col) {
+            for (int col = 0; col < tNumCols; ++col) {
                 double tCol0 = rThis.get(0, col);
                 double tCol1 = rThis.get(1, col);
                 double tCol2 = rThis.get(2, col);
@@ -386,7 +392,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
             break;
         }
         case 8: {
-            for (int col = 0; col < tColNum; ++col) {
+            for (int col = 0; col < tNumCols; ++col) {
                 double tCol0 = rThis.get(0, col);
                 double tCol1 = rThis.get(1, col);
                 double tCol2 = rThis.get(2, col);
@@ -407,12 +413,12 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
             break;
         }
         default: {
-            Vector tCol = VectorCache.getVec(tRowNum);
+            Vector tCol = VectorCache.getVec(tNumRows);
             double[] colData = tCol.internalData();
-            for (int col = 0; col < tColNum; ++col) {
+            for (int col = 0; col < tNumCols; ++col) {
                 tCol.fill(rThis.col(col));
-                for (int row = 0, rs = 0; row < tRowNum; ++row, rs+=tRowNum) {
-                    rThis.set(row, col, ARRAY.dot(rData, rs, colData, 0, tRowNum));
+                for (int row = 0, rs = 0; row < tNumRows; ++row, rs+=tNumRows) {
+                    rThis.set(row, col, ARRAY.dot(rData, rs, colData, 0, tNumRows));
                 }
             }
             VectorCache.returnVec(tCol);
@@ -424,28 +430,32 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         // 先判断大小是否合适
         matmul2destCheck(aLHS.nrows(), aLHS.ncols(), aRHS.nrows(), aRHS.ncols(), rDest.nrows(), rDest.ncols());
         // 获取必要数据
-        final int tRowNum = aLHS.nrows();
-        final int tColNum = aRHS.ncols();
-        final int tMidNum = aLHS.ncols();
+        final int tNumRows = aLHS.nrows();
+        final int tNumCols = aRHS.ncols();
+        final int tNumMids = aLHS.ncols();
         // 特殊情况处理
-        if (tMidNum == 0) return;
+        if (tNumMids == 0) return;
         // 现在对于串行的版本默认都不进行分块，更加简洁且很多情况下都更快
         // 判断行列顺序优先，这个问题没有那么简单
         // 一般情况下，行和列更短的一方对应矩阵更小，应该优先全部遍历（内存友好）
-        boolean tRowFirst = tColNum > tRowNum;
+        boolean tRowFirst = tNumCols > tNumRows;
         // 尝试使用 native 接口
         if (Conf.NATIVE_OPERATION) {
             RowMatrix tLHS = aLHS.toBufRow();
             ColumnMatrix tRHS = aRHS.toBufCol();
             if (tRowFirst) {
                 ColumnMatrix rBuf = rDest.toBufCol(true);
-                ARRAY.Native.matmulRCC2Dest(tLHS.internalData(), 0, tRHS.internalData(), 0,
-                                            rBuf.internalData(), 0, tRowNum, tColNum, tMidNum);
+                ARRAY.Native.matmulRCC2Dest(
+                    tLHS.internalData(), tLHS.internalDataShift(), tRHS.internalData(), tRHS.internalDataShift(),
+                    rBuf.internalData(), rBuf.internalDataShift(), tNumRows, tNumCols, tNumMids
+                );
                 rDest.releaseBuf(rBuf);
             } else {
                 RowMatrix rBuf = rDest.toBufRow(true);
-                ARRAY.Native.matmulRCR2Dest(tLHS.internalData(), 0, tRHS.internalData(), 0,
-                                            rBuf.internalData(), 0, tRowNum, tColNum, tMidNum);
+                ARRAY.Native.matmulRCR2Dest(
+                    tLHS.internalData(), tLHS.internalDataShift(), tRHS.internalData(), tRHS.internalDataShift(),
+                    rBuf.internalData(), rBuf.internalDataShift(), tNumRows, tNumCols, tNumMids
+                );
                 rDest.releaseBuf(rBuf);
             }
             aRHS.releaseBuf(tRHS, true);
@@ -453,84 +463,84 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
             return;
         }
         // 在 jse 实现中，中间很短的情况下应该翻转这个操作，从而更好利用上 SIMD 加速
-        if (tMidNum <= 4) tRowFirst = !tRowFirst;
+        if (tNumMids <= 4) tRowFirst = !tRowFirst;
         // 根据上述判断决定遍历顺序
         if (tRowFirst) {
             // 先遍历行，因此左边需要是行矩阵
             RowMatrix tLHS = aLHS.toBufRow();
             double[] lData = tLHS.internalData();
-            switch(tMidNum) {
+            switch(tNumMids) {
             case 1: {
-                for (int col = 0; col < tColNum; ++col) {
+                for (int col = 0; col < tNumCols; ++col) {
                     double tCol0 = aRHS.get(0, col);
-                    for (int row = 0; row < tRowNum; ++row) {
+                    for (int row = 0; row < tNumRows; ++row) {
                         rDest.set(row, col, lData[row]*tCol0);
                     }
                 }
                 break;
             }
             case 2: {
-                for (int col = 0; col < tColNum; ++col) {
+                for (int col = 0; col < tNumCols; ++col) {
                     double tCol0 = aRHS.get(0, col);
                     double tCol1 = aRHS.get(1, col);
-                    for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=2) {
+                    for (int row = 0, ls = 0; row < tNumRows; ++row, ls+=2) {
                         rDest.set(row, col, lData[ls]*tCol0 + lData[ls+1]*tCol1);
                     }
                 }
                 break;
             }
             case 3: {
-                for (int col = 0; col < tColNum; ++col) {
+                for (int col = 0; col < tNumCols; ++col) {
                     double tCol0 = aRHS.get(0, col);
                     double tCol1 = aRHS.get(1, col);
                     double tCol2 = aRHS.get(2, col);
-                    for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=3) {
+                    for (int row = 0, ls = 0; row < tNumRows; ++row, ls+=3) {
                         rDest.set(row, col, lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2);
                     }
                 }
                 break;
             }
             case 4: {
-                for (int col = 0; col < tColNum; ++col) {
+                for (int col = 0; col < tNumCols; ++col) {
                     double tCol0 = aRHS.get(0, col);
                     double tCol1 = aRHS.get(1, col);
                     double tCol2 = aRHS.get(2, col);
                     double tCol3 = aRHS.get(3, col);
-                    for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=4) {
+                    for (int row = 0, ls = 0; row < tNumRows; ++row, ls+=4) {
                         rDest.set(row, col, lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2 + lData[ls+3]*tCol3);
                     }
                 }
                 break;
             }
             case 5: {
-                for (int col = 0; col < tColNum; ++col) {
+                for (int col = 0; col < tNumCols; ++col) {
                     double tCol0 = aRHS.get(0, col);
                     double tCol1 = aRHS.get(1, col);
                     double tCol2 = aRHS.get(2, col);
                     double tCol3 = aRHS.get(3, col);
                     double tCol4 = aRHS.get(4, col);
-                    for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=5) {
+                    for (int row = 0, ls = 0; row < tNumRows; ++row, ls+=5) {
                         rDest.set(row, col, lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2 + lData[ls+3]*tCol3 + lData[ls+4]*tCol4);
                     }
                 }
                 break;
             }
             case 6: {
-                for (int col = 0; col < tColNum; ++col) {
+                for (int col = 0; col < tNumCols; ++col) {
                     double tCol0 = aRHS.get(0, col);
                     double tCol1 = aRHS.get(1, col);
                     double tCol2 = aRHS.get(2, col);
                     double tCol3 = aRHS.get(3, col);
                     double tCol4 = aRHS.get(4, col);
                     double tCol5 = aRHS.get(5, col);
-                    for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=6) {
+                    for (int row = 0, ls = 0; row < tNumRows; ++row, ls+=6) {
                         rDest.set(row, col, lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2 + lData[ls+3]*tCol3 + lData[ls+4]*tCol4 + lData[ls+5]*tCol5);
                     }
                 }
                 break;
             }
             case 7: {
-                for (int col = 0; col < tColNum; ++col) {
+                for (int col = 0; col < tNumCols; ++col) {
                     double tCol0 = aRHS.get(0, col);
                     double tCol1 = aRHS.get(1, col);
                     double tCol2 = aRHS.get(2, col);
@@ -538,14 +548,14 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                     double tCol4 = aRHS.get(4, col);
                     double tCol5 = aRHS.get(5, col);
                     double tCol6 = aRHS.get(6, col);
-                    for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=7) {
+                    for (int row = 0, ls = 0; row < tNumRows; ++row, ls+=7) {
                         rDest.set(row, col, lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2 + lData[ls+3]*tCol3 + lData[ls+4]*tCol4 + lData[ls+5]*tCol5 + lData[ls+6]*tCol6);
                     }
                 }
                 break;
             }
             case 8: {
-                for (int col = 0; col < tColNum; ++col) {
+                for (int col = 0; col < tNumCols; ++col) {
                     double tCol0 = aRHS.get(0, col);
                     double tCol1 = aRHS.get(1, col);
                     double tCol2 = aRHS.get(2, col);
@@ -554,19 +564,19 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                     double tCol5 = aRHS.get(5, col);
                     double tCol6 = aRHS.get(6, col);
                     double tCol7 = aRHS.get(7, col);
-                    for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=8) {
+                    for (int row = 0, ls = 0; row < tNumRows; ++row, ls+=8) {
                         rDest.set(row, col, lData[ls]*tCol0 + lData[ls+1]*tCol1 + lData[ls+2]*tCol2 + lData[ls+3]*tCol3 + lData[ls+4]*tCol4 + lData[ls+5]*tCol5 + lData[ls+6]*tCol6 + lData[ls+7]*tCol7);
                     }
                 }
                 break;
             }
             default: {
-                Vector tCol = VectorCache.getVec(tMidNum);
+                Vector tCol = VectorCache.getVec(tNumMids);
                 double[] colData = tCol.internalData();
-                for (int col = 0; col < tColNum; ++col) {
+                for (int col = 0; col < tNumCols; ++col) {
                     tCol.fill(aRHS.col(col));
-                    for (int row = 0, ls = 0; row < tRowNum; ++row, ls+=tMidNum) {
-                        rDest.set(row, col, ARRAY.dot(lData, ls, colData, 0, tMidNum));
+                    for (int row = 0, ls = 0; row < tNumRows; ++row, ls+=tNumMids) {
+                        rDest.set(row, col, ARRAY.dot(lData, ls, colData, 0, tNumMids));
                     }
                 }
                 VectorCache.returnVec(tCol);
@@ -577,78 +587,78 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
             // 先遍历列，因此右边需要是列矩阵
             ColumnMatrix tRHS = aRHS.toBufCol();
             double[] rData = tRHS.internalData();
-            switch(tMidNum) {
+            switch(tNumMids) {
             case 1: {
-                for (int row = 0; row < tRowNum; ++row) {
+                for (int row = 0; row < tNumRows; ++row) {
                     double tRow0 = aLHS.get(row, 0);
-                    for (int col = 0; col < tColNum; ++col) {
+                    for (int col = 0; col < tNumCols; ++col) {
                         rDest.set(row, col, tRow0*rData[col]);
                     }
                 }
                 break;
             }
             case 2: {
-                for (int row = 0; row < tRowNum; ++row) {
+                for (int row = 0; row < tNumRows; ++row) {
                     double tRow0 = aLHS.get(row, 0);
                     double tRow1 = aLHS.get(row, 1);
-                    for (int col = 0, rs = 0; col < tColNum; ++col, rs+=2) {
+                    for (int col = 0, rs = 0; col < tNumCols; ++col, rs+=2) {
                         rDest.set(row, col, tRow0*rData[rs] + tRow1*rData[rs+1]);
                     }
                 }
                 break;
             }
             case 3: {
-                for (int row = 0; row < tRowNum; ++row) {
+                for (int row = 0; row < tNumRows; ++row) {
                     double tRow0 = aLHS.get(row, 0);
                     double tRow1 = aLHS.get(row, 1);
                     double tRow2 = aLHS.get(row, 2);
-                    for (int col = 0, rs = 0; col < tColNum; ++col, rs+=3) {
+                    for (int col = 0, rs = 0; col < tNumCols; ++col, rs+=3) {
                         rDest.set(row, col, tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2]);
                     }
                 }
                 break;
             }
             case 4: {
-                for (int row = 0; row < tRowNum; ++row) {
+                for (int row = 0; row < tNumRows; ++row) {
                     double tRow0 = aLHS.get(row, 0);
                     double tRow1 = aLHS.get(row, 1);
                     double tRow2 = aLHS.get(row, 2);
                     double tRow3 = aLHS.get(row, 3);
-                    for (int col = 0, rs = 0; col < tColNum; ++col, rs+=4) {
+                    for (int col = 0, rs = 0; col < tNumCols; ++col, rs+=4) {
                         rDest.set(row, col, tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2] + tRow3*rData[rs+3]);
                     }
                 }
                 break;
             }
             case 5: {
-                for (int row = 0; row < tRowNum; ++row) {
+                for (int row = 0; row < tNumRows; ++row) {
                     double tRow0 = aLHS.get(row, 0);
                     double tRow1 = aLHS.get(row, 1);
                     double tRow2 = aLHS.get(row, 2);
                     double tRow3 = aLHS.get(row, 3);
                     double tRow4 = aLHS.get(row, 4);
-                    for (int col = 0, rs = 0; col < tColNum; ++col, rs+=5) {
+                    for (int col = 0, rs = 0; col < tNumCols; ++col, rs+=5) {
                         rDest.set(row, col, tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2] + tRow3*rData[rs+3] + tRow4*rData[rs+4]);
                     }
                 }
                 break;
             }
             case 6: {
-                for (int row = 0; row < tRowNum; ++row) {
+                for (int row = 0; row < tNumRows; ++row) {
                     double tRow0 = aLHS.get(row, 0);
                     double tRow1 = aLHS.get(row, 1);
                     double tRow2 = aLHS.get(row, 2);
                     double tRow3 = aLHS.get(row, 3);
                     double tRow4 = aLHS.get(row, 4);
                     double tRow5 = aLHS.get(row, 5);
-                    for (int col = 0, rs = 0; col < tColNum; ++col, rs+=6) {
+                    for (int col = 0, rs = 0; col < tNumCols; ++col, rs+=6) {
                         rDest.set(row, col, tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2] + tRow3*rData[rs+3] + tRow4*rData[rs+4] + tRow5*rData[rs+5]);
                     }
                 }
                 break;
             }
             case 7: {
-                for (int row = 0; row < tRowNum; ++row) {
+                for (int row = 0; row < tNumRows; ++row) {
                     double tRow0 = aLHS.get(row, 0);
                     double tRow1 = aLHS.get(row, 1);
                     double tRow2 = aLHS.get(row, 2);
@@ -656,14 +666,14 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                     double tRow4 = aLHS.get(row, 4);
                     double tRow5 = aLHS.get(row, 5);
                     double tRow6 = aLHS.get(row, 6);
-                    for (int col = 0, rs = 0; col < tColNum; ++col, rs+=7) {
+                    for (int col = 0, rs = 0; col < tNumCols; ++col, rs+=7) {
                         rDest.set(row, col, tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2] + tRow3*rData[rs+3] + tRow4*rData[rs+4] + tRow5*rData[rs+5] + tRow6*rData[rs+6]);
                     }
                 }
                 break;
             }
             case 8: {
-                for (int row = 0; row < tRowNum; ++row) {
+                for (int row = 0; row < tNumRows; ++row) {
                     double tRow0 = aLHS.get(row, 0);
                     double tRow1 = aLHS.get(row, 1);
                     double tRow2 = aLHS.get(row, 2);
@@ -672,19 +682,19 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                     double tRow5 = aLHS.get(row, 5);
                     double tRow6 = aLHS.get(row, 6);
                     double tRow7 = aLHS.get(row, 7);
-                    for (int col = 0, rs = 0; col < tColNum; ++col, rs+=8) {
+                    for (int col = 0, rs = 0; col < tNumCols; ++col, rs+=8) {
                         rDest.set(row, col, tRow0*rData[rs] + tRow1*rData[rs+1] + tRow2*rData[rs+2] + tRow3*rData[rs+3] + tRow4*rData[rs+4] + tRow5*rData[rs+5] + tRow6*rData[rs+6] + tRow7*rData[rs+7]);
                     }
                 }
                 break;
             }
             default: {
-                Vector tRow = VectorCache.getVec(tMidNum);
+                Vector tRow = VectorCache.getVec(tNumMids);
                 double[] rowData = tRow.internalData();
-                for (int row = 0; row < tRowNum; ++row) {
+                for (int row = 0; row < tNumRows; ++row) {
                     tRow.fill(aLHS.row(row));
-                    for (int col = 0, rs = 0; col < tColNum; ++col, rs+=tMidNum) {
-                        rDest.set(row, col, ARRAY.dot(rowData, 0, rData, rs, tMidNum));
+                    for (int col = 0, rs = 0; col < tNumCols; ++col, rs+=tNumMids) {
+                        rDest.set(row, col, ARRAY.dot(rowData, 0, rData, rs, tNumMids));
                     }
                 }
                 VectorCache.returnVec(tRow);
@@ -698,9 +708,9 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
     @Override public IVector sumOfCols() {
         final IMatrix tThis = thisMatrix_();
         
-        final int tColNum = tThis.ncols();
-        IVector rVector = newVector_(tColNum);
-        for (int col = 0; col < tColNum; ++col) {
+        final int tNumCols = tThis.ncols();
+        IVector rVector = newVector_(tNumCols);
+        for (int col = 0; col < tNumCols; ++col) {
             rVector.set(col, tThis.col(col).sum());
         }
         return rVector;
@@ -708,9 +718,9 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
     @Override public IVector sumOfRows() {
         final IMatrix tThis = thisMatrix_();
         
-        final int tRowNum = tThis.nrows();
-        IVector rVector = newVector_(tRowNum);
-        for (int row = 0; row < tRowNum; ++row) {
+        final int tNumRows = tThis.nrows();
+        IVector rVector = newVector_(tNumRows);
+        for (int row = 0; row < tNumRows; ++row) {
             rVector.set(row, tThis.row(row).sum());
         }
         return rVector;
@@ -719,9 +729,9 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
     @Override public IVector meanOfCols() {
         final IMatrix tThis = thisMatrix_();
         
-        final int tColNum = tThis.ncols();
-        IVector rVector = newVector_(tColNum);
-        for (int col = 0; col < tColNum; ++col) {
+        final int tNumCols = tThis.ncols();
+        IVector rVector = newVector_(tNumCols);
+        for (int col = 0; col < tNumCols; ++col) {
             rVector.set(col, tThis.col(col).mean());
         }
         return rVector;
@@ -729,9 +739,9 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
     @Override public IVector meanOfRows() {
         final IMatrix tThis = thisMatrix_();
         
-        final int tRowNum = tThis.nrows();
-        IVector rVector = newVector_(tRowNum);
-        for (int row = 0; row < tRowNum; ++row) {
+        final int tNumRows = tThis.nrows();
+        IVector rVector = newVector_(tNumRows);
+        for (int row = 0; row < tNumRows; ++row) {
             rVector.set(row, tThis.row(row).mean());
         }
         return rVector;
@@ -760,9 +770,9 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         final IMatrix tThis = thisMatrix_();
         
         final IDoubleIterator it = tThis.iteratorCol();
-        final int tRowNum = tThis.nrows();
-        final int tColNum = tThis.ncols();
-        for (int col = 0; col < tColNum; ++col) for (int row = 0; row < tRowNum; ++row) {
+        final int tNumRows = tThis.nrows();
+        final int tNumCols = tThis.ncols();
+        for (int col = 0; col < tNumCols; ++col) for (int row = 0; row < tNumRows; ++row) {
             double tValue = it.next();
             if (col!=row && tValue!=0.0) return false;
         }
@@ -775,56 +785,56 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         final IMatrix tThis = thisMatrix_();
         return newMatrix_(tThis.nrows(), tThis.ncols());
     }
-    static void ebeCheck(int lRowNum, int lColNum, int rRowNum, int rColNum) {
+    static void ebeCheck(int lNumRows, int lNumCols, int rNumRows, int rNumCols) {
         if (!OPERATION_CHECK) return;
-        if (lRowNum!=rRowNum || lColNum!=rColNum) throw new IllegalArgumentException(
-            "The dimensions of two matrices are not match: ("+lRowNum+" x "+lColNum+") vs ("+rRowNum+" x "+rColNum+")"
+        if (lNumRows!=rNumRows || lNumCols!=rNumCols) throw new IllegalArgumentException(
+            "The dimensions of two matrices are not match: ("+lNumRows+" x "+lNumCols+") vs ("+rNumRows+" x "+rNumCols+")"
         );
     }
-    static void ebeCheck(int lRowNum, int lColNum, int rRowNum, int rColNum, int dRowNum, int dColNum) {
+    static void ebeCheck(int lNumRows, int lNumCols, int rNumRows, int rNumCols, int dNumRows, int dNumCols) {
         if (!OPERATION_CHECK) return;
-        ebeCheck(lRowNum, lColNum, rRowNum, rColNum);
-        if (lRowNum!=dRowNum || lColNum!=dColNum) throw new IllegalArgumentException(
-            "The dimensions of input and output matrices are not match: ("+lRowNum+" x "+lColNum+") vs ("+dRowNum+" x "+dColNum+")"
+        ebeCheck(lNumRows, lNumCols, rNumRows, rNumCols);
+        if (lNumRows!=dNumRows || lNumCols!=dNumCols) throw new IllegalArgumentException(
+            "The dimensions of input and output matrices are not match: ("+lNumRows+" x "+lNumCols+") vs ("+dNumRows+" x "+dNumCols+")"
         );
     }
-    static void mapCheck(int lRowNum, int lColNum, int dRowNum, int dColNum) {
+    static void mapCheck(int lNumRows, int lNumCols, int dNumRows, int dNumCols) {
         if (!OPERATION_CHECK) return;
-        if (lRowNum!=dRowNum || lColNum!=dColNum) throw new IllegalArgumentException(
-            "The dimensions of input and output matrices are not match: ("+lRowNum+" x "+lColNum+") vs ("+dRowNum+" x "+dColNum+")"
+        if (lNumRows!=dNumRows || lNumCols!=dNumCols) throw new IllegalArgumentException(
+            "The dimensions of input and output matrices are not match: ("+lNumRows+" x "+lNumCols+") vs ("+dNumRows+" x "+dNumCols+")"
         );
     }
-    static void matmulCheck(int lRowNum, int lColNum, int rRowNum, int rColNum) {
+    static void matmulCheck(int lNumRows, int lNumCols, int rNumRows, int rNumCols) {
         if (!OPERATION_CHECK) return;
-        if (lColNum != rRowNum) throw new IllegalArgumentException(
-            "The dimension used for matrix multiplication is incorrect: ("+lRowNum+" x "+lColNum+") vs ("+rRowNum+" x "+rColNum+").\n" +
-            "Please ensure that the ncols in the first matrix ("+lColNum+") matches the nrows in the second matrix ("+rRowNum+")"
+        if (lNumCols != rNumRows) throw new IllegalArgumentException(
+            "The dimension used for matrix multiplication is incorrect: ("+lNumRows+" x "+lNumCols+") vs ("+rNumRows+" x "+rNumCols+").\n" +
+            "Please ensure that the ncols in the first matrix ("+lNumCols+") matches the nrows in the second matrix ("+rNumRows+")"
         );
     }
-    static void matmul2thisCheck(int lRowNum, int lColNum, int rRowNum, int rColNum) {
+    static void matmul2thisCheck(int lNumRows, int lNumCols, int rNumRows, int rNumCols) {
         if (!OPERATION_CHECK) return;
-        matmulCheck(lRowNum, lColNum, rRowNum, rColNum);
-        if (rRowNum != rColNum) throw new IllegalArgumentException(
-            "Input matrix for `matmul2this` MUST be square: ("+rRowNum+" x "+rColNum+")"
+        matmulCheck(lNumRows, lNumCols, rNumRows, rNumCols);
+        if (rNumRows != rNumCols) throw new IllegalArgumentException(
+            "Input matrix for `matmul2this` MUST be square: ("+rNumRows+" x "+rNumCols+")"
         );
     }
-    static void lmatmul2thisCheck(int lRowNum, int lColNum, int rRowNum, int rColNum) {
+    static void lmatmul2thisCheck(int lNumRows, int lNumCols, int rNumRows, int rNumCols) {
         if (!OPERATION_CHECK) return;
-        matmulCheck(rRowNum, rColNum, lRowNum, lColNum);
-        if (rRowNum != rColNum) throw new IllegalArgumentException(
-            "Input matrix for `lmatmul2this` MUST be square: ("+rRowNum+" x "+rColNum+")"
+        matmulCheck(rNumRows, rNumCols, lNumRows, lNumCols);
+        if (rNumRows != rNumCols) throw new IllegalArgumentException(
+            "Input matrix for `lmatmul2this` MUST be square: ("+rNumRows+" x "+rNumCols+")"
         );
     }
-    static void matmul2destCheck(int lRowNum, int lColNum, int rRowNum, int rColNum, int dRowNum, int dColNum) {
+    static void matmul2destCheck(int lNumRows, int lNumCols, int rNumRows, int rNumCols, int dNumRows, int dNumCols) {
         if (!OPERATION_CHECK) return;
-        matmulCheck(lRowNum, lColNum, rRowNum, rColNum);
-        if (lRowNum!=dRowNum || rColNum!=dColNum) throw new IllegalArgumentException(
-            "The dimensions of input and output matrix are not match: ("+lRowNum+" x "+rColNum+") vs ("+dRowNum+" x "+dColNum+")"
+        matmulCheck(lNumRows, lNumCols, rNumRows, rNumCols);
+        if (lNumRows!=dNumRows || rNumCols!=dNumCols) throw new IllegalArgumentException(
+            "The dimensions of input and output matrix are not match: ("+lNumRows+" x "+rNumCols+") vs ("+dNumRows+" x "+dNumCols+")"
         );
     }
     
     /** stuff to override */
     protected abstract IMatrix thisMatrix_();
-    protected abstract IMatrix newMatrix_(int aRowNum, int aColNum);
+    protected abstract IMatrix newMatrix_(int aNumRows, int aNumCols);
     protected IVector newVector_(int aSize) {return Vectors.zeros(aSize);}
 }

@@ -31,16 +31,16 @@ public abstract class AbstractLogicalMatrix implements ILogicalMatrix {
     /** Iterator stuffs */
     @Override public IBooleanIterator iteratorCol() {
         return new IBooleanIterator() {
-            private final int mColNum = ncols();
-            private final int mRowNum = nrows();
+            private final int mNumCols = ncols();
+            private final int mNumRows = nrows();
             private int mCol = 0;
             private int mRow = 0;
-            @Override public boolean hasNext() {return mCol < mColNum;}
+            @Override public boolean hasNext() {return mCol < mNumCols;}
             @Override public boolean next() {
                 if (hasNext()) {
                     boolean tNext = get(mRow, mCol);
                     ++mRow;
-                    if (mRow == mRowNum) {mRow = 0; ++mCol;}
+                    if (mRow == mNumRows) {mRow = 0; ++mCol;}
                     return tNext;
                 } else {
                     throw new NoSuchElementException();
@@ -50,16 +50,16 @@ public abstract class AbstractLogicalMatrix implements ILogicalMatrix {
     }
     @Override public IBooleanIterator iteratorRow() {
         return new IBooleanIterator() {
-            private final int mColNum = ncols();
-            private final int mRowNum = nrows();
+            private final int mNumCols = ncols();
+            private final int mNumRows = nrows();
             private int mCol = 0;
             private int mRow = 0;
-            @Override public boolean hasNext() {return mRow < mRowNum;}
+            @Override public boolean hasNext() {return mRow < mNumRows;}
             @Override public boolean next() {
                 if (hasNext()) {
                     boolean tNext = get(mRow, mCol);
                     ++mCol;
-                    if (mCol == mColNum) {mCol = 0; ++mRow;}
+                    if (mCol == mNumCols) {mCol = 0; ++mRow;}
                     return tNext;
                 } else {
                     throw new NoSuchElementException();
@@ -70,9 +70,9 @@ public abstract class AbstractLogicalMatrix implements ILogicalMatrix {
     @Override public IBooleanIterator iteratorColAt(final int aCol) {
         rangeCheckCol(aCol, ncols());
         return new IBooleanIterator() {
-            private final int mRowNum = nrows();
+            private final int mNumRows = nrows();
             private int mRow = 0;
-            @Override public boolean hasNext() {return mRow < mRowNum;}
+            @Override public boolean hasNext() {return mRow < mNumRows;}
             @Override public boolean next() {
                 if (hasNext()) {
                     boolean tNext = get(mRow, aCol);
@@ -87,9 +87,9 @@ public abstract class AbstractLogicalMatrix implements ILogicalMatrix {
     @Override public IBooleanIterator iteratorRowAt(final int aRow) {
         rangeCheckRow(aRow, nrows());
         return new IBooleanIterator() {
-            private final int mColNum = ncols();
+            private final int mNumCols = ncols();
             private int mCol = 0;
-            @Override public boolean hasNext() {return mCol < mColNum;}
+            @Override public boolean hasNext() {return mCol < mNumCols;}
             @Override public boolean next() {
                 if (hasNext()) {
                     boolean tNext = get(aRow, mCol);
@@ -103,11 +103,11 @@ public abstract class AbstractLogicalMatrix implements ILogicalMatrix {
     }
     @Override public IBooleanSetIterator setIteratorCol() {
         return new IBooleanSetIterator() {
-            private final int mColNum = ncols();
-            private final int mRowNum = nrows();
+            private final int mNumCols = ncols();
+            private final int mNumRows = nrows();
             private int mCol = 0, oCol = -1;
             private int mRow = 0, oRow = -1;
-            @Override public boolean hasNext() {return mCol < mColNum;}
+            @Override public boolean hasNext() {return mCol < mNumCols;}
             @Override public void set(boolean aValue) {
                 if (oRow < 0) throw new IllegalStateException();
                 AbstractLogicalMatrix.this.set(oRow, oCol, aValue);
@@ -116,7 +116,7 @@ public abstract class AbstractLogicalMatrix implements ILogicalMatrix {
                 if (hasNext()) {
                     oCol = mCol; oRow = mRow;
                     ++mRow;
-                    if (mRow == mRowNum) {mRow = 0; ++mCol;}
+                    if (mRow == mNumRows) {mRow = 0; ++mCol;}
                     return get(oRow, oCol);
                 } else {
                     throw new NoSuchElementException();
@@ -126,7 +126,7 @@ public abstract class AbstractLogicalMatrix implements ILogicalMatrix {
                 if (hasNext()) {
                     oCol = mCol; oRow = mRow;
                     ++mRow;
-                    if (mRow == mRowNum) {mRow = 0; ++mCol;}
+                    if (mRow == mNumRows) {mRow = 0; ++mCol;}
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -136,7 +136,7 @@ public abstract class AbstractLogicalMatrix implements ILogicalMatrix {
                 if (hasNext()) {
                     oCol = mCol; oRow = mRow;
                     ++mRow;
-                    if (mRow == mRowNum) {mRow = 0; ++mCol;}
+                    if (mRow == mNumRows) {mRow = 0; ++mCol;}
                     AbstractLogicalMatrix.this.set(oRow, oCol, aValue);
                 } else {
                     throw new NoSuchElementException();
@@ -146,11 +146,11 @@ public abstract class AbstractLogicalMatrix implements ILogicalMatrix {
     }
     @Override public IBooleanSetIterator setIteratorRow() {
         return new IBooleanSetIterator() {
-            private final int mColNum = ncols();
-            private final int mRowNum = nrows();
+            private final int mNumCols = ncols();
+            private final int mNumRows = nrows();
             private int mCol = 0, oCol = -1;
             private int mRow = 0, oRow = -1;
-            @Override public boolean hasNext() {return mRow < mRowNum;}
+            @Override public boolean hasNext() {return mRow < mNumRows;}
             @Override public void set(boolean aValue) {
                 if (oCol < 0) throw new IllegalStateException();
                 AbstractLogicalMatrix.this.set(oRow, oCol, aValue);
@@ -159,7 +159,7 @@ public abstract class AbstractLogicalMatrix implements ILogicalMatrix {
                 if (hasNext()) {
                     oCol = mCol; oRow = mRow;
                     ++mCol;
-                    if (mCol == mColNum) {mCol = 0; ++mRow;}
+                    if (mCol == mNumCols) {mCol = 0; ++mRow;}
                     return get(oRow, oCol);
                 } else {
                     throw new NoSuchElementException();
@@ -169,7 +169,7 @@ public abstract class AbstractLogicalMatrix implements ILogicalMatrix {
                 if (hasNext()) {
                     oCol = mCol; oRow = mRow;
                     ++mCol;
-                    if (mCol == mColNum) {mCol = 0; ++mRow;}
+                    if (mCol == mNumCols) {mCol = 0; ++mRow;}
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -179,7 +179,7 @@ public abstract class AbstractLogicalMatrix implements ILogicalMatrix {
                 if (hasNext()) {
                     oCol = mCol; oRow = mRow;
                     ++mCol;
-                    if (mCol == mColNum) {mCol = 0; ++mRow;}
+                    if (mCol == mNumCols) {mCol = 0; ++mRow;}
                     AbstractLogicalMatrix.this.set(oRow, oCol, aValue);
                 } else {
                     throw new NoSuchElementException();
@@ -190,9 +190,9 @@ public abstract class AbstractLogicalMatrix implements ILogicalMatrix {
     @Override public IBooleanSetIterator setIteratorColAt(final int aCol) {
         rangeCheckCol(aCol, ncols());
         return new IBooleanSetIterator() {
-            private final int mRowNum = nrows();
+            private final int mNumRows = nrows();
             private int mRow = 0, oRow = -1;
-            @Override public boolean hasNext() {return mRow < mRowNum;}
+            @Override public boolean hasNext() {return mRow < mNumRows;}
             @Override public void set(boolean aValue) {
                 if (oRow < 0) throw new IllegalStateException();
                 AbstractLogicalMatrix.this.set(oRow, aCol, aValue);
@@ -226,9 +226,9 @@ public abstract class AbstractLogicalMatrix implements ILogicalMatrix {
     @Override public IBooleanSetIterator setIteratorRowAt(final int aRow) {
         rangeCheckRow(aRow, nrows());
         return new IBooleanSetIterator() {
-            private final int mColNum = ncols();
+            private final int mNumCols = ncols();
             private int mCol = 0, oCol = -1;
-            @Override public boolean hasNext() {return mCol < mColNum;}
+            @Override public boolean hasNext() {return mCol < mNumCols;}
             @Override public void set(boolean aValue) {
                 if (oCol < 0) throw new IllegalStateException();
                 AbstractLogicalMatrix.this.set(aRow, oCol, aValue);
@@ -292,22 +292,22 @@ public abstract class AbstractLogicalMatrix implements ILogicalMatrix {
     }
     @Override public ILogicalVector asVecCol() {
         return new RefLogicalVector() {
-            private final int mRowNum = nrows(), mColNum = ncols();
-            @Override public boolean get(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractLogicalMatrix.this.get(aIdx%mRowNum, aIdx/mRowNum);}
-            @Override public void set(int aIdx, boolean aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractLogicalMatrix.this.set(aIdx%mRowNum, aIdx/mRowNum, aValue);}
-            @Override public boolean getAndSet(int aIdx, boolean aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractLogicalMatrix.this.getAndSet(aIdx%mRowNum, aIdx/mRowNum, aValue);}
-            @Override public int size() {return mRowNum * mColNum;}
+            private final int mNumRows = nrows(), mNumCols = ncols();
+            @Override public boolean get(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractLogicalMatrix.this.get(aIdx%mNumRows, aIdx/mNumRows);}
+            @Override public void set(int aIdx, boolean aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractLogicalMatrix.this.set(aIdx%mNumRows, aIdx/mNumRows, aValue);}
+            @Override public boolean getAndSet(int aIdx, boolean aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractLogicalMatrix.this.getAndSet(aIdx%mNumRows, aIdx/mNumRows, aValue);}
+            @Override public int size() {return mNumRows * mNumCols;}
             @Override public IBooleanIterator iterator() {return iteratorCol();}
             @Override public IBooleanSetIterator setIterator() {return setIteratorCol();}
         };
     }
     @Override public ILogicalVector asVecRow() {
         return new RefLogicalVector() {
-            private final int mRowNum = nrows(), mColNum = ncols();
-            @Override public boolean get(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractLogicalMatrix.this.get(aIdx/mColNum, aIdx%mColNum);}
-            @Override public void set(int aIdx, boolean aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractLogicalMatrix.this.set(aIdx/mColNum, aIdx%mColNum, aValue);}
-            @Override public boolean getAndSet(int aIdx, boolean aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractLogicalMatrix.this.getAndSet(aIdx/mColNum, aIdx%mColNum, aValue);}
-            @Override public int size() {return mRowNum * mColNum;}
+            private final int mNumRows = nrows(), mNumCols = ncols();
+            @Override public boolean get(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractLogicalMatrix.this.get(aIdx/mNumCols, aIdx%mNumCols);}
+            @Override public void set(int aIdx, boolean aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractLogicalMatrix.this.set(aIdx/mNumCols, aIdx%mNumCols, aValue);}
+            @Override public boolean getAndSet(int aIdx, boolean aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractLogicalMatrix.this.getAndSet(aIdx/mNumCols, aIdx%mNumCols, aValue);}
+            @Override public int size() {return mNumRows * mNumCols;}
             @Override public IBooleanIterator iterator() {return iteratorRow();}
             @Override public IBooleanSetIterator setIterator() {return setIteratorRow();}
         };
@@ -319,25 +319,25 @@ public abstract class AbstractLogicalMatrix implements ILogicalMatrix {
      * @return {@inheritDoc}
      */
     @Override public NDArray<boolean[]> numpy() {
-        final int tRowNum = nrows();
-        final int tColNum = ncols();
-        final int tSize = tRowNum*tColNum;
+        final int tNumRows = nrows();
+        final int tNumCols = ncols();
+        final int tSize = tNumRows*tNumCols;
         boolean[] rData = new boolean[tSize];
         final IBooleanIterator it = iteratorRow();
         for (int i = 0; i < tSize; ++i) {
             rData[i] = it.next();
         }
-        return new NDArray<>(rData, tRowNum, tColNum);
+        return new NDArray<>(rData, tNumRows, tNumCols);
     }
     /** {@inheritDoc} */
     @Override public boolean[][] data() {
-        final int tRowNum = nrows();
-        final int tColNum = ncols();
-        boolean[][] rMat = new boolean[tRowNum][tColNum];
+        final int tNumRows = nrows();
+        final int tNumCols = ncols();
+        boolean[][] rMat = new boolean[tNumRows][tNumCols];
         final IBooleanIterator it = iteratorRow();
-        for (int row = 0; row < tRowNum; ++row) {
+        for (int row = 0; row < tNumRows; ++row) {
             final boolean[] tRow = rMat[row];
-            for (int col = 0; col < tColNum; ++col) tRow[col] = it.next();
+            for (int col = 0; col < tNumCols; ++col) tRow[col] = it.next();
         }
         return rMat;
     }
@@ -350,11 +350,11 @@ public abstract class AbstractLogicalMatrix implements ILogicalMatrix {
     /** 同样这里改为直接用迭代器遍历实现而不去调用对应向量的运算，中等的优化程度 */
     @Override public void fill(final boolean[][] aData) {
         final IBooleanSetIterator si = setIteratorRow();
-        final int tRowNum = nrows();
-        final int tColNum = ncols();
-        for (int row = 0; row < tRowNum; ++row) {
+        final int tNumRows = nrows();
+        final int tNumCols = ncols();
+        for (int row = 0; row < tNumRows; ++row) {
             final boolean[] tRow = aData[row];
-            for (int col = 0; col < tColNum; ++col) si.nextAndSet(tRow[col]);
+            for (int col = 0; col < tNumCols; ++col) si.nextAndSet(tRow[col]);
         }
     }
     @SuppressWarnings("unchecked")
@@ -471,7 +471,7 @@ public abstract class AbstractLogicalMatrix implements ILogicalMatrix {
     @Override public ILogicalMatrixOperation operation() {
         return new AbstractLogicalMatrixOperation() {
             @Override protected ILogicalMatrix thisMatrix_() {return AbstractLogicalMatrix.this;}
-            @Override protected ILogicalMatrix newMatrix_(int aRowNum, int aColNum) {return newZeros_(aRowNum, aColNum);}
+            @Override protected ILogicalMatrix newMatrix_(int aNumRows, int aNumCols) {return newZeros_(aNumRows, aNumCols);}
             @Override protected ILogicalVector newVector_(int aSize) {return newZerosVec_(aSize);}
         };
     }
@@ -483,7 +483,7 @@ public abstract class AbstractLogicalMatrix implements ILogicalMatrix {
     @Override public abstract boolean getAndSet(int aRow, int aCol, boolean aValue); // 返回修改前的值
     @Override public abstract int nrows();
     @Override public abstract int ncols();
-    protected abstract ILogicalMatrix newZeros_(int aRowNum, int aColNum);
+    protected abstract ILogicalMatrix newZeros_(int aNumRows, int aNumCols);
     protected ILogicalVector newZerosVec_(int aSize) {return LogicalVector.zeros(aSize);}
     
     protected String toString_(boolean aValue) {return " "+(aValue?"T":"F");}

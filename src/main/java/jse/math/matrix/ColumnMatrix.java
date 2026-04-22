@@ -25,75 +25,75 @@ import java.util.function.DoubleUnaryOperator;
 public class ColumnMatrix extends DoubleArrayMatrix {
     /** 提供默认的创建 */
     public static ColumnMatrix ones(int aSize) {return ones(aSize, aSize);}
-    public static ColumnMatrix ones(int aRowNum, int aColNum) {
-        double[] tData = new double[aRowNum*aColNum];
+    public static ColumnMatrix ones(int aNumRows, int aNumCols) {
+        double[] tData = new double[aNumRows*aNumCols];
         Arrays.fill(tData, 1.0);
-        return new ColumnMatrix(aRowNum, aColNum, tData);
+        return new ColumnMatrix(aNumRows, aNumCols, tData);
     }
     public static ColumnMatrix zeros(int aSize) {return zeros(aSize, aSize);}
-    public static ColumnMatrix zeros(int aRowNum, int aColNum) {return new ColumnMatrix(aRowNum, aColNum, new double[aRowNum*aColNum]);}
+    public static ColumnMatrix zeros(int aNumRows, int aNumCols) {return new ColumnMatrix(aNumRows, aNumCols, new double[aNumRows*aNumCols]);}
     
     /** 也提供 builder 方式的构建 */
-    public static Builder builder(int aRowNum) {return new Builder(aRowNum);}
-    public static Builder builder(int aRowNum, int aInitSize) {return new Builder(aRowNum, aInitSize);}
+    public static Builder builder(int aNumRows) {return new Builder(aNumRows);}
+    public static Builder builder(int aNumRows, int aInitSize) {return new Builder(aNumRows, aInitSize);}
     public final static class Builder {
         private final static int DEFAULT_INIT_SIZE = 8;
         private DoubleList mData;
-        private final int mRowNum;
-        private Builder(int aRowNum) {mRowNum = aRowNum; mData = new DoubleList(Math.max(aRowNum, DEFAULT_INIT_SIZE));}
-        private Builder(int aRowNum, int aInitSize) {mRowNum = aRowNum; mData = new DoubleList(Math.max(aRowNum, aInitSize));}
+        private final int mNumRows;
+        private Builder(int aNumRows) {mNumRows = aNumRows; mData = new DoubleList(Math.max(aNumRows, DEFAULT_INIT_SIZE));}
+        private Builder(int aNumRows, int aInitSize) {mNumRows = aNumRows; mData = new DoubleList(Math.max(aNumRows, aInitSize));}
         
-        public void addCol(IVectorGetter aColGetter) {mData.addAll(mRowNum, aColGetter);}
+        public void addCol(IVectorGetter aColGetter) {mData.addAll(mNumRows, aColGetter);}
         public void trimToSize() {mData.trimToSize();}
         
         public ColumnMatrix build() {
             DoubleList tData = Objects.requireNonNull(mData);
             mData = null; // 设为 null 防止再通过 Builder 来修改此数据
-            return new ColumnMatrix(mRowNum, tData.size()/mRowNum, tData.internalData());
+            return new ColumnMatrix(mNumRows, tData.size()/mNumRows, tData.internalData());
         }
     }
     
-    private final int mRowNum;
-    private final int mColNum;
+    private final int mNumRows;
+    private final int mNumCols;
     
-    public ColumnMatrix(int aRowNum, int aColNum, double[] aData) {
+    public ColumnMatrix(int aNumRows, int aNumCols, double[] aData) {
         super(aData);
-        mRowNum = aRowNum;
-        mColNum = aColNum;
+        mNumRows = aNumRows;
+        mNumCols = aNumCols;
     }
-    public ColumnMatrix(int aRowNum, double[] aData) {this(aRowNum, aData.length/aRowNum, aData);}
+    public ColumnMatrix(int aNumRows, double[] aData) {this(aNumRows, aData.length/aNumRows, aData);}
     
     
     /** IMatrix stuffs */
     @Override public final double get(int aRow, int aCol) {
-        rangeCheckRow(aRow, mRowNum);
-        rangeCheckCol(aCol, mColNum);
-        return mData[aRow + aCol*mRowNum];
+        rangeCheckRow(aRow, mNumRows);
+        rangeCheckCol(aCol, mNumCols);
+        return mData[aRow + aCol* mNumRows];
     }
     @Override public final void set(int aRow, int aCol, double aValue) {
-        rangeCheckRow(aRow, mRowNum);
-        rangeCheckCol(aCol, mColNum);
-        mData[aRow + aCol*mRowNum] = aValue;
+        rangeCheckRow(aRow, mNumRows);
+        rangeCheckCol(aCol, mNumCols);
+        mData[aRow + aCol* mNumRows] = aValue;
     }
     @Override public final double getAndSet(int aRow, int aCol, double aValue) {
-        rangeCheckRow(aRow, mRowNum);
-        rangeCheckCol(aCol, mColNum);
-        int tIdx = aRow + aCol*mRowNum;
+        rangeCheckRow(aRow, mNumRows);
+        rangeCheckCol(aCol, mNumCols);
+        int tIdx = aRow + aCol* mNumRows;
         double oValue = mData[tIdx];
         mData[tIdx] = aValue;
         return oValue;
     }
-    @Override public final int nrows() {return mRowNum;}
-    @Override public final int ncols() {return mColNum;}
+    @Override public final int nrows() {return mNumRows;}
+    @Override public final int ncols() {return mNumCols;}
     
-    @Override protected ColumnMatrix newZeros_(int aRowNum, int aColNum) {return ColumnMatrix.zeros(aRowNum, aColNum);}
+    @Override protected ColumnMatrix newZeros_(int aNumRows, int aNumCols) {return ColumnMatrix.zeros(aNumRows, aNumCols);}
     @Override public ColumnMatrix copy() {return (ColumnMatrix)super.copy();}
     
-    @Override public int internalDataSize() {return mRowNum*mColNum;}
+    @Override public int internalDataSize() {return mNumRows * mNumCols;}
     
     @Override public double @Nullable[] getIfHasSameOrderData(Object aObj) {
         // 只有同样是 ColumnMatrix 并且行数相同才会返回 mData
-        if (aObj instanceof ColumnMatrix && ((ColumnMatrix)aObj).mRowNum == mRowNum) return ((ColumnMatrix)aObj).mData;
+        if (aObj instanceof ColumnMatrix && ((ColumnMatrix)aObj).mNumRows == mNumRows) return ((ColumnMatrix)aObj).mData;
         return null;
     }
     
@@ -104,53 +104,53 @@ public class ColumnMatrix extends DoubleArrayMatrix {
     /** Optimize stuffs，重写这个提高列向的索引速度 */
     @Override public List<? extends Vector> cols() {
         return new AbstractRandomAccessList<Vector>() {
-            @Override public int size() {return mColNum;}
+            @Override public int size() {return mNumCols;}
             @Override public Vector get(int aCol) {return col(aCol);}
         };
     }
     @Override public Vector col(final int aCol) {
-        rangeCheckCol(aCol, mColNum);
-        return new Vector(mRowNum, aCol*mRowNum, mData);
+        rangeCheckCol(aCol, mNumCols);
+        return new Vector(mNumRows, aCol* mNumRows, mData);
     }
     
     /** Optimize stuffs，列向展开的向量直接返回 */
-    @Override public Vector asVecCol() {return new Vector(mRowNum*mColNum, mData);}
+    @Override public Vector asVecCol() {return new Vector(mNumRows * mNumCols, mData);}
     
     /** Optimize stuffs，引用转置直接返回 {@link RowMatrix} */
     @Override public final IMatrixOperation operation() {
         return new DoubleArrayMatrixOperation_() {
             @Override public void fill(IMatrixGetter aRHS) {
                 int idx = 0;
-                for (int col = 0; col < mColNum; ++col) for (int row = 0; row < mRowNum; ++row) {
+                for (int col = 0; col < mNumCols; ++col) for (int row = 0; row < mNumRows; ++row) {
                     mData[idx] = aRHS.get(row, col);
                     ++idx;
                 }
             }
             @Override public void assignCol(DoubleSupplier aSup) {
-                int rEnd = mRowNum*mColNum;
+                int rEnd = mNumRows * mNumCols;
                 for (int i = 0; i < rEnd; ++i) mData[i] = aSup.getAsDouble();
             }
             @Override public void forEachCol(DoubleConsumer aCon) {
-                int rEnd = mRowNum*mColNum;
+                int rEnd = mNumRows * mNumCols;
                 for (int i = 0; i < rEnd; ++i) aCon.accept(mData[i]);
             }
             @Override public RowMatrix refTranspose() {
-                return new RowMatrix(mColNum, mRowNum, mData);
+                return new RowMatrix(mNumCols, mNumRows, mData);
             }
         };
     }
     
     /** Optimize stuffs，重写加速这些操作 */
     @Override public final void update(int aRow, int aCol, DoubleUnaryOperator aOpt) {
-        rangeCheckRow(aRow, mRowNum);
-        rangeCheckCol(aCol, mColNum);
-        int tIdx = aRow + aCol*mRowNum;
+        rangeCheckRow(aRow, mNumRows);
+        rangeCheckCol(aCol, mNumCols);
+        int tIdx = aRow + aCol* mNumRows;
         mData[tIdx] = aOpt.applyAsDouble(mData[tIdx]);
     }
     @Override public final double getAndUpdate(int aRow, int aCol, DoubleUnaryOperator aOpt) {
-        rangeCheckRow(aRow, mRowNum);
-        rangeCheckCol(aCol, mColNum);
-        int tIdx = aRow + aCol*mRowNum;
+        rangeCheckRow(aRow, mNumRows);
+        rangeCheckCol(aCol, mNumCols);
+        int tIdx = aRow + aCol* mNumRows;
         double tValue = mData[tIdx];
         mData[tIdx] = aOpt.applyAsDouble(tValue);
         return tValue;
@@ -160,7 +160,7 @@ public class ColumnMatrix extends DoubleArrayMatrix {
     /** Optimize stuffs，重写迭代器来提高遍历速度 */
     @Override public final IDoubleIterator iteratorCol() {
         return new IDoubleIterator() {
-            private final int mSize = mRowNum * mColNum;
+            private final int mSize = mNumRows * mNumCols;
             private int mIdx = 0;
             @Override public boolean hasNext() {return mIdx < mSize;}
             @Override public double next() {
@@ -176,14 +176,14 @@ public class ColumnMatrix extends DoubleArrayMatrix {
     }
     @Override public final IDoubleIterator iteratorRow() {
         return new IDoubleIterator() {
-            private final int mSize = mRowNum * mColNum;
+            private final int mSize = mNumRows * mNumCols;
             private int mRow = 0;
             private int mIdx = mRow;
-            @Override public boolean hasNext() {return mRow < mRowNum;}
+            @Override public boolean hasNext() {return mRow < mNumRows;}
             @Override public double next() {
                 if (hasNext()) {
                     double tNext = mData[mIdx];
-                    mIdx += mRowNum;
+                    mIdx += mNumRows;
                     if (mIdx >= mSize) {++mRow; mIdx = mRow;}
                     return tNext;
                 } else {
@@ -193,10 +193,10 @@ public class ColumnMatrix extends DoubleArrayMatrix {
         };
     }
     @Override public final IDoubleIterator iteratorColAt(final int aCol) {
-        rangeCheckCol(aCol, mColNum);
+        rangeCheckCol(aCol, mNumCols);
         return new IDoubleIterator() {
-            private final int mEnd = (aCol+1)*mRowNum;
-            private int mIdx = aCol*mRowNum;
+            private final int mEnd = (aCol+1)* mNumRows;
+            private int mIdx = aCol* mNumRows;
             @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public double next() {
                 if (hasNext()) {
@@ -210,15 +210,15 @@ public class ColumnMatrix extends DoubleArrayMatrix {
         };
     }
     @Override public final IDoubleIterator iteratorRowAt(final int aRow) {
-        rangeCheckRow(aRow, mRowNum);
+        rangeCheckRow(aRow, mNumRows);
         return new IDoubleIterator() {
-            private final int mSize = mRowNum * mColNum;
+            private final int mSize = mNumRows * mNumCols;
             private int mIdx = aRow;
             @Override public boolean hasNext() {return mIdx < mSize;}
             @Override public double next() {
                 if (hasNext()) {
                     double tNext = mData[mIdx];
-                    mIdx += mRowNum;
+                    mIdx += mNumRows;
                     return tNext;
                 } else {
                     throw new NoSuchElementException();
@@ -228,7 +228,7 @@ public class ColumnMatrix extends DoubleArrayMatrix {
     }
     @Override public final IDoubleSetIterator setIteratorCol() {
         return new IDoubleSetIterator() {
-            private final int mSize = mRowNum * mColNum;
+            private final int mSize = mNumRows * mNumCols;
             private int mIdx = 0, oIdx = -1;
             @Override public boolean hasNext() {return mIdx < mSize;}
             @Override public void set(double aValue) {
@@ -263,17 +263,17 @@ public class ColumnMatrix extends DoubleArrayMatrix {
     }
     @Override public final IDoubleSetIterator setIteratorRow() {
         return new IDoubleSetIterator() {
-            private final int mSize = mRowNum * mColNum;
+            private final int mSize = mNumRows * mNumCols;
             private int mRow = 0;
             private int mIdx = mRow, oIdx = -1;
-            @Override public boolean hasNext() {return mRow < mRowNum;}
+            @Override public boolean hasNext() {return mRow < mNumRows;}
             @Override public void set(double aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[oIdx] = aValue;
             }
             @Override public double next() {
                 if (hasNext()) {
-                    oIdx = mIdx; mIdx += mRowNum;
+                    oIdx = mIdx; mIdx += mNumRows;
                     if (mIdx >= mSize) {++mRow; mIdx = mRow;}
                     return mData[oIdx];
                 } else {
@@ -282,7 +282,7 @@ public class ColumnMatrix extends DoubleArrayMatrix {
             }
             @Override public void nextOnly() {
                 if (hasNext()) {
-                    oIdx = mIdx; mIdx += mRowNum;
+                    oIdx = mIdx; mIdx += mNumRows;
                     if (mIdx >= mSize) {++mRow; mIdx = mRow;}
                 } else {
                     throw new NoSuchElementException();
@@ -291,7 +291,7 @@ public class ColumnMatrix extends DoubleArrayMatrix {
             /** 高性能接口重写来进行专门优化 */
             @Override public void nextAndSet(double aValue) {
                 if (hasNext()) {
-                    oIdx = mIdx; mIdx += mRowNum;
+                    oIdx = mIdx; mIdx += mNumRows;
                     if (mIdx >= mSize) {++mRow; mIdx = mRow;}
                     mData[oIdx] = aValue;
                 } else {
@@ -301,10 +301,10 @@ public class ColumnMatrix extends DoubleArrayMatrix {
         };
     }
     @Override public final IDoubleSetIterator setIteratorColAt(final int aCol) {
-        rangeCheckCol(aCol, mColNum);
+        rangeCheckCol(aCol, mNumCols);
         return new IDoubleSetIterator() {
-            private final int mEnd = (aCol+1)*mRowNum;
-            private int mIdx = aCol*mRowNum, oIdx = -1;
+            private final int mEnd = (aCol+1)* mNumRows;
+            private int mIdx = aCol* mNumRows, oIdx = -1;
             @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public void set(double aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
@@ -337,9 +337,9 @@ public class ColumnMatrix extends DoubleArrayMatrix {
         };
     }
     @Override public final IDoubleSetIterator setIteratorRowAt(final int aRow) {
-        rangeCheckRow(aRow, mRowNum);
+        rangeCheckRow(aRow, mNumRows);
         return new IDoubleSetIterator() {
-            private final int mSize = mRowNum * mColNum;
+            private final int mSize = mNumRows * mNumCols;
             private int mIdx = aRow, oIdx = -1;
             @Override public boolean hasNext() {return mIdx < mSize;}
             @Override public void set(double aValue) {
@@ -348,7 +348,7 @@ public class ColumnMatrix extends DoubleArrayMatrix {
             }
             @Override public double next() {
                 if (hasNext()) {
-                    oIdx = mIdx; mIdx += mRowNum;
+                    oIdx = mIdx; mIdx += mNumRows;
                     return mData[oIdx];
                 } else {
                     throw new NoSuchElementException();
@@ -356,7 +356,7 @@ public class ColumnMatrix extends DoubleArrayMatrix {
             }
             @Override public void nextOnly() {
                 if (hasNext()) {
-                    oIdx = mIdx; mIdx += mRowNum;
+                    oIdx = mIdx; mIdx += mNumRows;
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -364,7 +364,7 @@ public class ColumnMatrix extends DoubleArrayMatrix {
             /** 高性能接口重写来进行专门优化 */
             @Override public void nextAndSet(double aValue) {
                 if (hasNext()) {
-                    oIdx = mIdx; mIdx += mRowNum;
+                    oIdx = mIdx; mIdx += mNumRows;
                     mData[oIdx] = aValue;
                 } else {
                     throw new NoSuchElementException();

@@ -17,48 +17,48 @@ import java.util.*;
  */
 public class Table extends AbstractTable implements IDataShell<DoubleList> {
     /** 提供默认的创建 */
-    public static Table zeros(int aRowNum) {
-        return new Table(aRowNum);
+    public static Table zeros(int aNumRows) {
+        return new Table(aNumRows);
     }
-    public static Table zeros(int aRowNum, String... aHeads) {
+    public static Table zeros(int aNumRows, String... aHeads) {
         if (aHeads==null || aHeads.length==0) {
-            return new Table(aRowNum);
+            return new Table(aNumRows);
         } else {
-            int tSize = aRowNum * aHeads.length;
+            int tSize = aNumRows * aHeads.length;
             DoubleList tData = new DoubleList();
             tData.addZeros(tSize);
-            return new Table(aRowNum, tData, aHeads);
+            return new Table(aNumRows, tData, aHeads);
         }
     }
-    public static Table zeros(final int aRowNum, int aColNum) {
-        int tSize = aRowNum * aColNum;
+    public static Table zeros(final int aNumRows, int aNumCols) {
+        int tSize = aNumRows * aNumCols;
         DoubleList tData = new DoubleList();
         tData.addZeros(tSize);
-        return new Table(aRowNum, aColNum, tData);
+        return new Table(aNumRows, aNumCols, tData);
     }
     
     /** 现在内部数据改为 {@link DoubleList} */
-    private final int mRowNum;
+    private final int mNumRows;
     private DoubleList mData;
     private @Nullable ColumnMatrix mMatrix = null;
     /** 这些构造函数主要用于避免重复值拷贝数据 */
-    protected Table(int aRowNum, DoubleList aData, List<String> aHeads) {
+    protected Table(int aNumRows, DoubleList aData, List<String> aHeads) {
         super(aHeads);
-        mRowNum = aRowNum;
+        mNumRows = aNumRows;
         mData = aData;
     }
-    public Table(int aRowNum, DoubleList aData, String... aHeads) {
+    public Table(int aNumRows, DoubleList aData, String... aHeads) {
         super(aHeads);
-        mRowNum = aRowNum;
+        mNumRows = aNumRows;
         mData = aData;
     }
-    public Table(int aRowNum, int aColNum, DoubleList aData) {
-        super(aColNum);
-        mRowNum = aRowNum;
+    public Table(int aNumRows, int aNumCols, DoubleList aData) {
+        super(aNumCols);
+        mNumRows = aNumRows;
         mData = aData;
     }
-    public Table(int aRowNum, DoubleList aData) {this(aRowNum, 0, aData);}
-    public Table(int aRowNum) {this(aRowNum, 0, new DoubleList());}
+    public Table(int aNumRows, DoubleList aData) {this(aNumRows, 0, aData);}
+    public Table(int aNumRows) {this(aNumRows, 0, new DoubleList());}
     
     
     /** 重写这些接口实现直接返回 {@link Vector} */
@@ -86,15 +86,15 @@ public class Table extends AbstractTable implements IDataShell<DoubleList> {
     }
     @Override public final List<? extends Vector> cols() {return asMatrix().cols();}
     @Override public final Vector col(String aHead) {return asMatrix().col(mHead2Idx.get(aHead));}
-    @Override public final int nrows() {return mRowNum;}
+    @Override public final int nrows() {return mNumRows;}
     
     @Override public Table copy() {
-        return new Table(mRowNum, mData.copy(), NewCollections.from(mHeads));
+        return new Table(mNumRows, mData.copy(), NewCollections.from(mHeads));
     }
     
     /** AbstractTable stuffs */
     @Override public final ColumnMatrix asMatrix() {
-        if (mMatrix == null) mMatrix = new ColumnMatrix(mRowNum, ncols(), mData.internalData());
+        if (mMatrix == null) mMatrix = new ColumnMatrix(mNumRows, ncols(), mData.internalData());
         return mMatrix;
     }
     @Override protected final Vector newColumn_(String aHead) {
@@ -104,7 +104,7 @@ public class Table extends AbstractTable implements IDataShell<DoubleList> {
         mHead2Idx.put(aHead, mHeads.size());
         mHeads.add(aHead);
         // 然后扩展数据
-        mData.addZeros(mRowNum);
+        mData.addZeros(mNumRows);
         return asMatrix().col(ncols()-1);
     }
     

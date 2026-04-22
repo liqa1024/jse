@@ -40,16 +40,16 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
     /** Iterator stuffs */
     @Override public IComplexDoubleIterator iteratorCol() {
         return new IComplexDoubleIterator() {
-            private final int mColNum = ncols();
-            private final int mRowNum = nrows();
+            private final int mNumCols = ncols();
+            private final int mNumRows = nrows();
             private int mCol = 0, oCol = -1;
             private int mRow = 0, oRow = -1;
-            @Override public boolean hasNext() {return mCol < mColNum;}
+            @Override public boolean hasNext() {return mCol < mNumCols;}
             @Override public void nextOnly() {
                 if (hasNext()) {
                     oCol = mCol; oRow = mRow;
                     ++mRow;
-                    if (mRow == mRowNum) {mRow = 0; ++mCol;}
+                    if (mRow == mNumRows) {mRow = 0; ++mCol;}
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -69,16 +69,16 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
     }
     @Override public IComplexDoubleIterator iteratorRow() {
         return new IComplexDoubleIterator() {
-            private final int mColNum = ncols();
-            private final int mRowNum = nrows();
+            private final int mNumCols = ncols();
+            private final int mNumRows = nrows();
             private int mCol = 0, oCol = -1;
             private int mRow = 0, oRow = -1;
-            @Override public boolean hasNext() {return mRow < mRowNum;}
+            @Override public boolean hasNext() {return mRow < mNumRows;}
             @Override public void nextOnly() {
                 if (hasNext()) {
                     oCol = mCol; oRow = mRow;
                     ++mCol;
-                    if (mCol == mColNum) {mCol = 0; ++mRow;}
+                    if (mCol == mNumCols) {mCol = 0; ++mRow;}
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -99,9 +99,9 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
     @Override public IComplexDoubleIterator iteratorColAt(final int aCol) {
         rangeCheckCol(aCol, ncols());
         return new IComplexDoubleIterator() {
-            private final int mRowNum = nrows();
+            private final int mNumRows = nrows();
             private int mRow = 0, oRow = -1;
-            @Override public boolean hasNext() {return mRow < mRowNum;}
+            @Override public boolean hasNext() {return mRow < mNumRows;}
             @Override public void nextOnly() {
                 if (hasNext()) {
                     oRow = mRow;
@@ -126,9 +126,9 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
     @Override public IComplexDoubleIterator iteratorRowAt(final int aRow) {
         rangeCheckRow(aRow, nrows());
         return new IComplexDoubleIterator() {
-            private final int mColNum = ncols();
+            private final int mNumCols = ncols();
             private int mCol = 0, oCol = -1;
-            @Override public boolean hasNext() {return mCol < mColNum;}
+            @Override public boolean hasNext() {return mCol < mNumCols;}
             @Override public void nextOnly() {
                 if (hasNext()) {
                     oCol = mCol;
@@ -153,11 +153,11 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
     
     @Override public IComplexDoubleSetIterator setIteratorCol() {
         return new IComplexDoubleSetIterator() {
-            private final int mColNum = ncols();
-            private final int mRowNum = nrows();
+            private final int mNumCols = ncols();
+            private final int mNumRows = nrows();
             private int mCol = 0, oCol = -1;
             private int mRow = 0, oRow = -1;
-            @Override public boolean hasNext() {return mCol < mColNum;}
+            @Override public boolean hasNext() {return mCol < mNumCols;}
             @Override public void set(double aReal, double aImag) {
                 if (oRow < 0) throw new IllegalStateException();
                 AbstractComplexMatrix.this.set(oRow, oCol, aReal, aImag);
@@ -174,7 +174,7 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
                 if (hasNext()) {
                     oCol = mCol; oRow = mRow;
                     ++mRow;
-                    if (mRow == mRowNum) {mRow = 0; ++mCol;}
+                    if (mRow == mNumRows) {mRow = 0; ++mCol;}
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -206,11 +206,11 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
     }
     @Override public IComplexDoubleSetIterator setIteratorRow() {
         return new IComplexDoubleSetIterator() {
-            private final int mColNum = ncols();
-            private final int mRowNum = nrows();
+            private final int mNumCols = ncols();
+            private final int mNumRows = nrows();
             private int mCol = 0, oCol = -1;
             private int mRow = 0, oRow = -1;
-            @Override public boolean hasNext() {return mRow < mRowNum;}
+            @Override public boolean hasNext() {return mRow < mNumRows;}
             @Override public void set(double aReal, double aImag) {
                 if (oRow < 0) throw new IllegalStateException();
                 AbstractComplexMatrix.this.set(oRow, oCol, aReal, aImag);
@@ -227,7 +227,7 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
                 if (hasNext()) {
                     oCol = mCol; oRow = mRow;
                     ++mCol;
-                    if (mCol == mColNum) {mCol = 0; ++mRow;}
+                    if (mCol == mNumCols) {mCol = 0; ++mRow;}
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -260,9 +260,9 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
     @Override public IComplexDoubleSetIterator setIteratorColAt(final int aCol) {
         rangeCheckCol(aCol, ncols());
         return new IComplexDoubleSetIterator() {
-            private final int mRowNum = nrows();
+            private final int mNumRows = nrows();
             private int mRow = 0, oRow = -1;
-            @Override public boolean hasNext() {return mRow < mRowNum;}
+            @Override public boolean hasNext() {return mRow < mNumRows;}
             @Override public void set(double aReal, double aImag) {
                 if (oRow < 0) throw new IllegalStateException();
                 AbstractComplexMatrix.this.set(oRow, aCol, aReal, aImag);
@@ -310,9 +310,9 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
     @Override public IComplexDoubleSetIterator setIteratorRowAt(final int aRow) {
         rangeCheckRow(aRow, nrows());
         return new IComplexDoubleSetIterator() {
-            private final int mColNum = ncols();
+            private final int mNumCols = ncols();
             private int mCol = 0, oCol = -1;
-            @Override public boolean hasNext() {return mCol < mColNum;}
+            @Override public boolean hasNext() {return mCol < mNumCols;}
             @Override public void set(double aReal, double aImag) {
                 if (oCol < 0) throw new IllegalStateException();
                 AbstractComplexMatrix.this.set(aRow, oCol, aReal, aImag);
@@ -363,50 +363,50 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
     @Override public List<List<ComplexDouble>> asListRows() {return AbstractCollections.map(rows(), IComplexVector::asList);}
     @Override public IComplexVector asVecCol() {
         return new RefComplexVector() {
-            private final int mRowNum = nrows(), mColNum = ncols();
-            @Override public double getReal(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getReal(aIdx%mRowNum, aIdx/mRowNum);}
-            @Override public double getImag(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getImag(aIdx%mRowNum, aIdx/mRowNum);}
-            @Override public void set(int aIdx, double aReal, double aImag) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.set(aIdx%mRowNum, aIdx/mRowNum, aReal, aImag);}
-            @Override public void setReal(int aIdx, double aReal) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.setReal(aIdx%mRowNum, aIdx/mRowNum, aReal);}
-            @Override public void setImag(int aIdx, double aImag) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.setImag(aIdx%mRowNum, aIdx/mRowNum, aImag);}
-            @Override public ComplexDouble getAndSet(int aIdx, double aReal, double aImag) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSet(aIdx%mRowNum, aIdx/mRowNum, aReal, aImag);}
-            @Override public double getAndSetReal(int aIdx, double aReal) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSetReal(aIdx%mRowNum, aIdx/mRowNum, aReal);}
-            @Override public double getAndSetImag(int aIdx, double aImag) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSetImag(aIdx%mRowNum, aIdx/mRowNum, aImag);}
-            @Override public int size() {return mRowNum * mColNum;}
+            private final int mNumRows = nrows(), mNumCols = ncols();
+            @Override public double getReal(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getReal(aIdx%mNumRows, aIdx/mNumRows);}
+            @Override public double getImag(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getImag(aIdx%mNumRows, aIdx/mNumRows);}
+            @Override public void set(int aIdx, double aReal, double aImag) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.set(aIdx%mNumRows, aIdx/mNumRows, aReal, aImag);}
+            @Override public void setReal(int aIdx, double aReal) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.setReal(aIdx%mNumRows, aIdx/mNumRows, aReal);}
+            @Override public void setImag(int aIdx, double aImag) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.setImag(aIdx%mNumRows, aIdx/mNumRows, aImag);}
+            @Override public ComplexDouble getAndSet(int aIdx, double aReal, double aImag) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSet(aIdx%mNumRows, aIdx/mNumRows, aReal, aImag);}
+            @Override public double getAndSetReal(int aIdx, double aReal) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSetReal(aIdx%mNumRows, aIdx/mNumRows, aReal);}
+            @Override public double getAndSetImag(int aIdx, double aImag) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSetImag(aIdx%mNumRows, aIdx/mNumRows, aImag);}
+            @Override public int size() {return mNumRows * mNumCols;}
             @Override public IComplexDoubleIterator iterator() {return iteratorCol();}
             @Override public IComplexDoubleSetIterator setIterator() {return setIteratorCol();}
             /** 这些接口用来减少索引的重复计算 */
-            @Override public ComplexDouble get(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.get(aIdx%mRowNum, aIdx/mRowNum);}
-            @Override public void set(int aIdx, IComplexDouble aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.set(aIdx%mRowNum, aIdx/mRowNum, aValue);}
-            @Override public void set(int aIdx, ComplexDouble aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.set(aIdx%mRowNum, aIdx/mRowNum, aValue);}
-            @Override public void set(int aIdx, double aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.set(aIdx%mRowNum, aIdx/mRowNum, aValue);}
-            @Override public ComplexDouble getAndSet(int aIdx, IComplexDouble aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSet(aIdx%mRowNum, aIdx/mRowNum, aValue);}
-            @Override public ComplexDouble getAndSet(int aIdx, ComplexDouble aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSet(aIdx%mRowNum, aIdx/mRowNum, aValue);}
-            @Override public ComplexDouble getAndSet(int aIdx, double aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSet(aIdx%mRowNum, aIdx/mRowNum, aValue);}
+            @Override public ComplexDouble get(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.get(aIdx%mNumRows, aIdx/mNumRows);}
+            @Override public void set(int aIdx, IComplexDouble aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.set(aIdx%mNumRows, aIdx/mNumRows, aValue);}
+            @Override public void set(int aIdx, ComplexDouble aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.set(aIdx%mNumRows, aIdx/mNumRows, aValue);}
+            @Override public void set(int aIdx, double aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.set(aIdx%mNumRows, aIdx/mNumRows, aValue);}
+            @Override public ComplexDouble getAndSet(int aIdx, IComplexDouble aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSet(aIdx%mNumRows, aIdx/mNumRows, aValue);}
+            @Override public ComplexDouble getAndSet(int aIdx, ComplexDouble aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSet(aIdx%mNumRows, aIdx/mNumRows, aValue);}
+            @Override public ComplexDouble getAndSet(int aIdx, double aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSet(aIdx%mNumRows, aIdx/mNumRows, aValue);}
         };
     }
     @Override public IComplexVector asVecRow() {
         return new RefComplexVector() {
-            private final int mRowNum = nrows(), mColNum = ncols();
-            @Override public double getReal(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getReal(aIdx/mColNum, aIdx%mColNum);}
-            @Override public double getImag(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getImag(aIdx/mColNum, aIdx%mColNum);}
-            @Override public void set(int aIdx, double aReal, double aImag) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.set(aIdx/mColNum, aIdx%mColNum, aReal, aImag);}
-            @Override public void setReal(int aIdx, double aReal) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.setReal(aIdx/mColNum, aIdx%mColNum, aReal);}
-            @Override public void setImag(int aIdx, double aImag) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.setImag(aIdx/mColNum, aIdx%mColNum, aImag);}
-            @Override public ComplexDouble getAndSet(int aIdx, double aReal, double aImag) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSet(aIdx/mColNum, aIdx%mColNum, aReal, aImag);}
-            @Override public double getAndSetReal(int aIdx, double aReal) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSetReal(aIdx/mColNum, aIdx%mColNum, aReal);}
-            @Override public double getAndSetImag(int aIdx, double aImag) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSetImag(aIdx/mColNum, aIdx%mColNum, aImag);}
-            @Override public int size() {return mRowNum * mColNum;}
+            private final int mNumRows = nrows(), mNumCols = ncols();
+            @Override public double getReal(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getReal(aIdx/mNumCols, aIdx%mNumCols);}
+            @Override public double getImag(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getImag(aIdx/mNumCols, aIdx%mNumCols);}
+            @Override public void set(int aIdx, double aReal, double aImag) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.set(aIdx/mNumCols, aIdx%mNumCols, aReal, aImag);}
+            @Override public void setReal(int aIdx, double aReal) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.setReal(aIdx/mNumCols, aIdx%mNumCols, aReal);}
+            @Override public void setImag(int aIdx, double aImag) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.setImag(aIdx/mNumCols, aIdx%mNumCols, aImag);}
+            @Override public ComplexDouble getAndSet(int aIdx, double aReal, double aImag) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSet(aIdx/mNumCols, aIdx%mNumCols, aReal, aImag);}
+            @Override public double getAndSetReal(int aIdx, double aReal) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSetReal(aIdx/mNumCols, aIdx%mNumCols, aReal);}
+            @Override public double getAndSetImag(int aIdx, double aImag) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSetImag(aIdx/mNumCols, aIdx%mNumCols, aImag);}
+            @Override public int size() {return mNumRows * mNumCols;}
             @Override public IComplexDoubleIterator iterator() {return iteratorRow();}
             @Override public IComplexDoubleSetIterator setIterator() {return setIteratorRow();}
             /** 这些接口用来减少索引的重复计算 */
-            @Override public ComplexDouble get(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.get(aIdx/mColNum, aIdx%mColNum);}
-            @Override public void set(int aIdx, IComplexDouble aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.set(aIdx/mColNum, aIdx%mColNum, aValue);}
-            @Override public void set(int aIdx, ComplexDouble aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.set(aIdx/mColNum, aIdx%mColNum, aValue);}
-            @Override public void set(int aIdx, double aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.set(aIdx/mColNum, aIdx%mColNum, aValue);}
-            @Override public ComplexDouble getAndSet(int aIdx, IComplexDouble aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSet(aIdx/mColNum, aIdx%mColNum, aValue);}
-            @Override public ComplexDouble getAndSet(int aIdx, ComplexDouble aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSet(aIdx/mColNum, aIdx%mColNum, aValue);}
-            @Override public ComplexDouble getAndSet(int aIdx, double aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSet(aIdx/mColNum, aIdx%mColNum, aValue);}
+            @Override public ComplexDouble get(int aIdx) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.get(aIdx/mNumCols, aIdx%mNumCols);}
+            @Override public void set(int aIdx, IComplexDouble aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.set(aIdx/mNumCols, aIdx%mNumCols, aValue);}
+            @Override public void set(int aIdx, ComplexDouble aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.set(aIdx/mNumCols, aIdx%mNumCols, aValue);}
+            @Override public void set(int aIdx, double aValue) {AbstractVector.rangeCheck(aIdx, size()); AbstractComplexMatrix.this.set(aIdx/mNumCols, aIdx%mNumCols, aValue);}
+            @Override public ComplexDouble getAndSet(int aIdx, IComplexDouble aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSet(aIdx/mNumCols, aIdx%mNumCols, aValue);}
+            @Override public ComplexDouble getAndSet(int aIdx, ComplexDouble aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSet(aIdx/mNumCols, aIdx%mNumCols, aValue);}
+            @Override public ComplexDouble getAndSet(int aIdx, double aValue) {AbstractVector.rangeCheck(aIdx, size()); return AbstractComplexMatrix.this.getAndSet(aIdx/mNumCols, aIdx%mNumCols, aValue);}
         };
     }
     
@@ -435,16 +435,16 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
     
     /** 转为兼容性更好的 double[][][]，默认直接使用 asListRow 转为 double[][] */
     @Override public double[][][] data() {
-        final int tRowNum = nrows();
-        final int tColNum = ncols();
-        double[][][] rMat = new double[2][tRowNum][tColNum];
+        final int tNumRows = nrows();
+        final int tNumCols = ncols();
+        double[][][] rMat = new double[2][tNumRows][tNumCols];
         double[][] rRealMat = rMat[0];
         double[][] rImagMat = rMat[1];
         final IComplexDoubleIterator it = iteratorRow();
-        for (int row = 0; row < tRowNum; ++row) {
+        for (int row = 0; row < tNumRows; ++row) {
             double[] tRealRow = rRealMat[row];
             double[] tImagRow = rImagMat[row];
-            for (int col = 0; col < tColNum; ++col) {
+            for (int col = 0; col < tNumCols; ++col) {
                 it.nextOnly();
                 tRealRow[col] = it.real();
                 tImagRow[col] = it.imag();
@@ -466,23 +466,23 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
         final double[][] tRealData = aData[0];
         final double[][] tImagData = aData[1];
         final IComplexDoubleSetOnlyIterator si = setIteratorRow();
-        final int tRowNum = nrows();
-        final int tColNum = ncols();
-        for (int row = 0; row < tRowNum; ++row) {
+        final int tNumRows = nrows();
+        final int tNumCols = ncols();
+        for (int row = 0; row < tNumRows; ++row) {
             final double[] tRealRow = tRealData[row];
             final double[] tImagRow = tImagData[row];
-            for (int col = 0; col < tColNum; ++col) {
+            for (int col = 0; col < tNumCols; ++col) {
                 si.nextAndSet(tRealRow[col], tImagRow[col]);
             }
         }
     }
     @Override public void fill(double[][] aData) {
         final IComplexDoubleSetOnlyIterator si = setIteratorRow();
-        final int tRowNum = nrows();
-        final int tColNum = ncols();
-        for (int row = 0; row < tRowNum; ++row) {
+        final int tNumRows = nrows();
+        final int tNumCols = ncols();
+        for (int row = 0; row < tNumRows; ++row) {
             final double[] tRow = aData[row];
-            for (int col = 0; col < tColNum; ++col) si.nextAndSet(tRow[col]);
+            for (int col = 0; col < tNumCols; ++col) si.nextAndSet(tRow[col]);
         }
     }
     @Override public void fillWithRows(Iterable<?> aRows) {
@@ -654,7 +654,7 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
     @Override public IComplexMatrixOperation operation() {
         return new AbstractComplexMatrixOperation() {
             @Override protected IComplexMatrix thisMatrix_() {return AbstractComplexMatrix.this;}
-            @Override protected IComplexMatrix newMatrix_(int aRowNum, int aColNum) {return newZeros_(aRowNum, aColNum);}
+            @Override protected IComplexMatrix newMatrix_(int aNumRows, int aNumCols) {return newZeros_(aNumRows, aNumCols);}
             @Override protected IComplexVector newVector_(int aSize) {return newZerosVec_(aSize);}
         };
     }
@@ -718,7 +718,7 @@ public abstract class AbstractComplexMatrix implements IComplexMatrix {
     @Override public abstract double getAndSetImag(int aRow, int aCol, double aImag);
     @Override public abstract int nrows();
     @Override public abstract int ncols();
-    protected abstract IComplexMatrix newZeros_(int aRowNum, int aColNum);
+    protected abstract IComplexMatrix newZeros_(int aNumRows, int aNumCols);
     protected IComplexVector newZerosVec_(int aSize) {return ComplexVector.zeros(aSize);}
     
     protected String toString_(double aReal, double aImag) {return Double.compare(aImag, 0.0)>=0 ? String.format("   %.4g + %.4gi", aReal, aImag) : String.format("   %.4g - %.4gi", aReal, -aImag);}
