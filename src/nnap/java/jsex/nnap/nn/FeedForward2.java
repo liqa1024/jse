@@ -4,7 +4,6 @@ import jse.code.Conf;
 import jse.code.UT;
 import jse.code.collection.AbstractCollections;
 import jse.cptr.IDoubleOrFloatCPointer;
-import jse.math.IDataShell;
 import jse.math.MathEX;
 import jse.math.matrix.Matrices;
 import jse.math.matrix.RowMatrix;
@@ -200,49 +199,47 @@ public class FeedForward2 extends NeuralNetwork2 {
     public int fittableParameterWeightSize() {
         return mHiddenWeightsSize+mOutputWeightSize;
     }
-    @Override public void mountParameter(IDataShell<double[]> aData) {
+    @Override public void mountParameter(Vector aVec) {
         if (Conf.OPERATION_CHECK) {
-            if (parameterSize() != aData.internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+            if (parameterSize() != aVec.size()) throw new IllegalArgumentException("data size mismatch");
         } else {
-            if (parameterSize() > aData.internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+            if (parameterSize() > aVec.size()) throw new IllegalArgumentException("data size mismatch");
         }
-        double[] tData = aData.internalData();
-        int tShift = aData.internalDataShift();
+        int tShift = 0;
         
         IVector oVec = mHiddenWeights;
-        mHiddenWeights = new Vector(mHiddenWeightsSize, tShift, tData);
+        mHiddenWeights = aVec.subVec(tShift, tShift+mHiddenWeightsSize);
         tShift += mHiddenWeightsSize;
         mHiddenWeights.fill(oVec);
         
         oVec = mOutputWeight;
-        mOutputWeight = new Vector(mOutputWeightSize, tShift, tData);
+        mOutputWeight = aVec.subVec(tShift, tShift+mOutputWeightSize);
         tShift += mOutputWeightSize;
         mOutputWeight.fill(oVec);
         
         oVec = mHiddenBiases;
-        mHiddenBiases = new Vector(mHiddenBiasesSize, tShift, tData);
+        mHiddenBiases = aVec.subVec(tShift, tShift+mHiddenBiasesSize);
         tShift += mHiddenBiasesSize;
         mHiddenBiases.fill(oVec);
         
         double tOutputBias = mOutputBias.get(0);
-        mOutputBias = new Vector(1, tShift, tData);
+        mOutputBias = aVec.subVec(tShift, tShift+1);
         mOutputBias.set(0, tOutputBias);
     }
-    @Override public void mountGradParameter(IDataShell<double[]> aData) {
+    @Override public void mountGradParameter(Vector aVec) {
         if (Conf.OPERATION_CHECK) {
-            if (parameterSize() != aData.internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+            if (parameterSize() != aVec.size()) throw new IllegalArgumentException("data size mismatch");
         } else {
-            if (parameterSize() > aData.internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+            if (parameterSize() > aVec.size()) throw new IllegalArgumentException("data size mismatch");
         }
-        double[] tData = aData.internalData();
-        int tShift = aData.internalDataShift();
-        mGradHiddenWeights = new Vector(mHiddenWeightsSize, tShift, tData);
+        int tShift = 0;
+        mGradHiddenWeights = aVec.subVec(tShift, tShift+mHiddenWeightsSize);
         tShift += mHiddenWeightsSize;
-        mGradOutputWeight = new Vector(mOutputWeightSize, tShift, tData);
+        mGradOutputWeight = aVec.subVec(tShift, tShift+mOutputWeightSize);
         tShift += mOutputWeightSize;
-        mGradHiddenBiases = new Vector(mHiddenBiasesSize, tShift, tData);
+        mGradHiddenBiases = aVec.subVec(tShift, tShift+mHiddenBiasesSize);
         tShift += mHiddenBiasesSize;
-        mGradOutputBias = new Vector(1, tShift, tData);
+        mGradOutputBias = aVec.subVec(tShift, tShift+1);
     }
     
     @Override public int cptrParameterSize() {

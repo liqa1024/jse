@@ -14,7 +14,6 @@ import jse.code.IO;
 import jse.code.OS;
 import jse.code.UT;
 import jse.math.matrix.*;
-import jse.math.vector.IIntVector;
 import jse.math.vector.IVector;
 import jse.math.vector.IntVector;
 import jse.math.vector.Vector;
@@ -917,30 +916,28 @@ public class NativeLmp implements IAutoShutdown {
         } else {
         command("region          box block "+tBox.xlo()+" "+tBox.xhi()+" "+tBox.ylo()+" "+tBox.yhi()+" "+tBox.zlo()+" "+tBox.zhi());
         }
-        int tAtomTypeNum = aLmpdat.ntypes();
-        command("create_box      "+tAtomTypeNum+" box");
-        if (aLmpdat.hasMass()) for (int tType = 1; tType <= tAtomTypeNum; ++tType) {
+        int tNTypes = aLmpdat.ntypes();
+        command("create_box      "+ tNTypes +" box");
+        if (aLmpdat.hasMass()) for (int tType = 1; tType <= tNTypes; ++tType) {
         double tMass = aLmpdat.mass(tType);
         if (!Double.isNaN(tMass)) {
         command("mass            "+tType+" "+tMass);
         }}
-        IIntVector tIDs = aLmpdat.ids();
-        @Nullable IntVector tBufIDs = aDiscardID ? null : tIDs.toBuf();
-        IIntVector tTypes = aLmpdat.types(); IntVector tBufTypes = tTypes.toBuf();
-        IVector tPositionsVec = aLmpdat.positions().asVecRow(); Vector tBufPositionsVec = tPositionsVec.toBuf();
-        @Nullable IMatrix tVelocities = aLmpdat.velocities();
-        @Nullable IVector tVelocitiesVec = tVelocities==null ? null : tVelocities.asVecRow();
-        @Nullable Vector tBufVelocitiesVec = tVelocitiesVec==null ? null : tVelocitiesVec.toBuf();
-        try {
-            lammpsCreateAtoms0(mLmpPtr.mPtr, aLmpdat.natoms(), tBufIDs==null ? null : tBufIDs.internalData(), tBufTypes.internalData(), tBufPositionsVec.internalData(), tBufVelocitiesVec==null ? null : tBufVelocitiesVec.internalData(), null, false);
-        } finally {
-            if (tBufIDs!=null) tIDs.releaseBuf(tBufIDs, true);
-            tTypes.releaseBuf(tBufTypes, true);
-            tPositionsVec.releaseBuf(tBufPositionsVec, true);
-            if (tVelocitiesVec!=null && tBufVelocitiesVec!=null) tVelocitiesVec.releaseBuf(tBufVelocitiesVec, true);
-        }
+        int tNAtoms = aLmpdat.natoms();
+        @Nullable IntVector tIDs = aDiscardID ? null : aLmpdat.ids();
+        IntVector tTypes = aLmpdat.types();
+        Vector tPosVec = aLmpdat.positions().asVecRow();
+        @Nullable RowMatrix tVelo = aLmpdat.velocities();
+        @Nullable Vector tVeloVec = tVelo ==null ? null : tVelo.asVecRow();
+        lammpsCreateAtoms0(
+            mLmpPtr.mPtr, tNAtoms, tIDs==null?null:tIDs.internalDataWithLengthCheck(tNAtoms, 0),
+            tTypes.internalDataWithLengthCheck(tNAtoms, 0), tPosVec.internalDataWithLengthCheck(tNAtoms*3, 0),
+            tVeloVec==null?null:tVeloVec.internalDataWithLengthCheck(tNAtoms*3, 0), null, false
+        );
     }
-    public void loadLmpdat(Lmpdat aLmpdat) throws LmpException {loadLmpdat(aLmpdat, false);}
+    public void loadLmpdat(Lmpdat aLmpdat) throws LmpException {
+        loadLmpdat(aLmpdat, false);
+    }
     public void loadData(IAtomData aAtomData, boolean aDiscardID) throws LmpException {
         if (mDead) throw new IllegalStateException("This NativeLmp is dead");
         checkThread();
@@ -962,9 +959,15 @@ public class NativeLmp implements IAutoShutdown {
         }}
         creatAtoms(aAtomData.atoms(), false, aDiscardID);
     }
-    public void loadData(IAtomData aAtomData) throws LmpException {loadData(aAtomData, false);}
-    public void loadData(Lmpdat aLmpdat, boolean aDiscardID) throws LmpException {loadLmpdat(aLmpdat, aDiscardID);}
-    public void loadData(Lmpdat aLmpdat) throws LmpException {loadLmpdat(aLmpdat);}
+    public void loadData(IAtomData aAtomData) throws LmpException {
+        loadData(aAtomData, false);
+    }
+    public void loadData(Lmpdat aLmpdat, boolean aDiscardID) throws LmpException {
+        loadLmpdat(aLmpdat, aDiscardID);
+    }
+    public void loadData(Lmpdat aLmpdat) throws LmpException {
+        loadLmpdat(aLmpdat);
+    }
     
     /**
      * Create N atoms from list of coordinates and properties
@@ -978,13 +981,13 @@ public class NativeLmp implements IAutoShutdown {
         if (mDead) throw new IllegalStateException("This NativeLmp is dead");
         checkThread();
         final IAtom tFirst = UT.Code.first(aAtoms);
-        final boolean tHasVelocities = tFirst.hasVelocity();
+        final boolean tHasVelo = tFirst.hasVelocity();
         final boolean tHasID = !aDiscardID && tFirst.hasID();
-        final int tAtomNum = aAtoms.size();
-        int[] rID = tHasID ? IntArrayCache.getArray(tAtomNum) : null;
-        int[] rType = IntArrayCache.getArray(tAtomNum);
-        double[] rXYZ = DoubleArrayCache.getArray(tAtomNum*3);
-        double[] rVelocities = tHasVelocities ? DoubleArrayCache.getArray(tAtomNum*3) : null;
+        final int tNAtoms = aAtoms.size();
+        int[] rID = tHasID ? IntArrayCache.getArray(tNAtoms) : null;
+        int[] rType = IntArrayCache.getArray(tNAtoms);
+        double[] rPos = DoubleArrayCache.getArray(tNAtoms*3);
+        double[] rVelo = tHasVelo ? DoubleArrayCache.getArray(tNAtoms*3) : null;
         int i = 0, j1 = 0, j2 = 0;
         for (IAtom tAtom : aAtoms) {
             if (tHasID) {
@@ -993,24 +996,27 @@ public class NativeLmp implements IAutoShutdown {
             }
             rType[i] = tAtom.type();
             ++i;
-            rXYZ[j1] = tAtom.x(); ++j1;
-            rXYZ[j1] = tAtom.y(); ++j1;
-            rXYZ[j1] = tAtom.z(); ++j1;
-            if (tHasVelocities) {
-                rVelocities[j2] = tAtom.vx(); ++j2;
-                rVelocities[j2] = tAtom.vy(); ++j2;
-                rVelocities[j2] = tAtom.vz(); ++j2;
+            rPos[j1] = tAtom.x(); ++j1;
+            rPos[j1] = tAtom.y(); ++j1;
+            rPos[j1] = tAtom.z(); ++j1;
+            if (tHasVelo) {
+                rVelo[j2] = tAtom.vx(); ++j2;
+                rVelo[j2] = tAtom.vy(); ++j2;
+                rVelo[j2] = tAtom.vz(); ++j2;
             }
         }
-        lammpsCreateAtoms0(mLmpPtr.mPtr, tAtomNum, rID, rType, rXYZ, rVelocities, null, aShrinkExceed);
+        lammpsCreateAtoms0(
+            mLmpPtr.mPtr, tNAtoms, rID, rType,
+            rPos, rVelo, null, aShrinkExceed
+        );
         if (tHasID) IntArrayCache.returnArray(rID);
         IntArrayCache.returnArray(rType);
-        DoubleArrayCache.returnArray(rXYZ);
-        if (tHasVelocities) DoubleArrayCache.returnArray(rVelocities);
+        DoubleArrayCache.returnArray(rPos);
+        if (tHasVelo) DoubleArrayCache.returnArray(rVelo);
     }
     public void creatAtoms(List<? extends IAtom> aAtoms, boolean aShrinkExceed) throws LmpException {creatAtoms(aAtoms, aShrinkExceed, false);}
     public void creatAtoms(List<? extends IAtom> aAtoms) throws LmpException {creatAtoms(aAtoms, false);}
-    private native static void lammpsCreateAtoms0(long aLmpPtr, int aAtomNum, int @Nullable[] aID, int @NotNull[] aType, double @NotNull[] aXYZ, double @Nullable[] aVelocities, int @Nullable[] aImage, boolean aShrinkExceed) throws LmpException;
+    private native static void lammpsCreateAtoms0(long aLmpPtr, int aNumAtoms, int @Nullable[] aID, int @NotNull[] aType, double @NotNull[] aPos, double @Nullable[] aVelo, int @Nullable[] aImage, boolean aShrinkExceed) throws LmpException;
     
     /**
      * lammps clear 指令

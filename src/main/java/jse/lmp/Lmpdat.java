@@ -261,14 +261,14 @@ public class Lmpdat extends AbstractSettableAtomData {
     
     
     /// 获取属性
-    public IIntVector ids() {return mAtomID;}
-    public IIntVector types() {return mAtomType;}
-    public IMatrix positions() {return mAtomXYZ;}
+    public IntVector ids() {return mAtomID;}
+    public IntVector types() {return mAtomType;}
+    public RowMatrix positions() {return mAtomXYZ;}
     /** @return {@inheritDoc} */
     @Override public boolean hasID() {return true;}
     @Override public boolean hasBond() {return mBondIndex!=null;}
     @Override public boolean hasBondID() {return true;}
-    public @Nullable IMatrix velocities() {return mVelocities;}
+    public @Nullable RowMatrix velocities() {return mVelocities;}
     @Override public boolean hasVelocity() {return mVelocities != null;}
     @Override public boolean hasMass() {return mMasses!=null;}
     @Override public double mass(int aType) {return (mMasses==null || aType>mMasses.size()) ? Double.NaN : mMasses.get(aType-1);}

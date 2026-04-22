@@ -2,7 +2,7 @@ package jsex.nnap.basis;
 
 import jse.code.io.ISavable;
 import jse.cptr.IDoubleOrFloatCPointer;
-import jse.math.IDataShell;
+import jse.math.vector.Vector;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.util.List;
@@ -94,11 +94,11 @@ public abstract class Basis2 implements ISavable {
     /**
      * 挂载内部的可拟合参数到一个数组，从而自动同步修改
      */
-    public void mountParameter(IDataShell<double[]> aData) {}
+    public void mountParameter(Vector aVec) {}
     /**
      * 挂载内部的可拟合参数的梯度到一个数组，从而自动同步修改
      */
-    public void mountGradParameter(IDataShell<double[]> aData) {}
+    public void mountGradParameter(Vector aVec) {}
     /** @return 内部可能存在的可拟合参数的长度 */
     public int parameterSize() {return 0;}
     

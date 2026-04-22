@@ -3,7 +3,6 @@ package jsex.nnap.basis;
 import jse.code.Conf;
 import jse.code.collection.NewCollections;
 import jse.cptr.IDoubleOrFloatCPointer;
-import jse.math.IDataShell;
 import jse.math.vector.Vector;
 
 import java.util.LinkedHashMap;
@@ -90,31 +89,29 @@ public class MergedBasis2 extends Basis2 {
     @Override public void initParameters() {
         for (MergeableBasis2 tBasis : mMergedBasis) tBasis.initParameters();
     }
-    @Override public void mountParameter(IDataShell<double[]> aData) {
+    @Override public void mountParameter(Vector aVec) {
         if (Conf.OPERATION_CHECK) {
-            if (mTotParaSize != aData.internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+            if (mTotParaSize != aVec.size()) throw new IllegalArgumentException("data size mismatch");
         } else {
-            if (mTotParaSize > aData.internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+            if (mTotParaSize > aVec.size()) throw new IllegalArgumentException("data size mismatch");
         }
-        double[] tData = aData.internalData();
-        int tShift = aData.internalDataShift();
+        int tShift = 0;
         for (int i = 0; i < mMergedBasis.length; ++i) {
             int tSize = mParaSizes[i];
-            mMergedBasis[i].mountParameter(new Vector(tSize, tShift, tData));
+            mMergedBasis[i].mountParameter(aVec.subVec(tShift, tShift+tSize));
             tShift += tSize;
         }
     }
-    @Override public void mountGradParameter(IDataShell<double[]> aData) {
+    @Override public void mountGradParameter(Vector aVec) {
         if (Conf.OPERATION_CHECK) {
-            if (mTotParaSize != aData.internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+            if (mTotParaSize != aVec.size()) throw new IllegalArgumentException("data size mismatch");
         } else {
-            if (mTotParaSize > aData.internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+            if (mTotParaSize > aVec.size()) throw new IllegalArgumentException("data size mismatch");
         }
-        double[] tData = aData.internalData();
-        int tShift = aData.internalDataShift();
+        int tShift = 0;
         for (int i = 0; i < mMergedBasis.length; ++i) {
             int tSize = mParaSizes[i];
-            mMergedBasis[i].mountGradParameter(new Vector(tSize, tShift, tData));
+            mMergedBasis[i].mountGradParameter(aVec.subVec(tShift, tShift+tSize));
             tShift += tSize;
         }
     }

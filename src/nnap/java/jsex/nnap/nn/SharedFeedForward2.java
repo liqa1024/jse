@@ -4,7 +4,6 @@ import jse.code.Conf;
 import jse.code.UT;
 import jse.code.collection.AbstractCollections;
 import jse.cptr.IDoubleOrFloatCPointer;
-import jse.math.IDataShell;
 import jse.math.MathEX;
 import jse.math.matrix.Matrices;
 import jse.math.matrix.RowMatrix;
@@ -341,49 +340,47 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
     public int fittableParameterWeightSize() {
         return mNoSharedHiddenWeightsSize + mNoSharedOutputWeightSize;
     }
-    @Override public void mountParameter(IDataShell<double[]> aData) {
+    @Override public void mountParameter(Vector aVec) {
         if (Conf.OPERATION_CHECK) {
-            if (parameterSize() != aData.internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+            if (parameterSize() != aVec.size()) throw new IllegalArgumentException("data size mismatch");
         } else {
-            if (parameterSize() > aData.internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+            if (parameterSize() > aVec.size()) throw new IllegalArgumentException("data size mismatch");
         }
-        double[] tData = aData.internalData();
-        int tShift = aData.internalDataShift();
+        int tShift = 0;
         
         IVector oVec = mNoSharedHiddenWeights;
-        mNoSharedHiddenWeights = new Vector(mNoSharedHiddenWeightsSize, tShift, tData);
+        mNoSharedHiddenWeights = aVec.subVec(tShift, tShift+mNoSharedHiddenWeightsSize);
         tShift += mNoSharedHiddenWeightsSize;
         mNoSharedHiddenWeights.fill(oVec);
         
         oVec = mNoSharedOutputWeight;
-        mNoSharedOutputWeight = new Vector(mNoSharedOutputWeightSize, tShift, tData);
+        mNoSharedOutputWeight = aVec.subVec(tShift, tShift+mNoSharedOutputWeightSize);
         tShift += mNoSharedOutputWeightSize;
         mNoSharedOutputWeight.fill(oVec);
         
         oVec = mNoSharedHiddenBiases;
-        mNoSharedHiddenBiases = new Vector(mNoSharedHiddenBiasesSize, tShift, tData);
+        mNoSharedHiddenBiases = aVec.subVec(tShift, tShift+mNoSharedHiddenBiasesSize);
         tShift += mNoSharedHiddenBiasesSize;
         mNoSharedHiddenBiases.fill(oVec);
         
         oVec = mNoSharedOutputBias;
-        mNoSharedOutputBias = new Vector(mNoSharedOutputBiasSize, tShift, tData);
+        mNoSharedOutputBias = aVec.subVec(tShift, tShift+mNoSharedOutputBiasSize);
         mNoSharedOutputBias.fill(oVec);
     }
-    @Override public void mountGradParameter(IDataShell<double[]> aData) {
+    @Override public void mountGradParameter(Vector aVec) {
         if (Conf.OPERATION_CHECK) {
-            if (parameterSize() != aData.internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+            if (parameterSize() != aVec.size()) throw new IllegalArgumentException("data size mismatch");
         } else {
-            if (parameterSize() > aData.internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+            if (parameterSize() > aVec.size()) throw new IllegalArgumentException("data size mismatch");
         }
-        double[] tData = aData.internalData();
-        int tShift = aData.internalDataShift();
-        mGradNoSharedHiddenWeights = new Vector(mNoSharedHiddenWeightsSize, tShift, tData);
+        int tShift = 0;
+        mGradNoSharedHiddenWeights = aVec.subVec(tShift, tShift+mNoSharedHiddenWeightsSize);
         tShift += mNoSharedHiddenWeightsSize;
-        mGradNoSharedOutputWeight = new Vector(mNoSharedOutputWeightSize, tShift, tData);
+        mGradNoSharedOutputWeight = aVec.subVec(tShift, tShift+mNoSharedOutputWeightSize);
         tShift += mNoSharedOutputWeightSize;
-        mGradNoSharedHiddenBiases = new Vector(mNoSharedHiddenBiasesSize, tShift, tData);
+        mGradNoSharedHiddenBiases = aVec.subVec(tShift, tShift+mNoSharedHiddenBiasesSize);
         tShift += mNoSharedHiddenBiasesSize;
-        mGradNoSharedOutputBias = new Vector(mNoSharedOutputBiasSize, tShift, tData);
+        mGradNoSharedOutputBias = aVec.subVec(tShift, tShift+mNoSharedOutputBiasSize);
     }
     
     @Override public int cptrParameterSize() {

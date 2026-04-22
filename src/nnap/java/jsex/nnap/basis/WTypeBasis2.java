@@ -5,7 +5,6 @@ import com.google.common.collect.ImmutableBiMap;
 import jse.code.Conf;
 import jse.code.UT;
 import jse.cptr.IDoubleOrFloatCPointer;
-import jse.math.IDataShell;
 import jse.math.MathEX;
 import jse.math.matrix.Matrices;
 import jse.math.matrix.RowMatrix;
@@ -580,45 +579,43 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
         return (mSizeNP*mNumTypes) * (mNMax+1);
     }
     
-    @Override public void mountParameter(IDataShell<double[]> aData) {
+    @Override public void mountParameter(Vector aVec) {
         if (Conf.OPERATION_CHECK) {
-            if (parameterSize() != aData.internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+            if (parameterSize() != aVec.size()) throw new IllegalArgumentException("data size mismatch");
         } else {
-            if (parameterSize() > aData.internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+            if (parameterSize() > aVec.size()) throw new IllegalArgumentException("data size mismatch");
         }
-        double[] tData = aData.internalData();
-        int tShift = aData.internalDataShift();
+        int tShift = 0;
         if (mTypedWType==WTYPE_FUSE || mTypedWType==WTYPE_EXFUSE) {
             assert mFuseWeight != null;
             IVector oFuseWeight = mFuseWeight;
             int tSize = oFuseWeight.size();
-            mFuseWeight = new Vector(tSize, tShift, tData);
+            mFuseWeight = aVec.subVec(tShift, tShift+tSize);
             tShift += tSize;
             mFuseWeight.fill(oFuseWeight);
         }
         if (mPostFuseWeight==null) return;
         IVector oPostFuseWeight = mPostFuseWeight;
         int tSize = oPostFuseWeight.size();
-        mPostFuseWeight = new Vector(tSize, tShift, tData);
+        mPostFuseWeight = aVec.subVec(tShift, tShift+tSize);
         mPostFuseWeight.fill(oPostFuseWeight);
     }
-    @Override public void mountGradParameter(IDataShell<double[]> aData) {
+    @Override public void mountGradParameter(Vector aVec) {
         if (Conf.OPERATION_CHECK) {
-            if (parameterSize() != aData.internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+            if (parameterSize() != aVec.size()) throw new IllegalArgumentException("data size mismatch");
         } else {
-            if (parameterSize() > aData.internalDataSize()) throw new IllegalArgumentException("data size mismatch");
+            if (parameterSize() > aVec.size()) throw new IllegalArgumentException("data size mismatch");
         }
-        double[] tData = aData.internalData();
-        int tShift = aData.internalDataShift();
+        int tShift = 0;
         if (mTypedWType==WTYPE_FUSE || mTypedWType==WTYPE_EXFUSE) {
             assert mFuseWeight != null;
             int tSize = mFuseWeight.size();
-            mGradFuseWeight = new Vector(tSize, tShift, tData);
+            mGradFuseWeight = aVec.subVec(tShift, tShift+tSize);
             tShift += tSize;
         }
         if (mPostFuseWeight==null) return;
         int tSize = mPostFuseWeight.size();
-        mGradPostFuseWeight = new Vector(tSize, tShift, tData);
+        mGradPostFuseWeight = aVec.subVec(tShift, tShift+tSize);
     }
     @Override public int parameterSize() {
         final int tParaSize;
