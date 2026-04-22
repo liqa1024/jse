@@ -27,7 +27,7 @@ public class MatrixCache {
         void setReturned();
     }
     final static class CacheableColumnMatrix extends ColumnMatrix implements ICacheableMatrix {
-        public CacheableColumnMatrix(int aRowNum, int aColNum, double[] aData) {super(aRowNum, aColNum, aData);}
+        public CacheableColumnMatrix(int aNumRows, int aNumCols, double[] aData) {super(aNumRows, aNumCols, aData);}
         /** 重写这些方法来让这个 cache 可以顺利相互转换 */
         @Override public VectorCache.CacheableVector asVecCol() {return new VectorCache.CacheableVector(internalDataSize(), internalData());}
         /** 从缓存中获取的数据一律不允许进行后续修改 */
@@ -35,7 +35,7 @@ public class MatrixCache {
         @Override public void setReturned() {mData = null;}
     }
     final static class CacheableRowMatrix extends RowMatrix implements ICacheableMatrix {
-        public CacheableRowMatrix(int aRowNum, int aColNum, double[] aData) {super(aRowNum, aColNum, aData);}
+        public CacheableRowMatrix(int aNumRows, int aNumCols, double[] aData) {super(aNumRows, aNumCols, aData);}
         /** 重写这些方法来让这个 cache 可以顺利相互转换 */
         @Override public VectorCache.CacheableVector asVecRow() {return new VectorCache.CacheableVector(internalDataSize(), internalData());}
         /** 从缓存中获取的数据一律不允许进行后续修改 */
@@ -70,52 +70,52 @@ public class MatrixCache {
     }
     
     
-    public static @NotNull RowMatrix getZeros(int aRowNum, int aColNum) {
-        return getZerosRow(aRowNum, aColNum);
+    public static @NotNull RowMatrix getZeros(int aNumRows, int aNumCols) {
+        return getZerosRow(aNumRows, aNumCols);
     }
-    public static @NotNull List<RowMatrix> getZeros(int aRowNum, int aColNum, int aMultiple) {
-        return getZerosRow(aRowNum, aColNum, aMultiple);
+    public static @NotNull List<RowMatrix> getZeros(int aNumRows, int aNumCols, int aMultiple) {
+        return getZerosRow(aNumRows, aNumCols, aMultiple);
     }
-    public static @NotNull ColumnMatrix getZerosCol(int aRowNum, int aColNum) {
-        return new CacheableColumnMatrix(aRowNum, aColNum, DoubleArrayCache.getZeros(aRowNum*aColNum));
+    public static @NotNull ColumnMatrix getZerosCol(int aNumRows, int aNumCols) {
+        return new CacheableColumnMatrix(aNumRows, aNumCols, DoubleArrayCache.getZeros(aNumRows*aNumCols));
     }
-    public static @NotNull List<ColumnMatrix> getZerosCol(final int aRowNum, final int aColNum, int aMultiple) {
+    public static @NotNull List<ColumnMatrix> getZerosCol(final int aNumRows, final int aNumCols, int aMultiple) {
         if (aMultiple <= 0) return AbstractCollections.zl();
         final List<ColumnMatrix> rOut = new ArrayList<>(aMultiple);
-        DoubleArrayCache.getZerosTo(aRowNum*aColNum, aMultiple, (i, arr) -> rOut.add(new CacheableColumnMatrix(aRowNum, aColNum, arr)));
+        DoubleArrayCache.getZerosTo(aNumRows*aNumCols, aMultiple, (i, arr) -> rOut.add(new CacheableColumnMatrix(aNumRows, aNumCols, arr)));
         return rOut;
     }
-    public static @NotNull RowMatrix getZerosRow(int aRowNum, int aColNum) {
-        return new CacheableRowMatrix(aRowNum, aColNum, DoubleArrayCache.getZeros(aRowNum*aColNum));
+    public static @NotNull RowMatrix getZerosRow(int aNumRows, int aNumCols) {
+        return new CacheableRowMatrix(aNumRows, aNumCols, DoubleArrayCache.getZeros(aNumRows*aNumCols));
     }
-    public static @NotNull List<RowMatrix> getZerosRow(final int aRowNum, final int aColNum, int aMultiple) {
+    public static @NotNull List<RowMatrix> getZerosRow(final int aNumRows, final int aNumCols, int aMultiple) {
         if (aMultiple <= 0) return AbstractCollections.zl();
         final List<RowMatrix> rOut = new ArrayList<>(aMultiple);
-        DoubleArrayCache.getZerosTo(aRowNum*aColNum, aMultiple, (i, arr) -> rOut.add(new CacheableRowMatrix(aRowNum, aColNum, arr)));
+        DoubleArrayCache.getZerosTo(aNumRows*aNumCols, aMultiple, (i, arr) -> rOut.add(new CacheableRowMatrix(aNumRows, aNumCols, arr)));
         return rOut;
     }
-    public static @NotNull RowMatrix getMat(int aRowNum, int aColNum) {
-        return getMatRow(aRowNum, aColNum);
+    public static @NotNull RowMatrix getMat(int aNumRows, int aNumCols) {
+        return getMatRow(aNumRows, aNumCols);
     }
-    public static @NotNull List<RowMatrix> getMat(int aRowNum, int aColNum, int aMultiple) {
-        return getMatRow(aRowNum, aColNum, aMultiple);
+    public static @NotNull List<RowMatrix> getMat(int aNumRows, int aNumCols, int aMultiple) {
+        return getMatRow(aNumRows, aNumCols, aMultiple);
     }
-    public static @NotNull ColumnMatrix getMatCol(int aRowNum, int aColNum) {
-        return new CacheableColumnMatrix(aRowNum, aColNum, DoubleArrayCache.getArray(aRowNum*aColNum));
+    public static @NotNull ColumnMatrix getMatCol(int aNumRows, int aNumCols) {
+        return new CacheableColumnMatrix(aNumRows, aNumCols, DoubleArrayCache.getArray(aNumRows*aNumCols));
     }
-    public static @NotNull List<ColumnMatrix> getMatCol(final int aRowNum, final int aColNum, int aMultiple) {
+    public static @NotNull List<ColumnMatrix> getMatCol(final int aNumRows, final int aNumCols, int aMultiple) {
         if (aMultiple <= 0) return AbstractCollections.zl();
         final List<ColumnMatrix> rOut = new ArrayList<>(aMultiple);
-        DoubleArrayCache.getArrayTo(aRowNum*aColNum, aMultiple, (i, arr) -> rOut.add(new CacheableColumnMatrix(aRowNum, aColNum, arr)));
+        DoubleArrayCache.getArrayTo(aNumRows*aNumCols, aMultiple, (i, arr) -> rOut.add(new CacheableColumnMatrix(aNumRows, aNumCols, arr)));
         return rOut;
     }
-    public static @NotNull RowMatrix getMatRow(int aRowNum, int aColNum) {
-        return new CacheableRowMatrix(aRowNum, aColNum, DoubleArrayCache.getArray(aRowNum*aColNum));
+    public static @NotNull RowMatrix getMatRow(int aNumRows, int aNumCols) {
+        return new CacheableRowMatrix(aNumRows, aNumCols, DoubleArrayCache.getArray(aNumRows*aNumCols));
     }
-    public static @NotNull List<RowMatrix> getMatRow(final int aRowNum, final int aColNum, int aMultiple) {
+    public static @NotNull List<RowMatrix> getMatRow(final int aNumRows, final int aNumCols, int aMultiple) {
         if (aMultiple <= 0) return AbstractCollections.zl();
         final List<RowMatrix> rOut = new ArrayList<>(aMultiple);
-        DoubleArrayCache.getArrayTo(aRowNum*aColNum, aMultiple, (i, arr) -> rOut.add(new CacheableRowMatrix(aRowNum, aColNum, arr)));
+        DoubleArrayCache.getArrayTo(aNumRows*aNumCols, aMultiple, (i, arr) -> rOut.add(new CacheableRowMatrix(aNumRows, aNumCols, arr)));
         return rOut;
     }
 }

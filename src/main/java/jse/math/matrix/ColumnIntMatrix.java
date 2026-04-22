@@ -7,7 +7,6 @@ import jse.code.iterator.IIntSetIterator;
 import jse.math.vector.IIntVector;
 import jse.math.vector.IIntVectorGetter;
 import jse.math.vector.IntVector;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -60,30 +59,37 @@ public class ColumnIntMatrix extends IntArrayMatrix {
     
     private final int mNumRows;
     private final int mNumCols;
+    private final int mShift;
     
-    public ColumnIntMatrix(int aNumRows, int aNumCols, int[] aData) {
+    public ColumnIntMatrix(int aNumRows, int aNumCols, int aShift, int[] aData) {
         super(aData);
         mNumRows = aNumRows;
         mNumCols = aNumCols;
+        mShift = aShift;
     }
-    public ColumnIntMatrix(int aNumRows, int[] aData) {this(aNumRows, aData.length/aNumRows, aData);}
+    public ColumnIntMatrix(int aNumRows, int aNumCols, int[] aData) {
+        this(aNumRows, aNumCols, 0, aData);
+    }
+    public ColumnIntMatrix(int aNumRows, int[] aData) {
+        this(aNumRows, aData.length/aNumRows, aData);
+    }
     
     
     /** IMatrix stuffs */
     @Override public final int get(int aRow, int aCol) {
         rangeCheckRow(aRow, mNumRows);
         rangeCheckCol(aCol, mNumCols);
-        return mData[aRow + aCol*mNumRows];
+        return mData[aRow + aCol*mNumRows + mShift];
     }
     @Override public final void set(int aRow, int aCol, int aValue) {
         rangeCheckRow(aRow, mNumRows);
         rangeCheckCol(aCol, mNumCols);
-        mData[aRow + aCol*mNumRows] = aValue;
+        mData[aRow + aCol*mNumRows + mShift] = aValue;
     }
     @Override public final int getAndSet(int aRow, int aCol, int aValue) {
         rangeCheckRow(aRow, mNumRows);
         rangeCheckCol(aCol, mNumCols);
-        int tIdx = aRow + aCol*mNumRows;
+        int tIdx = aRow + aCol*mNumRows + mShift;
         int oValue = mData[tIdx];
         mData[tIdx] = aValue;
         return oValue;
@@ -95,15 +101,13 @@ public class ColumnIntMatrix extends IntArrayMatrix {
     @Override public ColumnIntMatrix copy() {return (ColumnIntMatrix)super.copy();}
     
     @Override public int internalDataSize() {return mNumRows*mNumCols;}
+    @Override public int internalDataShift() {return mShift;}
     
     @Override public int @Nullable[] getIfHasSameOrderData(Object aObj) {
         // 只有同样是 ColumnMatrix 并且行数相同才会返回 mData
-        if (aObj instanceof ColumnIntMatrix && ((ColumnIntMatrix)aObj).mNumRows == mNumRows) return ((ColumnIntMatrix)aObj).mData;
+        if (aObj instanceof ColumnIntMatrix && ((ColumnIntMatrix)aObj).mNumRows==mNumRows) return ((ColumnIntMatrix)aObj).mData;
         return null;
     }
-    
-    @Override public final ColumnIntMatrix toBufCol(boolean aAbort) {return this;}
-    @Override public final void releaseBuf(@NotNull IIntMatrix aBuf, boolean aAbort) {if (aBuf != this) super.releaseBuf(aBuf, aAbort);}
     
     
     /** Optimize stuffs，重写这个提高列向的索引速度 */
@@ -115,32 +119,34 @@ public class ColumnIntMatrix extends IntArrayMatrix {
     }
     @Override public IntVector col(final int aCol) {
         rangeCheckCol(aCol, mNumCols);
-        return new IntVector(mNumRows, aCol*mNumRows, mData);
+        return new IntVector(mNumRows, aCol*mNumRows + mShift, mData);
     }
     
     /** Optimize stuffs，列向展开的向量直接返回 */
-    @Override public IntVector asVecCol() {return new IntVector(mNumRows*mNumCols, mData);}
+    @Override public IntVector asVecCol() {
+        return new IntVector(mNumRows*mNumCols, mShift, mData);
+    }
     
     /** Optimize stuffs，引用转置直接返回 {@link RowIntMatrix} */
     @Override public final IIntMatrixOperation operation() {
         return new IntArrayMatrixOperation_() {
             @Override public void fill(IIntMatrixGetter aRHS) {
-                int idx = 0;
+                int idx = mShift;
                 for (int col = 0; col < mNumCols; ++col) for (int row = 0; row < mNumRows; ++row) {
                     mData[idx] = aRHS.get(row, col);
                     ++idx;
                 }
             }
             @Override public void assignCol(IntSupplier aSup) {
-                int rEnd = mNumRows*mNumCols;
-                for (int i = 0; i < rEnd; ++i) mData[i] = aSup.getAsInt();
+                int rEnd = mNumRows*mNumCols + mShift;
+                for (int i = mShift; i < rEnd; ++i) mData[i] = aSup.getAsInt();
             }
             @Override public void forEachCol(IntConsumer aCon) {
-                int rEnd = mNumRows*mNumCols;
-                for (int i = 0; i < rEnd; ++i) aCon.accept(mData[i]);
+                int rEnd = mNumRows*mNumCols + mShift;
+                for (int i = mShift; i < rEnd; ++i) aCon.accept(mData[i]);
             }
             @Override public RowIntMatrix refTranspose() {
-                return new RowIntMatrix(mNumRows, mNumCols, mData);
+                return new RowIntMatrix(mNumRows, mNumCols, mShift, mData);
             }
         };
     }
@@ -149,13 +155,13 @@ public class ColumnIntMatrix extends IntArrayMatrix {
     @Override public final void update(int aRow, int aCol, IntUnaryOperator aOpt) {
         rangeCheckRow(aRow, mNumRows);
         rangeCheckCol(aCol, mNumCols);
-        int tIdx = aRow + aCol*mNumRows;
+        int tIdx = aRow + aCol*mNumRows + mShift;
         mData[tIdx] = aOpt.applyAsInt(mData[tIdx]);
     }
     @Override public final int getAndUpdate(int aRow, int aCol, IntUnaryOperator aOpt) {
         rangeCheckRow(aRow, mNumRows);
         rangeCheckCol(aCol, mNumCols);
-        int tIdx = aRow + aCol*mNumRows;
+        int tIdx = aRow + aCol*mNumRows + mShift;
         int tValue = mData[tIdx];
         mData[tIdx] = aOpt.applyAsInt(tValue);
         return tValue;
@@ -165,9 +171,9 @@ public class ColumnIntMatrix extends IntArrayMatrix {
     /** Optimize stuffs，重写迭代器来提高遍历速度 */
     @Override public final IIntIterator iteratorCol() {
         return new IIntIterator() {
-            private final int mSize = mNumRows * mNumCols;
-            private int mIdx = 0;
-            @Override public boolean hasNext() {return mIdx < mSize;}
+            private final int mEnd = mNumRows*mNumCols + mShift;
+            private int mIdx = mShift;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public int next() {
                 if (hasNext()) {
                     int tNext = mData[mIdx];
@@ -181,15 +187,15 @@ public class ColumnIntMatrix extends IntArrayMatrix {
     }
     @Override public final IIntIterator iteratorRow() {
         return new IIntIterator() {
-            private final int mSize = mNumRows * mNumCols;
+            private final int mEnd = mNumRows*mNumCols + mShift;
             private int mRow = 0;
-            private int mIdx = mRow;
+            private int mIdx = mRow+mShift;
             @Override public boolean hasNext() {return mRow < mNumRows;}
             @Override public int next() {
                 if (hasNext()) {
                     int tNext = mData[mIdx];
                     mIdx += mNumRows;
-                    if (mIdx >= mSize) {++mRow; mIdx = mRow;}
+                    if (mIdx >= mEnd) {++mRow; mIdx = mRow+mShift;}
                     return tNext;
                 } else {
                     throw new NoSuchElementException();
@@ -200,8 +206,8 @@ public class ColumnIntMatrix extends IntArrayMatrix {
     @Override public final IIntIterator iteratorColAt(final int aCol) {
         rangeCheckCol(aCol, mNumCols);
         return new IIntIterator() {
-            private final int mEnd = (aCol+1)*mNumRows;
-            private int mIdx = aCol*mNumRows;
+            private final int mEnd = (aCol+1)*mNumRows + mShift;
+            private int mIdx = aCol*mNumRows + mShift;
             @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public int next() {
                 if (hasNext()) {
@@ -217,9 +223,9 @@ public class ColumnIntMatrix extends IntArrayMatrix {
     @Override public final IIntIterator iteratorRowAt(final int aRow) {
         rangeCheckRow(aRow, mNumRows);
         return new IIntIterator() {
-            private final int mSize = mNumRows * mNumCols;
-            private int mIdx = aRow;
-            @Override public boolean hasNext() {return mIdx < mSize;}
+            private final int mEnd = mNumRows*mNumCols + mShift;
+            private int mIdx = aRow+mShift;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public int next() {
                 if (hasNext()) {
                     int tNext = mData[mIdx];
@@ -233,9 +239,9 @@ public class ColumnIntMatrix extends IntArrayMatrix {
     }
     @Override public final IIntSetIterator setIteratorCol() {
         return new IIntSetIterator() {
-            private final int mSize = mNumRows * mNumCols;
-            private int mIdx = 0, oIdx = -1;
-            @Override public boolean hasNext() {return mIdx < mSize;}
+            private final int mEnd = mNumRows*mNumCols + mShift;
+            private int mIdx = mShift, oIdx = -1;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public void set(int aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[oIdx] = aValue;
@@ -268,9 +274,9 @@ public class ColumnIntMatrix extends IntArrayMatrix {
     }
     @Override public final IIntSetIterator setIteratorRow() {
         return new IIntSetIterator() {
-            private final int mSize = mNumRows * mNumCols;
+            private final int mEnd = mNumRows*mNumCols + mShift;
             private int mRow = 0;
-            private int mIdx = mRow, oIdx = -1;
+            private int mIdx = mRow+mShift, oIdx = -1;
             @Override public boolean hasNext() {return mRow < mNumRows;}
             @Override public void set(int aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
@@ -279,7 +285,7 @@ public class ColumnIntMatrix extends IntArrayMatrix {
             @Override public int next() {
                 if (hasNext()) {
                     oIdx = mIdx; mIdx += mNumRows;
-                    if (mIdx >= mSize) {++mRow; mIdx = mRow;}
+                    if (mIdx >= mEnd) {++mRow; mIdx = mRow+mShift;}
                     return mData[oIdx];
                 } else {
                     throw new NoSuchElementException();
@@ -288,7 +294,7 @@ public class ColumnIntMatrix extends IntArrayMatrix {
             @Override public void nextOnly() {
                 if (hasNext()) {
                     oIdx = mIdx; mIdx += mNumRows;
-                    if (mIdx >= mSize) {++mRow; mIdx = mRow;}
+                    if (mIdx >= mEnd) {++mRow; mIdx = mRow+mShift;}
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -297,7 +303,7 @@ public class ColumnIntMatrix extends IntArrayMatrix {
             @Override public void nextAndSet(int aValue) {
                 if (hasNext()) {
                     oIdx = mIdx; mIdx += mNumRows;
-                    if (mIdx >= mSize) {++mRow; mIdx = mRow;}
+                    if (mIdx >= mEnd) {++mRow; mIdx = mRow+mShift;}
                     mData[oIdx] = aValue;
                 } else {
                     throw new NoSuchElementException();
@@ -308,8 +314,8 @@ public class ColumnIntMatrix extends IntArrayMatrix {
     @Override public final IIntSetIterator setIteratorColAt(final int aCol) {
         rangeCheckCol(aCol, mNumCols);
         return new IIntSetIterator() {
-            private final int mEnd = (aCol+1)*mNumRows;
-            private int mIdx = aCol*mNumRows, oIdx = -1;
+            private final int mEnd = (aCol+1)*mNumRows + mShift;
+            private int mIdx = aCol*mNumRows + mShift, oIdx = -1;
             @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public void set(int aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
@@ -344,9 +350,9 @@ public class ColumnIntMatrix extends IntArrayMatrix {
     @Override public final IIntSetIterator setIteratorRowAt(final int aRow) {
         rangeCheckRow(aRow, mNumRows);
         return new IIntSetIterator() {
-            private final int mSize = mNumRows * mNumCols;
-            private int mIdx = aRow, oIdx = -1;
-            @Override public boolean hasNext() {return mIdx < mSize;}
+            private final int mEnd = mNumRows*mNumCols + mShift;
+            private int mIdx = aRow+mShift, oIdx = -1;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public void set(int aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[oIdx] = aValue;

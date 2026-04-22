@@ -57,30 +57,37 @@ public class ColumnLogicalMatrix extends BooleanArrayMatrix {
     
     private final int mNumRows;
     private final int mNumCols;
+    private final int mShift;
     
-    public ColumnLogicalMatrix(int aNumRows, int aNumCols, boolean[] aData) {
+    public ColumnLogicalMatrix(int aNumRows, int aNumCols, int aShift, boolean[] aData) {
         super(aData);
         mNumRows = aNumRows;
         mNumCols = aNumCols;
+        mShift = aShift;
     }
-    public ColumnLogicalMatrix(int aNumRows, boolean[] aData) {this(aNumRows, aData.length/aNumRows, aData);}
+    public ColumnLogicalMatrix(int aNumRows, int aNumCols, boolean[] aData) {
+        this(aNumRows, aNumCols, 0, aData);
+    }
+    public ColumnLogicalMatrix(int aNumRows, boolean[] aData) {
+        this(aNumRows, aData.length/aNumRows, aData);
+    }
     
     
     /** IMatrix stuffs */
     @Override public final boolean get(int aRow, int aCol) {
         rangeCheckRow(aRow, mNumRows);
         rangeCheckCol(aCol, mNumCols);
-        return mData[aRow + aCol*mNumRows];
+        return mData[aRow + aCol*mNumRows + mShift];
     }
     @Override public final void set(int aRow, int aCol, boolean aValue) {
         rangeCheckRow(aRow, mNumRows);
         rangeCheckCol(aCol, mNumCols);
-        mData[aRow + aCol*mNumRows] = aValue;
+        mData[aRow + aCol*mNumRows + mShift] = aValue;
     }
     @Override public final boolean getAndSet(int aRow, int aCol, boolean aValue) {
         rangeCheckRow(aRow, mNumRows);
         rangeCheckCol(aCol, mNumCols);
-        int tIdx = aRow + aCol*mNumRows;
+        int tIdx = aRow + aCol*mNumRows + mShift;
         boolean oValue = mData[tIdx];
         mData[tIdx] = aValue;
         return oValue;
@@ -92,10 +99,11 @@ public class ColumnLogicalMatrix extends BooleanArrayMatrix {
     @Override public ColumnLogicalMatrix copy() {return (ColumnLogicalMatrix)super.copy();}
     
     @Override public int internalDataSize() {return mNumRows*mNumCols;}
+    @Override public int internalDataShift() {return mShift;}
     
     @Override public boolean @Nullable[] getIfHasSameOrderData(Object aObj) {
         // 只有同样是 ColumnMatrix 并且行数相同才会返回 mData
-        if ((aObj instanceof ColumnLogicalMatrix) && ((ColumnLogicalMatrix)aObj).mNumRows == mNumRows) return ((ColumnLogicalMatrix)aObj).mData;
+        if ((aObj instanceof ColumnLogicalMatrix) && ((ColumnLogicalMatrix)aObj).mNumRows==mNumRows) return ((ColumnLogicalMatrix)aObj).mData;
         return null;
     }
     
@@ -108,32 +116,34 @@ public class ColumnLogicalMatrix extends BooleanArrayMatrix {
     }
     @Override public LogicalVector col(final int aCol) {
         rangeCheckCol(aCol, mNumCols);
-        return new LogicalVector(mNumRows, aCol*mNumRows, mData);
+        return new LogicalVector(mNumRows, aCol*mNumRows + mShift, mData);
     }
     
     /** Optimize stuffs，列向展开的向量直接返回 */
-    @Override public LogicalVector asVecCol() {return new LogicalVector(mNumRows*mNumCols, mData);}
+    @Override public LogicalVector asVecCol() {
+        return new LogicalVector(mNumRows*mNumCols, mShift, mData);
+    }
     
     /** Optimize stuffs，引用转置直接返回 {@link RowLogicalMatrix} */
     @Override public final ILogicalMatrixOperation operation() {
         return new BooleanArrayMatrixOperation_() {
             @Override public void fill(ILogicalMatrixGetter aRHS) {
-                int idx = 0;
+                int idx = mShift;
                 for (int col = 0; col < mNumCols; ++col) for (int row = 0; row < mNumRows; ++row) {
                     mData[idx] = aRHS.get(row, col);
                     ++idx;
                 }
             }
             @Override public void assignCol(BooleanSupplier aSup) {
-                int rEnd = mNumRows*mNumCols;
-                for (int i = 0; i < rEnd; ++i) mData[i] = aSup.getAsBoolean();
+                int rEnd = mNumRows*mNumCols + mShift;
+                for (int i = mShift; i < rEnd; ++i) mData[i] = aSup.getAsBoolean();
             }
             @Override public void forEachCol(IBooleanConsumer aCon) {
-                int rEnd = mNumRows*mNumCols;
-                for (int i = 0; i < rEnd; ++i) aCon.accept(mData[i]);
+                int rEnd = mNumRows*mNumCols + mShift;
+                for (int i = mShift; i < rEnd; ++i) aCon.accept(mData[i]);
             }
             @Override public RowLogicalMatrix refTranspose() {
-                return new RowLogicalMatrix(mNumRows, mNumCols, mData);
+                return new RowLogicalMatrix(mNumRows, mNumCols, mShift, mData);
             }
         };
     }
@@ -142,13 +152,13 @@ public class ColumnLogicalMatrix extends BooleanArrayMatrix {
     @Override public final void update(int aRow, int aCol, IBooleanUnaryOperator aOpt) {
         rangeCheckRow(aRow, mNumRows);
         rangeCheckCol(aCol, mNumCols);
-        int tIdx = aRow + aCol*mNumRows;
+        int tIdx = aRow + aCol*mNumRows + mShift;
         mData[tIdx] = aOpt.applyAsBoolean(mData[tIdx]);
     }
     @Override public final boolean getAndUpdate(int aRow, int aCol, IBooleanUnaryOperator aOpt) {
         rangeCheckRow(aRow, mNumRows);
         rangeCheckCol(aCol, mNumCols);
-        int tIdx = aRow + aCol*mNumRows;
+        int tIdx = aRow + aCol*mNumRows + mShift;
         boolean tValue = mData[tIdx];
         mData[tIdx] = aOpt.applyAsBoolean(tValue);
         return tValue;
@@ -158,9 +168,9 @@ public class ColumnLogicalMatrix extends BooleanArrayMatrix {
     /** Optimize stuffs，重写迭代器来提高遍历速度 */
     @Override public final IBooleanIterator iteratorCol() {
         return new IBooleanIterator() {
-            private final int mSize = mNumRows * mNumCols;
-            private int mIdx = 0;
-            @Override public boolean hasNext() {return mIdx < mSize;}
+            private final int mEnd = mNumRows*mNumCols + mShift;
+            private int mIdx = mShift;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public boolean next() {
                 if (hasNext()) {
                     boolean tNext = mData[mIdx];
@@ -174,15 +184,15 @@ public class ColumnLogicalMatrix extends BooleanArrayMatrix {
     }
     @Override public final IBooleanIterator iteratorRow() {
         return new IBooleanIterator() {
-            private final int mSize = mNumRows * mNumCols;
+            private final int mEnd = mNumRows*mNumCols + mShift;
             private int mRow = 0;
-            private int mIdx = mRow;
+            private int mIdx = mRow+mShift;
             @Override public boolean hasNext() {return mRow < mNumRows;}
             @Override public boolean next() {
                 if (hasNext()) {
                     boolean tNext = mData[mIdx];
                     mIdx += mNumRows;
-                    if (mIdx >= mSize) {++mRow; mIdx = mRow;}
+                    if (mIdx >= mEnd) {++mRow; mIdx = mRow+mShift;}
                     return tNext;
                 } else {
                     throw new NoSuchElementException();
@@ -193,8 +203,8 @@ public class ColumnLogicalMatrix extends BooleanArrayMatrix {
     @Override public final IBooleanIterator iteratorColAt(final int aCol) {
         rangeCheckCol(aCol, mNumCols);
         return new IBooleanIterator() {
-            private final int mEnd = (aCol+1)*mNumRows;
-            private int mIdx = aCol*mNumRows;
+            private final int mEnd = (aCol+1)*mNumRows + mShift;
+            private int mIdx = aCol*mNumRows + mShift;
             @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public boolean next() {
                 if (hasNext()) {
@@ -210,9 +220,9 @@ public class ColumnLogicalMatrix extends BooleanArrayMatrix {
     @Override public final IBooleanIterator iteratorRowAt(final int aRow) {
         rangeCheckRow(aRow, mNumRows);
         return new IBooleanIterator() {
-            private final int mSize = mNumRows * mNumCols;
-            private int mIdx = aRow;
-            @Override public boolean hasNext() {return mIdx < mSize;}
+            private final int mEnd = mNumRows*mNumCols + mShift;
+            private int mIdx = aRow+mShift;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public boolean next() {
                 if (hasNext()) {
                     boolean tNext = mData[mIdx];
@@ -226,9 +236,9 @@ public class ColumnLogicalMatrix extends BooleanArrayMatrix {
     }
     @Override public final IBooleanSetIterator setIteratorCol() {
         return new IBooleanSetIterator() {
-            private final int mSize = mNumRows * mNumCols;
-            private int mIdx = 0, oIdx = -1;
-            @Override public boolean hasNext() {return mIdx < mSize;}
+            private final int mEnd = mNumRows*mNumCols + mShift;
+            private int mIdx = mShift, oIdx = -1;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public void set(boolean aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[oIdx] = aValue;
@@ -261,9 +271,9 @@ public class ColumnLogicalMatrix extends BooleanArrayMatrix {
     }
     @Override public final IBooleanSetIterator setIteratorRow() {
         return new IBooleanSetIterator() {
-            private final int mSize = mNumRows * mNumCols;
+            private final int mEnd = mNumRows*mNumCols + mShift;
             private int mRow = 0;
-            private int mIdx = mRow, oIdx = -1;
+            private int mIdx = mRow+mShift, oIdx = -1;
             @Override public boolean hasNext() {return mRow < mNumRows;}
             @Override public void set(boolean aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
@@ -272,7 +282,7 @@ public class ColumnLogicalMatrix extends BooleanArrayMatrix {
             @Override public boolean next() {
                 if (hasNext()) {
                     oIdx = mIdx; mIdx += mNumRows;
-                    if (mIdx >= mSize) {++mRow; mIdx = mRow;}
+                    if (mIdx >= mEnd) {++mRow; mIdx = mRow+mShift;}
                     return mData[oIdx];
                 } else {
                     throw new NoSuchElementException();
@@ -281,7 +291,7 @@ public class ColumnLogicalMatrix extends BooleanArrayMatrix {
             @Override public void nextOnly() {
                 if (hasNext()) {
                     oIdx = mIdx; mIdx += mNumRows;
-                    if (mIdx >= mSize) {++mRow; mIdx = mRow;}
+                    if (mIdx >= mEnd) {++mRow; mIdx = mRow+mShift;}
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -290,7 +300,7 @@ public class ColumnLogicalMatrix extends BooleanArrayMatrix {
             @Override public void nextAndSet(boolean aValue) {
                 if (hasNext()) {
                     oIdx = mIdx; mIdx += mNumRows;
-                    if (mIdx >= mSize) {++mRow; mIdx = mRow;}
+                    if (mIdx >= mEnd) {++mRow; mIdx = mRow+mShift;}
                     mData[oIdx] = aValue;
                 } else {
                     throw new NoSuchElementException();
@@ -301,8 +311,8 @@ public class ColumnLogicalMatrix extends BooleanArrayMatrix {
     @Override public final IBooleanSetIterator setIteratorColAt(final int aCol) {
         rangeCheckCol(aCol, mNumCols);
         return new IBooleanSetIterator() {
-            private final int mEnd = (aCol+1)*mNumRows;
-            private int mIdx = aCol*mNumRows, oIdx = -1;
+            private final int mEnd = (aCol+1)*mNumRows + mShift;
+            private int mIdx = aCol*mNumRows + mShift, oIdx = -1;
             @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public void set(boolean aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
@@ -337,9 +347,9 @@ public class ColumnLogicalMatrix extends BooleanArrayMatrix {
     @Override public final IBooleanSetIterator setIteratorRowAt(final int aRow) {
         rangeCheckRow(aRow, mNumRows);
         return new IBooleanSetIterator() {
-            private final int mSize = mNumRows * mNumCols;
-            private int mIdx = aRow, oIdx = -1;
-            @Override public boolean hasNext() {return mIdx < mSize;}
+            private final int mEnd = mNumRows*mNumCols + mShift;
+            private int mIdx = aRow+mShift, oIdx = -1;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public void set(boolean aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[oIdx] = aValue;

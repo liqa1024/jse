@@ -66,31 +66,129 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
     
     private final int mNumRows;
     private final int mNumCols;
+    private final int mShift;
     
-    public ColumnComplexMatrix(int aNumRows, int aNumCols, double[][] aData) {
+    public ColumnComplexMatrix(int aNumRows, int aNumCols, int aShift, double[][] aData) {
         super(aData);
         mNumRows = aNumRows;
         mNumCols = aNumCols;
+        mShift = aShift;
     }
-    public ColumnComplexMatrix(int aNumRows, double[][] aData) {this(aNumRows, Math.min(aData[0].length, aData[1].length)/aNumRows, aData);}
+    public ColumnComplexMatrix(int aNumRows, int aNumCols, double[][] aData) {
+        this(aNumRows, aNumCols, 0, aData);
+    }
+    public ColumnComplexMatrix(int aNumRows, double[][] aData) {
+        this(aNumRows, Math.min(aData[0].length, aData[1].length)/aNumRows, aData);
+    }
     
     
     /** IComplexMatrix stuffs */
-    @Override public final ComplexDouble get(int aRow, int aCol) {rangeCheckRow(aRow, mNumRows); rangeCheckCol(aCol, mNumCols); int tIdx = aRow + aCol*mNumRows; return new ComplexDouble(mData[0][tIdx], mData[1][tIdx]);}
-    @Override public final double getReal(int aRow, int aCol) {rangeCheckRow(aRow, mNumRows); rangeCheckCol(aCol, mNumCols); return mData[0][aRow + aCol*mNumRows];}
-    @Override public final double getImag(int aRow, int aCol) {rangeCheckRow(aRow, mNumRows); rangeCheckCol(aCol, mNumCols); return mData[1][aRow + aCol*mNumRows];}
-    @Override public final void set(int aRow, int aCol, IComplexDouble aValue) {rangeCheckRow(aRow, mNumRows); rangeCheckCol(aCol, mNumCols); int tIdx = aRow + aCol*mNumRows; mData[0][tIdx] = aValue.real(); mData[1][tIdx] = aValue.imag();}
-    @Override public final void set(int aRow, int aCol, ComplexDouble aValue) {rangeCheckRow(aRow, mNumRows); rangeCheckCol(aCol, mNumCols); int tIdx = aRow + aCol*mNumRows; mData[0][tIdx] = aValue.mReal; mData[1][tIdx] = aValue.mImag;}
-    @Override public final void set(int aRow, int aCol, double aValue) {rangeCheckRow(aRow, mNumRows); rangeCheckCol(aCol, mNumCols); int tIdx = aRow + aCol*mNumRows; mData[0][tIdx] = aValue; mData[1][tIdx] = 0.0;}
-    @Override public final void set(int aRow, int aCol, double aReal, double aImag) {rangeCheckRow(aRow, mNumRows); rangeCheckCol(aCol, mNumCols); int tIdx = aRow + aCol*mNumRows; mData[0][tIdx] = aReal; mData[1][tIdx] = aImag;}
-    @Override public final void setReal(int aRow, int aCol, double aReal) {rangeCheckRow(aRow, mNumRows); rangeCheckCol(aCol, mNumCols); mData[0][aRow + aCol*mNumRows] = aReal;}
-    @Override public final void setImag(int aRow, int aCol, double aImag) {rangeCheckRow(aRow, mNumRows); rangeCheckCol(aCol, mNumCols); mData[1][aRow + aCol*mNumRows] = aImag;}
-    @Override public final ComplexDouble getAndSet(int aRow, int aCol, IComplexDouble aValue) {rangeCheckRow(aRow, mNumRows); rangeCheckCol(aCol, mNumCols); int tIdx = aRow + aCol*mNumRows; ComplexDouble oValue = new ComplexDouble(mData[0][tIdx], mData[1][tIdx]); mData[0][tIdx] = aValue.real(); mData[1][tIdx] = aValue.imag(); return oValue;}
-    @Override public final ComplexDouble getAndSet(int aRow, int aCol, ComplexDouble aValue) {rangeCheckRow(aRow, mNumRows); rangeCheckCol(aCol, mNumCols); int tIdx = aRow + aCol*mNumRows; ComplexDouble oValue = new ComplexDouble(mData[0][tIdx], mData[1][tIdx]); mData[0][tIdx] = aValue.mReal; mData[1][tIdx] = aValue.mImag; return oValue;}
-    @Override public final ComplexDouble getAndSet(int aRow, int aCol, double aValue) {rangeCheckRow(aRow, mNumRows); rangeCheckCol(aCol, mNumCols); int tIdx = aRow + aCol*mNumRows; ComplexDouble oValue = new ComplexDouble(mData[0][tIdx], mData[1][tIdx]); mData[0][tIdx] = aValue; mData[1][tIdx] = 0.0; return oValue;}
-    @Override public final ComplexDouble getAndSet(int aRow, int aCol, double aReal, double aImag) {rangeCheckRow(aRow, mNumRows); rangeCheckCol(aCol, mNumCols); int tIdx = aRow + aCol*mNumRows; ComplexDouble oValue = new ComplexDouble(mData[0][tIdx], mData[1][tIdx]); mData[0][tIdx] = aReal; mData[1][tIdx] = aImag; return oValue;}
-    @Override public final double getAndSetReal(int aRow, int aCol, double aReal) {rangeCheckRow(aRow, mNumRows); rangeCheckCol(aCol, mNumCols); int tIdx = aRow + aCol*mNumRows; double oReal = mData[0][tIdx]; mData[0][tIdx] = aReal; return oReal;}
-    @Override public final double getAndSetImag(int aRow, int aCol, double aImag) {rangeCheckRow(aRow, mNumRows); rangeCheckCol(aCol, mNumCols); int tIdx = aRow + aCol*mNumRows; double oImag = mData[1][tIdx]; mData[1][tIdx] = aImag; return oImag;}
+    @Override public final ComplexDouble get(int aRow, int aCol) {
+        rangeCheckRow(aRow, mNumRows);
+        rangeCheckCol(aCol, mNumCols);
+        int tIdx = aRow + aCol*mNumRows + mShift;
+        return new ComplexDouble(mData[0][tIdx], mData[1][tIdx]);
+    }
+    @Override public final double getReal(int aRow, int aCol) {
+        rangeCheckRow(aRow, mNumRows);
+        rangeCheckCol(aCol, mNumCols);
+        return mData[0][aRow + aCol*mNumRows + mShift];
+    }
+    @Override public final double getImag(int aRow, int aCol) {
+        rangeCheckRow(aRow, mNumRows);
+        rangeCheckCol(aCol, mNumCols);
+        return mData[1][aRow + aCol*mNumRows + mShift];
+    }
+    @Override public final void set(int aRow, int aCol, IComplexDouble aValue) {
+        rangeCheckRow(aRow, mNumRows);
+        rangeCheckCol(aCol, mNumCols);
+        int tIdx = aRow + aCol*mNumRows + mShift;
+        mData[0][tIdx] = aValue.real();
+        mData[1][tIdx] = aValue.imag();
+    }
+    @Override public final void set(int aRow, int aCol, ComplexDouble aValue) {
+        rangeCheckRow(aRow, mNumRows);
+        rangeCheckCol(aCol, mNumCols);
+        int tIdx = aRow + aCol*mNumRows + mShift;
+        mData[0][tIdx] = aValue.mReal;
+        mData[1][tIdx] = aValue.mImag;
+    }
+    @Override public final void set(int aRow, int aCol, double aValue) {
+        rangeCheckRow(aRow, mNumRows);
+        rangeCheckCol(aCol, mNumCols);
+        int tIdx = aRow + aCol*mNumRows + mShift;
+        mData[0][tIdx] = aValue;
+        mData[1][tIdx] = 0.0;
+    }
+    @Override public final void set(int aRow, int aCol, double aReal, double aImag) {
+        rangeCheckRow(aRow, mNumRows);
+        rangeCheckCol(aCol, mNumCols);
+        int tIdx = aRow + aCol*mNumRows + mShift;
+        mData[0][tIdx] = aReal;
+        mData[1][tIdx] = aImag;
+    }
+    @Override public final void setReal(int aRow, int aCol, double aReal) {
+        rangeCheckRow(aRow, mNumRows);
+        rangeCheckCol(aCol, mNumCols);
+        mData[0][aRow + aCol*mNumRows + mShift] = aReal;
+    }
+    @Override public final void setImag(int aRow, int aCol, double aImag) {
+        rangeCheckRow(aRow, mNumRows);
+        rangeCheckCol(aCol, mNumCols);
+        mData[1][aRow + aCol*mNumRows + mShift] = aImag;
+    }
+    @Override public final ComplexDouble getAndSet(int aRow, int aCol, IComplexDouble aValue) {
+        rangeCheckRow(aRow, mNumRows);
+        rangeCheckCol(aCol, mNumCols);
+        int tIdx = aRow + aCol*mNumRows + mShift;
+        ComplexDouble oValue = new ComplexDouble(mData[0][tIdx], mData[1][tIdx]);
+        mData[0][tIdx] = aValue.real();
+        mData[1][tIdx] = aValue.imag();
+        return oValue;
+    }
+    @Override public final ComplexDouble getAndSet(int aRow, int aCol, ComplexDouble aValue) {
+        rangeCheckRow(aRow, mNumRows);
+        rangeCheckCol(aCol, mNumCols);
+        int tIdx = aRow + aCol*mNumRows + mShift;
+        ComplexDouble oValue = new ComplexDouble(mData[0][tIdx], mData[1][tIdx]);
+        mData[0][tIdx] = aValue.mReal;
+        mData[1][tIdx] = aValue.mImag;
+        return oValue;
+    }
+    @Override public final ComplexDouble getAndSet(int aRow, int aCol, double aValue) {
+        rangeCheckRow(aRow, mNumRows);
+        rangeCheckCol(aCol, mNumCols);
+        int tIdx = aRow + aCol*mNumRows + mShift;
+        ComplexDouble oValue = new ComplexDouble(mData[0][tIdx], mData[1][tIdx]);
+        mData[0][tIdx] = aValue;
+        mData[1][tIdx] = 0.0;
+        return oValue;
+    }
+    @Override public final ComplexDouble getAndSet(int aRow, int aCol, double aReal, double aImag) {
+        rangeCheckRow(aRow, mNumRows);
+        rangeCheckCol(aCol, mNumCols);
+        int tIdx = aRow + aCol*mNumRows + mShift;
+        ComplexDouble oValue = new ComplexDouble(mData[0][tIdx], mData[1][tIdx]);
+        mData[0][tIdx] = aReal;
+        mData[1][tIdx] = aImag;
+        return oValue;
+    }
+    @Override public final double getAndSetReal(int aRow, int aCol, double aReal) {
+        rangeCheckRow(aRow, mNumRows);
+        rangeCheckCol(aCol, mNumCols);
+        int tIdx = aRow + aCol*mNumRows + mShift;
+        double oReal = mData[0][tIdx];
+        mData[0][tIdx] = aReal;
+        return oReal;
+    }
+    @Override public final double getAndSetImag(int aRow, int aCol, double aImag) {
+        rangeCheckRow(aRow, mNumRows);
+        rangeCheckCol(aCol, mNumCols);
+        int tIdx = aRow + aCol*mNumRows + mShift;
+        double oImag = mData[1][tIdx];
+        mData[1][tIdx] = aImag;
+        return oImag;
+    }
     @Override public final int nrows() {return mNumRows;}
     @Override public final int ncols() {return mNumCols;}
     
@@ -98,13 +196,13 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
     @Override public ColumnComplexMatrix copy() {return (ColumnComplexMatrix)super.copy();}
     
     @Override public int internalDataSize() {return mNumRows*mNumCols;}
+    @Override public int internalDataShift() {return mShift;}
     
     @Override public double @Nullable[][] getIfHasSameOrderData(Object aObj) {
         // 只有同样是 ColumnMatrix 并且行数相同才会返回 mData
-        if (aObj instanceof ColumnComplexMatrix && ((ColumnComplexMatrix)aObj).mNumRows == mNumRows) return ((ColumnComplexMatrix)aObj).mData;
+        if (aObj instanceof ColumnComplexMatrix && ((ColumnComplexMatrix)aObj).mNumRows==mNumRows) return ((ColumnComplexMatrix)aObj).mData;
         return null;
     }
-    
     
     /** Optimize stuffs，重写这个提高列向的索引速度 */
     @Override public List<? extends ComplexVector> cols() {
@@ -115,15 +213,21 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
     }
     @Override public ComplexVector col(final int aCol) {
         rangeCheckCol(aCol, mNumCols);
-        return new ComplexVector(mNumRows, aCol*mNumRows, mData);
+        return new ComplexVector(mNumRows, aCol*mNumRows + mShift, mData);
     }
     
     /** Optimize stuffs，列向展开的向量直接返回 */
-    @Override public ComplexVector asVecCol() {return new ComplexVector(mNumRows*mNumCols, mData);}
+    @Override public ComplexVector asVecCol() {
+        return new ComplexVector(mNumRows*mNumCols, mShift, mData);
+    }
     
     /** Optimize stuffs，real()，imag() 直接返回 {@link ColumnMatrix} */
-    @Override public final ColumnMatrix real() {return new ColumnMatrix(mNumRows, mNumCols, mData[0]);}
-    @Override public final ColumnMatrix imag() {return new ColumnMatrix(mNumRows, mNumCols, mData[1]);}
+    @Override public final ColumnMatrix real() {
+        return new ColumnMatrix(mNumRows, mNumCols, mShift, mData[0]);
+    }
+    @Override public final ColumnMatrix imag() {
+        return new ColumnMatrix(mNumRows, mNumCols, mShift, mData[1]);
+    }
     
     /** Optimize stuffs，引用转置直接返回 {@link RowComplexMatrix} */
     @Override public final IComplexMatrixOperation operation() {
@@ -131,7 +235,7 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             @Override public void fill(IComplexMatrixGetter aRHS) {
                 final double[] tRealData = mData[0];
                 final double[] tImagData = mData[1];
-                int idx = 0;
+                int idx = mShift;
                 for (int col = 0; col < mNumCols; ++col) for (int row = 0; row < mNumRows; ++row) {
                     IComplexDouble tValue = aRHS.get(row, col);
                     tRealData[idx] = tValue.real();
@@ -142,7 +246,7 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             @Override public void fill(IMatrixGetter aRHS) {
                 final double[] tRealData = mData[0];
                 final double[] tImagData = mData[1];
-                int idx = 0;
+                int idx = mShift;
                 for (int col = 0; col < mNumCols; ++col) for (int row = 0; row < mNumRows; ++row) {
                     tRealData[idx] = aRHS.get(row, col);
                     tImagData[idx] = 0.0;
@@ -152,8 +256,8 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             @Override public void assignCol(Supplier<? extends IComplexDouble> aSup) {
                 final double[] tRealData = mData[0];
                 final double[] tImagData = mData[1];
-                int rEnd = mNumRows*mNumCols;
-                for (int i = 0; i < rEnd; ++i) {
+                int rEnd = mNumRows*mNumCols + mShift;
+                for (int i = mShift; i < rEnd; ++i) {
                     IComplexDouble tValue = aSup.get();
                     tRealData[i] = tValue.real();
                     tImagData[i] = tValue.imag();
@@ -162,8 +266,8 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             @Override public void assignCol(DoubleSupplier aSup) {
                 final double[] tRealData = mData[0];
                 final double[] tImagData = mData[1];
-                int rEnd = mNumRows*mNumCols;
-                for (int i = 0; i < rEnd; ++i) {
+                int rEnd = mNumRows*mNumCols + mShift;
+                for (int i = mShift; i < rEnd; ++i) {
                     tRealData[i] = aSup.getAsDouble();
                     tImagData[i] = 0.0;
                 }
@@ -171,20 +275,20 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             @Override public void forEachCol(Consumer<? super ComplexDouble> aCon) {
                 final double[] tRealData = mData[0];
                 final double[] tImagData = mData[1];
-                int rEnd = mNumRows*mNumCols;
-                for (int i = 0; i < rEnd; ++i) aCon.accept(new ComplexDouble(tRealData[i], tImagData[i]));
+                int rEnd = mNumRows*mNumCols + mShift;
+                for (int i = mShift; i < rEnd; ++i) aCon.accept(new ComplexDouble(tRealData[i], tImagData[i]));
             }
             @Override public void forEachCol(IDoubleBinaryConsumer aCon) {
                 final double[] tRealData = mData[0];
                 final double[] tImagData = mData[1];
-                int rEnd = mNumRows*mNumCols;
-                for (int i = 0; i < rEnd; ++i) aCon.accept(tRealData[i], tImagData[i]);
+                int rEnd = mNumRows*mNumCols + mShift;
+                for (int i = mShift; i < rEnd; ++i) aCon.accept(tRealData[i], tImagData[i]);
             }
             /** Groovy stuffs */
             @Override public void fill(Closure<?> aGroovyTask) {
                 final double[] tRealData = mData[0];
                 final double[] tImagData = mData[1];
-                int idx = 0;
+                int idx = mShift;
                 for (int col = 0; col < mNumCols; ++col) for (int row = 0; row < mNumRows; ++row) {
                     // 直接先执行然后检测类型决定如何设置
                     Object tObj = aGroovyTask.call(row, col);
@@ -208,7 +312,7 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             }
             
             @Override public RowComplexMatrix refTranspose() {
-                return new RowComplexMatrix(mNumRows, mNumCols, mData);
+                return new RowComplexMatrix(mNumRows, mNumCols, mShift, mData);
             }
         };
     }
@@ -217,7 +321,7 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
     @Override public final void update(int aRow, int aCol, IUnaryFullOperator<? extends IComplexDouble, ? super ComplexDouble> aOpt) {
         rangeCheckRow(aRow, mNumRows);
         rangeCheckCol(aCol, mNumCols);
-        int tIdx = aRow + aCol*mNumRows;
+        int tIdx = aRow + aCol*mNumRows + mShift;
         final double[] tRealData = mData[0];
         final double[] tImagData = mData[1];
         IComplexDouble tValue = aOpt.apply(new ComplexDouble(tRealData[tIdx], tImagData[tIdx]));
@@ -227,21 +331,21 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
     @Override public final void updateReal(int aRow, int aCol,  DoubleUnaryOperator aRealOpt) {
         rangeCheckRow(aRow, mNumRows);
         rangeCheckCol(aCol, mNumCols);
-        int tIdx = aRow + aCol*mNumRows;
+        int tIdx = aRow + aCol*mNumRows + mShift;
         final double[] tRealData = mData[0];
         tRealData[tIdx] = aRealOpt.applyAsDouble(tRealData[tIdx]);
     }
     @Override public final void updateImag(int aRow, int aCol, DoubleUnaryOperator aImagOpt) {
         rangeCheckRow(aRow, mNumRows);
         rangeCheckCol(aCol, mNumCols);
-        int tIdx = aRow + aCol*mNumRows;
+        int tIdx = aRow + aCol*mNumRows + mShift;
         final double[] tImagData = mData[1];
         tImagData[tIdx] = aImagOpt.applyAsDouble(tImagData[tIdx]);
     }
     @Override public final ComplexDouble getAndUpdate(int aRow, int aCol, IUnaryFullOperator<? extends IComplexDouble, ? super ComplexDouble> aOpt) {
         rangeCheckRow(aRow, mNumRows);
         rangeCheckCol(aCol, mNumCols);
-        int tIdx = aRow + aCol*mNumRows;
+        int tIdx = aRow + aCol*mNumRows + mShift;
         final double[] tRealData = mData[0];
         final double[] tImagData = mData[1];
         ComplexDouble oValue = new ComplexDouble(tRealData[tIdx], tImagData[tIdx]);
@@ -253,7 +357,7 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
     @Override public final double getAndUpdateReal(int aRow, int aCol,DoubleUnaryOperator aRealOpt) {
         rangeCheckRow(aRow, mNumRows);
         rangeCheckCol(aCol, mNumCols);
-        int tIdx = aRow + aCol*mNumRows;
+        int tIdx = aRow + aCol*mNumRows + mShift;
         final double[] tRealData = mData[0];
         double oReal = tRealData[tIdx];
         tRealData[tIdx] = aRealOpt.applyAsDouble(oReal);
@@ -262,7 +366,7 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
     @Override public final double getAndUpdateImag(int aRow, int aCol,DoubleUnaryOperator aImagOpt) {
         rangeCheckRow(aRow, mNumRows);
         rangeCheckCol(aCol, mNumCols);
-        int tIdx = aRow + aCol*mNumRows;
+        int tIdx = aRow + aCol*mNumRows + mShift;
         final double[] tImagData = mData[1];
         double oImag = tImagData[tIdx];
         tImagData[tIdx] = aImagOpt.applyAsDouble(oImag);
@@ -272,61 +376,8 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
     /** Optimize stuffs，重写迭代器来提高遍历速度 */
     @Override public final IComplexDoubleIterator iteratorCol() {
         return new IComplexDoubleIterator() {
-            private final int mSize = mNumRows * mNumCols;
-            private int mIdx = 0, oIdx = -1;
-            @Override public boolean hasNext() {return mIdx < mSize;}
-            @Override public void nextOnly() {
-                if (hasNext()) {
-                    oIdx = mIdx; ++mIdx;
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-            @Override public double real() {
-                if (oIdx < 0) throw new IllegalStateException();
-                return mData[0][oIdx];
-            }
-            @Override public double imag() {
-                if (oIdx < 0) throw new IllegalStateException();
-                return mData[1][oIdx];
-            }
-            
-            /** 重写保证使用此类中的逻辑而不是 IComplexDoubleIterator，虽然是一致的 */
-            @Override public ComplexDouble next() {nextOnly(); return new ComplexDouble(mData[0][oIdx], mData[1][oIdx]);}
-        };
-    }
-    @Override public final IComplexDoubleIterator iteratorRow() {
-        return new IComplexDoubleIterator() {
-            private final int mSize = mNumRows * mNumCols;
-            private int mRow = 0;
-            private int mIdx = mRow, oIdx = -1;
-            @Override public boolean hasNext() {return mRow < mNumRows;}
-            @Override public void nextOnly() {
-                if (hasNext()) {
-                    oIdx = mIdx; mIdx += mNumRows;
-                    if (mIdx >= mSize) {++mRow; mIdx = mRow;}
-                } else {
-                    throw new NoSuchElementException();
-                }
-            }
-            @Override public double real() {
-                if (oIdx < 0) throw new IllegalStateException();
-                return mData[0][oIdx];
-            }
-            @Override public double imag() {
-                if (oIdx < 0) throw new IllegalStateException();
-                return mData[1][oIdx];
-            }
-            
-            /** 重写保证使用此类中的逻辑而不是 IComplexDoubleIterator，虽然是一致的 */
-            @Override public ComplexDouble next() {nextOnly(); return new ComplexDouble(mData[0][oIdx], mData[1][oIdx]);}
-        };
-    }
-    @Override public final IComplexDoubleIterator iteratorColAt(final int aCol) {
-        rangeCheckCol(aCol, mNumCols);
-        return new IComplexDoubleIterator() {
-            private final int mEnd = (aCol+1)*mNumRows;
-            private int mIdx = aCol*mNumRows, oIdx = -1;
+            private final int mEnd = mNumRows*mNumCols + mShift;
+            private int mIdx = mShift, oIdx = -1;
             @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public void nextOnly() {
                 if (hasNext()) {
@@ -345,15 +396,77 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             }
             
             /** 重写保证使用此类中的逻辑而不是 IComplexDoubleIterator，虽然是一致的 */
-            @Override public ComplexDouble next() {nextOnly(); return new ComplexDouble(mData[0][oIdx], mData[1][oIdx]);}
+            @Override public ComplexDouble next() {
+                nextOnly();
+                return new ComplexDouble(mData[0][oIdx], mData[1][oIdx]);
+            }
+        };
+    }
+    @Override public final IComplexDoubleIterator iteratorRow() {
+        return new IComplexDoubleIterator() {
+            private final int mEnd = mNumRows*mNumCols + mShift;
+            private int mRow = 0;
+            private int mIdx = mRow+mShift, oIdx = -1;
+            @Override public boolean hasNext() {return mRow < mNumRows;}
+            @Override public void nextOnly() {
+                if (hasNext()) {
+                    oIdx = mIdx; mIdx += mNumRows;
+                    if (mIdx >= mEnd) {++mRow; mIdx = mRow+mShift;}
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public double real() {
+                if (oIdx < 0) throw new IllegalStateException();
+                return mData[0][oIdx];
+            }
+            @Override public double imag() {
+                if (oIdx < 0) throw new IllegalStateException();
+                return mData[1][oIdx];
+            }
+            
+            /** 重写保证使用此类中的逻辑而不是 IComplexDoubleIterator，虽然是一致的 */
+            @Override public ComplexDouble next() {
+                nextOnly();
+                return new ComplexDouble(mData[0][oIdx], mData[1][oIdx]);
+            }
+        };
+    }
+    @Override public final IComplexDoubleIterator iteratorColAt(final int aCol) {
+        rangeCheckCol(aCol, mNumCols);
+        return new IComplexDoubleIterator() {
+            private final int mEnd = (aCol+1)*mNumRows + mShift;
+            private int mIdx = aCol*mNumRows + mShift, oIdx = -1;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
+            @Override public void nextOnly() {
+                if (hasNext()) {
+                    oIdx = mIdx; ++mIdx;
+                } else {
+                    throw new NoSuchElementException();
+                }
+            }
+            @Override public double real() {
+                if (oIdx < 0) throw new IllegalStateException();
+                return mData[0][oIdx];
+            }
+            @Override public double imag() {
+                if (oIdx < 0) throw new IllegalStateException();
+                return mData[1][oIdx];
+            }
+            
+            /** 重写保证使用此类中的逻辑而不是 IComplexDoubleIterator，虽然是一致的 */
+            @Override public ComplexDouble next() {
+                nextOnly();
+                return new ComplexDouble(mData[0][oIdx], mData[1][oIdx]);
+            }
         };
     }
     @Override public final IComplexDoubleIterator iteratorRowAt(final int aRow) {
         rangeCheckRow(aRow, mNumRows);
         return new IComplexDoubleIterator() {
-            private final int mSize = mNumRows * mNumCols;
-            private int mIdx = aRow, oIdx = -1;
-            @Override public boolean hasNext() {return mIdx < mSize;}
+            private final int mEnd = mNumRows*mNumCols + mShift;
+            private int mIdx = aRow+mShift, oIdx = -1;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public void nextOnly() {
                 if (hasNext()) {
                     oIdx = mIdx; mIdx += mNumRows;
@@ -371,14 +484,17 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             }
             
             /** 重写保证使用此类中的逻辑而不是 IComplexDoubleIterator，虽然是一致的 */
-            @Override public ComplexDouble next() {nextOnly(); return new ComplexDouble(mData[0][oIdx], mData[1][oIdx]);}
+            @Override public ComplexDouble next() {
+                nextOnly();
+                return new ComplexDouble(mData[0][oIdx], mData[1][oIdx]);
+            }
         };
     }
     @Override public final IComplexDoubleSetIterator setIteratorCol() {
         return new IComplexDoubleSetIterator() {
-            private final int mSize = mNumRows * mNumCols;
-            private int mIdx = 0, oIdx = -1;
-            @Override public boolean hasNext() {return mIdx < mSize;}
+            private final int mEnd = mNumRows*mNumCols + mShift;
+            private int mIdx = mShift, oIdx = -1;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public void set(double aReal, double aImag) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[0][oIdx] = aReal;
@@ -409,7 +525,10 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             }
             
             /** 重写保证使用此类中的逻辑而不是 IComplexDoubleSetIterator，虽然是一致的 */
-            @Override public ComplexDouble next() {nextOnly(); return new ComplexDouble(mData[0][oIdx], mData[1][oIdx]);}
+            @Override public ComplexDouble next() {
+                nextOnly();
+                return new ComplexDouble(mData[0][oIdx], mData[1][oIdx]);
+            }
             @Override public void set(IComplexDouble aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[0][oIdx] = aValue.real();
@@ -488,9 +607,9 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
     }
     @Override public final IComplexDoubleSetIterator setIteratorRow() {
         return new IComplexDoubleSetIterator() {
-            private final int mSize = mNumRows * mNumCols;
+            private final int mEnd = mNumRows*mNumCols + mShift;
             private int mRow = 0;
-            private int mIdx = mRow, oIdx = -1;
+            private int mIdx = mRow+mShift, oIdx = -1;
             @Override public boolean hasNext() {return mRow < mNumRows;}
             @Override public void set(double aReal, double aImag) {
                 if (oIdx < 0) throw new IllegalStateException();
@@ -508,7 +627,7 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             @Override public void nextOnly() {
                 if (hasNext()) {
                     oIdx = mIdx; mIdx += mNumRows;
-                    if (mIdx >= mSize) {++mRow; mIdx = mRow;}
+                    if (mIdx >= mEnd) {++mRow; mIdx = mRow+mShift;}
                 } else {
                     throw new NoSuchElementException();
                 }
@@ -523,7 +642,10 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             }
             
             /** 重写保证使用此类中的逻辑而不是 IComplexDoubleSetIterator，虽然是一致的 */
-            @Override public ComplexDouble next() {nextOnly(); return new ComplexDouble(mData[0][oIdx], mData[1][oIdx]);}
+            @Override public ComplexDouble next() {
+                nextOnly();
+                return new ComplexDouble(mData[0][oIdx], mData[1][oIdx]);
+            }
             @Override public void set(IComplexDouble aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[0][oIdx] = aValue.real();
@@ -549,7 +671,7 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             @Override public void nextAndSet(IComplexDouble aValue) {
                 if (hasNext()) {
                     oIdx = mIdx; mIdx += mNumRows;
-                    if (mIdx >= mSize) {++mRow; mIdx = mRow;}
+                    if (mIdx >= mEnd) {++mRow; mIdx = mRow+mShift;}
                     mData[0][oIdx] = aValue.real();
                     mData[1][oIdx] = aValue.imag();
                 } else {
@@ -559,7 +681,7 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             @Override public void nextAndSet(ComplexDouble aValue) {
                 if (hasNext()) {
                     oIdx = mIdx; mIdx += mNumRows;
-                    if (mIdx >= mSize) {++mRow; mIdx = mRow;}
+                    if (mIdx >= mEnd) {++mRow; mIdx = mRow+mShift;}
                     mData[0][oIdx] = aValue.mReal;
                     mData[1][oIdx] = aValue.mImag;
                 } else {
@@ -569,7 +691,7 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             @Override public void nextAndSet(double aValue) {
                 if (hasNext()) {
                     oIdx = mIdx; mIdx += mNumRows;
-                    if (mIdx >= mSize) {++mRow; mIdx = mRow;}
+                    if (mIdx >= mEnd) {++mRow; mIdx = mRow+mShift;}
                     mData[0][oIdx] = aValue;
                     mData[1][oIdx] = 0.0;
                 } else {
@@ -588,7 +710,7 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             @Override public void nextAndSetReal(double aReal) {
                 if (hasNext()) {
                     oIdx = mIdx; mIdx += mNumRows;
-                    if (mIdx >= mSize) {++mRow; mIdx = mRow;}
+                    if (mIdx >= mEnd) {++mRow; mIdx = mRow+mShift;}
                     mData[0][oIdx] = aReal;
                 } else {
                     throw new NoSuchElementException();
@@ -597,7 +719,7 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             @Override public void nextAndSetImag(double aImag) {
                 if (hasNext()) {
                     oIdx = mIdx; mIdx += mNumRows;
-                    if (mIdx >= mSize) {++mRow; mIdx = mRow;}
+                    if (mIdx >= mEnd) {++mRow; mIdx = mRow+mShift;}
                     mData[1][oIdx] = aImag;
                 } else {
                     throw new NoSuchElementException();
@@ -608,8 +730,8 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
     @Override public final IComplexDoubleSetIterator setIteratorColAt(final int aCol) {
         rangeCheckCol(aCol, mNumCols);
         return new IComplexDoubleSetIterator() {
-            private final int mEnd = (aCol+1)*mNumRows;
-            private int mIdx = aCol*mNumRows, oIdx = -1;
+            private final int mEnd = (aCol+1)*mNumRows + mShift;
+            private int mIdx = aCol*mNumRows + mShift, oIdx = -1;
             @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public void set(double aReal, double aImag) {
                 if (oIdx < 0) throw new IllegalStateException();
@@ -641,7 +763,10 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             }
             
             /** 重写保证使用此类中的逻辑而不是 IComplexDoubleSetIterator，虽然是一致的 */
-            @Override public ComplexDouble next() {nextOnly(); return new ComplexDouble(mData[0][oIdx], mData[1][oIdx]);}
+            @Override public ComplexDouble next() {
+                nextOnly();
+                return new ComplexDouble(mData[0][oIdx], mData[1][oIdx]);
+            }
             @Override public void set(IComplexDouble aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[0][oIdx] = aValue.real();
@@ -721,9 +846,9 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
     @Override public final IComplexDoubleSetIterator setIteratorRowAt(final int aRow) {
         rangeCheckRow(aRow, mNumRows);
         return new IComplexDoubleSetIterator() {
-            private final int mSize = mNumRows * mNumCols;
-            private int mIdx = aRow, oIdx = -1;
-            @Override public boolean hasNext() {return mIdx < mSize;}
+            private final int mEnd = mNumRows*mNumCols + mShift;
+            private int mIdx = aRow+mShift, oIdx = -1;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public void set(double aReal, double aImag) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[0][oIdx] = aReal;
@@ -754,7 +879,10 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
             }
             
             /** 重写保证使用此类中的逻辑而不是 IComplexDoubleSetIterator，虽然是一致的 */
-            @Override public ComplexDouble next() {nextOnly(); return new ComplexDouble(mData[0][oIdx], mData[1][oIdx]);}
+            @Override public ComplexDouble next() {
+                nextOnly();
+                return new ComplexDouble(mData[0][oIdx], mData[1][oIdx]);
+            }
             @Override public void set(IComplexDouble aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[0][oIdx] = aValue.real();

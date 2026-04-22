@@ -1,5 +1,6 @@
 package jse.math.matrix;
 
+import jse.cache.MatrixCache;
 import jse.cache.VectorCache;
 import jse.code.Conf;
 import jse.code.iterator.IDoubleIterator;
@@ -118,6 +119,35 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
     @Override public void lmatmul2dest(IMatrix aRHS, IMatrix rDest) {matmul2Dest_(aRHS, thisMatrix_(), rDest);}
     
     
+    private static RowMatrix toBufRow_(IMatrix aMat) {
+        return toBufRow_(aMat, false);
+    }
+    private static RowMatrix toBufRow_(IMatrix aMat, boolean aAbort) {
+        if (aMat instanceof RowMatrix) return (RowMatrix)aMat;
+        RowMatrix rBuf = MatrixCache.getMatRow(aMat.nrows(), aMat.ncols());
+        if (aAbort) return rBuf;
+        rBuf.fill(aMat);
+        return rBuf;
+    }
+    private static ColumnMatrix toBufCol_(IMatrix aMat) {
+        return toBufCol_(aMat, false);
+    }
+    private static ColumnMatrix toBufCol_(IMatrix aMat, boolean aAbort) {
+        if (aMat instanceof ColumnMatrix) return (ColumnMatrix)aMat;
+        ColumnMatrix rBuf = MatrixCache.getMatCol(aMat.nrows(), aMat.ncols());
+        if (aAbort) return rBuf;
+        rBuf.fill(aMat);
+        return rBuf;
+    }
+    private static void releaseBuf_(IMatrix rMat, IMatrix aBuf) {
+        releaseBuf_(rMat, aBuf, false);
+    }
+    private static void releaseBuf_(IMatrix rMat, IMatrix aBuf, boolean aAbort) {
+        if (rMat==aBuf) return;
+        if (!aAbort) rMat.fill(aBuf);
+        MatrixCache.returnMat(aBuf);
+    }
+    
     /**
      * 计算矩阵乘法实现；
      * 现在对于串行版本不进行分块，因为大部分情况效率更低；
@@ -135,19 +165,19 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         // 尝试使用 native 接口
         if (Conf.NATIVE_OPERATION) {
             Vector tRow = VectorCache.getVec(tNumCols);
-            RowMatrix tThis = rThis.toBufRow();
-            ColumnMatrix tRHS = aRHS.toBufCol();
+            RowMatrix tThis = toBufRow_(rThis);
+            ColumnMatrix tRHS = toBufCol_(aRHS);
             ARRAY.Native.matmulRC2This(
                 tThis.internalData(), tThis.internalDataShift(), tRHS.internalData(), tRHS.internalDataShift(),
                 tRow.internalData(), tNumRows, tNumCols
             );
-            aRHS.releaseBuf(tRHS, true);
-            rThis.releaseBuf(tThis);
+            releaseBuf_(aRHS, tRHS, true);
+            releaseBuf_(rThis, tThis);
             VectorCache.returnVec(tRow);
             return;
         }
         // 这里简单处理，强制列优先遍历，让逻辑一致
-        ColumnMatrix tRHS = aRHS.toBufCol();
+        ColumnMatrix tRHS = toBufCol_(aRHS);
         double[] rData = tRHS.internalData();
         // 注意 mid == col，可以直接展开
         switch(tNumCols) {
@@ -272,7 +302,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
             VectorCache.returnVec(tRow);
             break;
         }}
-        aRHS.releaseBuf(tRHS, true);
+        releaseBuf_(aRHS, tRHS, true);
     }
     private static void lmatmul2This_(IMatrix rThis, IMatrix aRHS) {
         // 由于逻辑存在些许不同，这里简单起见重新实现，不去考虑重复代码的问题
@@ -285,20 +315,20 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         if (tNumRows == 0) return;
         // 尝试使用 native 接口
         if (Conf.NATIVE_OPERATION) {
-            ColumnMatrix tThis = rThis.toBufCol();
-            RowMatrix tRHS = aRHS.toBufRow();
+            ColumnMatrix tThis = toBufCol_(rThis);
+            RowMatrix tRHS = toBufRow_(aRHS);
             Vector tCol = VectorCache.getVec(tNumRows);
             ARRAY.Native.lmatmulCR2This(
                 tThis.internalData(), tThis.internalDataShift(), tRHS.internalData(), tRHS.internalDataShift(),
                 tCol.internalData(), tNumRows, tNumCols
             );
             VectorCache.returnVec(tCol);
-            aRHS.releaseBuf(tRHS, true);
-            rThis.releaseBuf(tThis);
+            releaseBuf_(aRHS, tRHS, true);
+            releaseBuf_(rThis, tThis);
             return;
         }
         // 这里简单处理，强制行优先遍历，让逻辑一致
-        RowMatrix tRHS = aRHS.toBufRow();
+        RowMatrix tRHS = toBufRow_(aRHS);
         double[] rData = tRHS.internalData();
         // 注意 mid == row，可以直接展开
         switch(tNumRows) {
@@ -424,7 +454,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
             VectorCache.returnVec(tCol);
             break;
         }}
-        aRHS.releaseBuf(tRHS, true);
+        releaseBuf_(aRHS, tRHS, true);
     }
     private static void matmul2Dest_(IMatrix aLHS, IMatrix aRHS, IMatrix rDest) {
         // 先判断大小是否合适
@@ -441,25 +471,25 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         boolean tRowFirst = tNumCols > tNumRows;
         // 尝试使用 native 接口
         if (Conf.NATIVE_OPERATION) {
-            RowMatrix tLHS = aLHS.toBufRow();
-            ColumnMatrix tRHS = aRHS.toBufCol();
+            RowMatrix tLHS = toBufRow_(aLHS);
+            ColumnMatrix tRHS = toBufCol_(aRHS);
             if (tRowFirst) {
-                ColumnMatrix rBuf = rDest.toBufCol(true);
+                ColumnMatrix rBuf = toBufCol_(rDest, true);
                 ARRAY.Native.matmulRCC2Dest(
                     tLHS.internalData(), tLHS.internalDataShift(), tRHS.internalData(), tRHS.internalDataShift(),
                     rBuf.internalData(), rBuf.internalDataShift(), tNumRows, tNumCols, tNumMids
                 );
-                rDest.releaseBuf(rBuf);
+                releaseBuf_(rDest, rBuf);
             } else {
-                RowMatrix rBuf = rDest.toBufRow(true);
+                RowMatrix rBuf = toBufRow_(rDest, true);
                 ARRAY.Native.matmulRCR2Dest(
                     tLHS.internalData(), tLHS.internalDataShift(), tRHS.internalData(), tRHS.internalDataShift(),
                     rBuf.internalData(), rBuf.internalDataShift(), tNumRows, tNumCols, tNumMids
                 );
-                rDest.releaseBuf(rBuf);
+                releaseBuf_(rDest, rBuf);
             }
-            aRHS.releaseBuf(tRHS, true);
-            aLHS.releaseBuf(tLHS, true);
+            releaseBuf_(aRHS, tRHS, true);
+            releaseBuf_(aLHS, tLHS, true);
             return;
         }
         // 在 jse 实现中，中间很短的情况下应该翻转这个操作，从而更好利用上 SIMD 加速
@@ -467,7 +497,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
         // 根据上述判断决定遍历顺序
         if (tRowFirst) {
             // 先遍历行，因此左边需要是行矩阵
-            RowMatrix tLHS = aLHS.toBufRow();
+            RowMatrix tLHS = toBufRow_(aLHS);
             double[] lData = tLHS.internalData();
             switch(tNumMids) {
             case 1: {
@@ -582,10 +612,10 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                 VectorCache.returnVec(tCol);
                 break;
             }}
-            aLHS.releaseBuf(tLHS, true);
+            releaseBuf_(aLHS, tLHS, true);
         } else {
             // 先遍历列，因此右边需要是列矩阵
-            ColumnMatrix tRHS = aRHS.toBufCol();
+            ColumnMatrix tRHS = toBufCol_(aRHS);
             double[] rData = tRHS.internalData();
             switch(tNumMids) {
             case 1: {
@@ -700,7 +730,7 @@ public abstract class AbstractMatrixOperation implements IMatrixOperation {
                 VectorCache.returnVec(tRow);
                 break;
             }}
-            aRHS.releaseBuf(tRHS, true);
+            releaseBuf_(aRHS, tRHS, true);
         }
     }
     
