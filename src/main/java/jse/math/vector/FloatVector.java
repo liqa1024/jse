@@ -17,6 +17,8 @@ import static jse.math.vector.AbstractVector.*;
 
 /**
  * 单精度浮点数向量的一般实现
+ * <p>
+ * 现在合并了 ShiftFloatVector 的功能，从而同时支持从数组任意位置开始操作
  * @author liqa
  */
 public class FloatVector extends FloatArrayVector {
@@ -50,44 +52,70 @@ public class FloatVector extends FloatArrayVector {
     }
     
     private int mSize;
-    public FloatVector(int aSize, float[] aData) {super(aData); mSize = aSize;}
-    public FloatVector(float[] aData) {this(aData.length, aData);}
+    private int mShift = 0;
+    public FloatVector(int aSize, int aShift, float[] aData) {
+        super(aData);
+        mSize = aSize;
+        mShift = aShift;
+    }
+    public FloatVector(int aSize, float[] aData) {
+        super(aData);
+        mSize = aSize;
+    }
+    public FloatVector(float[] aData) {
+        this(aData.length, aData);
+    }
     
     /** 提供额外的接口来直接设置底层参数 */
     @Override public void setInternalDataSize(int aSize) {mSize = aSize;}
+    @Override public void setInternalDataShift(int aShift) {mShift = aShift;}
     
-    /** IIntegerVector stuffs */
-    @Override public final float get(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx];}
-    @Override public final void set(int aIdx, float aValue) {rangeCheck(aIdx, mSize); mData[aIdx] = aValue;}
+    /** IFloatVector stuffs */
+    @Override public final float get(int aIdx) {
+        rangeCheck(aIdx, mSize);
+        return mData[aIdx+mShift];
+    }
+    @Override public final void set(int aIdx, float aValue) {
+        rangeCheck(aIdx, mSize);
+        mData[aIdx+mShift] = aValue;
+    }
     @Override public final float getAndSet(int aIdx, float aValue) {
         rangeCheck(aIdx, mSize);
+        aIdx += mShift;
         float oValue = mData[aIdx];
         mData[aIdx] = aValue;
         return oValue;
     }
-    @Override public int size() {return mSize;}
+    @Override public int size() {
+        return mSize;
+    }
     
     @Override protected final FloatVector newZeros_(int aSize) {return FloatVector.zeros(aSize);}
     @Override public final FloatVector copy() {return (FloatVector)super.copy();}
     
     @Override public final float @Nullable[] getIfHasSameOrderData(Object aObj) {
         if (aObj instanceof FloatVector) return ((FloatVector)aObj).mData;
-        if (aObj instanceof ShiftFloatVector) return ((ShiftFloatVector)aObj).mData;
         if (aObj instanceof FloatList) return ((FloatList)aObj).internalData();
         if (aObj instanceof float[]) return (float[])aObj;
         return null;
     }
-    @Override public final NDArray<float[]> numpy() {return new NDArray<>(mData, mSize);}
+    @Override public final NDArray<float[]> numpy() {
+        return mShift==0 ? new NDArray<>(mData, mSize) : super.numpy();
+    }
+    /** 需要指定平移的距离保证优化运算的正确性 */
+    @Override public int internalDataShift() {return mShift;}
     
-    /** Optimize stuffs，subVec 切片直接返回  {@link ShiftFloatVector} */
-    @Override public final FloatArrayVector subVec(final int aFromIdx, final int aToIdx) {
+    /** Optimize stuffs，subVec 切片直接返回  {@link FloatVector} */
+    @Override public final FloatVector subVec(final int aFromIdx, final int aToIdx) {
         subVecRangeCheck(aFromIdx, aToIdx, mSize);
-        return aFromIdx==0 ? new FloatVector(aToIdx, mData) : new ShiftFloatVector(aToIdx-aFromIdx, aFromIdx, mData);
+        return new FloatVector(aToIdx-aFromIdx, aFromIdx+mShift, mData);
     }
     
     /** Optimize stuffs，重写加速这些操作 */
     @Override public final void swap(int aIdx1, int aIdx2) {
         biRangeCheck(aIdx1, aIdx2, mSize);
+        aIdx1 += mShift;
+        aIdx2 += mShift;
         float tValue = mData[aIdx2];
         mData[aIdx2] = mData[aIdx1];
         mData[aIdx1] = tValue;
@@ -95,29 +123,34 @@ public class FloatVector extends FloatArrayVector {
     
     @Override public final void update(int aIdx, IFloatUnaryOperator aOpt) {
         rangeCheck(aIdx, mSize);
+        aIdx += mShift;
         mData[aIdx] = aOpt.applyAsFloat(mData[aIdx]);
     }
     @Override public final float getAndUpdate(int aIdx, IFloatUnaryOperator aOpt) {
         rangeCheck(aIdx, mSize);
+        aIdx += mShift;
         float tValue = mData[aIdx];
         mData[aIdx] = aOpt.applyAsFloat(tValue);
         return tValue;
     }
-    @Override public final boolean isEmpty() {return mSize==0;}
+    @Override public final boolean isEmpty() {
+        return mSize==0;
+    }
     @Override public final float last() {
         if (isEmpty()) throw new NoSuchElementException("Cannot access last() element from an empty FloatVector");
-        return mData[mSize-1];
+        return mData[mSize-1+mShift];
     }
     @Override public final float first() {
         if (isEmpty()) throw new NoSuchElementException("Cannot access first() element from an empty FloatVector");
-        return mData[0];
+        return mData[mShift];
     }
     
     /** Optimize stuffs，重写迭代器来提高遍历速度（主要是省去隐函数的调用，以及保持和矩阵相同的写法格式）*/
     @Override public final IFloatIterator iterator() {
         return new IFloatIterator() {
-            private int mIdx = 0;
-            @Override public boolean hasNext() {return mIdx < mSize;}
+            private final int mEnd = mSize + mShift;
+            private int mIdx = mShift;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public float next() {
                 if (hasNext()) {
                     float tNext = mData[mIdx];
@@ -131,8 +164,9 @@ public class FloatVector extends FloatArrayVector {
     }
     @Override public final IFloatSetIterator setIterator() {
         return new IFloatSetIterator() {
-            private int mIdx = 0, oIdx = -1;
-            @Override public boolean hasNext() {return mIdx < mSize;}
+            private final int mEnd = mSize + mShift;
+            private int mIdx = mShift, oIdx = -1;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public void set(float aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[oIdx] = aValue;

@@ -16,6 +16,8 @@ import static jse.math.vector.AbstractVector.*;
 
 /**
  * 逻辑向量的一般实现
+ * <p>
+ * 现在合并了 ShiftLogicalVector 的功能，从而同时支持从数组任意位置开始操作
  * @author liqa
  */
 public class LogicalVector extends BooleanArrayVector {
@@ -49,22 +51,43 @@ public class LogicalVector extends BooleanArrayVector {
     }
     
     private int mSize;
-    public LogicalVector(int aSize, boolean[] aData) {super(aData); mSize = aSize;}
-    public LogicalVector(boolean[] aData) {this(aData.length, aData);}
+    private int mShift = 0;
+    public LogicalVector(int aSize, int aShift, boolean[] aData) {
+        super(aData);
+        mSize = aSize;
+        mShift = aShift;
+    }
+    public LogicalVector(int aSize, boolean[] aData) {
+        super(aData);
+        mSize = aSize;
+    }
+    public LogicalVector(boolean[] aData) {
+        this(aData.length, aData);
+    }
     
     /** 提供额外的接口来直接设置底层参数 */
     @Override public void setInternalDataSize(int aSize) {mSize = aSize;}
+    @Override public void setInternalDataShift(int aShift) {mShift = aShift;}
     
     /** ILogicalVector stuffs */
-    @Override public final boolean get(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx];}
-    @Override public final void set(int aIdx, boolean aValue) {rangeCheck(aIdx, mSize); mData[aIdx] = aValue;}
+    @Override public final boolean get(int aIdx) {
+        rangeCheck(aIdx, mSize);
+        return mData[aIdx+mShift];
+    }
+    @Override public final void set(int aIdx, boolean aValue) {
+        rangeCheck(aIdx, mSize);
+        mData[aIdx+mShift] = aValue;
+    }
     @Override public final boolean getAndSet(int aIdx, boolean aValue) {
         rangeCheck(aIdx, mSize);
+        aIdx += mShift;
         boolean oValue = mData[aIdx];
         mData[aIdx] = aValue;
         return oValue;
     }
-    @Override public final int size() {return mSize;}
+    @Override public final int size() {
+        return mSize;
+    }
     
     @Override protected final LogicalVector newZeros_(int aSize) {return LogicalVector.zeros(aSize);}
     @Override public final LogicalVector copy() {
@@ -75,22 +98,27 @@ public class LogicalVector extends BooleanArrayVector {
     
     @Override public final boolean @Nullable[] getIfHasSameOrderData(Object aObj) {
         if (aObj instanceof LogicalVector) return ((LogicalVector)aObj).mData;
-        if (aObj instanceof ShiftLogicalVector) return ((ShiftLogicalVector)aObj).mData;
         if (aObj instanceof BooleanList) return ((BooleanList)aObj).internalData();
         if (aObj instanceof boolean[]) return (boolean[])aObj;
         return null;
     }
-    @Override public final NDArray<boolean[]> numpy() {return new NDArray<>(mData, mSize);}
+    @Override public final NDArray<boolean[]> numpy() {
+        return mShift==0 ? new NDArray<>(mData, mSize) : super.numpy();
+    }
+    /** 需要指定平移的距离保证优化运算的正确性 */
+    @Override public int internalDataShift() {return mShift;}
     
-    /** Optimize stuffs，subVec 切片直接返回  {@link ShiftLogicalVector} */
-    @Override public final BooleanArrayVector subVec(final int aFromIdx, final int aToIdx) {
+    /** Optimize stuffs，subVec 切片直接返回  {@link LogicalVector} */
+    @Override public final LogicalVector subVec(final int aFromIdx, final int aToIdx) {
         subVecRangeCheck(aFromIdx, aToIdx, mSize);
-        return aFromIdx==0 ? new LogicalVector(aToIdx, mData) : new ShiftLogicalVector(aToIdx-aFromIdx, aFromIdx, mData);
+        return new LogicalVector(aToIdx-aFromIdx, aFromIdx+mShift, mData);
     }
     
     /** Optimize stuffs，重写加速这些操作 */
     @Override public final void swap(int aIdx1, int aIdx2) {
         biRangeCheck(aIdx1, aIdx2, mSize);
+        aIdx1 += mShift;
+        aIdx2 += mShift;
         boolean tValue = mData[aIdx2];
         mData[aIdx2] = mData[aIdx1];
         mData[aIdx1] = tValue;
@@ -98,39 +126,46 @@ public class LogicalVector extends BooleanArrayVector {
     
     @Override public final void flip(int aIdx) {
         rangeCheck(aIdx, mSize);
+        aIdx += mShift;
         mData[aIdx] = !mData[aIdx];
     }
     @Override public final boolean getAndFlip(int aIdx) {
         rangeCheck(aIdx, mSize);
+        aIdx += mShift;
         boolean tValue = mData[aIdx];
         mData[aIdx] = !tValue;
         return tValue;
     }
     @Override public final void update(int aIdx, IBooleanUnaryOperator aOpt) {
         rangeCheck(aIdx, mSize);
+        aIdx += mShift;
         mData[aIdx] = aOpt.applyAsBoolean(mData[aIdx]);
     }
     @Override public final boolean getAndUpdate(int aIdx, IBooleanUnaryOperator aOpt) {
         rangeCheck(aIdx, mSize);
+        aIdx += mShift;
         boolean tValue = mData[aIdx];
         mData[aIdx] = aOpt.applyAsBoolean(tValue);
         return tValue;
     }
-    @Override public final boolean isEmpty() {return mSize==0;}
+    @Override public final boolean isEmpty() {
+        return mSize==0;
+    }
     @Override public final boolean last() {
         if (isEmpty()) throw new NoSuchElementException("Cannot access last() element from an empty LogicalVector");
-        return mData[mSize-1];
+        return mData[mSize-1+mShift];
     }
     @Override public final boolean first() {
         if (isEmpty()) throw new NoSuchElementException("Cannot access first() element from an empty LogicalVector");
-        return mData[0];
+        return mData[mShift];
     }
     
     /** Optimize stuffs，重写迭代器来提高遍历速度（主要是省去隐函数的调用，以及保持和矩阵相同的写法格式） */
     @Override public final IBooleanIterator iterator() {
         return new IBooleanIterator() {
-            private int mIdx = 0;
-            @Override public boolean hasNext() {return mIdx < mSize;}
+            private final int mEnd = mSize + mShift;
+            private int mIdx = mShift;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public boolean next() {
                 if (hasNext()) {
                     boolean tNext = mData[mIdx];
@@ -144,8 +179,9 @@ public class LogicalVector extends BooleanArrayVector {
     }
     @Override public final IBooleanSetIterator setIterator() {
         return new IBooleanSetIterator() {
-            private int mIdx = 0, oIdx = -1;
-            @Override public boolean hasNext() {return mIdx < mSize;}
+            private final int mEnd = mSize + mShift;
+            private int mIdx = mShift, oIdx = -1;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public void set(boolean aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[oIdx] = aValue;

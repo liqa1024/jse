@@ -9,7 +9,6 @@ import jse.code.functional.IIndexFilter;
 import jse.code.iterator.IDoubleIterator;
 import jse.code.iterator.IIntIterator;
 import jse.code.iterator.IIntSetIterator;
-import jse.cache.IntVectorCache;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -109,16 +108,6 @@ public abstract class AbstractIntVector implements IIntVector {
         final IIntIterator it = iterator();
         for (int i = 0; i < tSize; ++i) rData[i] = it.next();
         return rData;
-    }
-    @Override public IntVector toBuf(boolean aAbort) {
-        IntVector rBuf = IntVectorCache.getVec(size());
-        if (aAbort) return rBuf;
-        rBuf.fill(this);
-        return rBuf;
-    }
-    @Override public void releaseBuf(@NotNull IIntVector aBuf, boolean aAbort) {
-        if (!aAbort) fill(aBuf);
-        IntVectorCache.returnVec(aBuf);
     }
     
     /** ISwapper stuffs */

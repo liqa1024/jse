@@ -8,7 +8,6 @@ import jse.code.iterator.IIntSetIterator;
 import jse.math.vector.IIntVector;
 import jse.math.vector.IIntVectorGetter;
 import jse.math.vector.IntVector;
-import jse.math.vector.ShiftIntVector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -113,15 +112,15 @@ public class RowIntMatrix extends IntArrayMatrix {
     @Override public IntVector asVecRow() {return new IntVector(mRowNum*mColNum, mData);}
     
     /** Optimize stuffs，重写这个提高行向的索引速度 */
-    @Override public List<? extends ShiftIntVector> rows() {
-        return new AbstractRandomAccessList<ShiftIntVector>() {
+    @Override public List<? extends IntVector> rows() {
+        return new AbstractRandomAccessList<IntVector>() {
             @Override public int size() {return mRowNum;}
-            @Override public ShiftIntVector get(int aRow) {return row(aRow);}
+            @Override public IntVector get(int aRow) {return row(aRow);}
         };
     }
-    @Override public final ShiftIntVector row(final int aRow) {
+    @Override public final IntVector row(final int aRow) {
         rangeCheckRow(aRow, mRowNum);
-        return new ShiftIntVector(mColNum, aRow*mColNum, mData);
+        return new IntVector(mColNum, aRow*mColNum, mData);
     }
     
     /** Optimize stuffs，引用转置直接返回 {@link ColumnIntMatrix} */

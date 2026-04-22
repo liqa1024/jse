@@ -18,6 +18,8 @@ import static jse.math.vector.AbstractVector.*;
 
 /**
  * 复向量的一般实现
+ * <p>
+ * 现在合并了 ShiftComplexVector 的功能，从而同时支持从数组任意位置开始操作
  * @author liqa
  */
 public class ComplexVector extends BiDoubleArrayVector {
@@ -52,29 +54,119 @@ public class ComplexVector extends BiDoubleArrayVector {
     
     
     private int mSize;
-    public ComplexVector(int aSize, double[][] aData) {super(aData); mSize = aSize;}
-    public ComplexVector(double[][] aData) {this(Math.min(aData[0].length, aData[1].length), aData);}
+    private int mShift = 0;
+    public ComplexVector(int aSize, int aShift, double[][] aData) {
+        super(aData);
+        mSize = aSize;
+        mShift = aShift;
+    }
+    public ComplexVector(int aSize, double[][] aData) {
+        super(aData);
+        mSize = aSize;
+    }
+    public ComplexVector(double[][] aData) {
+        this(Math.min(aData[0].length, aData[1].length), aData);
+    }
     
     /** 提供额外的接口来直接设置底层参数 */
     @Override public void setInternalDataSize(int aSize) {mSize = aSize;}
+    @Override public void setInternalDataShift(int aShift) {mShift = aShift;}
     
     /** IComplexVector stuffs */
-    @Override public final ComplexDouble get(int aIdx) {rangeCheck(aIdx, mSize); return new ComplexDouble(mData[0][aIdx], mData[1][aIdx]);}
-    @Override public final double getReal(int aIdx) {rangeCheck(aIdx, mSize); return mData[0][aIdx];}
-    @Override public final double getImag(int aIdx) {rangeCheck(aIdx, mSize); return mData[1][aIdx];}
-    @Override public final void set(int aIdx, IComplexDouble aValue) {rangeCheck(aIdx, mSize); mData[0][aIdx] = aValue.real(); mData[1][aIdx] = aValue.imag();}
-    @Override public final void set(int aIdx, ComplexDouble aValue) {rangeCheck(aIdx, mSize); mData[0][aIdx] = aValue.mReal; mData[1][aIdx] = aValue.mImag;}
-    @Override public final void set(int aIdx, double aValue) {rangeCheck(aIdx, mSize); mData[0][aIdx] = aValue; mData[1][aIdx] = 0.0;}
-    @Override public final void set(int aIdx, double aReal, double aImag) {rangeCheck(aIdx, mSize); mData[0][aIdx] = aReal; mData[1][aIdx] = aImag;}
-    @Override public final void setReal(int aIdx, double aReal) {rangeCheck(aIdx, mSize); mData[0][aIdx] = aReal;}
-    @Override public final void setImag(int aIdx, double aImag) {rangeCheck(aIdx, mSize); mData[1][aIdx] = aImag;}
-    @Override public final ComplexDouble getAndSet(int aIdx, IComplexDouble aValue) {rangeCheck(aIdx, mSize); ComplexDouble oValue = new ComplexDouble(mData[0][aIdx], mData[1][aIdx]); mData[0][aIdx] = aValue.real(); mData[1][aIdx] = aValue.imag(); return oValue;}
-    @Override public final ComplexDouble getAndSet(int aIdx, ComplexDouble aValue) {rangeCheck(aIdx, mSize); ComplexDouble oValue = new ComplexDouble(mData[0][aIdx], mData[1][aIdx]); mData[0][aIdx] = aValue.mReal; mData[1][aIdx] = aValue.mImag; return oValue;}
-    @Override public final ComplexDouble getAndSet(int aIdx, double aValue) {rangeCheck(aIdx, mSize); ComplexDouble oValue = new ComplexDouble(mData[0][aIdx], mData[1][aIdx]); mData[0][aIdx] = aValue; mData[1][aIdx] = 0.0; return oValue;}
-    @Override public final ComplexDouble getAndSet(int aIdx, double aReal, double aImag) {rangeCheck(aIdx, mSize); ComplexDouble oValue = new ComplexDouble(mData[0][aIdx], mData[1][aIdx]); mData[0][aIdx] = aReal; mData[1][aIdx] = aImag; return oValue;}
-    @Override public final double getAndSetReal(int aIdx, double aReal) {rangeCheck(aIdx, mSize); double oReal = mData[0][aIdx]; mData[0][aIdx] = aReal; return oReal;}
-    @Override public final double getAndSetImag(int aIdx, double aImag) {rangeCheck(aIdx, mSize); double oImag = mData[1][aIdx]; mData[1][aIdx] = aImag; return oImag;}
-    @Override public final int size() {return mSize;}
+    @Override public final ComplexDouble get(int aIdx) {
+        rangeCheck(aIdx, mSize);
+        aIdx += mShift;
+        return new ComplexDouble(mData[0][aIdx], mData[1][aIdx]);
+    }
+    @Override public final double getReal(int aIdx) {
+        rangeCheck(aIdx, mSize);
+        return mData[0][aIdx+mShift];
+    }
+    @Override public final double getImag(int aIdx) {
+        rangeCheck(aIdx, mSize);
+        return mData[1][aIdx+mShift];
+    }
+    @Override public final void set(int aIdx, IComplexDouble aValue) {
+        rangeCheck(aIdx, mSize);
+        aIdx += mShift;
+        mData[0][aIdx] = aValue.real();
+        mData[1][aIdx] = aValue.imag();
+    }
+    @Override public final void set(int aIdx, ComplexDouble aValue) {
+        rangeCheck(aIdx, mSize);
+        aIdx += mShift;
+        mData[0][aIdx] = aValue.mReal;
+        mData[1][aIdx] = aValue.mImag;
+    }
+    @Override public final void set(int aIdx, double aValue) {
+        rangeCheck(aIdx, mSize);
+        aIdx += mShift;
+        mData[0][aIdx] = aValue;
+        mData[1][aIdx] = 0.0;
+    }
+    @Override public final void set(int aIdx, double aReal, double aImag) {
+        rangeCheck(aIdx, mSize);
+        aIdx += mShift;
+        mData[0][aIdx] = aReal;
+        mData[1][aIdx] = aImag;
+    }
+    @Override public final void setReal(int aIdx, double aReal) {
+        rangeCheck(aIdx, mSize);
+        mData[0][aIdx+mShift] = aReal;
+    }
+    @Override public final void setImag(int aIdx, double aImag) {
+        rangeCheck(aIdx, mSize);
+        mData[1][aIdx+mShift] = aImag;
+    }
+    @Override public final ComplexDouble getAndSet(int aIdx, IComplexDouble aValue) {
+        rangeCheck(aIdx, mSize);
+        aIdx += mShift;
+        ComplexDouble oValue = new ComplexDouble(mData[0][aIdx], mData[1][aIdx]);
+        mData[0][aIdx] = aValue.real();
+        mData[1][aIdx] = aValue.imag();
+        return oValue;
+    }
+    @Override public final ComplexDouble getAndSet(int aIdx, ComplexDouble aValue) {
+        rangeCheck(aIdx, mSize);
+        aIdx += mShift;
+        ComplexDouble oValue = new ComplexDouble(mData[0][aIdx], mData[1][aIdx]);
+        mData[0][aIdx] = aValue.mReal;
+        mData[1][aIdx] = aValue.mImag;
+        return oValue;
+    }
+    @Override public final ComplexDouble getAndSet(int aIdx, double aValue) {
+        rangeCheck(aIdx, mSize);
+        aIdx += mShift;
+        ComplexDouble oValue = new ComplexDouble(mData[0][aIdx], mData[1][aIdx]);
+        mData[0][aIdx] = aValue;
+        mData[1][aIdx] = 0.0;
+        return oValue;
+    }
+    @Override public final ComplexDouble getAndSet(int aIdx, double aReal, double aImag) {
+        rangeCheck(aIdx, mSize);
+        aIdx += mShift;
+        ComplexDouble oValue = new ComplexDouble(mData[0][aIdx], mData[1][aIdx]);
+        mData[0][aIdx] = aReal;
+        mData[1][aIdx] = aImag;
+        return oValue;
+    }
+    @Override public final double getAndSetReal(int aIdx, double aReal) {
+        rangeCheck(aIdx, mSize);
+        aIdx += mShift;
+        double oReal = mData[0][aIdx];
+        mData[0][aIdx] = aReal;
+        return oReal;
+    }
+    @Override public final double getAndSetImag(int aIdx, double aImag) {
+        rangeCheck(aIdx, mSize);
+        aIdx += mShift;
+        double oImag = mData[1][aIdx];
+        mData[1][aIdx] = aImag;
+        return oImag;
+    }
+    @Override public final int size() {
+        return mSize;
+    }
     
     @Override protected final ComplexVector newZeros_(int aSize) {return ComplexVector.zeros(aSize);}
     @Override public final ComplexVector copy() {
@@ -85,7 +177,6 @@ public class ComplexVector extends BiDoubleArrayVector {
     
     @Override public final double @Nullable[][] getIfHasSameOrderData(Object aObj) {
         if (aObj instanceof ComplexVector) return ((ComplexVector)aObj).mData;
-        if (aObj instanceof ShiftComplexVector) return ((ShiftComplexVector)aObj).mData;
         if (aObj instanceof ComplexDoubleList) return ((ComplexDoubleList)aObj).internalData();
         if (aObj instanceof double[][]) {
             double[][] tData = (double[][])aObj;
@@ -93,21 +184,28 @@ public class ComplexVector extends BiDoubleArrayVector {
         }
         return null;
     }
-    
+    /** 需要指定平移的距离保证优化运算的正确性 */
+    @Override public int internalDataShift() {return mShift;}
     
     /** Optimize stuffs，real()，imag() 直接返回 {@link Vector} */
-    @Override public final Vector real() {return new Vector(mSize, mData[0]);}
-    @Override public final Vector imag() {return new Vector(mSize, mData[1]);}
+    @Override public final Vector real() {
+        return new Vector(mSize, mData[0]);
+    }
+    @Override public final Vector imag() {
+        return new Vector(mSize, mData[1]);
+    }
     
-    /** Optimize stuffs，subVec 切片直接返回  {@link ShiftComplexVector} */
-    @Override public final BiDoubleArrayVector subVec(final int aFromIdx, final int aToIdx) {
+    /** Optimize stuffs，subVec 切片直接返回  {@link ComplexVector} */
+    @Override public final ComplexVector subVec(final int aFromIdx, final int aToIdx) {
         subVecRangeCheck(aFromIdx, aToIdx, mSize);
-        return aFromIdx==0 ? new ComplexVector(aToIdx, mData) : new ShiftComplexVector(aToIdx-aFromIdx, aFromIdx, mData);
+        return new ComplexVector(aToIdx-aFromIdx, aFromIdx+mShift, mData);
     }
     
     /** Optimize stuffs，重写加速这些操作 */
     @Override public final void swap(int aIdx1, int aIdx2) {
         biRangeCheck(aIdx1, aIdx2, mSize);
+        aIdx1 += mShift;
+        aIdx2 += mShift;
         final double[] tRealData = mData[0];
         final double[] tImagData = mData[1];
         double tReal = tRealData[aIdx2];
@@ -120,18 +218,27 @@ public class ComplexVector extends BiDoubleArrayVector {
     
     @Override public final void add(int aIdx, IComplexDouble aDelta) {
         rangeCheck(aIdx, mSize);
+        aIdx += mShift;
         mData[0][aIdx] += aDelta.real();
         mData[1][aIdx] += aDelta.imag();
     }
     @Override public final void add(int aIdx, ComplexDouble aDelta) {
         rangeCheck(aIdx, mSize);
+        aIdx += mShift;
         mData[0][aIdx] += aDelta.mReal;
         mData[1][aIdx] += aDelta.mImag;
     }
-    @Override public final void add(int aIdx, double aDelta) {rangeCheck(aIdx, mSize); mData[0][aIdx] += aDelta;}
-    @Override public final void addImag(int aIdx, double aImag) {rangeCheck(aIdx, mSize); mData[1][aIdx] += aImag;}
+    @Override public final void add(int aIdx, double aDelta) {
+        rangeCheck(aIdx, mSize);
+        mData[0][aIdx+mShift] += aDelta;
+    }
+    @Override public final void addImag(int aIdx, double aImag) {
+        rangeCheck(aIdx, mSize);
+        mData[1][aIdx+mShift] += aImag;
+    }
     @Override public final void update(int aIdx, IUnaryFullOperator<? extends IComplexDouble, ? super ComplexDouble> aOpt) {
         rangeCheck(aIdx, mSize);
+        aIdx += mShift;
         final double[] tRealData = mData[0];
         final double[] tImagData = mData[1];
         IComplexDouble tValue = aOpt.apply(new ComplexDouble(tRealData[aIdx], tImagData[aIdx]));
@@ -140,16 +247,19 @@ public class ComplexVector extends BiDoubleArrayVector {
     }
     @Override public final void updateReal(int aIdx, DoubleUnaryOperator aRealOpt) {
         rangeCheck(aIdx, mSize);
+        aIdx += mShift;
         final double[] tRealData = mData[0];
         tRealData[aIdx] = aRealOpt.applyAsDouble(tRealData[aIdx]);
     }
     @Override public final void updateImag(int aIdx, DoubleUnaryOperator aImagOpt) {
         rangeCheck(aIdx, mSize);
+        aIdx += mShift;
         final double[] tImagData = mData[1];
         tImagData[aIdx] = aImagOpt.applyAsDouble(tImagData[aIdx]);
     }
     @Override public final ComplexDouble getAndUpdate(int aIdx, IUnaryFullOperator<? extends IComplexDouble, ? super ComplexDouble> aOpt) {
         rangeCheck(aIdx, mSize);
+        aIdx += mShift;
         final double[] tRealData = mData[0];
         final double[] tImagData = mData[1];
         ComplexDouble oValue = new ComplexDouble(tRealData[aIdx], tImagData[aIdx]);
@@ -160,6 +270,7 @@ public class ComplexVector extends BiDoubleArrayVector {
     }
     @Override public final double getAndUpdateReal(int aIdx, DoubleUnaryOperator aRealOpt) {
         rangeCheck(aIdx, mSize);
+        aIdx += mShift;
         final double[] tRealData = mData[0];
         double oReal = tRealData[aIdx];
         tRealData[aIdx] = aRealOpt.applyAsDouble(oReal);
@@ -167,27 +278,31 @@ public class ComplexVector extends BiDoubleArrayVector {
     }
     @Override public final double getAndUpdateImag(int aIdx, DoubleUnaryOperator aImagOpt) {
         rangeCheck(aIdx, mSize);
+        aIdx += mShift;
         final double[] tImagData = mData[1];
         double oImag = tImagData[aIdx];
         tImagData[aIdx] = aImagOpt.applyAsDouble(oImag);
         return oImag;
     }
-    @Override public final boolean isEmpty() {return mSize==0;}
+    @Override public final boolean isEmpty() {
+        return mSize==0;
+    }
     @Override public final ComplexDouble last() {
         if (isEmpty()) throw new NoSuchElementException("Cannot access last() element from an empty ComplexVector");
-        int tSizeMM = mSize-1;
-        return new ComplexDouble(mData[0][tSizeMM], mData[1][tSizeMM]);
+        int tLastIdx = mSize-1+mShift;
+        return new ComplexDouble(mData[0][tLastIdx], mData[1][tLastIdx]);
     }
     @Override public final ComplexDouble first() {
         if (isEmpty()) throw new NoSuchElementException("Cannot access first() element from an empty ComplexVector");
-        return new ComplexDouble(mData[0][0], mData[1][0]);
+        return new ComplexDouble(mData[0][mShift], mData[1][mShift]);
     }
     
     /** Optimize stuffs，重写迭代器来提高遍历速度（主要是省去隐函数的调用，以及保持和矩阵相同的写法格式） */
     @Override public final IComplexDoubleIterator iterator() {
         return new IComplexDoubleIterator() {
-            private int mIdx = 0, oIdx = -1;
-            @Override public boolean hasNext() {return mIdx < mSize;}
+            private final int mEnd = mSize + mShift;
+            private int mIdx = mShift, oIdx = -1;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public void nextOnly() {
                 if (hasNext()) {
                     oIdx = mIdx;
@@ -211,8 +326,9 @@ public class ComplexVector extends BiDoubleArrayVector {
     }
     @Override public final IComplexDoubleSetIterator setIterator() {
         return new IComplexDoubleSetIterator() {
-            private int mIdx = 0, oIdx = -1;
-            @Override public boolean hasNext() {return mIdx < mSize;}
+            private final int mEnd = mSize + mShift;
+            private int mIdx = mShift, oIdx = -1;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public void set(double aReal, double aImag) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[0][oIdx] = aReal;

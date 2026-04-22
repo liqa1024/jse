@@ -37,9 +37,6 @@ public interface IVector extends ISwapper, IHasDoubleIterator, IHasDoubleSetIter
     List<Double> asList();
     IIntVector asIntVec();
     
-    IMatrix asMatCol();
-    IMatrix asMatRow();
-    
     /**
      * 转换为 numpy 的数组 {@link NDArray}，在 java 侧根据具体向量类型可能不会进行值拷贝，由于
      * {@link NDArray} 内部实现特性，在 python 中总是会再经历一次值拷贝，此时使用不会有引用问题。
@@ -48,24 +45,6 @@ public interface IVector extends ISwapper, IHasDoubleIterator, IHasDoubleSetIter
     NDArray<double[]> numpy();
     /** 转为兼容性更好的 {@code double[]}，会进行一次值拷贝 */
     double[] data();
-    
-    /**
-     * 通用的转换成 {@link Vector} 的方法，借鉴了 jni 中相关函数的实现思路，
-     * 对于 {@link Vector} 会直接转换，而其他类型会使用缓存；
-     * <p>
-     * 使用完成后调用 {@link #releaseBuf} 来释放数据，此时会将更改应用到数据中，
-     * 而对于使用缓存的类型会归还缓存；
-     * <p>
-     * aAbort 参数用于指定是否抛弃数据，对于 {@link #toBuf} 则不需要获取到原始数据（仅写入并且会全部写入），
-     * 对于 {@link #releaseBuf} 则会忽略掉 aBuf 的修改（仅读取）；
-     * <p>
-     * 显而易见，对于 {@link Vector}，aAbort 参数不会有任何影响，
-     * 而对于其他类型，aAbort 参数可以对复杂工况做优化。
-     */
-    @ApiStatus.Experimental Vector toBuf(boolean aAbort);
-    @ApiStatus.Experimental void releaseBuf(@NotNull IVector aBuf, boolean aAbort);
-    @ApiStatus.Experimental default Vector toBuf() {return toBuf(false);}
-    @ApiStatus.Experimental default void releaseBuf(@NotNull IVector aBuf) {releaseBuf(aBuf, false);}
     
     /** ISwapper stuffs */
     @Override void swap(int aIdx1, int aIdx2);

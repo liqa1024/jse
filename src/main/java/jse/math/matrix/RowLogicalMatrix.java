@@ -106,15 +106,15 @@ public class RowLogicalMatrix extends BooleanArrayMatrix {
     @Override public LogicalVector asVecRow() {return new LogicalVector(mRowNum*mColNum, mData);}
     
     /** Optimize stuffs，重写这个提高行向的索引速度 */
-    @Override public List<? extends ShiftLogicalVector> rows() {
-        return new AbstractRandomAccessList<ShiftLogicalVector>() {
+    @Override public List<? extends LogicalVector> rows() {
+        return new AbstractRandomAccessList<LogicalVector>() {
             @Override public int size() {return mRowNum;}
-            @Override public ShiftLogicalVector get(int aRow) {return row(aRow);}
+            @Override public LogicalVector get(int aRow) {return row(aRow);}
         };
     }
-    @Override public final ShiftLogicalVector row(final int aRow) {
+    @Override public final LogicalVector row(final int aRow) {
         rangeCheckRow(aRow, mRowNum);
-        return new ShiftLogicalVector(mColNum, aRow*mColNum, mData);
+        return new LogicalVector(mColNum, aRow*mColNum, mData);
     }
     
     /** Optimize stuffs，引用转置直接返回 {@link ColumnLogicalMatrix} */

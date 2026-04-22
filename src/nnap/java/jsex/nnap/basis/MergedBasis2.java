@@ -4,7 +4,7 @@ import jse.code.Conf;
 import jse.code.collection.NewCollections;
 import jse.cptr.IDoubleOrFloatCPointer;
 import jse.math.IDataShell;
-import jse.math.vector.ShiftVector;
+import jse.math.vector.Vector;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -100,7 +100,7 @@ public class MergedBasis2 extends Basis2 {
         int tShift = aData.internalDataShift();
         for (int i = 0; i < mMergedBasis.length; ++i) {
             int tSize = mParaSizes[i];
-            mMergedBasis[i].mountParameter(new ShiftVector(tSize, tShift, tData));
+            mMergedBasis[i].mountParameter(new Vector(tSize, tShift, tData));
             tShift += tSize;
         }
     }
@@ -114,7 +114,7 @@ public class MergedBasis2 extends Basis2 {
         int tShift = aData.internalDataShift();
         for (int i = 0; i < mMergedBasis.length; ++i) {
             int tSize = mParaSizes[i];
-            mMergedBasis[i].mountGradParameter(new ShiftVector(tSize, tShift, tData));
+            mMergedBasis[i].mountGradParameter(new Vector(tSize, tShift, tData));
             tShift += tSize;
         }
     }

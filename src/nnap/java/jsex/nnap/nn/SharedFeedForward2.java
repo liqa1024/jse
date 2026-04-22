@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 import static jse.code.CS.RANDOM;
+import static jse.code.CS.ZL_VEC;
 
 /**
  * 可以共享部分神经元的前馈神经网络 (FFNN) 实现，原生实现在非 batch 的情况下可以有最快的性能
@@ -33,10 +34,10 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
     
     private final int mInputDim;
     private final int[] mSharedHiddenDims;
-    private ShiftVector mNoSharedHiddenWeights, mNoSharedHiddenBiases;
-    private ShiftVector mNoSharedOutputWeight, mNoSharedOutputBias;
-    private ShiftVector mGradNoSharedHiddenWeights = null, mGradNoSharedHiddenBiases = null;
-    private ShiftVector mGradNoSharedOutputWeight = null, mGradNoSharedOutputBias = null;
+    private Vector mNoSharedHiddenWeights, mNoSharedHiddenBiases;
+    private Vector mNoSharedOutputWeight, mNoSharedOutputBias;
+    private Vector mGradNoSharedHiddenWeights = null, mGradNoSharedHiddenBiases = null;
+    private Vector mGradNoSharedOutputWeight = null, mGradNoSharedOutputBias = null;
     private final int mNumLayers;
     private final int mNoSharedHiddenWeightsSize;
     private final int mNoSharedHiddenBiasesSize;
@@ -47,7 +48,7 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
     private IDoubleOrFloatCPointer mInternalGradHiddenWeights = null, mInternalGradHiddenBiases = null;
     private IDoubleOrFloatCPointer mInternalGradOutputWeight = null, mInternalGradOutputBias = null;
     
-    SharedFeedForward2(int aInputDim, FeedForward2 aBase, int aSharedType, int[] aSharedHiddenDims, ShiftVector aNoSharedHiddenWeights, ShiftVector aNoSharedHiddenBiases, ShiftVector aNoSharedOutputWeight, ShiftVector aNoSharedOutputBias) {
+    SharedFeedForward2(int aInputDim, FeedForward2 aBase, int aSharedType, int[] aSharedHiddenDims, Vector aNoSharedHiddenWeights, Vector aNoSharedHiddenBiases, Vector aNoSharedOutputWeight, Vector aNoSharedOutputBias) {
         mInputDim = aInputDim;
         mBase = aBase;
         mSharedType = aSharedType;
@@ -75,16 +76,16 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
         }
         mNoSharedHiddenWeightsSize = tNoSharedHiddenWeightsSize;
         mNoSharedHiddenBiasesSize = tNoSharedHiddenBiasesSize;
-        mNoSharedHiddenWeights = aNoSharedHiddenWeights==null ? new ShiftVector(0, new double[mNoSharedHiddenWeightsSize]) : aNoSharedHiddenWeights;
-        mNoSharedHiddenBiases = aNoSharedHiddenBiases==null ? new ShiftVector(0, new double[mNoSharedHiddenBiasesSize]) : aNoSharedHiddenBiases;
+        mNoSharedHiddenWeights = aNoSharedHiddenWeights==null ? Vectors.zeros(mNoSharedHiddenWeightsSize) : aNoSharedHiddenWeights;
+        mNoSharedHiddenBiases = aNoSharedHiddenBiases==null ? Vectors.zeros(mNoSharedHiddenBiasesSize) : aNoSharedHiddenBiases;
         if (mNoSharedHiddenWeights.size() != mNoSharedHiddenWeightsSize) throw new IllegalArgumentException("The size of hidden weights mismatch");
         if (mNoSharedHiddenBiases.size() != mNoSharedHiddenBiasesSize) throw new IllegalArgumentException("The size of hidden biases mismatch");
         int tSharedOutputDim = mSharedHiddenDims[mNumLayers];
         if (tSharedOutputDim<0 || tSharedOutputDim>1) throw new IllegalArgumentException("invalid shared dimension: "+tSharedOutputDim+" vs "+1);
         mNoSharedOutputWeightSize = tSharedOutputDim==1 ? 0 : mBase.mHiddenDims[mNumLayers -1];
         mNoSharedOutputBiasSize = tSharedOutputDim==1 ? 0 : 1;
-        mNoSharedOutputWeight = aNoSharedOutputWeight==null ? new ShiftVector(0, new double[mNoSharedOutputWeightSize]) : aNoSharedOutputWeight;
-        mNoSharedOutputBias = aNoSharedOutputBias==null ?  new ShiftVector(0, new double[mNoSharedOutputBiasSize]) : aNoSharedOutputBias;
+        mNoSharedOutputWeight = aNoSharedOutputWeight==null ? Vectors.zeros(mNoSharedOutputWeightSize) : aNoSharedOutputWeight;
+        mNoSharedOutputBias = aNoSharedOutputBias==null ?  Vectors.zeros(mNoSharedOutputBiasSize) : aNoSharedOutputBias;
         if (mNoSharedOutputWeight.size() != mNoSharedOutputWeightSize) throw new IllegalArgumentException("The size of output weight mismatch");
         if (mNoSharedOutputBias.size() != mNoSharedOutputBiasSize) throw new IllegalArgumentException("The size of output biases mismatch");
     }
@@ -254,7 +255,7 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
         }
         List<?> tNoSharedHiddenWeights = (List<?>)UT.Code.get(aMap, "hidden_weights");
         if (tNoSharedHiddenWeights.size() != tNumLayers) throw new IllegalArgumentException("The number of hidden weights mismatch");
-        ShiftVector aNoSharedHiddenWeights = new ShiftVector(0, new double[tNoSharedHiddenWeightsSize]);
+        Vector aNoSharedHiddenWeights = Vectors.zeros(tNoSharedHiddenWeightsSize);
         tColNum = aInputDim;
         int tShift = 0;
         for (int i = 0; i < tNumLayers; ++i) {
@@ -271,7 +272,7 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
         }
         List<?> tNoSharedHiddenBiases = (List<?>)UT.Code.get(aMap, "hidden_biases");
         if (tNoSharedHiddenBiases.size() != tNumLayers) throw new IllegalArgumentException("The number of hidden biases mismatch");
-        ShiftVector aNoSharedHiddenBiases = new ShiftVector(0, new double[tNoSharedHiddenBiasesSize]);
+        Vector aNoSharedHiddenBiases = Vectors.zeros(tNoSharedHiddenBiasesSize);
         tShift = 0;
         for (int i = 0; i < tNumLayers; ++i) {
             int tHiddenDim = tBase.mHiddenDims[i];
@@ -282,14 +283,14 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
             aNoSharedHiddenBiases.subVec(tShift, tShift+tNoSharedHiddenDim).fill(tBias);
             tShift += tNoSharedHiddenDim;
         }
-        ShiftVector aNoSharedOutputWeight;
-        ShiftVector aNoSharedOutputBias;
+        Vector aNoSharedOutputWeight;
+        Vector aNoSharedOutputBias;
         if (aSharedHiddenDims[tNumLayers]==1) {
-            aNoSharedOutputWeight = new ShiftVector(0, new double[0]);
-            aNoSharedOutputBias = new ShiftVector(0, new double[0]);
+            aNoSharedOutputWeight = ZL_VEC;
+            aNoSharedOutputBias = ZL_VEC;
         } else {
-            aNoSharedOutputWeight = new ShiftVector(0, new double[tBase.mHiddenDims[tNumLayers-1]]);
-            aNoSharedOutputBias = new ShiftVector(0, new double[1]);
+            aNoSharedOutputWeight = Vectors.zeros(tBase.mHiddenDims[tNumLayers-1]);
+            aNoSharedOutputBias = Vectors.zeros(1);
             aNoSharedOutputWeight.fill((List<? extends Number>)aMap.get("output_weight"));
             aNoSharedOutputBias.set(0, ((Number)aMap.get("output_bias")).doubleValue());
         }
@@ -350,22 +351,22 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
         int tShift = aData.internalDataShift();
         
         IVector oVec = mNoSharedHiddenWeights;
-        mNoSharedHiddenWeights = new ShiftVector(mNoSharedHiddenWeightsSize, tShift, tData);
+        mNoSharedHiddenWeights = new Vector(mNoSharedHiddenWeightsSize, tShift, tData);
         tShift += mNoSharedHiddenWeightsSize;
         mNoSharedHiddenWeights.fill(oVec);
         
         oVec = mNoSharedOutputWeight;
-        mNoSharedOutputWeight = new ShiftVector(mNoSharedOutputWeightSize, tShift, tData);
+        mNoSharedOutputWeight = new Vector(mNoSharedOutputWeightSize, tShift, tData);
         tShift += mNoSharedOutputWeightSize;
         mNoSharedOutputWeight.fill(oVec);
         
         oVec = mNoSharedHiddenBiases;
-        mNoSharedHiddenBiases = new ShiftVector(mNoSharedHiddenBiasesSize, tShift, tData);
+        mNoSharedHiddenBiases = new Vector(mNoSharedHiddenBiasesSize, tShift, tData);
         tShift += mNoSharedHiddenBiasesSize;
         mNoSharedHiddenBiases.fill(oVec);
         
         oVec = mNoSharedOutputBias;
-        mNoSharedOutputBias = new ShiftVector(mNoSharedOutputBiasSize, tShift, tData);
+        mNoSharedOutputBias = new Vector(mNoSharedOutputBiasSize, tShift, tData);
         mNoSharedOutputBias.fill(oVec);
     }
     @Override public void mountGradParameter(IDataShell<double[]> aData) {
@@ -376,13 +377,13 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
         }
         double[] tData = aData.internalData();
         int tShift = aData.internalDataShift();
-        mGradNoSharedHiddenWeights = new ShiftVector(mNoSharedHiddenWeightsSize, tShift, tData);
+        mGradNoSharedHiddenWeights = new Vector(mNoSharedHiddenWeightsSize, tShift, tData);
         tShift += mNoSharedHiddenWeightsSize;
-        mGradNoSharedOutputWeight = new ShiftVector(mNoSharedOutputWeightSize, tShift, tData);
+        mGradNoSharedOutputWeight = new Vector(mNoSharedOutputWeightSize, tShift, tData);
         tShift += mNoSharedOutputWeightSize;
-        mGradNoSharedHiddenBiases = new ShiftVector(mNoSharedHiddenBiasesSize, tShift, tData);
+        mGradNoSharedHiddenBiases = new Vector(mNoSharedHiddenBiasesSize, tShift, tData);
         tShift += mNoSharedHiddenBiasesSize;
-        mGradNoSharedOutputBias = new ShiftVector(mNoSharedOutputBiasSize, tShift, tData);
+        mGradNoSharedOutputBias = new Vector(mNoSharedOutputBiasSize, tShift, tData);
     }
     
     @Override public int cptrParameterSize() {

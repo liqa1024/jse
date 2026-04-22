@@ -26,10 +26,10 @@ import static jse.code.CS.RANDOM;
 public class FeedForward2 extends NeuralNetwork2 {
     final int mInputDim;
     final int[] mHiddenDims;
-    DoubleArrayVector mHiddenWeights, mHiddenBiases;
-    DoubleArrayVector mOutputWeight, mOutputBias;
-    DoubleArrayVector mGradHiddenWeights = null, mGradHiddenBiases = null;
-    DoubleArrayVector mGradOutputWeight = null, mGradOutputBias = null;
+    Vector mHiddenWeights, mHiddenBiases;
+    Vector mOutputWeight, mOutputBias;
+    Vector mGradHiddenWeights = null, mGradHiddenBiases = null;
+    Vector mGradOutputWeight = null, mGradOutputBias = null;
     final int mNumLayers, mHiddenWeightsSize, mHiddenBiasesSize, mOutputWeightSize;
     
     private IDoubleOrFloatCPointer mInternalHiddenWeights = null, mInternalHiddenBiases = null;
@@ -210,22 +210,22 @@ public class FeedForward2 extends NeuralNetwork2 {
         int tShift = aData.internalDataShift();
         
         IVector oVec = mHiddenWeights;
-        mHiddenWeights = new ShiftVector(mHiddenWeightsSize, tShift, tData);
+        mHiddenWeights = new Vector(mHiddenWeightsSize, tShift, tData);
         tShift += mHiddenWeightsSize;
         mHiddenWeights.fill(oVec);
         
         oVec = mOutputWeight;
-        mOutputWeight = new ShiftVector(mOutputWeightSize, tShift, tData);
+        mOutputWeight = new Vector(mOutputWeightSize, tShift, tData);
         tShift += mOutputWeightSize;
         mOutputWeight.fill(oVec);
         
         oVec = mHiddenBiases;
-        mHiddenBiases = new ShiftVector(mHiddenBiasesSize, tShift, tData);
+        mHiddenBiases = new Vector(mHiddenBiasesSize, tShift, tData);
         tShift += mHiddenBiasesSize;
         mHiddenBiases.fill(oVec);
         
         double tOutputBias = mOutputBias.get(0);
-        mOutputBias = new ShiftVector(1, tShift, tData);
+        mOutputBias = new Vector(1, tShift, tData);
         mOutputBias.set(0, tOutputBias);
     }
     @Override public void mountGradParameter(IDataShell<double[]> aData) {
@@ -236,13 +236,13 @@ public class FeedForward2 extends NeuralNetwork2 {
         }
         double[] tData = aData.internalData();
         int tShift = aData.internalDataShift();
-        mGradHiddenWeights = new ShiftVector(mHiddenWeightsSize, tShift, tData);
+        mGradHiddenWeights = new Vector(mHiddenWeightsSize, tShift, tData);
         tShift += mHiddenWeightsSize;
-        mGradOutputWeight = new ShiftVector(mOutputWeightSize, tShift, tData);
+        mGradOutputWeight = new Vector(mOutputWeightSize, tShift, tData);
         tShift += mOutputWeightSize;
-        mGradHiddenBiases = new ShiftVector(mHiddenBiasesSize, tShift, tData);
+        mGradHiddenBiases = new Vector(mHiddenBiasesSize, tShift, tData);
         tShift += mHiddenBiasesSize;
-        mGradOutputBias = new ShiftVector(1, tShift, tData);
+        mGradOutputBias = new Vector(1, tShift, tData);
     }
     
     @Override public int cptrParameterSize() {

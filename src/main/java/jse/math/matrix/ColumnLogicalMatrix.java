@@ -100,15 +100,15 @@ public class ColumnLogicalMatrix extends BooleanArrayMatrix {
     }
     
     /** Optimize stuffs，重写这个提高列向的索引速度 */
-    @Override public List<? extends ShiftLogicalVector> cols() {
-        return new AbstractRandomAccessList<ShiftLogicalVector>() {
+    @Override public List<? extends LogicalVector> cols() {
+        return new AbstractRandomAccessList<LogicalVector>() {
             @Override public int size() {return mColNum;}
-            @Override public ShiftLogicalVector get(int aCol) {return col(aCol);}
+            @Override public LogicalVector get(int aCol) {return col(aCol);}
         };
     }
-    @Override public ShiftLogicalVector col(final int aCol) {
+    @Override public LogicalVector col(final int aCol) {
         rangeCheckCol(aCol, mColNum);
-        return new ShiftLogicalVector(mRowNum, aCol*mRowNum, mData);
+        return new LogicalVector(mRowNum, aCol*mRowNum, mData);
     }
     
     /** Optimize stuffs，列向展开的向量直接返回 */

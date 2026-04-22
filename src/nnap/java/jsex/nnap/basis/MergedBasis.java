@@ -8,7 +8,9 @@ import jse.math.vector.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import static jse.code.CS.*;
 
@@ -23,8 +25,8 @@ public class MergedBasis extends Basis {
     private final @Nullable IVector[] mParas;
     private final int[] mParaSizes;
     private final String @Nullable[] mSymbols;
-    private final ShiftVector[] mFpShell, mNNGradShell, mGradNNGradShell, mParaShell;
-    private final ShiftVector[] mForwardCacheShell, mBackwardCacheShell, mForwardForceCacheShell, mBackwardForceCacheShell;
+    private final Vector[] mFpShell, mNNGradShell, mGradNNGradShell, mParaShell;
+    private final Vector[] mForwardCacheShell, mBackwardCacheShell, mForwardForceCacheShell, mBackwardForceCacheShell;
     
     public MergedBasis(MergeableBasis... aMergedBasis) {
         if (aMergedBasis ==null || aMergedBasis.length==0) throw new IllegalArgumentException("Merge basis can not be null or empty");
@@ -69,34 +71,34 @@ public class MergedBasis extends Basis {
         // init para stuff
         mParas = new IVector[mMergedBasis.length];
         mParaSizes = new int[mMergedBasis.length];
-        mParaShell = new ShiftVector[mMergedBasis.length];
+        mParaShell = new Vector[mMergedBasis.length];
         int tTotParaSize = 0;
         for (int i = 0; i < mMergedBasis.length; ++i) {
             IVector tPara = mMergedBasis[i].hasParameters() ? mMergedBasis[i].parameters() : null;
             mParas[i] = tPara;
             int tSizePara = tPara==null ? 0 : tPara.size();
             mParaSizes[i] = tSizePara;
-            mParaShell[i] = new ShiftVector(tSizePara, 0, null);
+            mParaShell[i] = new Vector(tSizePara, 0, null);
             tTotParaSize += tSizePara;
         }
         mTotParaSize = tTotParaSize;
         // init fp shell
-        mFpShell = new ShiftVector[mMergedBasis.length];
-        mNNGradShell = new ShiftVector[mMergedBasis.length];
-        mGradNNGradShell = new ShiftVector[mMergedBasis.length];
-        mForwardCacheShell = new ShiftVector[mMergedBasis.length];
-        mBackwardCacheShell = new ShiftVector[mMergedBasis.length];
-        mForwardForceCacheShell = new ShiftVector[mMergedBasis.length];
-        mBackwardForceCacheShell = new ShiftVector[mMergedBasis.length];
+        mFpShell = new Vector[mMergedBasis.length];
+        mNNGradShell = new Vector[mMergedBasis.length];
+        mGradNNGradShell = new Vector[mMergedBasis.length];
+        mForwardCacheShell = new Vector[mMergedBasis.length];
+        mBackwardCacheShell = new Vector[mMergedBasis.length];
+        mForwardForceCacheShell = new Vector[mMergedBasis.length];
+        mBackwardForceCacheShell = new Vector[mMergedBasis.length];
         for (int i = 0; i < mMergedBasis.length; ++i) {
             int tSizeFp = mMergedBasis[i].size();
-            mFpShell[i] = new ShiftVector(tSizeFp, 0, null);
-            mNNGradShell[i] = new ShiftVector(tSizeFp, 0, null);
-            mGradNNGradShell[i] = new ShiftVector(tSizeFp, 0, null);
-            mForwardCacheShell[i] = new ShiftVector(0, 0, null);
-            mBackwardCacheShell[i] = new ShiftVector(0, 0, null);
-            mForwardForceCacheShell[i] = new ShiftVector(0, 0, null);
-            mBackwardForceCacheShell[i] = new ShiftVector(0, 0, null);
+            mFpShell[i] = new Vector(tSizeFp, 0, null);
+            mNNGradShell[i] = new Vector(tSizeFp, 0, null);
+            mGradNNGradShell[i] = new Vector(tSizeFp, 0, null);
+            mForwardCacheShell[i] = new Vector(0, 0, null);
+            mBackwardCacheShell[i] = new Vector(0, 0, null);
+            mForwardForceCacheShell[i] = new Vector(0, 0, null);
+            mBackwardForceCacheShell[i] = new Vector(0, 0, null);
         }
     }
     @Override public MergedBasis threadSafeRef() {
@@ -283,10 +285,10 @@ public class MergedBasis extends Basis {
         int tFpShift = rFp.internalDataShift();
         int tCacheShift = 0;
         for (int i = 0; i < mMergedBasis.length; ++i) {
-            ShiftVector tFp = mFpShell[i];
+            Vector tFp = mFpShell[i];
             tFp.setInternalData(rFp.internalData());
             tFp.setInternalDataShift(tFpShift);
-            ShiftVector tForwardCache = mForwardCacheShell[i];
+            Vector tForwardCache = mForwardCacheShell[i];
             tForwardCache.setInternalData(rForwardCache.internalData());
             tForwardCache.setInternalDataShift(tCacheShift);
             mMergedBasis[i].forward_(aNlDx, aNlDy, aNlDz, aNlType, tFp, tForwardCache, aFullCache);
@@ -309,16 +311,16 @@ public class MergedBasis extends Basis {
         int tFpShift = aGradFp.internalDataShift(), tParaShift = rGradPara.internalDataShift();
         int tCacheShift = 0, tBackwardCacheShift = 0;
         for (int i = 0; i < mMergedBasis.length; ++i) {
-            ShiftVector tGradFp = mFpShell[i];
+            Vector tGradFp = mFpShell[i];
             tGradFp.setInternalData(aGradFp.internalData());
             tGradFp.setInternalDataShift(tFpShift);
-            ShiftVector tGradPara = mParaShell[i];
+            Vector tGradPara = mParaShell[i];
             tGradPara.setInternalData(rGradPara.internalData());
             tGradPara.setInternalDataShift(tParaShift);
-            ShiftVector tForwardCache = mForwardCacheShell[i];
+            Vector tForwardCache = mForwardCacheShell[i];
             tForwardCache.setInternalData(aForwardCache.internalData());
             tForwardCache.setInternalDataShift(tCacheShift);
-            ShiftVector tBackwardCache = mBackwardCacheShell[i];
+            Vector tBackwardCache = mBackwardCacheShell[i];
             tBackwardCache.setInternalData(rBackwardCache.internalData());
             tBackwardCache.setInternalDataShift(tBackwardCacheShift);
             mMergedBasis[i].backward_(aNlDx, aNlDy, aNlDz, aNlType, tGradFp, tGradPara, tForwardCache, tBackwardCache, aKeepCache);
@@ -338,13 +340,13 @@ public class MergedBasis extends Basis {
         int tFpShift = aNNGrad.internalDataShift();
         int tCacheShift = 0, tForceCacheShift = 0;
         for (int i = 0; i < mMergedBasis.length; ++i) {
-            ShiftVector tNNGrad = mNNGradShell[i];
+            Vector tNNGrad = mNNGradShell[i];
             tNNGrad.setInternalData(aNNGrad.internalData());
             tNNGrad.setInternalDataShift(tFpShift);
-            ShiftVector tForwardCache = mForwardCacheShell[i];
+            Vector tForwardCache = mForwardCacheShell[i];
             tForwardCache.setInternalData(aForwardCache.internalData());
             tForwardCache.setInternalDataShift(tCacheShift);
-            ShiftVector tForwardForceCache = mForwardForceCacheShell[i];
+            Vector tForwardForceCache = mForwardForceCacheShell[i];
             tForwardForceCache.setInternalData(rForwardForceCache.internalData());
             tForwardForceCache.setInternalDataShift(tForceCacheShift);
             mMergedBasis[i].forwardForceAccumulate_(aNlDx, aNlDy, aNlDz, aNlType, tNNGrad, rFx, rFy, rFz, tForwardCache, tForwardForceCache, aFullCache);
@@ -364,25 +366,25 @@ public class MergedBasis extends Basis {
         int tGFpShift = aNNGrad.internalDataShift(), tGGFpShift = rGradNNGrad.internalDataShift(), tParaShift = rGradPara==null?0:rGradPara.internalDataShift();
         int tCacheShift = 0, tForceCacheShift = 0, tBackwardCacheShift = 0, tBackwardForceCacheShift = 0;
         for (int i = 0; i < mMergedBasis.length; ++i) {
-            ShiftVector tNNGrad = mNNGradShell[i];
+            Vector tNNGrad = mNNGradShell[i];
             tNNGrad.setInternalData(aNNGrad.internalData());
             tNNGrad.setInternalDataShift(tGFpShift);
-            ShiftVector tGradNNGrad = mGradNNGradShell[i];
+            Vector tGradNNGrad = mGradNNGradShell[i];
             tGradNNGrad.setInternalData(rGradNNGrad.internalData());
             tGradNNGrad.setInternalDataShift(tGGFpShift);
-            ShiftVector tGradPara = rGradPara==null?null:mParaShell[i];
+            Vector tGradPara = rGradPara==null?null:mParaShell[i];
             if (rGradPara!=null) tGradPara.setInternalData(rGradPara.internalData());
             if (rGradPara!=null) tGradPara.setInternalDataShift(tParaShift);
-            ShiftVector tForwardCache = mForwardCacheShell[i];
+            Vector tForwardCache = mForwardCacheShell[i];
             tForwardCache.setInternalData(aForwardCache.internalData());
             tForwardCache.setInternalDataShift(tCacheShift);
-            ShiftVector tForwardForceCache = mForwardForceCacheShell[i];
+            Vector tForwardForceCache = mForwardForceCacheShell[i];
             tForwardForceCache.setInternalData(aForwardForceCache.internalData());
             tForwardForceCache.setInternalDataShift(tForceCacheShift);
-            ShiftVector tBackwardCache = mBackwardCacheShell[i];
+            Vector tBackwardCache = mBackwardCacheShell[i];
             tBackwardCache.setInternalData(rBackwardCache.internalData());
             tBackwardCache.setInternalDataShift(tBackwardCacheShift);
-            ShiftVector tBackwardForceCache = mBackwardForceCacheShell[i];
+            Vector tBackwardForceCache = mBackwardForceCacheShell[i];
             tBackwardForceCache.setInternalData(rBackwardForceCache.internalData());
             tBackwardForceCache.setInternalDataShift(tBackwardForceCacheShift);
             mMergedBasis[i].backwardForce_(aNlDx, aNlDy, aNlDz, aNlType, tNNGrad, aGradFx, aGradFy, aGradFz, tGradNNGrad, tGradPara, tForwardCache, tForwardForceCache, tBackwardCache, tBackwardForceCache, aKeepCache, aFixBasis);

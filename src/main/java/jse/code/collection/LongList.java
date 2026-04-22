@@ -174,7 +174,6 @@ public class LongList implements IDataShell<long[]> {
     @ApiStatus.Internal @Override public long @Nullable[] getIfHasSameOrderData(Object aObj) {
         if (aObj instanceof LongList) return ((LongList)aObj).mData;
         if (aObj instanceof LongVector) return ((LongVector)aObj).internalData();
-        if (aObj instanceof ShiftLongVector) return ((ShiftLongVector)aObj).internalData();
         if (aObj instanceof long[]) return (long[])aObj;
         return null;
     }

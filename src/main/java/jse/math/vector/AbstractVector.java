@@ -1,7 +1,6 @@
 package jse.math.vector;
 
 import jep.NDArray;
-import jse.cache.VectorCache;
 import jse.code.UT;
 import jse.code.collection.AbstractRandomAccessList;
 import jse.code.collection.ISlice;
@@ -10,9 +9,6 @@ import jse.code.iterator.IDoubleIterator;
 import jse.code.iterator.IDoubleSetIterator;
 import jse.code.iterator.IIntIterator;
 import jse.math.SliceType;
-import jse.math.matrix.AbstractMatrix;
-import jse.math.matrix.IMatrix;
-import jse.math.matrix.RefMatrix;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -99,38 +95,13 @@ public abstract class AbstractVector implements IVector {
         };
     }
     
-    @Override public IMatrix asMatCol() {
-        return new RefMatrix() {
-            @Override public double get(int aRow, int aCol) {AbstractMatrix.rangeCheckRow(aRow, nrows()); AbstractMatrix.rangeCheckCol(aCol, 1); return AbstractVector.this.get(aRow);}
-            @Override public void set(int aRow, int aCol, double aValue) {AbstractMatrix.rangeCheckRow(aRow, nrows()); AbstractMatrix.rangeCheckCol(aCol, 1); AbstractVector.this.set(aRow, aValue);}
-            @Override public double getAndSet(int aRow, int aCol, double aValue) {AbstractMatrix.rangeCheckRow(aRow, nrows()); AbstractMatrix.rangeCheckCol(aCol, 1); return AbstractVector.this.getAndSet(aRow, aValue);}
-            @Override public int nrows() {return AbstractVector.this.size();}
-            @Override public int ncols() {return 1;}
-            @Override public IDoubleIterator iteratorCol() {return AbstractVector.this.iterator();}
-            @Override public IDoubleIterator iteratorColAt(int aCol) {AbstractMatrix.rangeCheckCol(aCol, 1); return AbstractVector.this.iterator();}
-            @Override public IDoubleSetIterator setIteratorCol() {return AbstractVector.this.setIterator();}
-            @Override public IDoubleSetIterator setIteratorColAt(int aCol) {AbstractMatrix.rangeCheckCol(aCol, 1); return AbstractVector.this.setIterator();}
-        };
-    }
-    @Override public IMatrix asMatRow() {
-        return new RefMatrix() {
-            @Override public double get(int aRow, int aCol) {AbstractMatrix.rangeCheckRow(aRow, 1); AbstractMatrix.rangeCheckCol(aCol, this.ncols()); return AbstractVector.this.get(aCol);}
-            @Override public void set(int aRow, int aCol, double aValue) {AbstractMatrix.rangeCheckRow(aRow, 1); AbstractMatrix.rangeCheckCol(aCol, this.ncols()); AbstractVector.this.set(aCol, aValue);}
-            @Override public double getAndSet(int aRow, int aCol, double aValue) {AbstractMatrix.rangeCheckRow(aRow, 1); AbstractMatrix.rangeCheckCol(aCol, this.ncols()); return AbstractVector.this.getAndSet(aCol, aValue);}
-            @Override public int nrows() {return 1;}
-            @Override public int ncols() {return AbstractVector.this.size();}
-            @Override public IDoubleIterator iteratorRow() {return AbstractVector.this.iterator();}
-            @Override public IDoubleIterator iteratorRowAt(int aRow) {AbstractMatrix.rangeCheckRow(aRow, 1); return AbstractVector.this.iterator();}
-            @Override public IDoubleSetIterator setIteratorRow() {return AbstractVector.this.setIterator();}
-            @Override public IDoubleSetIterator setIteratorRowAt(int aRow) {AbstractMatrix.rangeCheckRow(aRow, 1); return AbstractVector.this.setIterator();}
-        };
-    }
-    
     /**
      * {@inheritDoc}
      * @return {@inheritDoc}
      */
-    @Override public NDArray<double[]> numpy() {return new NDArray<>(data(), size());}
+    @Override public NDArray<double[]> numpy() {
+        return new NDArray<>(data(), size());
+    }
     /** {@inheritDoc} */
     @Override public double[] data() {
         final int tSize = size();
@@ -138,16 +109,6 @@ public abstract class AbstractVector implements IVector {
         final IDoubleIterator it = iterator();
         for (int i = 0; i < tSize; ++i) rData[i] = it.next();
         return rData;
-    }
-    @Override public Vector toBuf(boolean aAbort) {
-        Vector rBuf = VectorCache.getVec(size());
-        if (aAbort) return rBuf;
-        rBuf.fill(this);
-        return rBuf;
-    }
-    @Override public void releaseBuf(@NotNull IVector aBuf, boolean aAbort) {
-        if (!aAbort) fill(aBuf);
-        VectorCache.returnVec(aBuf);
     }
     
     /** ISwapper stuffs */

@@ -5,7 +5,6 @@ import jse.code.collection.DoubleList;
 import jse.code.iterator.IDoubleIterator;
 import jse.code.iterator.IDoubleSetIterator;
 import jse.math.vector.IVectorGetter;
-import jse.math.vector.ShiftVector;
 import jse.math.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -103,15 +102,15 @@ public class ColumnMatrix extends DoubleArrayMatrix {
     
     
     /** Optimize stuffs，重写这个提高列向的索引速度 */
-    @Override public List<? extends ShiftVector> cols() {
-        return new AbstractRandomAccessList<ShiftVector>() {
+    @Override public List<? extends Vector> cols() {
+        return new AbstractRandomAccessList<Vector>() {
             @Override public int size() {return mColNum;}
-            @Override public ShiftVector get(int aCol) {return col(aCol);}
+            @Override public Vector get(int aCol) {return col(aCol);}
         };
     }
-    @Override public ShiftVector col(final int aCol) {
+    @Override public Vector col(final int aCol) {
         rangeCheckCol(aCol, mColNum);
-        return new ShiftVector(mRowNum, aCol*mRowNum, mData);
+        return new Vector(mRowNum, aCol*mRowNum, mData);
     }
     
     /** Optimize stuffs，列向展开的向量直接返回 */

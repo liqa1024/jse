@@ -204,7 +204,7 @@ public class SimpleSphericalChebyshev extends Basis {
         if (aFullCache) throw new UnsupportedOperationException("full cache in simple basis");
         validCache_(rForwardCache, mNMax+1 + mLMAll + mSizeN*mLMAll);
         Vector rCnlm = new Vector(mSizeN*mLMAll, rForwardCache.internalData());
-        ShiftVector rForwardCacheElse = new ShiftVector(mNMax+1+mLMAll, mSizeN*mLMAll, rForwardCache.internalData());
+        Vector rForwardCacheElse = new Vector(mNMax+1+mLMAll, mSizeN*mLMAll, rForwardCache.internalData());
         // clear cnlm first
         rCnlm.fill(0.0);
         // do cal
@@ -225,7 +225,7 @@ public class SimpleSphericalChebyshev extends Basis {
         DoubleList tCache = new DoubleList(16);
         validCache_(tCache, mNMax+1 + mLMAll + mSizeN*mLMAll);
         Vector rCnlm = new Vector(mSizeN*mLMAll, tCache.internalData());
-        ShiftVector tCacheElse = new ShiftVector(mNMax+1+mLMAll, mSizeN*mLMAll, tCache.internalData());
+        Vector tCacheElse = new Vector(mNMax+1+mLMAll, mSizeN*mLMAll, tCache.internalData());
         rCnlm.fill(0.0);
         calCnlm(aNlDx, aNlDy, aNlDz, aNlType, rCnlm, tCacheElse);
         Vector tScale = Vector.zeros(mSizeN*(mLMaxMax+1));
@@ -237,8 +237,8 @@ public class SimpleSphericalChebyshev extends Basis {
     void calCnlm(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rCnlm, DoubleArrayVector rForwardCache) {
         int tSizeBnlm = (mNMax+1)*mLMAll;
         // init cache
-        ShiftVector rRn = new ShiftVector(mNMax+1, rForwardCache.internalDataShift(), rForwardCache.internalData());
-        ShiftVector rY = new ShiftVector(mLMAll, rForwardCache.internalDataShift()+mNMax+1, rForwardCache.internalData());
+        Vector rRn = new Vector(mNMax+1, rForwardCache.internalDataShift(), rForwardCache.internalData());
+        Vector rY = new Vector(mLMAll, rForwardCache.internalDataShift()+mNMax+1, rForwardCache.internalData());
         // loop for neighbor
         final int tNN = aNlDx.size();
         for (int j = 0; j < tNN; ++j) {

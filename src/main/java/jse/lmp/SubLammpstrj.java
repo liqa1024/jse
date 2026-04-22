@@ -1,7 +1,6 @@
 package jse.lmp;
 
 import jse.atom.*;
-import jse.atom.data.DataXYZ;
 import jse.code.FileEndException;
 import jse.code.IO;
 import jse.code.UT;
@@ -12,7 +11,7 @@ import jse.math.table.ITable;
 import jse.math.table.Table;
 import jse.math.table.Tables;
 import jse.math.vector.IVector;
-import jse.math.vector.ShiftVector;
+import jse.math.vector.Vector;
 import jse.parallel.MPI;
 import jse.parallel.MPIException;
 import org.jetbrains.annotations.ApiStatus;
@@ -828,7 +827,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         }, 0, LAMMPSTRJ_INFO_LEN, aDest, LAMMPSTRJ_INFO);
         // 必要信息发送完成后分别发送 atomDataKeys 和 atomData，这里按列发送，先统一发送 key 再统一发送数据
         for (String subDataKey : aSubLammpstrj.mAtomData.heads()) aComm.sendStr(subDataKey, aDest, DATA_KEY);
-        for (ShiftVector subData : aSubLammpstrj.mAtomData.asMatrix().cols()) aComm.send(subData, aDest, DATA);
+        for (Vector subData : aSubLammpstrj.mAtomData.asMatrix().cols()) aComm.send(subData, aDest, DATA);
     }
     public static SubLammpstrj recv(int aSource, MPI.Comm aComm) throws MPIException {
         // 同样先接收必要信息，[AtomNum | AtomDataKeyNum, Box.xlo, Box.xhi, Box.ylo, Box.yhi, Box.zlo, Box.zhi, TimeStep]
@@ -842,7 +841,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         String[] tAtomDataKeys = new String[tAtomDataKeyNum];
         for (int i = 0; i < tAtomDataKeyNum; ++i) tAtomDataKeys[i] = aComm.recvStr(aSource, DATA_KEY);
         Table rAtomData = Tables.zeros(tAtomNum, tAtomDataKeys);
-        for (ShiftVector subData : rAtomData.asMatrix().cols()) aComm.recv(subData, aSource, DATA);
+        for (Vector subData : rAtomData.asMatrix().cols()) aComm.recv(subData, aSource, DATA);
         // 创建 SubLammpstrj
         return new SubLammpstrj(tTimeStep, BOX_BOUND, new LmpBox(
             Double.longBitsToDouble(tLammpstrjInfo[1]), Double.longBitsToDouble(tLammpstrjInfo[2]),
@@ -873,7 +872,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
             }, 0, LAMMPSTRJ_INFO_LEN, aRoot);
             // 必要信息发送完成后分别发送 atomDataKeys 和 atomData，这里按列发送，先统一发送 key 再统一发送数据
             for (String subDataKey : aSubLammpstrj.mAtomData.heads()) aComm.bcastStr(subDataKey, aRoot);
-            for (ShiftVector subData : aSubLammpstrj.mAtomData.asMatrix().cols()) aComm.bcast(subData, aRoot);
+            for (Vector subData : aSubLammpstrj.mAtomData.asMatrix().cols()) aComm.bcast(subData, aRoot);
             return aSubLammpstrj;
         } else {
             // 同样先接收必要信息，[AtomNum | AtomDataKeyNum, Box.xlo, Box.xhi, Box.ylo, Box.yhi, Box.zlo, Box.zhi, TimeStep]
@@ -887,7 +886,7 @@ public class SubLammpstrj extends AbstractSettableAtomData {
             String[] tAtomDataKeys = new String[tAtomDataKeyNum];
             for (int i = 0; i < tAtomDataKeyNum; ++i) tAtomDataKeys[i] = aComm.bcastStr(null, aRoot);
             Table rAtomData = Tables.zeros(tAtomNum, tAtomDataKeys);
-            for (ShiftVector subData : rAtomData.asMatrix().cols()) aComm.bcast(subData, aRoot);
+            for (Vector subData : rAtomData.asMatrix().cols()) aComm.bcast(subData, aRoot);
             // 创建 SubLammpstrj
             return new SubLammpstrj(tTimeStep, BOX_BOUND, new LmpBox(
                 Double.longBitsToDouble(tLammpstrjInfo[1]), Double.longBitsToDouble(tLammpstrjInfo[2]),

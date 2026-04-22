@@ -107,15 +107,15 @@ public class RowComplexMatrix extends BiDoubleArrayMatrix {
     
     
     /** Optimize stuffs，重写这个提高行向的索引速度 */
-    @Override public List<? extends ShiftComplexVector> rows() {
-        return new AbstractRandomAccessList<ShiftComplexVector>() {
+    @Override public List<? extends ComplexVector> rows() {
+        return new AbstractRandomAccessList<ComplexVector>() {
             @Override public int size() {return RowComplexMatrix.this.nrows();}
-            @Override public ShiftComplexVector get(int aRow) {return row(aRow);}
+            @Override public ComplexVector get(int aRow) {return row(aRow);}
         };
     }
-    @Override public ShiftComplexVector row(final int aRow) {
+    @Override public ComplexVector row(final int aRow) {
         rangeCheckRow(aRow, mRowNum);
-        return new ShiftComplexVector(mColNum, aRow*mColNum, mData);
+        return new ComplexVector(mColNum, aRow*mColNum, mData);
     }
     
     /** Optimize stuffs，行向展开的向量直接返回 */

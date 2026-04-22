@@ -34,13 +34,13 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
     final int mWType, mInternalWType;
     final int mTypedWType;
     
-    @Nullable DoubleArrayVector mFuseWeight;
-    @Nullable DoubleArrayVector mGradFuseWeight = null;
+    @Nullable Vector mFuseWeight;
+    @Nullable Vector mGradFuseWeight = null;
     final int mSizeN;
     final int mFuseSize;
     
-    @Nullable DoubleArrayVector mPostFuseWeight;
-    @Nullable DoubleArrayVector mGradPostFuseWeight = null;
+    @Nullable Vector mPostFuseWeight;
+    @Nullable Vector mGradPostFuseWeight = null;
     final int mPostFuseSize;
     final double[] mPostFuseScale;
     
@@ -592,14 +592,14 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
             assert mFuseWeight != null;
             IVector oFuseWeight = mFuseWeight;
             int tSize = oFuseWeight.size();
-            mFuseWeight = new ShiftVector(tSize, tShift, tData);
+            mFuseWeight = new Vector(tSize, tShift, tData);
             tShift += tSize;
             mFuseWeight.fill(oFuseWeight);
         }
         if (mPostFuseWeight==null) return;
         IVector oPostFuseWeight = mPostFuseWeight;
         int tSize = oPostFuseWeight.size();
-        mPostFuseWeight = new ShiftVector(tSize, tShift, tData);
+        mPostFuseWeight = new Vector(tSize, tShift, tData);
         mPostFuseWeight.fill(oPostFuseWeight);
     }
     @Override public void mountGradParameter(IDataShell<double[]> aData) {
@@ -613,12 +613,12 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
         if (mTypedWType==WTYPE_FUSE || mTypedWType==WTYPE_EXFUSE) {
             assert mFuseWeight != null;
             int tSize = mFuseWeight.size();
-            mGradFuseWeight = new ShiftVector(tSize, tShift, tData);
+            mGradFuseWeight = new Vector(tSize, tShift, tData);
             tShift += tSize;
         }
         if (mPostFuseWeight==null) return;
         int tSize = mPostFuseWeight.size();
-        mGradPostFuseWeight = new ShiftVector(tSize, tShift, tData);
+        mGradPostFuseWeight = new Vector(tSize, tShift, tData);
     }
     @Override public int parameterSize() {
         final int tParaSize;

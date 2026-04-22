@@ -5,7 +5,7 @@ import jse.code.collection.DoubleList;
 import jse.code.collection.NewCollections;
 import jse.math.IDataShell;
 import jse.math.matrix.ColumnMatrix;
-import jse.math.vector.ShiftVector;
+import jse.math.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -61,31 +61,31 @@ public class Table extends AbstractTable implements IDataShell<DoubleList> {
     public Table(int aRowNum) {this(aRowNum, 0, new DoubleList());}
     
     
-    /** 重写这些接口实现直接返回 {@link ShiftVector} */
-    @Override public final Map<String, ShiftVector> asMap() {
-        return new AbstractMap<String, ShiftVector>() {
-            @NotNull @Override public Set<Entry<String, ShiftVector>> entrySet() {
-                return new AbstractSet<Entry<String, ShiftVector>>() {
-                    @Override public @NotNull Iterator<Entry<String, ShiftVector>> iterator() {
-                        return AbstractCollections.map(mHeads.iterator(), head -> new Entry<String, ShiftVector>(){
+    /** 重写这些接口实现直接返回 {@link Vector} */
+    @Override public final Map<String, Vector> asMap() {
+        return new AbstractMap<String, Vector>() {
+            @NotNull @Override public Set<Entry<String, Vector>> entrySet() {
+                return new AbstractSet<Entry<String, Vector>>() {
+                    @Override public @NotNull Iterator<Entry<String, Vector>> iterator() {
+                        return AbstractCollections.map(mHeads.iterator(), head -> new Entry<String, Vector>(){
                             @Override public String getKey() {return head;}
-                            @Override public ShiftVector getValue() {return col(head);}
-                            @Override public ShiftVector setValue(ShiftVector value) {throw new UnsupportedOperationException("setValue");}
+                            @Override public Vector getValue() {return col(head);}
+                            @Override public Vector setValue(Vector value) {throw new UnsupportedOperationException("setValue");}
                         });
                     }
                     @Override public int size() {return ncols();}
                 };
             }
-            @Override public ShiftVector get(Object key) {return asMatrix().col(mHead2Idx.get(key));}
+            @Override public Vector get(Object key) {return asMatrix().col(mHead2Idx.get(key));}
             @Override public boolean containsKey(Object key) {return mHead2Idx.containsKey(key);}
-            @Override public ShiftVector remove(Object key) {throw new UnsupportedOperationException("remove");}
+            @Override public Vector remove(Object key) {throw new UnsupportedOperationException("remove");}
             @Override public int size() {return ncols();}
             @Override public void clear() {throw new UnsupportedOperationException("clear");}
-            @Override public ShiftVector put(String key, ShiftVector value) {throw new UnsupportedOperationException("put");}
+            @Override public Vector put(String key, Vector value) {throw new UnsupportedOperationException("put");}
         };
     }
-    @Override public final List<? extends ShiftVector> cols() {return asMatrix().cols();}
-    @Override public final ShiftVector col(String aHead) {return asMatrix().col(mHead2Idx.get(aHead));}
+    @Override public final List<? extends Vector> cols() {return asMatrix().cols();}
+    @Override public final Vector col(String aHead) {return asMatrix().col(mHead2Idx.get(aHead));}
     @Override public final int nrows() {return mRowNum;}
     
     @Override public Table copy() {
@@ -97,7 +97,7 @@ public class Table extends AbstractTable implements IDataShell<DoubleList> {
         if (mMatrix == null) mMatrix = new ColumnMatrix(mRowNum, ncols(), mData.internalData());
         return mMatrix;
     }
-    @Override protected final ShiftVector newColumn_(String aHead) {
+    @Override protected final Vector newColumn_(String aHead) {
         // 标记 null 表示旧矩阵失效
         mMatrix = null;
         // 先扩展 map

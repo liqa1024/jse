@@ -240,7 +240,6 @@ public class ComplexDoubleList implements IDataShell<double[][]> {
     @ApiStatus.Internal @Override public double @Nullable[][] getIfHasSameOrderData(Object aObj) {
         if (aObj instanceof ComplexDoubleList) return ((ComplexDoubleList)aObj).mData;
         if (aObj instanceof ComplexVector) return ((ComplexVector)aObj).internalData();
-        if (aObj instanceof ShiftComplexVector) return ((ShiftComplexVector)aObj).internalData();
         if (aObj instanceof double[][]) {
             double[][] tData = (double[][])aObj;
             if (tData.length==2 && tData[0]!=null && tData[1]!=null) return tData;

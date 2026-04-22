@@ -107,15 +107,15 @@ public class ColumnComplexMatrix extends BiDoubleArrayMatrix {
     
     
     /** Optimize stuffs，重写这个提高列向的索引速度 */
-    @Override public List<? extends ShiftComplexVector> cols() {
-        return new AbstractRandomAccessList<ShiftComplexVector>() {
+    @Override public List<? extends ComplexVector> cols() {
+        return new AbstractRandomAccessList<ComplexVector>() {
             @Override public int size() {return ncols();}
-            @Override public ShiftComplexVector get(int aCol) {return col(aCol);}
+            @Override public ComplexVector get(int aCol) {return col(aCol);}
         };
     }
-    @Override public ShiftComplexVector col(final int aCol) {
+    @Override public ComplexVector col(final int aCol) {
         rangeCheckCol(aCol, mColNum);
-        return new ShiftComplexVector(mRowNum, aCol*mRowNum, mData);
+        return new ComplexVector(mRowNum, aCol*mRowNum, mData);
     }
     
     /** Optimize stuffs，列向展开的向量直接返回 */

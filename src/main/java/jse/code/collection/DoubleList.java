@@ -176,7 +176,6 @@ public class DoubleList implements IDataShell<double[]> {
     @ApiStatus.Internal @Override public double @Nullable[] getIfHasSameOrderData(Object aObj) {
         if (aObj instanceof DoubleList) return ((DoubleList)aObj).mData;
         if (aObj instanceof Vector) return ((Vector)aObj).internalData();
-        if (aObj instanceof ShiftVector) return ((ShiftVector)aObj).internalData();
         if (aObj instanceof double[]) return (double[])aObj;
         return null;
     }

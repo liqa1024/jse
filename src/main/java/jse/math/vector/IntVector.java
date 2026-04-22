@@ -4,7 +4,6 @@ import jep.NDArray;
 import jse.code.collection.IntList;
 import jse.code.iterator.IIntIterator;
 import jse.code.iterator.IIntSetIterator;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -18,6 +17,8 @@ import static jse.math.vector.AbstractVector.*;
 
 /**
  * 整数向量的一般实现
+ * <p>
+ * 现在合并了 ShiftIntVector 的功能，从而同时支持从数组任意位置开始操作
  * @author liqa
  */
 public class IntVector extends IntArrayVector {
@@ -51,17 +52,36 @@ public class IntVector extends IntArrayVector {
     }
     
     private int mSize;
-    public IntVector(int aSize, int[] aData) {super(aData); mSize = aSize;}
-    public IntVector(int[] aData) {this(aData.length, aData);}
+    private int mShift = 0;
+    public IntVector(int aSize, int aShift, int[] aData) {
+        super(aData);
+        mSize = aSize;
+        mShift = aShift;
+    }
+    public IntVector(int aSize, int[] aData) {
+        super(aData);
+        mSize = aSize;
+    }
+    public IntVector(int[] aData) {
+        this(aData.length, aData);
+    }
     
     /** 提供额外的接口来直接设置底层参数 */
     @Override public void setInternalDataSize(int aSize) {mSize = aSize;}
+    @Override public void setInternalDataShift(int aShift) {mShift = aShift;}
     
-    /** IIntegerVector stuffs */
-    @Override public final int get(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx];}
-    @Override public final void set(int aIdx, int aValue) {rangeCheck(aIdx, mSize); mData[aIdx] = aValue;}
+    /** IIntVector stuffs */
+    @Override public final int get(int aIdx) {
+        rangeCheck(aIdx, mSize);
+        return mData[aIdx+mShift];
+    }
+    @Override public final void set(int aIdx, int aValue) {
+        rangeCheck(aIdx, mSize);
+        mData[aIdx+mShift] = aValue;
+    }
     @Override public final int getAndSet(int aIdx, int aValue) {
         rangeCheck(aIdx, mSize);
+        aIdx += mShift;
         int oValue = mData[aIdx];
         mData[aIdx] = aValue;
         return oValue;
@@ -73,49 +93,69 @@ public class IntVector extends IntArrayVector {
     
     @Override public final int @Nullable[] getIfHasSameOrderData(Object aObj) {
         if (aObj instanceof IntVector) return ((IntVector)aObj).mData;
-        if (aObj instanceof ShiftIntVector) return ((ShiftIntVector)aObj).mData;
         if (aObj instanceof IntList) return ((IntList)aObj).internalData();
         if (aObj instanceof int[]) return (int[])aObj;
         return null;
     }
+    @Override public final NDArray<int[]> numpy() {
+        return mShift==0 ? new NDArray<>(mData, mSize) : super.numpy();
+    }
+    /** 需要指定平移的距离保证优化运算的正确性 */
+    @Override public int internalDataShift() {return mShift;}
     
-    @Override public final NDArray<int[]> numpy() {return new NDArray<>(mData, mSize);}
-    @Override public final IntVector toBuf(boolean aAbort) {return this;}
-    @Override public final void releaseBuf(@NotNull IIntVector aBuf, boolean aAbort) {if (aBuf != this) super.releaseBuf(aBuf, aAbort);}
     
-    
-    /** Optimize stuffs，subVec 切片直接返回  {@link ShiftIntVector} */
-    @Override public final IntArrayVector subVec(final int aFromIdx, final int aToIdx) {
+    /** Optimize stuffs，subVec 切片直接返回  {@link IntVector} */
+    @Override public final IntVector subVec(final int aFromIdx, final int aToIdx) {
         subVecRangeCheck(aFromIdx, aToIdx, mSize);
-        return aFromIdx==0 ? new IntVector(aToIdx, mData) : new ShiftIntVector(aToIdx-aFromIdx, aFromIdx, mData);
+        return new IntVector(aToIdx-aFromIdx, aFromIdx+mShift, mData);
     }
     
     /** Optimize stuffs，重写加速这些操作 */
     @Override public final void swap(int aIdx1, int aIdx2) {
         biRangeCheck(aIdx1, aIdx2, mSize);
+        aIdx1 += mShift;
+        aIdx2 += mShift;
         int tValue = mData[aIdx2];
         mData[aIdx2] = mData[aIdx1];
         mData[aIdx1] = tValue;
     }
     
-    @Override public final void increment(int aIdx) {rangeCheck(aIdx, mSize); ++mData[aIdx];}
-    @Override public final int getAndIncrement(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx]++;}
-    @Override public final void decrement(int aIdx) {rangeCheck(aIdx, mSize); --mData[aIdx];}
-    @Override public final int getAndDecrement(int aIdx) {rangeCheck(aIdx, mSize); return mData[aIdx]--;}
+    @Override public final void increment(int aIdx) {
+        rangeCheck(aIdx, mSize);
+        ++mData[aIdx+mShift];
+    }
+    @Override public final int getAndIncrement(int aIdx) {
+        rangeCheck(aIdx, mSize);
+        return mData[aIdx+mShift]++;
+    }
+    @Override public final void decrement(int aIdx) {
+        rangeCheck(aIdx, mSize);
+        --mData[aIdx+mShift];
+    }
+    @Override public final int getAndDecrement(int aIdx) {
+        rangeCheck(aIdx, mSize);
+        return mData[aIdx+mShift]--;
+    }
     
-    @Override public final void add(int aIdx, int aDelta) {rangeCheck(aIdx, mSize); mData[aIdx] += aDelta;}
+    @Override public final void add(int aIdx, int aDelta) {
+        rangeCheck(aIdx, mSize);
+        mData[aIdx+mShift] += aDelta;
+    }
     @Override public final int getAndAdd(int aIdx, int aDelta) {
         rangeCheck(aIdx, mSize);
+        aIdx += mShift;
         int tValue = mData[aIdx];
         mData[aIdx] += aDelta;
         return tValue;
     }
     @Override public final void update(int aIdx, IntUnaryOperator aOpt) {
         rangeCheck(aIdx, mSize);
+        aIdx += mShift;
         mData[aIdx] = aOpt.applyAsInt(mData[aIdx]);
     }
     @Override public final int getAndUpdate(int aIdx, IntUnaryOperator aOpt) {
         rangeCheck(aIdx, mSize);
+        aIdx += mShift;
         int tValue = mData[aIdx];
         mData[aIdx] = aOpt.applyAsInt(tValue);
         return tValue;
@@ -123,18 +163,19 @@ public class IntVector extends IntArrayVector {
     @Override public final boolean isEmpty() {return mSize==0;}
     @Override public final int last() {
         if (isEmpty()) throw new NoSuchElementException("Cannot access last() element from an empty IntVector");
-        return mData[mSize-1];
+        return mData[mSize-1+mShift];
     }
     @Override public final int first() {
         if (isEmpty()) throw new NoSuchElementException("Cannot access first() element from an empty IntVector");
-        return mData[0];
+        return mData[mShift];
     }
     
     /** Optimize stuffs，重写迭代器来提高遍历速度（主要是省去隐函数的调用，以及保持和矩阵相同的写法格式）*/
     @Override public final IIntIterator iterator() {
         return new IIntIterator() {
-            private int mIdx = 0;
-            @Override public boolean hasNext() {return mIdx < mSize;}
+            private final int mEnd = mSize + mShift;
+            private int mIdx = mShift;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public int next() {
                 if (hasNext()) {
                     int tNext = mData[mIdx];
@@ -148,8 +189,9 @@ public class IntVector extends IntArrayVector {
     }
     @Override public final IIntSetIterator setIterator() {
         return new IIntSetIterator() {
-            private int mIdx = 0, oIdx = -1;
-            @Override public boolean hasNext() {return mIdx < mSize;}
+            private final int mEnd = mSize + mShift;
+            private int mIdx = mShift, oIdx = -1;
+            @Override public boolean hasNext() {return mIdx < mEnd;}
             @Override public void set(int aValue) {
                 if (oIdx < 0) throw new IllegalStateException();
                 mData[oIdx] = aValue;
