@@ -118,9 +118,9 @@ class PotentialCalculator(Calculator):
         self.pot = pot
     
     def release(self):
-        self.pot.shutdown()
-    def shutdown(self):
-        self.pot.shutdown()
+        self.pot.close()
+    def close(self):
+        self.pot.close()
     
     def calculate(self, atoms=None, properties=['energy'], system_changes=all_changes):
         super().calculate(atoms, properties, system_changes)

@@ -198,7 +198,7 @@ public class SimpleSphericalChebyshev extends Basis {
     
     @Override
     public void forward(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp, DoubleList rForwardCache, boolean aFullCache) {
-        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        if (isClosed()) throw new IllegalStateException("This Basis is dead");
         if (rFp.size() != size()) throw new IllegalArgumentException("data size mismatch");
         // init cache
         if (aFullCache) throw new UnsupportedOperationException("full cache in simple basis");
@@ -613,18 +613,18 @@ public class SimpleSphericalChebyshev extends Basis {
     
     @Override
     public void backward(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aGradFp, DoubleArrayVector rGradPara, DoubleList aForwardCache, DoubleList rBackwardCache, boolean aKeepCache) {
-        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        if (isClosed()) throw new IllegalStateException("This Basis is dead");
         throw new UnsupportedOperationException();
     }
     @Override
     public void forwardForce(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList rFx, DoubleList rFy, DoubleList rFz, DoubleList aForwardCache, DoubleList rForwardForceCache, boolean aFullCache) {
-        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        if (isClosed()) throw new IllegalStateException("This Basis is dead");
         throw new UnsupportedOperationException();
     }
     @Override
     public void backwardForce(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList aGradFx, DoubleList aGradFy, DoubleList aGradFz, DoubleArrayVector rGradNNGrad, @Nullable DoubleArrayVector rGradPara,
                               DoubleList aForwardCache, DoubleList aForwardForceCache, DoubleList rBackwardCache, DoubleList rBackwardForceCache, boolean aKeepCache, boolean aFixBasis) {
-        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        if (isClosed()) throw new IllegalStateException("This Basis is dead");
         throw new UnsupportedOperationException();
     }
 }

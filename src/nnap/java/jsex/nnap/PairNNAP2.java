@@ -121,7 +121,7 @@ public class PairNNAP2 extends LmpPlugin.Pair {
         return mCutoff[i];
     }
     
-    @Override public void shutdown() {
+    @Override public void close() throws Exception {
         if (mLmpType2NNAPType != null) {
             mLmpType2NNAPType.free();
             mLmpType2NNAPType = null;
@@ -143,7 +143,7 @@ public class PairNNAP2 extends LmpPlugin.Pair {
             mTypeInum = null;
         }
         if (mNNAP != null) {
-            mNNAP.shutdown();
+            mNNAP.close();
             mNNAP = null;
         }
     }

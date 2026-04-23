@@ -50,7 +50,7 @@ public class AseCalculator implements IPotential {
      * 通过一个 ase 计算器的 python 对象创建一个兼容 jse 的
      * {@link IPotential} 的计算器包装对象
      * <p>
-     * 当调用 {@link #shutdown()} 关闭时会同时尝试关闭内部的
+     * 当调用 {@link #close()} 关闭时会同时尝试关闭内部的
      * ase 计算器引用，并移除 java 对此 python 对象的引用；
      * 这在大多数时候可以简化使用，例如在包装后不再需要保留原本的
      * calc 来后续手动关闭
@@ -86,7 +86,7 @@ public class AseCalculator implements IPotential {
      * 通过一个 ase 计算器的 python 对象创建一个兼容 jse 的
      * {@link IPotential} 的计算器包装对象
      * <p>
-     * 当调用 {@link #shutdown()} 关闭时会同时尝试关闭内部的
+     * 当调用 {@link #close()} 关闭时会同时尝试关闭内部的
      * ase 计算器引用，并移除 java 对此 python 对象的引用；
      * 这在大多数时候可以简化使用，例如在包装后不再需要保留原本的
      * calc 来后续手动关闭
@@ -98,21 +98,21 @@ public class AseCalculator implements IPotential {
     
     private boolean mDead = false;
     /** @return 此 ase 计算器是否已经关闭 */
-    @Override public boolean isShutdown() {return mDead;}
+    @Override public boolean isClosed() {return mDead;}
     /**
      * 关闭此 ase 计算器，会时尝试调用内部引用的 ase
-     * 计算器的 {@code release} 或 {@code shutdown}
+     * 计算器的 {@code release} 或 {@code close}
      * 进行关闭，并同时会移除 java 对其的引用。
      */
-    @Override public void shutdown() {
+    @Override public void close() throws Exception {
         if (mDead) return;
         mDead = true;
-        // 尝试调用 release 和 shutdown 来关闭，由于 python 特性只能直接用 try 的写法
+        // 尝试调用 release 和 close 来关闭，由于 python 特性只能直接用 try 的写法
         try (PyCallable tRelease = mCalc.getAttr("release", PyCallable.class)) {
             tRelease.call();
         } catch (JepException e) {
-            try (PyCallable tShutdown = mCalc.getAttr("shutdown", PyCallable.class)) {
-                tShutdown.call();
+            try (PyCallable tClose = mCalc.getAttr("close", PyCallable.class)) {
+                tClose.call();
             } catch (JepException ignored) {}
         }
         mCalc.close();

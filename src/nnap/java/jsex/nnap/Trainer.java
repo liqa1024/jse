@@ -16,7 +16,6 @@ import jse.math.vector.Vector;
 import jse.optim.Adam;
 import jse.optim.IOptimizer;
 import jse.optim.LBFGS;
-import jse.parallel.AbstractThreadPool;
 import jse.parallel.ParforThreadPool;
 import jsex.nnap.basis.*;
 import jsex.nnap.nn.FeedForward;
@@ -38,7 +37,7 @@ import java.util.function.IntUnaryOperator;
  * @author liqa
  */
 @ApiStatus.Experimental
-public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHasSymbol, ISavable {
+public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
     protected final static String DEFAULT_UNITS = "metal";
     protected final static int[] DEFAULT_HIDDEN_DIMS = {32, 32}; // 现在统一默认为 32, 32
     protected final static double DEFAULT_ENERGY_WEIGHT = 1.0;
@@ -92,6 +91,12 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         public final List<DoubleList[]> mNlDx = new ArrayList<>(64), mNlDy = new ArrayList<>(64), mNlDz = new ArrayList<>(64);
         /** 每个原子数据结构对应的总体积值 */
         public final DoubleList mVolume = new DoubleList(64);
+    }
+    
+    /// ParforThreadPool stuffs
+    protected final ParforThreadPool mPool;
+    @Override public void close() {
+        mPool.close();
     }
     
     protected final int mTypeNum;
@@ -374,7 +379,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
     
     @SuppressWarnings("unchecked")
     Trainer(@Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber, Map<String, ?> aArgs, @Nullable Map<String, ?> aModelInfo) throws Exception {
-        super(new ParforThreadPool(aThreadNumber));
+        mPool = new ParforThreadPool(aThreadNumber);
         final @Nullable List<? extends Map<String, ?>> tModelInfos;
         if (aModelInfo != null) {
             mIsRetrain = true;
@@ -1194,7 +1199,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         final boolean tRequireGrad = rGrad!=null;
         if (aTest && tRequireGrad) throw new IllegalStateException();
         final boolean tTrainBasis = mTrainBasis;
-        final int tThreadNum = nthreads();
+        final int tThreadNum = mPool.nthreads();
         if (tRequireGrad) {
             mGradParaBuf[0] = rGrad;
             for (Vector tGradPara : mGradParaBuf) {
@@ -1211,7 +1216,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
         }
         final int fAtomSize = tAtomSize;
         List<Vector> rLossPar = VectorCache.getZeros(4, tThreadNum);
-        pool().parfor(tSliceSize, (si, threadID) -> {
+        mPool.parfor(tSliceSize, (si, threadID) -> {
             final int i = aSlice.get(si);
             Basis[] tBasis = mBasis[threadID];
             NeuralNetwork[] tNN = mNN[threadID];
@@ -1795,7 +1800,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
             mNormSigma[i].fill(0.0);
         }
         mNormDiv.fill(0);
-        final int tThreadNum = nthreads();
+        final int tThreadNum = mPool.nthreads();
         Vector[][] tMuPar = new Vector[tThreadNum][mTypeNum];
         Vector[][] tSigmaPar = new Vector[tThreadNum][mTypeNum];
         Vector[][] tMaxPar = new Vector[tThreadNum][mTypeNum];
@@ -1817,7 +1822,7 @@ public class Trainer extends AbstractThreadPool<ParforThreadPool> implements IHa
                 tMinPar[ti][i] = VectorCache.getVec(mBasisSizes[i]); tMinPar[ti][i].fill(Double.POSITIVE_INFINITY);
             }
         }
-        pool().parfor(mTrainData.mSize, (i, threadID) -> {
+        mPool.parfor(mTrainData.mSize, (i, threadID) -> {
             Basis[] tBasis = mBasis[threadID];
             IntVector tAtomType = mTrainData.mAtomType.get(i);
             int tAtomNum = tAtomType.size();

@@ -123,20 +123,21 @@ public class TorchModel extends NeuralNetwork {
         return new TorchModel(mInputDim, mModelStr);
     }
     
-    @Override protected void shutdown_() {
-        mPtr.dispose();
+    @Override protected void close_() {
+        try {mPtr.dispose();}
+        catch (Exception e) {throw new RuntimeException(e);}
     }
     
     @Override public int inputSize() {
         return mInputDim;
     }
     @Override public double eval(DoubleArrayVector aX) throws jse.clib.TorchException {
-        if (isShutdown()) throw new IllegalStateException("This Model is dead");
+        if (isClosed()) throw new IllegalStateException("This Model is dead");
         return forward0(mPtr.mPtr, aX.internalDataWithLengthCheck(mInputDim), aX.internalDataShift(), mInputDim);
     }
     
     @Override public double evalGrad(DoubleArrayVector aX, DoubleArrayVector rGradX) throws jse.clib.TorchException {
-        if (isShutdown()) throw new IllegalStateException("This Model is dead");
+        if (isClosed()) throw new IllegalStateException("This Model is dead");
         return backward0(mPtr.mPtr, aX.internalDataWithLengthCheck(mInputDim), aX.internalDataShift(),
                          rGradX.internalDataWithLengthCheck(mInputDim), rGradX.internalDataShift(), mInputDim);
     }

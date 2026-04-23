@@ -103,7 +103,7 @@ public class SimpleJIT {
         
         @UnsafeJNI("Inputs mismatch or invalid usage will result in JVM SIGSEGV")
         @Override public int invoke(IPointer aDataIn, IPointer rDataOut) {
-            if (mEngine.isShutdown()) throw new RuntimeException("this JIT engine is dead");
+            if (mEngine.isClosed()) throw new RuntimeException("this JIT engine is dead");
             if (isNull()) throw new NullPointerException();
             return invokeMethod0(mMethodPtr, aDataIn.ptr_(), rDataOut.ptr_());
         }
@@ -237,12 +237,12 @@ public class SimpleJIT {
             if (!hasMethod(aMethodName)) throw new IllegalArgumentException("No method name: "+aMethodName);
             return new Method(findMethod0(mLibHandle.mPtr, aMethodName.toString()), this);
         }
-        @Override public void shutdown() {
+        @Override public void close() throws Exception {
             if (mDead) return;
             mDead = true;
             if (mLibHandle!=null) mLibHandle.dispose();
         }
-        @Override public boolean isShutdown() {return mDead;}
+        @Override public boolean isClosed() {return mDead;}
         
         
         private void validLibCache_() {

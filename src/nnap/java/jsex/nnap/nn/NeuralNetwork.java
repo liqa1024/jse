@@ -3,7 +3,6 @@ package jsex.nnap.nn;
 import groovy.lang.DeprecationException;
 import jse.code.io.ISavable;
 import jse.math.vector.DoubleArrayVector;
-import jse.parallel.IAutoShutdown;
 import jsex.nnap.NNAP;
 import jsex.nnap.basis.Basis;
 import jsex.nnap.basis.MirrorBasis;
@@ -18,7 +17,7 @@ import java.util.Map;
  * 由于内部会缓存中间结果，因此此类一般来说相同实例线程不安全，而不同实例之间线程安全
  * @author liqa
  */
-public abstract class NeuralNetwork implements IAutoShutdown, ISavable {
+public abstract class NeuralNetwork implements AutoCloseable, ISavable {
     static {
         // 依赖 nnap
         NNAP.InitHelper.init();
@@ -116,11 +115,11 @@ public abstract class NeuralNetwork implements IAutoShutdown, ISavable {
     
     private boolean mDead = false;
     /** @return 此模型是否已经关闭 */
-    public final boolean isShutdown() {return mDead;}
-    @Override public final void shutdown() {
+    public final boolean isClosed() {return mDead;}
+    @Override public final void close() {
         if (mDead) return;
         mDead = true;
-        shutdown_();
+        close_();
     }
-    protected void shutdown_() {/**/}
+    protected void close_() {/**/}
 }

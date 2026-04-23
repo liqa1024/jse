@@ -16,7 +16,7 @@ try (def subComm = MPI.Comm.WORLD.split(color)) {
     println("WORLD RANK/SIZE: $me/$np \t ROW RANK/SIZE: $subme/$subnp \t COLOR: $color")
 }
 
-MPI.shutdown()
+MPI.close()
 
 
 //OUTPUT (jse code/mpi/split):

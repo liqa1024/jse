@@ -1,5 +1,6 @@
 package jse.parallel;
 
+import jse.code.Conf;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
@@ -10,34 +11,41 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static jse.code.Conf.PARFOR_NO_COMPETITIVE;
-
 /**
+ * 可以像 matlab 的 {@code parfor} 一样直接使用的线程池，这里为了语义上一致依旧作为一种
+ * {@link IThreadPool}，但本质上线程池相关接口已经失去意义。
+ * <p>
+ * 自动识别单线程的情况来直接进行串行
+ * <p>
+ * 支持每个线程写入到独立的内存而不需要额外加锁，但依旧需要注意内部的线程安全问题
+ * <p>
+ * 注意：此类线程安全（包括不同实例间以及多个线程同时访问同一个实例）。当线程数大于
+ * 1 时同一个实例的操作加锁保证线程安全；当线程数为 1 时同一个实例的操作不会加锁
+ * <p>
+ * 通过 {@link Conf#PARFOR_NO_COMPETITIVE} 来设置默认是否是竞争的。
  * @author liqa
- * <p> 可以像 matlab 的 parfor 一样直接使用的线程池 </p>
- * <p> 自动识别单线程的情况来直接进行串行 </p>
- * <p> 当然还是需要自己注意内部的线程安全问题 </p>
- * <p> 支持每个线程写入到独立的内存而不需要额外加锁 </p>
- * <p> 注意：此类线程安全（包括不同实例间以及多个线程同时访问同一个实例）。
- * 当线程数大于 1 时同一个实例的操作加锁保证线程安全；
- * 当线程数为 1 时同一个实例的操作不会加锁 </p>
  */
-public final class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
+public final class ParforThreadPool implements IThreadPool {
     private final Lock @Nullable[] mLocks; // 用来在并行时给每个线程独立加锁，保证每个线程独立写入的操作的可见性
     private final boolean mNoCompetitive;
     
-    /** IThreadPoolContainer stuffs */
+    /// IThreadPool stuffs
+    private final IExecutorEX mPool;
     private volatile boolean mDead = false;
-    @Override public void shutdown() {mDead = true; super.shutdown();}
+    @Override public void shutdown() {mDead = true; mPool.shutdown();}
     @Override public void shutdownNow() {shutdown();}
     @Override public boolean isShutdown() {return mDead;}
     @Override public boolean isTerminated() {return mDead;}
-    /** ParforThreadPool close 时不需要 awaitTermination */
-    @ApiStatus.Internal @Override public void close() {shutdown();}
+    @Override public int njobs() {return mPool.njobs();}
+    @Override public int nthreads() {return mPool.nthreads();}
+    @Override public void awaitTermination() throws InterruptedException {mPool.awaitTermination();}
+    @Override public void waitUntilDone() throws InterruptedException {mPool.waitUntilDone();}
+    // ParforThreadPool close 时不需要 awaitTermination
+    @Override public void close() {shutdown();}
     
     public ParforThreadPool(@Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, boolean aNoCompetitive) {
-        super(aThreadNum==1 ? SERIAL_EXECUTOR : newPool(aThreadNum));
-        if (aThreadNum == 1) {
+        mPool = aThreadNum==1 ? ExecutorsEX.SERIAL_EXECUTOR : ExecutorsEX.newFixedThreadPool(aThreadNum);
+        if (aThreadNum==1) {
             mLocks = null;
         } else {
             mLocks = new Lock[aThreadNum];
@@ -45,14 +53,15 @@ public final class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
         }
         mNoCompetitive = aNoCompetitive;
     }
-    public ParforThreadPool(@Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {this(aThreadNum, PARFOR_NO_COMPETITIVE);}
+    public ParforThreadPool(@Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {
+        this(aThreadNum, Conf.PARFOR_NO_COMPETITIVE);
+    }
     
     
     /**
-     * @author liqa
-     * <p> 类似 {@code for (int i = 0; i < aSize; ++i)},
-     * 现在不再支持设置具体的 start 和 end </p>
-     * <p> 支持每个线程写入到独立的内存而不需要额外加锁 </p>
+     * 类似 {@code for (int i = 0; i < aSize; ++i)}
+     * <p>
+     * 支持每个线程写入到独立的内存而不需要额外加锁
      */
     public void parfor(final int aSize, final Runnable          aTask      ) {parfor(aSize, (i, threadID) -> aTask.run());}
     public void parfor(final int aSize, final IParforTask       aTask      ) {parfor(aSize, (i, threadID) -> aTask.run(i));}
@@ -81,7 +90,7 @@ public final class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
                 // 非竞争获取任务
                 for (int id = 0; id < tThreadNum; ++id) {
                     final int fId = id;
-                    pool().execute(() -> {
+                    mPool.execute(() -> {
                         assert mLocks != null;
                         mLocks[fId].lock(); // 加锁在结束后进行数据同步
                         try {
@@ -103,7 +112,7 @@ public final class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
                 final AtomicInteger currentIdx = new AtomicInteger(0);
                 for (int id = 0; id < tThreadNum; ++id) {
                     final int fId = id;
-                    pool().execute(() -> {
+                    mPool.execute(() -> {
                         assert mLocks != null;
                         mLocks[fId].lock(); // 加锁在结束后进行数据同步
                         try {
@@ -138,11 +147,14 @@ public final class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
     }
     
     /**
+     * 类似 {@code while (aChecker.noBreak())}
+     * <p>
+     * 内部已经对 aChecker 进行了加锁，因此不再需要对其再次加锁
+     * <p>
+     * 由于并行的特性不能保证 while 会立刻停止
+     * <p>
+     * 支持每个线程写入到独立的内存而不需要额外加锁
      * @author liqa
-     * <p> 类似 while (aChecker.noBreak()) </p>
-     * <p> 内部已经对 aChecker 进行了加锁，因此不再需要对其再次加锁 </p>
-     * <p> 由于并行的特性不能保证 while 会立刻停止 </p>
-     * <p> 支持每个线程写入到独立的内存而不需要额外加锁 </p>
      */
     public void parwhile(final IParwhileChecker aChecker, final Runnable            aTask      ) {parwhile(aChecker, (threadID) -> aTask.run());}
     public void parwhile(final IParwhileChecker aChecker, final IParwhileTaskWithID aTaskWithID) {parwhile(aChecker, null, null, aTaskWithID);}
@@ -165,7 +177,7 @@ public final class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
             // parwhile 不存在不竞争的情况
             for (int id = 0; id < tThreadNum; ++id) {
                 final int fId = id;
-                pool().execute(() -> {
+                mPool.execute(() -> {
                     assert mLocks != null;
                     mLocks[fId].lock(); // 加锁在结束后进行数据同步
                     if (aInitDo != null) aInitDo.run(fId);
@@ -193,10 +205,6 @@ public final class ParforThreadPool extends AbstractThreadPool<IExecutorEX> {
     }
     
     
-    /**
-     * @author liqa
-     * <p> 重写此类实现 parfor 的使用 </p>
-     */
     @FunctionalInterface public interface ITaskWithID {void run(int threadID);}
     @FunctionalInterface public interface IParforTask {void run(int i);}
     @FunctionalInterface public interface IParforTaskWithID {void run(int i, int threadID);}

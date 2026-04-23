@@ -2,7 +2,6 @@ package jsex.rareevent;
 
 import jse.atom.IAtomData;
 import jse.code.random.IRandom;
-import jse.parallel.IAutoShutdown;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.util.List;
@@ -16,7 +15,7 @@ import java.util.List;
  * @param <T> 路径上每个点的类型，对于 lammps 模拟则是原子结构信息 {@link IAtomData}
  */
 @ApiStatus.Experimental
-public interface IPathGenerator<T> extends IAutoShutdown {
+public interface IPathGenerator<T> extends AutoCloseable {
     /** 获取初始点，不需要任何输入参数 */
     T initPoint(IRandom aRNG);
     /** 获取从给定位置开始的路径，可以指定种子；注意这里约定获取到的路径的第一个点是 aStart（或等价于 aStart）*/
@@ -26,5 +25,5 @@ public interface IPathGenerator<T> extends IAutoShutdown {
     /** 获取精简一个点的数据，用于减少内存占用，也可以用于区分一条路径上继续和从存储的点继续两种不同的情况；对于lammps则需要返回没有速率的点来重新分配速率 */
     default T reducedPoint(T aPoint) {return aPoint;}
     
-    default void shutdown() {/**/}
+    @Override default void close() {/**/}
 }

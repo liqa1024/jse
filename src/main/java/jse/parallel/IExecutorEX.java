@@ -5,8 +5,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 /**
+ * Extended ExecutorService for more flexible usage
  * @author liqa
- * <p> Extended ExecutorService for more flexible usage </p>
  */
 public interface IExecutorEX extends IThreadPool {
     /** ExecutorService stuffs */

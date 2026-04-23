@@ -54,7 +54,7 @@ import static jse.code.OS.JAVA_HOME;
  * MPI.init(args)
  * int me = MPI.Comm.WORLD.rank()
  * println('Hi from <'+me+'>')
- * MPI.shutdown() // `finalize()` has been used in java
+ * MPI.close() // `finalize()` has been used in java
  * } </pre>
  * <p>
  * References:
@@ -114,7 +114,7 @@ public class MPI {
     
     public static final int UNDEFINED = Native.MPI_UNDEFINED;
     
-    public static class Group implements IAutoShutdown {
+    public static class Group implements AutoCloseable {
         public final static Group
           NULL  = new Group(Native.MPI_GROUP_NULL )
         , EMPTY = new Group(Native.MPI_GROUP_EMPTY)
@@ -141,9 +141,9 @@ public class MPI {
         public int size() throws MPIException {return Native.MPI_Group_size(mPtr);}
         
         /** Free the group. */
-        @Override public void shutdown() {
+        @Override public void close() throws MPIException {
             if (mPtr != Native.MPI_GROUP_NULL) {
-                try {Native.MPI_Group_free(mPtr);} catch (MPIException ignored) {}
+                Native.MPI_Group_free(mPtr);
                 mPtr = Native.MPI_GROUP_NULL;
             }
         }
@@ -211,7 +211,7 @@ public class MPI {
         public Group union(Group aRHS) throws MPIException {return of(Native.MPI_Group_union(mPtr, aRHS.mPtr));}
     }
     
-    public static class Comm implements IAutoShutdown {
+    public static class Comm implements AutoCloseable {
         public final static Comm
           NULL  = new Comm(Native.MPI_COMM_NULL )
         , WORLD = new Comm(Native.MPI_COMM_WORLD)
@@ -241,9 +241,9 @@ public class MPI {
          * Frees the communicator that is allocated with the {@link MPI.Comm#copy}, {@link MPI.Comm#create},
          * or {@link MPI.Comm#split} functions.
          */
-        @Override public void shutdown() {
+        @Override public void close() throws MPIException {
             if (mPtr != Native.MPI_COMM_NULL) {
-                try {Native.MPI_Comm_free(mPtr);} catch (MPIException ignored) {}
+                Native.MPI_Comm_free(mPtr);
                 mPtr = Native.MPI_COMM_NULL;
             }
         }
@@ -1023,12 +1023,12 @@ public class MPI {
     /**
      * Terminates the calling MPI process’s execution environment.
      */
-    public static void shutdown() throws MPIException {Native.MPI_Finalize();}
+    public static void close() throws MPIException {Native.MPI_Finalize();}
     /**
-     * Indicates whether {@link MPI#shutdown} has been called.
+     * Indicates whether {@link MPI#close} has been called.
      * @return true if MPI_Finalize has been called and false otherwise.
      */
-    public static boolean isShutdown() throws MPIException {return Native.MPI_Finalized();}
+    public static boolean isClosed() throws MPIException {return Native.MPI_Finalized();}
     
     
     

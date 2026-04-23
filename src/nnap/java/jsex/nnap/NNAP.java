@@ -35,9 +35,6 @@ import static jse.code.OS.JAVA_HOME;
  * Efficient and accurate simulation of vitrification in multi-component metallic liquids with neural-network potentials </a>
  * <p>
  * 此类设计时确保不同对象之间线程安全，而不同线程访问相同的对象线程不安全
- * <p>
- * 现在这个类会自动回收内部可能存在的 torch 模型指针，因此不需要担心内存泄漏的问题了；
- * 当然即使如此依旧建议手动调用 {@link #shutdown()} 来及时释放资源
  *
  * @author liqa
  */
@@ -320,19 +317,19 @@ public class NNAP implements IPairPotential {
     public NNAP(Map<?, ?> aModelInfo) throws Exception {this(aModelInfo, 1);}
     public NNAP(String aModelPath) throws Exception {this(aModelPath, 1);}
     
-    @Override public void shutdown() {
+    @Override public void close() {
         if (mDead) return;
         mDead = true;
         for (SingleNNAP tModel : mModels) {
             for (int i = 0; i < mThreadNumber; ++i) {
-                tModel.basis(i).shutdown();
+                tModel.basis(i).close();
             }
             for (int i = 0; i < mThreadNumber; ++i) {
-                tModel.mNN[i].shutdown();
+                tModel.mNN[i].close();
             }
         }
     }
-    @Override public boolean isShutdown() {return mDead;}
+    @Override public boolean isClosed() {return mDead;}
     @Override public int nthreads() {return mThreadNumber;}
     @Override public double rcutMax() {
         double tRCut = 0.0;

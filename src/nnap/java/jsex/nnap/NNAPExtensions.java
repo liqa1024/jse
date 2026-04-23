@@ -24,7 +24,7 @@ public class NNAPExtensions {
      * @return 原子描述符向量组成的列表；如果存在超过一个种类则输出长度翻倍
      */
     public static List<Vector> calBasisNNAP(final AtomicParameterCalculator self, final int aNMax, final int aLMax, final double aRCutOff) {
-        if (self.isShutdown()) throw new RuntimeException("This Calculator is dead");
+        if (self.isClosed()) throw new RuntimeException("This Calculator is dead");
         final int tThreadNum = self.nthreads();
         Basis[] tBasis = new Basis[tThreadNum];
         for (int i = 0; i < tThreadNum; ++i) {
@@ -39,7 +39,7 @@ public class NNAPExtensions {
             });
             return rFingerPrints;
         } finally {
-            for (int i = 0; i < tThreadNum; ++i) tBasis[i].shutdown();
+            for (int i = 0; i < tThreadNum; ++i) tBasis[i].close();
         }
     }
 }

@@ -258,12 +258,12 @@ public class NNAP2 implements IPairPotential {
         mBackwardEnergy = mJITEngine.findMethod(NAME_BACKWARD_ENERGY);
     }
     
-    @Override public void shutdown() {
+    @Override public void close() throws Exception {
         if (mDead) return;
         mDead = true;
-        shutdown_();
+        close_();
     }
-    void shutdown_() {
+    void close_() throws Exception {
         mInNums.free();
         mOutNums.free();
         mNlDx.free(); mNlDy.free(); mNlDz.free();
@@ -281,10 +281,10 @@ public class NNAP2 implements IPairPotential {
         mFpForwardCache.free(); mFpBackwardCache.free();
         mDataOut.free();
         
-        if (mJITEngine!=null) mJITEngine.shutdown();
+        if (mJITEngine!=null) mJITEngine.close();
     }
     
-    @Override public boolean isShutdown() {return mDead;}
+    @Override public boolean isClosed() {return mDead;}
     @Override public int nthreads() {return mThreadNumber;}
     @Override public double rcutMax() {
         double tRCut = 0.0;

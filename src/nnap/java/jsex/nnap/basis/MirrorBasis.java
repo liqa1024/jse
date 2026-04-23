@@ -48,8 +48,8 @@ public class MirrorBasis extends Basis {
     @Override public boolean hasSymbol() {return mMirrorBasis.hasSymbol();}
     @Override public String symbol(int aType) {return mMirrorBasis.symbol(aType);}
     
-    @Override protected void shutdown_() {
-        mMirrorBasis.shutdown();
+    @Override protected void close_() {
+        mMirrorBasis.close();
     }
     
     private final IntList mMirrorNlType = new IntList(16);
@@ -65,21 +65,21 @@ public class MirrorBasis extends Basis {
     
     @Override
     public final void forward(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp, DoubleList rForwardCache, boolean aFullCache) {
-        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        if (isClosed()) throw new IllegalStateException("This Basis is dead");
         // 现在可以有任意的调用顺序，因此这里简单处理都进行一次缓存
         buildNlType_(aNlType);
         mMirrorBasis.forward(aNlDx, aNlDy, aNlDz, mMirrorNlType, rFp, rForwardCache, aFullCache);
     }
     @Override
     public final void backward(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aGradFp, DoubleArrayVector rGradPara, DoubleList aForwardCache, DoubleList rBackwardCache, boolean aKeepCache) {
-        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        if (isClosed()) throw new IllegalStateException("This Basis is dead");
         // 现在可以有任意的调用顺序，因此这里简单处理都进行一次缓存
         buildNlType_(aNlType);
         mMirrorBasis.backward(aNlDx, aNlDy, aNlDz, mMirrorNlType, aGradFp, rGradPara, aForwardCache, rBackwardCache, aKeepCache);
     }
     @Override
     public final void forwardForce(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList rFx, DoubleList rFy, DoubleList rFz, DoubleList aForwardCache, DoubleList rForwardForceCache, boolean aFullCache) {
-        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        if (isClosed()) throw new IllegalStateException("This Basis is dead");
         // 现在可以有任意的调用顺序，因此这里简单处理都进行一次缓存
         buildNlType_(aNlType);
         mMirrorBasis.forwardForce(aNlDx, aNlDy, aNlDz, mMirrorNlType, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache);
@@ -87,7 +87,7 @@ public class MirrorBasis extends Basis {
     @Override
     public final void backwardForce(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList aGradFx, DoubleList aGradFy, DoubleList aGradFz, DoubleArrayVector rGradNNGrad, @Nullable DoubleArrayVector rGradPara,
                                     DoubleList aForwardCache, DoubleList aForwardForceCache, DoubleList rBackwardCache, DoubleList rBackwardForceCache, boolean aKeepCache, boolean aFixBasis) {
-        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        if (isClosed()) throw new IllegalStateException("This Basis is dead");
         // 现在可以有任意的调用顺序，因此这里简单处理都进行一次缓存
         buildNlType_(aNlType);
         mMirrorBasis.backwardForce(aNlDx, aNlDy, aNlDz, mMirrorNlType, aNNGrad, aGradFx, aGradFy, aGradFz, rGradNNGrad, rGradPara, aForwardCache, aForwardForceCache, rBackwardCache, rBackwardForceCache, aKeepCache, aFixBasis);

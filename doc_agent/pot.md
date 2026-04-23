@@ -17,8 +17,8 @@ Potentials in `jse` are pure functions. They calculate properties for a given co
 Some native potentials (LmpPotential) manage external C++ memory, or multithread pool (NNAP).
 
 *   **Rule of Thumb:**
-    *   **Simple Scripts:** Rely on the automatic **Garbage Collector (GC)**. Omit `pot.shutdown()` or `try-with-resources`. This makes the script look like standard Python/Groovy.
-    *   **Heavy Loops:** If creating thousands of potential instances inside a loop (rare), explicitly call `pot.shutdown()` or use `try-with-resouces`.
+    *   **Simple Scripts:** Rely on the automatic **Garbage Collector (GC)**. Omit `try-with-resources`. This makes the script look like standard Python/Groovy.
+    *   **Heavy Loops:** If creating thousands of potential instances inside a loop (rare), use `try-with-resouces` or explicitly call `pot.close()`.
 
 ### 1.3 Interface Types
 *   **`IPotential`**: Standard interface (Energy, Force, Stress).

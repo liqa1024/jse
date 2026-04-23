@@ -154,56 +154,53 @@ class NNAP_cuda extends NNAP2 {
         mComputeGPUMD = mJITEngine.findMethod("jse_nnap_computeGPUMD");
     }
     
-    @Override void shutdown_() {
-        super.shutdown_();
+    @Override void close_() throws Exception {
+        super.close_();
         mFltBuf.free();
         mIntBuf.free();
-        try {
-            mCudaX.free();
-            mCudaF0.free();
-            mCudaF1.free();
-            mCudaEatom0.free();
-            mCudaVatom0.free();
-            mCudaVatom1.free();
-            mCudaType.free();
-            mCudaIlist.free();
-            mCudaNumneigh.free();
-            mCudaBufNeiNum.free();
-            mCudaBufCType.free();
-            mCudaFirstneigh.free();
-            mCudaBufNlType.free();
-            mCudaBufNlIdx.free();
-            mCudaBufNlDx.free();
-            mCudaBufNlDy.free();
-            mCudaBufNlDz.free();
-            mCudaBufGradNlDx.free();
-            mCudaBufGradNlDy.free();
-            mCudaBufGradNlDz.free();
-            if (mCudaCutsq != null) {
-                mCudaCutsq.free();
-                mCudaCutsq = null;
-            }
-            if (mCudaLmpType2NNAPType != null) {
-                mCudaLmpType2NNAPType.free();
-                mCudaLmpType2NNAPType = null;
-            }
-            for (int i = 0; i < mSymbols.length; ++i) {
-                mCudaFpHyperParam.getAsCudaPointerAt(i).free();
-                mCudaFpParam.getAsCudaPointerAt(i).free();
-                mCudaNnParam.getAsCudaPointerAt(i).free();
-                mCudaNormParam.getAsCudaPointerAt(i).free();
-            }
-            mCudaFpHyperParam.free();
-            mCudaFpParam.free();
-            mCudaNnParam.free();
-            mCudaNormParam.free();
-            mCudaCudaFpHyperParam.free();
-            mCudaCudaFpParam.free();
-            mCudaCudaNnParam.free();
-            mCudaCudaNormParam.free();
-        } catch (CudaException e) {
-            throw new RuntimeException(e);
+        
+        mCudaX.free();
+        mCudaF0.free();
+        mCudaF1.free();
+        mCudaEatom0.free();
+        mCudaVatom0.free();
+        mCudaVatom1.free();
+        mCudaType.free();
+        mCudaIlist.free();
+        mCudaNumneigh.free();
+        mCudaBufNeiNum.free();
+        mCudaBufCType.free();
+        mCudaFirstneigh.free();
+        mCudaBufNlType.free();
+        mCudaBufNlIdx.free();
+        mCudaBufNlDx.free();
+        mCudaBufNlDy.free();
+        mCudaBufNlDz.free();
+        mCudaBufGradNlDx.free();
+        mCudaBufGradNlDy.free();
+        mCudaBufGradNlDz.free();
+        if (mCudaCutsq != null) {
+            mCudaCutsq.free();
+            mCudaCutsq = null;
         }
+        if (mCudaLmpType2NNAPType != null) {
+            mCudaLmpType2NNAPType.free();
+            mCudaLmpType2NNAPType = null;
+        }
+        for (int i = 0; i < mSymbols.length; ++i) {
+            mCudaFpHyperParam.getAsCudaPointerAt(i).free();
+            mCudaFpParam.getAsCudaPointerAt(i).free();
+            mCudaNnParam.getAsCudaPointerAt(i).free();
+            mCudaNormParam.getAsCudaPointerAt(i).free();
+        }
+        mCudaFpHyperParam.free();
+        mCudaFpParam.free();
+        mCudaNnParam.free();
+        mCudaNormParam.free();
+        mCudaCudaFpHyperParam.free();
+        mCudaCudaFpParam.free();
+        mCudaCudaNnParam.free();
+        mCudaCudaNormParam.free();
     }
     
     @Override public void calEnergy(int aAtomNumber, INeighborListGetter aNeighborListGetter, IEnergyAccumulator rEnergyAccumulator) throws Exception {

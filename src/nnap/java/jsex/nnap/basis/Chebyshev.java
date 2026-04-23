@@ -186,14 +186,14 @@ public class Chebyshev extends WTypeBasis {
     
     @Override
     protected void forward_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp, DoubleArrayVector rForwardCache, boolean aFullCache) {
-        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        if (isClosed()) throw new IllegalStateException("This Basis is dead");
         
         // 现在直接计算基组
         forward0(aNlDx, aNlDy, aNlDz, aNlType, rFp, rForwardCache, aFullCache);
     }
     @Override
     protected void backward_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aGradFp, DoubleArrayVector rGradPara, DoubleArrayVector aForwardCache, DoubleArrayVector rBackwardCache, boolean aKeepCache) {
-        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        if (isClosed()) throw new IllegalStateException("This Basis is dead");
         
         // 如果不是 fuse 直接返回不走 native
         if (mWType!=WTYPE_FUSE && mWType!=WTYPE_EXFUSE) return;
@@ -204,7 +204,7 @@ public class Chebyshev extends WTypeBasis {
     }
     @Override
     protected void forwardForceAccumulate_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList rFx, DoubleList rFy, DoubleList rFz, DoubleArrayVector aForwardCache, DoubleArrayVector rForwardForceCache, boolean aFullCache) {
-        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        if (isClosed()) throw new IllegalStateException("This Basis is dead");
         
         // 现在直接计算力
         forwardForce0(aNlDx, aNlDy, aNlDz, aNlType, aNNGrad, rFx, rFy, rFz, aForwardCache, rForwardForceCache, aFullCache);
@@ -212,7 +212,7 @@ public class Chebyshev extends WTypeBasis {
     @Override
     protected void backwardForce_(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList aGradFx, DoubleList aGradFy, DoubleList aGradFz, DoubleArrayVector rGradNNGrad, @Nullable DoubleArrayVector rGradPara,
                                   DoubleArrayVector aForwardCache, DoubleArrayVector aForwardForceCache, DoubleArrayVector rBackwardCache, DoubleArrayVector rBackwardForceCache, boolean aKeepCache, boolean aFixBasis) {
-        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        if (isClosed()) throw new IllegalStateException("This Basis is dead");
         
         // 如果不保留旧值则在这里清空
         if (!aKeepCache) {

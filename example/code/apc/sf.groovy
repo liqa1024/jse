@@ -37,7 +37,6 @@ println('maxQ_CuCu = ' + SqCu.op().maxX())
 println('maxQ_ZrZr = ' + SqZr.op().maxX())
 println('maxQ_CuZr = ' + SqCuZr.op().maxX())
 
-apc.shutdown() // optional
 
 // 绘制
 plot(Sq, 'SF-All')

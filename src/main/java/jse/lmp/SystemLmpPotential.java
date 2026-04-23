@@ -41,18 +41,18 @@ import java.util.List;
 public class SystemLmpPotential extends AbstractLmpPotential {
     private final SystemLmpChecker mChecker;
     private final ISystemExecutor mExec;
-    private final boolean mShutdownExec;
+    private final boolean mCloseExec;
     /**
      * 根据输入的 aPairStyle 和 aPairCoeff 创建一个命令运行 lammps 计算的势函数
      * @param aPairStyle 希望使用的 lammps 中的 pair 样式，对应 lammps 命令 {@code pair_style}
      * @param aPairCoeff lammps pair 需要设置的参数，对应 lammps 命令 {@code pair_coeff}
      * @param aExec 希望使用的系统命令执行器 {@link ISystemExecutor}，默认为 {@link OS#EXEC}
-     * @param aShutdownExec 是否会在关闭此势函数时，自动关闭内部的系统执行器，默认在手动传入 aExec 时为 {@code true}，不传入时为 {@code false}
+     * @param aCloseExec 是否会在关闭此势函数时，自动关闭内部的系统执行器，默认在手动传入 aExec 时为 {@code true}，不传入时为 {@code false}
      */
-    public SystemLmpPotential(String aPairStyle, String[] aPairCoeff, ISystemExecutor aExec, boolean aShutdownExec) {
+    public SystemLmpPotential(String aPairStyle, String[] aPairCoeff, ISystemExecutor aExec, boolean aCloseExec) {
         super(aPairStyle, aPairCoeff);
         mExec = aExec;
-        mShutdownExec = aShutdownExec;
+        mCloseExec = aCloseExec;
         // 使用相对路径提高 exec 的兼容性
         mChecker = new SystemLmpChecker(this);
     }
@@ -61,20 +61,20 @@ public class SystemLmpPotential extends AbstractLmpPotential {
      * @param aPairStyle 希望使用的 lammps 中的 pair 样式，对应 lammps 命令 {@code pair_style}
      * @param aPairCoeff lammps pair 需要设置的参数，对应 lammps 命令 {@code pair_coeff}
      * @param aExec 希望使用的系统命令执行器 {@link ISystemExecutor}，默认为 {@link OS#EXEC}，默认在关闭时会同时自动关闭
-     * @param aShutdownExec 是否会在关闭此势函数时，自动关闭内部的系统执行器，默认在手动传入 aExec 时为 {@code true}，不传入时为 {@code false}
+     * @param aCloseExec 是否会在关闭此势函数时，自动关闭内部的系统执行器，默认在手动传入 aExec 时为 {@code true}，不传入时为 {@code false}
      */
-    public SystemLmpPotential(String aPairStyle, String aPairCoeff, ISystemExecutor aExec, boolean aShutdownExec) {
-        this(aPairStyle, new String[]{aPairCoeff}, aExec, aShutdownExec);
+    public SystemLmpPotential(String aPairStyle, String aPairCoeff, ISystemExecutor aExec, boolean aCloseExec) {
+        this(aPairStyle, new String[]{aPairCoeff}, aExec, aCloseExec);
     }
     /**
      * 根据输入的 aPairStyle 和 aPairCoeff 创建一个命令运行 lammps 计算的势函数
      * @param aPairStyle 希望使用的 lammps 中的 pair 样式，对应 lammps 命令 {@code pair_style}
      * @param aPairCoeff lammps pair 需要设置的参数，对应 lammps 命令 {@code pair_coeff}
      * @param aExec 希望使用的系统命令执行器 {@link ISystemExecutor}，默认为 {@link OS#EXEC}，默认在关闭时会同时自动关闭
-     * @param aShutdownExec 是否会在关闭此势函数时，自动关闭内部的系统执行器，默认在手动传入 aExec 时为 {@code true}，不传入时为 {@code false}
+     * @param aCloseExec 是否会在关闭此势函数时，自动关闭内部的系统执行器，默认在手动传入 aExec 时为 {@code true}，不传入时为 {@code false}
      */
-    public SystemLmpPotential(String aPairStyle, Collection<? extends CharSequence> aPairCoeff, ISystemExecutor aExec, boolean aShutdownExec) {
-        this(aPairStyle, IO.Text.toArray(aPairCoeff), aExec, aShutdownExec);
+    public SystemLmpPotential(String aPairStyle, Collection<? extends CharSequence> aPairCoeff, ISystemExecutor aExec, boolean aCloseExec) {
+        this(aPairStyle, IO.Text.toArray(aPairCoeff), aExec, aCloseExec);
     }
     /**
      * 根据输入的 aPairStyle 和 aPairCoeff 创建一个命令运行 lammps 计算的势函数
@@ -122,16 +122,16 @@ public class SystemLmpPotential extends AbstractLmpPotential {
     
     private boolean mDead = false;
     /** @return 此 lammps 势函数是否已经关闭 */
-    @Override public boolean isShutdown() {return mDead;}
+    @Override public boolean isClosed() {return mDead;}
     /**
      * 关闭此 lammps 势函数，会同时关闭内部使用的
      * {@link NativeLmp} 对象
      */
-    @Override public void shutdown() {
+    @Override public void close() throws Exception {
         if (mDead) return;
         mDead = true;
         mChecker.dispose();
-        if (mShutdownExec) mExec.shutdown();
+        if (mCloseExec) mExec.close();
     }
     
     /**

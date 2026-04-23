@@ -11,7 +11,6 @@ import jse.code.collection.ISlice;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.IVector;
 import jse.math.vector.Vector;
-import jse.parallel.IAutoShutdown;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,15 +30,15 @@ import java.util.Map;
  * @see IPairPotential IPairPotential: 通用的基于截断半径内原子相互作用（pair）实现的势函数
  * @author liqa
  */
-public interface IPotential extends IAutoShutdown {
+public interface IPotential extends AutoCloseable {
     /**
      * 检测此势函数是否已经关闭，默认永远为 {@code false}（即使手动调用了
-     * {@link #shutdown()}），即默认不会去进行是否关闭的检测；
+     * {@link #close()}），即默认不会去进行是否关闭的检测；
      * 重写此函数来在调用计算时检测是否关闭
      * @return 此势函数是否已经关闭
      */
-    default boolean isShutdown() {return false;}
-    @Override default void shutdown() {/**/}
+    default boolean isClosed() {return false;}
+    @Override default void close() throws Exception {/**/}
     
     /** @return 是否支持计算每原子的能量 */
     default boolean perAtomEnergySupport() {return true;}
@@ -53,7 +52,7 @@ public interface IPotential extends IAutoShutdown {
      * ase 的计算器 </a>，可以方便接入已有的代码直接计算；这里计算的压力统一按照 ase 的排序，也就是
      * {@code [xx, yy, zz, yz, xz, xy]}，确保兼容
      * <p>
-     * 为了支持需要关闭的势函数，创建的 ase 计算器也提供了 {@code shutdown()} 方法来进行关闭，
+     * 为了支持需要关闭的势函数，创建的 ase 计算器也提供了 {@code close()} 方法来进行关闭，
      * 此时也会同步关闭内部引用的此势函数。不会实现 {@code __del__} 方法自动关闭，避免 java 这边的引用意外关闭。
      *
      * @return ase 计算器的 python 对象
@@ -64,7 +63,7 @@ public interface IPotential extends IAutoShutdown {
     }
     @ApiStatus.Internal
     default Map<String, Object> calculate_(Map<String, Object> rResults, PyObject aPyAseAtoms, String[] aProperties, boolean aSystemChanges) throws Exception {
-        if (isShutdown()) throw new IllegalStateException("This Potential is dead");
+        if (isClosed()) throw new IllegalStateException("This Potential is dead");
         boolean tAllInResults = true;
         for (String tProperty : aProperties) {
             if (!rResults.containsKey(tProperty)) {
@@ -138,7 +137,7 @@ public interface IPotential extends IAutoShutdown {
      * @throws Exception 特殊实现下可选的抛出异常
      */
     default Vector calEnergies(IAtomData aAtomData) throws Exception {
-        if (isShutdown()) throw new IllegalStateException("This Potential is dead");
+        if (isClosed()) throw new IllegalStateException("This Potential is dead");
         Vector rEnergies = VectorCache.getVec(aAtomData.natoms());
         calEnergyForceVirials(aAtomData, rEnergies, null, null, null, null, null, null, null, null, null);
         return rEnergies;
@@ -151,7 +150,7 @@ public interface IPotential extends IAutoShutdown {
      * @throws Exception 特殊实现下可选的抛出异常
      */
     default double calEnergy(IAtomData aAtomData) throws Exception {
-        if (isShutdown()) throw new IllegalStateException("This Potential is dead");
+        if (isClosed()) throw new IllegalStateException("This Potential is dead");
         Vector rTotEng = VectorCache.getVec(1);
         calEnergyForceVirials(aAtomData, rTotEng, null, null, null, null, null, null, null, null, null);
         double tTotEng = rTotEng.get(0);
@@ -166,7 +165,7 @@ public interface IPotential extends IAutoShutdown {
      * @throws Exception 特殊实现下可选的抛出异常
      */
     default RowMatrix calForces(IAtomData aAtomData) throws Exception {
-        if (isShutdown()) throw new IllegalStateException("This Potential is dead");
+        if (isClosed()) throw new IllegalStateException("This Potential is dead");
         RowMatrix rForces = MatrixCache.getMatRow(aAtomData.natoms(), 3);
         calEnergyForceVirials(aAtomData, null, rForces.col(0), rForces.col(1), rForces.col(2), null, null, null, null, null, null);
         return rForces;
@@ -190,7 +189,7 @@ public interface IPotential extends IAutoShutdown {
      * @throws Exception 特殊实现下可选的抛出异常
      */
     default List<Vector> calStresses(IAtomData aAtomData, boolean aIdealGas) throws Exception {
-        if (isShutdown()) throw new IllegalStateException("This Potential is dead");
+        if (isClosed()) throw new IllegalStateException("This Potential is dead");
         final int tAtomNum = aAtomData.natoms();
         final boolean tCentroid = centroidPerAtomStressSupport();
         final int tColNum = tCentroid ? 9 : 6;
@@ -257,7 +256,7 @@ public interface IPotential extends IAutoShutdown {
      * @throws Exception 特殊实现下可选的抛出异常
      */
     default List<Double> calStress(IAtomData aAtomData, boolean aIdealGas) throws Exception {
-        if (isShutdown()) throw new IllegalStateException("This Potential is dead");
+        if (isClosed()) throw new IllegalStateException("This Potential is dead");
         List<Vector> rStresses = VectorCache.getVec(1, 6);
         calEnergyForceVirials(aAtomData, null, null, null, null, rStresses.get(0), rStresses.get(1), rStresses.get(2), rStresses.get(3), rStresses.get(4), rStresses.get(5));
         double rStressXX = -rStresses.get(0).get(0);
@@ -329,7 +328,7 @@ public interface IPotential extends IAutoShutdown {
      * @throws Exception 特殊实现下可选的抛出异常
      */
     default double calEnergyDiffMove(ISettableAtomData aAtomData, int aI, double aDx, double aDy, double aDz, boolean aRestoreData) throws Exception {
-        if (isShutdown()) throw new IllegalStateException("This Potential is dead");
+        if (isClosed()) throw new IllegalStateException("This Potential is dead");
         double oEng = calEnergy(aAtomData);
         ISettableAtom tAtom = aAtomData.atom(aI);
         tAtom.plus2this(aDx, aDy, aDz);
@@ -410,7 +409,7 @@ public interface IPotential extends IAutoShutdown {
      * @throws Exception 特殊实现下可选的抛出异常
      */
     default double calEnergyDiffSwap(ISettableAtomData aAtomData, int aI, int aJ, boolean aRestoreData) throws Exception {
-        if (isShutdown()) throw new IllegalStateException("This Potential is dead");
+        if (isClosed()) throw new IllegalStateException("This Potential is dead");
         ISettableAtom tAtomI = aAtomData.atom(aI);
         ISettableAtom tAtomJ = aAtomData.atom(aJ);
         int oTypeI = tAtomI.type();
@@ -463,7 +462,7 @@ public interface IPotential extends IAutoShutdown {
      * @throws Exception 特殊实现下可选的抛出异常
      */
     default double calEnergyDiffFlip(ISettableAtomData aAtomData, int aI, int aType, boolean aRestoreData) throws Exception {
-        if (isShutdown()) throw new IllegalStateException("This Potential is dead");
+        if (isClosed()) throw new IllegalStateException("This Potential is dead");
         ISettableAtom tAtom = aAtomData.atom(aI);
         int oType = tAtom.type();
         if (oType == aType) return 0.0;

@@ -29,12 +29,13 @@ import static jse.code.CS.RANDOM;
  * @param <T> 路径上每个点的类型，对于 lammps 模拟则是原子结构信息 {@link IAtomData}
  */
 @ApiStatus.Experimental
-public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool> implements Runnable, IHasAutoShutdown {
+public class ForwardFluxSampling<T> implements Runnable, AutoCloseable {
     private final static long DEFAULT_MAX_PATH_MUL = 100;
     private final static double DEFAULT_CUTOFF = 0.01;
     private final static int DEFAULT_MAX_STAT_TIMES = 10;
     private final static long DEFAULT_PRUNING_STEP = 1000;
     
+    private final ParforThreadPool mPool;
     private final Object mLocker = this;
     private final IFullPathGenerator<T> mFullPathGenerator;
     
@@ -93,7 +94,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     
     ForwardFluxSampling(boolean aFlag, IFullPathGenerator<T> aFullPathGenerator, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, double aSurfaceA, IVector aSurfaces, int aN0) {
         // FFS 这里固定采用非竞争的 ParforThreadPool，因为 parfor 都只有线程数的任务
-        super(new ParforThreadPool(aThreadNum, true));
+        mPool = new ParforThreadPool(aThreadNum, true);
         
         mFullPathGenerator = aFullPathGenerator;
         mSurfaceA = aSurfaceA;
@@ -150,9 +151,6 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     public ForwardFluxSampling<T> setProgressBar() {return setProgressBar(true);}
     public ForwardFluxSampling<T> setJumpy(boolean aJumpy) {mJumpy = aJumpy; return this;}
     public ForwardFluxSampling<T> setJumpy() {return setJumpy(true);}
-    /** 是否在关闭此实例时顺便关闭输入的生成器和计算器 */
-    private boolean mDoNotShutdown = false;
-    @Override public ForwardFluxSampling<T> setDoNotShutdown(boolean aDoNotShutdown) {mDoNotShutdown = aDoNotShutdown; return this;}
     /** 可以从中间开始，此时则会直接跳过第一步（对于合法输入）*/
     public ForwardFluxSampling<T> setStep(int aStep, Iterable<? extends T> aPointsOnLambda, Map<?, ?> aRestData) {
         // 对于输入的合法性进行检测（界面需要兼容，这里只考虑现在省略了一些开头的界面以及完全不省略的情况）
@@ -266,7 +264,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
     
     
     /** 期望向后运行直到 lambdaA 的路径，在向前运行时会进行剪枝，用于过程 1 使用 */
-    private class BackwardPath implements IAutoShutdown {
+    private class BackwardPath implements AutoCloseable {
         private final ITimeAndParameterIterator<? extends T> mPath;
         private final IRandom mRNG_;
         private @Nullable Point mCurrentPoint = null;
@@ -279,9 +277,10 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
         private final BooleanSupplier mStopChecker;
         
         private boolean mDead = false;
-        @Override public void shutdown() {
+        @Override public void close() {
             if (mDead) return;
-            mPath.shutdown();
+            try {mPath.close();}
+            catch (Exception e) {throw new RuntimeException(e);}
             mDead = true;
         }
         
@@ -314,7 +313,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 if (mStopChecker.getAsBoolean()) {
                     mTimeConsumed += (mPath.timeConsumed() - oTimeConsumed) * tRoot.multiple;
                     mCurrentPoint = null;
-                    shutdown(); // 中断后不再有 path，从而让 next 相关操作非法
+                    close(); // 中断后不再有 path，从而让 next 相关操作非法
                     return null;
                 }
             }
@@ -340,7 +339,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                     if (aStatTime) mTimeConsumed += (mPath.timeConsumed() - oTimeConsumed) * mPruningMul;
                     // 到达 B 则返回 null 中断路径
                     mCurrentPoint = null;
-                    shutdown(); // 中断后不再有 path，从而让 next 相关操作非法
+                    close(); // 中断后不再有 path，从而让 next 相关操作非法
                     return null;
                 }
                 // pruning，如果向前则有概率直接中断，这里直接 return null 来标记 pruning 的情况
@@ -365,7 +364,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                         // 有 mPruningProb 中断，由 pruning 中断的情况直接返回 null
                         if (mRNG_.nextDouble() < mPruningProb) {
                             mCurrentPoint = null;
-                            shutdown(); // 中断后不再有 path，从而让 next 相关操作非法
+                            close(); // 中断后不再有 path，从而让 next 相关操作非法
                             return null;
                         }
                         // 否则增加权重
@@ -376,7 +375,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 if (mStopChecker.getAsBoolean()) {
                     if (aStatTime) mTimeConsumed += (mPath.timeConsumed() - oTimeConsumed) * mPruningMul;
                     mCurrentPoint = null;
-                    shutdown(); // 中断后不再有 path，从而让 next 相关操作非法
+                    close(); // 中断后不再有 path，从而让 next 相关操作非法
                     return null;
                 }
             }
@@ -414,6 +413,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 return rPointsOnLambda.size() >= aN0;
             }
         };
+        Throwable pe = null;
         // 获取初始路径的迭代器，并由此找到到达 A 的起始位置，一般来说直接初始化的点都会在 A，但是不一定
         BackwardPath tPath = new BackwardPath(aRNG, aStopChecker); ++rPathNum;
         Point tRoot = tPath.nextUntilReachLambdaAOrLambdaB(false); // 此过程不会记录耗时
@@ -494,15 +494,22 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
             // 最后统计所有的耗时
             rTotTime0 += tPath.timeConsumed();
             rPointNum += tPath.pointNum();
+        } catch (Throwable t) {
+            pe = t; throw t;
         } finally {
-            tPath.close();
+            if (pe==null) {
+                tPath.close();
+            } else {
+                try {tPath.close();}
+                catch (Throwable ct) {pe.addSuppressed(ct);}
+            }
         }
         return new Step1Return(rN0Eff, rTotTime0, rPointNum, rPathNum);
     }
     
     
     /** 期望向前运行直到下一个界面的路径，在向后运行时会进行剪枝，用于过程 2 使用 */
-    private class ForwardPath implements IAutoShutdown {
+    private class ForwardPath implements AutoCloseable {
         private final ITimeAndParameterIterator<? extends T> mPath;
         private final IRandom mRNG_;
         private final Point mStart;
@@ -514,9 +521,10 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
         private final BooleanSupplier mStopChecker;
         
         private boolean mDead = false;
-        @Override public void shutdown() {
+        @Override public void close() {
             if (mDead) return;
-            mPath.shutdown();
+            try {mPath.close();}
+            catch (Exception e) {throw new RuntimeException(e);}
             mDead = true;
         }
         
@@ -546,7 +554,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 // 判断是否穿过了 A
                 if (tLambda <= mSurfaceA) {
                     // 穿过 A 直接返回 null
-                    shutdown(); // 中断后不再有 path，从而让 next 相关操作非法
+                    close(); // 中断后不再有 path，从而让 next 相关操作非法
                     return null;
                 }
                 // 修剪，如果向前则有概率直接中断，现在第二个过程的修剪概率存在一个上限
@@ -579,7 +587,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                         if (tPruningProb > 0.0) {
                             if (mRNG_.nextDouble() < tPruningProb) {
                                 // 有 mPruningProb 中断，直接返回 null
-                                shutdown(); // 中断后不再有 path，从而让 next 相关操作非法
+                                close(); // 中断后不再有 path，从而让 next 相关操作非法
                                 return null;
                             } else {
                                 // 否则需要增加权重
@@ -590,7 +598,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 }
                 // 中断检测
                 if (mStopChecker.getAsBoolean()) {
-                    shutdown(); // 中断后不再有 path，从而让 next 相关操作非法
+                    close(); // 中断后不再有 path，从而让 next 相关操作非法
                     return null;
                 }
             }
@@ -713,7 +721,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
         if (mStep < 0) {
             mStepFinished = false;
             
-            int tThreadNum = pool().nthreads();
+            int tThreadNum = mPool.nthreads();
             // 为了并行使用随机数生成器，这里统一采用 UT.Par.splitRandoms
             final IRandom[] tRNGs = UT.Par.splitRandoms(tThreadNum, mRNG.nextLong());
             // 每个线程独立的返回值
@@ -723,18 +731,18 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 // 竞争的写法，每个线程共用 mPointsOnLambda 并同步检测容量是否达标
                 // 在竞争的情况下不需要统一生成种子
                 if (mProgressBar) UT.Timer.progressBar(double2str_(mSurfaceA)+" -> "+double2str_(mSurfaces.first()), (long)mN0*mStep1Mul);
-                pool().parfor(tThreadNum, i -> {
+                mPool.parfor(tThreadNum, i -> {
                     tStep1ReturnBuffer[i] = doStep1(mN0*mStep1Mul, mPointsOnLambda, tRNGs[i]);
                 });
             } else {
-                // 非竞争的写法，每个线程都分别采集到 mN0*mStep1Mul/nThreads 才算结束
+                // 非竞争的写法，每个线程都分别采集到 mN0*mStep1Mul/nthreads 才算结束
                 final int subN0 = MathEX.Code.divup(mN0*mStep1Mul, tThreadNum);
                 // 每个线程存放到独立的点 List 上
                 final List<Point>[] tPointsOnLambdaBuffer = (List<Point>[]) new List[tThreadNum];
                 tPointsOnLambdaBuffer[0] = mPointsOnLambda;
                 for (int i = 1; i < tThreadNum; ++i) tPointsOnLambdaBuffer[i] = new ArrayList<>(subN0);
                 if (mProgressBar) UT.Timer.progressBar(double2str_(mSurfaceA)+" -> "+double2str_(mSurfaces.first()), (long)subN0*tThreadNum);
-                pool().parfor(tThreadNum, i -> {
+                mPool.parfor(tThreadNum, i -> {
                     tStep1ReturnBuffer[i] = doStep1(subN0, tPointsOnLambdaBuffer[i], tRNGs[i]);
                 });
                 for (int i = 1; i < tThreadNum; ++i) mPointsOnLambda.addAll(tPointsOnLambdaBuffer[i]);
@@ -798,13 +806,13 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
             mPointsOnLambda.clear();
             // 这里保证 mMovedPoints 长度永远合法
             if (oPointsOnLambda.size() > mMovedPoints.size()) {
-                mMovedPoints = LogicalVector.zeros(oPointsOnLambda.size()+ nthreads());
+                mMovedPoints = LogicalVector.zeros(oPointsOnLambda.size()+mPool.nthreads());
             }
             mMovedPoints.fill(false);
             // 目前界面的点数目可能小于 mN0，为了避免死循环，下一个界面需要的点的数目也要相应调整
             final int tNipp = Math.min(mN0, oPointsOnLambda.size());
             
-            int tThreadNum = pool().nthreads();
+            int tThreadNum = mPool.nthreads();
             // 为了并行使用随机数生成器，这里统一采用 UT.Par.splitRandoms
             final IRandom[] tRNGs = UT.Par.splitRandoms(tThreadNum, mRNG.nextLong());
             // 每个线程独立的返回值
@@ -815,11 +823,11 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 final long subMaxPathNum = MathEX.Code.divup(mMaxPathNum, tThreadNum);
                 // 在竞争的情况下不需要统一生成种子
                 if (mProgressBar) UT.Timer.progressBar(double2str_(oLambda)+" -> "+double2str_(tLambdaNext), tNipp);
-                pool().parfor(tThreadNum, i -> {
+                mPool.parfor(tThreadNum, i -> {
                     tStep2ReturnBuffer[i] = doStep2(tNipp, mPointsOnLambda, subMaxPathNum, tRNGs[i]);
                 });
             } else {
-                // 非竞争的方式，每个线程都分别采集到 mN0/nThreads 才算结束
+                // 非竞争的方式，每个线程都分别采集到 mN0/nthreads 才算结束
                 final int subNipp = MathEX.Code.divup(tNipp, tThreadNum);
                 final long subMaxPathNum = MathEX.Code.divup(mMaxPathNum, tThreadNum);
                 // 每个线程存放到独立的点 List 上
@@ -827,7 +835,7 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
                 tPointsOnLambdaBuffer[0] = mPointsOnLambda;
                 for (int i = 1; i < tThreadNum; ++i) tPointsOnLambdaBuffer[i] = new ArrayList<>(subNipp);
                 if (mProgressBar) UT.Timer.progressBar(double2str_(oLambda)+" -> "+double2str_(tLambdaNext), (long)subNipp*tThreadNum);
-                pool().parfor(tThreadNum, i -> {
+                mPool.parfor(tThreadNum, i -> {
                     tStep2ReturnBuffer[i] = doStep2(subNipp, tPointsOnLambdaBuffer[i], subMaxPathNum, tRNGs[i]);
                 });
                 for (int i = 1; i < tThreadNum; ++i) mPointsOnLambda.addAll(tPointsOnLambdaBuffer[i]);
@@ -918,8 +926,15 @@ public class ForwardFluxSampling<T> extends AbstractThreadPool<ParforThreadPool>
             .build();
     }
     
+    /** 是否在关闭此实例时顺便关闭输入的生成器和计算器 */
+    private boolean mDoNotClose = false;
+    public ForwardFluxSampling<T> setDoNotClose(boolean aDoNotClose) {
+        mDoNotClose = aDoNotClose;
+        return this;
+    }
     /** 程序结束时会顺便关闭内部的 mFullPathGenerator */
-    @Override public void shutdown() {super.shutdown(); if (!mDoNotShutdown) mFullPathGenerator.shutdown();}
-    /** ParforThreadPool close 时不需要 awaitTermination */
-    @ApiStatus.Internal @Override public void close() {super.shutdown(); if (!mDoNotShutdown) mFullPathGenerator.close();}
+    @ApiStatus.Internal @Override public void close() throws Exception {
+        mPool.close();
+        if (!mDoNotClose) mFullPathGenerator.close();
+    }
 }

@@ -2,7 +2,6 @@ package jsex.rareevent;
 
 import jse.atom.IAtomData;
 import jse.code.random.IRandom;
-import jse.parallel.AbstractHasAutoShutdown;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.util.Iterator;
@@ -16,7 +15,7 @@ import java.util.List;
  * @param <T> 获取到点的类型，对于 lammps 模拟则是原子结构信息 {@link IAtomData}
  */
 @ApiStatus.Experimental
-public class BufferedFullPathGenerator<T> extends AbstractHasAutoShutdown implements IFullPathGenerator<T> {
+public class BufferedFullPathGenerator<T> implements IFullPathGenerator<T> {
     private final IPathGenerator<T> mPathGenerator;
     private final IParameterCalculator<? super T> mParameterCalculator;
     
@@ -24,9 +23,6 @@ public class BufferedFullPathGenerator<T> extends AbstractHasAutoShutdown implem
         mPathGenerator = aPathGenerator;
         mParameterCalculator = aParameterCalculator;
     }
-    
-    /** 是否在关闭此实例时顺便关闭输入的生成器和计算器 */
-    @Override public BufferedFullPathGenerator<T> setDoNotShutdown(boolean aDoNotShutdown) {setDoNotShutdown_(aDoNotShutdown); return this;}
     
     /** 这里还是保持一致，第一个值为 aStart（或等价于 aStart）*/
     @Override public ITimeAndParameterIterator<T> fullPathFrom(T aStart, IRandom aRNG) {return new BufferedIterator(aStart, aRNG);}
@@ -103,12 +99,19 @@ public class BufferedFullPathGenerator<T> extends AbstractHasAutoShutdown implem
         @Override public boolean hasNext() {return true;}
     }
     
-    
-    /** 默认程序结束时会顺便关闭内部的 mPathGenerator, mParameterCalculator */
-    @Override protected void shutdownInternal_() {
-        mPathGenerator.shutdown();
+    private boolean mDoNotClose = false;
+    /** 是否在关闭此实例时顺便关闭输入的生成器和计算器 */
+    public BufferedFullPathGenerator<T> setDoNotClose(boolean aDoNotClose) {
+        mDoNotClose = aDoNotClose;
+        return this;
     }
-    @Override protected void closeInternal_() {
+    /** 默认程序结束时会顺便关闭内部的 mPathGenerator, mParameterCalculator */
+    @Override public final void close() {
+        close_();
+        if (!mDoNotClose) closeInternal_();
+    }
+    protected void close_() {/**/}
+    protected void closeInternal_() {
         mPathGenerator.close();
     }
 }

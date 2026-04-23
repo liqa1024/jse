@@ -5,7 +5,6 @@ import jse.code.IO;
 import jse.code.OS;
 import jse.code.UT;
 import jse.parallel.ExecutorsEX;
-import jse.parallel.IAutoShutdown;
 import jse.parallel.IExecutorEX;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -26,7 +25,7 @@ import static jse.code.CS.FILE_SYSTEM_SLEEP_TIME;
  * @author liqa
  */
 @SuppressWarnings("UnusedReturnValue")
-final class SSHCore implements IAutoShutdown {
+final class SSHCore implements AutoCloseable {
     private final static String DEFAULT_KEY_PATH = USER_HOME_DIR+".ssh/id_rsa";
     
     // 本地和远程的工作目录
@@ -106,7 +105,7 @@ final class SSHCore implements IAutoShutdown {
             if (aBeforeCommand != null) rServerSSH.setBeforeCommand(aBeforeCommand);
         } catch (Exception e) {
             // 获取失败会自动关闭
-            if (rServerSSH != null) rServerSSH.shutdown();
+            if (rServerSSH != null) rServerSSH.close();
             throw e;
         }
         
@@ -203,7 +202,7 @@ final class SSHCore implements IAutoShutdown {
         }
     }
     public void disconnect() {session().disconnect();}
-    @Override public void shutdown() {
+    @Override public void close() {
         mDead = true;
         session().disconnect();
     }

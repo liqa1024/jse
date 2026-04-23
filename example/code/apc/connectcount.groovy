@@ -19,25 +19,21 @@ def dataB = Structures.bcc(2.0, 10).op().perturbXYZ(0.1)
 def dataF = Structures.fcc(3.0,  8).op().perturbXYZ(0.1)
 
 // 计算 ConnectCount
-def apcG = APC.of(dataG)
-def countQ6G = apcG.calConnectCountBOOP(6, 0.5)
-def countq6G = apcG.calConnectCountABOOP(6, 0.9)
-apcG.shutdown() // optional
+def apc = APC.of(dataG)
+def countQ6G = apc.calConnectCountBOOP(6, 0.5)
+def countq6G = apc.calConnectCountABOOP(6, 0.9)
 
-def apcC = APC.of(dataC)
-def countQ6C = apcC.calConnectCountBOOP(6, 0.5)
-def countq6C = apcC.calConnectCountABOOP(6, 0.9)
-apcC.shutdown() // optional
+apc = APC.of(dataC)
+def countQ6C = apc.calConnectCountBOOP(6, 0.5)
+def countq6C = apc.calConnectCountABOOP(6, 0.9)
 
-def apcB = APC.of(dataB)
-def countQ6B = apcB.calConnectCountBOOP(6, 0.5)
-def countq6B = apcB.calConnectCountABOOP(6, 0.9)
-apcB.shutdown() // optional
+apc = APC.of(dataB)
+def countQ6B = apc.calConnectCountBOOP(6, 0.5)
+def countq6B = apc.calConnectCountABOOP(6, 0.9)
 
-def apcF = APC.of(dataF)
-def countQ6F = apcF.calConnectCountBOOP(6, 0.5)
-def countq6F = apcF.calConnectCountABOOP(6, 0.9)
-apcF.shutdown() // optional
+apc = APC.of(dataF)
+def countQ6F = apc.calConnectCountBOOP(6, 0.5)
+def countq6F = apc.calConnectCountABOOP(6, 0.9)
 
 // 输出平均值
 println("Mean of connect count Q6 of glass:   ${countQ6G.mean()}")

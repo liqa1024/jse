@@ -19,29 +19,25 @@ def dataB = Structures.bcc(2.0, 10).op().perturbXYZ(0.1)
 def dataF = Structures.fcc(3.0,  8).op().perturbXYZ(0.1)
 
 // 计算 q4，q6，w4
-def apcG = APC.of(dataG)
-def q4G = apcG.calABOOP(4)
-def q6G = apcG.calABOOP(6)
-def w4G = apcG.calABOOP3(4)
-apcG.shutdown() // optional
+def apc = APC.of(dataG)
+def q4G = apc.calABOOP(4)
+def q6G = apc.calABOOP(6)
+def w4G = apc.calABOOP3(4)
 
-def apcC = APC.of(dataC)
-def q4C = apcC.calABOOP(4)
-def q6C = apcC.calABOOP(6)
-def w4C = apcC.calABOOP3(4)
-apcC.shutdown() // optional
+apc = APC.of(dataC)
+def q4C = apc.calABOOP(4)
+def q6C = apc.calABOOP(6)
+def w4C = apc.calABOOP3(4)
 
-def apcB = APC.of(dataB)
-def q4B = apcB.calABOOP(4)
-def q6B = apcB.calABOOP(6)
-def w4B = apcB.calABOOP3(4)
-apcB.shutdown() // optional
+apc = APC.of(dataB)
+def q4B = apc.calABOOP(4)
+def q6B = apc.calABOOP(6)
+def w4B = apc.calABOOP3(4)
 
-def apcF = APC.of(dataF)
-def q4F = apcF.calABOOP(4)
-def q6F = apcF.calABOOP(6)
-def w4F = apcF.calABOOP3(4)
-apcF.shutdown() // optional
+apc = APC.of(dataF)
+def q4F = apc.calABOOP(4)
+def q6F = apc.calABOOP(6)
+def w4F = apc.calABOOP3(4)
 
 // 输出平均值
 println("Mean of q4 of glass:   ${q4G.mean()}")

@@ -16,7 +16,7 @@ println("rand of <$me>: $r")
 MPI.Comm.WORLD.bcast(r, 0)
 println("bcast rand of <$me>: $r")
 
-MPI.shutdown()
+MPI.close()
 
 
 //OUTPUT (jse code/mpi/bcast):

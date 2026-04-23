@@ -47,10 +47,8 @@ import static jse.math.MathEX.*;
  * <pre> {@code
  * def apc = APC.of(data)
  * def gr = apc.calRDF()
- * apc.shutdown()
  * } </pre>
- * 由此来计算此原子数据的 rdf，最终调用 {@link #shutdown()}
- * 来手动释放内部缓存资源以及线程池（现在不再强制要求调用，但在高频使用下手动释放可以提高性能）
+ * 由此来计算此原子数据的 rdf
  * <p>
  * 也可以通过 {@link #withOf(IAtomData, IUnaryFullOperator)}
  * 来创建一个自动关闭的 apc 并直接获取计算结果：
@@ -66,14 +64,14 @@ import static jse.math.MathEX.*;
  * @see NeighborListGetter NeighborListGetter: jse 目前的近邻列表实现
  * @author liqa
  */
-public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPool> {
-    private IMatrix mAtomDataXYZ; // 现在改为 Matrix 存储，每行为一个原子的 xyz 数据
+public class AtomicParameterCalculator implements AutoCloseable {
+    private IMatrix mPosMat; // 现在改为 Matrix 存储，每行为一个原子的 xyz 数据
     private final IBox mBox;
     
-    private final int mAtomNum;
-    private IIntVector mAtomNumType; // 统计某个种类的原子数目
+    private final int mNumAtoms;
+    private IIntVector mNumAtomsType; // 统计某个种类的原子数目
     private IIntVector mTypeVec; // 统计所有的原子种类
-    private final int mAtomTypeNum; // 统计所有的原子种类数目
+    private final int mNomTypes; // 统计所有的原子种类数目
     private final double mVolume; // 模拟盒体积
     private final double mRho; // 粒子数密度
     private final double mUnitLen; // 平均单个原子的距离
@@ -81,71 +79,86 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
     private final NeighborListGetter mNL;
     private final Thread mInitThread;
     
-    /// IThreadPoolContainer stuffs
+    /// ParforThreadPool stuffs
+    private ParforThreadPool mPool;
     private volatile boolean mDead = false;
     /** 关闭这个参数计算器，现在不再强制要求手动关闭，但是手动调用可以提高性能 */
-    @Override public void shutdown() {
+    @Override public void close() {
         if (mDead) return;
-        mDead = true; super.shutdown();
-        mNL.shutdown(); // 内部保证执行后内部的 mAtomDataXYZ 已经置为 null
+        mDead = true;
+        mPool.close();
+        mNL.close(); // 内部保证执行后内部的 mAtomDataXYZ 已经置为 null
         // 此时 APC 关闭，归还 mAtomDataXYZ，这种写法保证永远能获取到 mAtomDataXYZ 时都是合法的
         // 只有相同线程关闭才会归还
         Thread tThread = Thread.currentThread();
         if (tThread == mInitThread) {
-            IMatrix oAtomDataXYZ = mAtomDataXYZ;
-            IIntVector oAtomNumType = mAtomNumType;
+            IMatrix oAtomDataXYZ = mPosMat;
+            IIntVector oAtomNumType = mNumAtomsType;
             IIntVector oTypeVec = mTypeVec;
-            mAtomDataXYZ = null;
-            mAtomNumType = null;
+            mPosMat = null;
+            mNumAtomsType = null;
             mTypeVec = null;
             MatrixCache.returnMat(oAtomDataXYZ);
             IntVectorCache.returnVec(oAtomNumType);
             IntVectorCache.returnVec(oTypeVec);
         } else {
-            UT.Code.warning("Thread of shutdown() and init should be SAME in AtomicParameterCalculator");
+            UT.Code.warning("Thread of close() and init should be SAME in AtomicParameterCalculator");
         }
     }
-    /** 立刻关闭参数计算器，这里和 {@link #shutdown()} 行为一致 */
-    @Override public void shutdownNow() {shutdown();}
     /** @return 是否调用了关闭 */
-    @Override public boolean isShutdown() {return mDead;}
-    /** @return 是否真的完全结束了，这里和 {@link #isShutdown()} 行为一致 */
-    @Override public boolean isTerminated() {return mDead;}
-    /** {@link AutoCloseable} 实现，除了调用 {@link #shutdown()} 关闭还需要等待完全关闭，这里和 {@link #shutdown()} 行为一致 */
-    @ApiStatus.Internal @Override public void close() {shutdown();}
+    public boolean isClosed() {
+        return mDead;
+    }
+    /** @return 线程数 */
+    public int nthreads() {
+        return mPool.nthreads();
+    }
+    /**
+     * 修改线程数，如果相同则不会进行任何操作
+     * @param aNumThreads 线程数目
+     * @return 返回自身用于链式调用
+     */
+    public AtomicParameterCalculator setNthreads(@Range(from=1, to=Integer.MAX_VALUE) int aNumThreads)  {
+        if (aNumThreads!=nthreads()) {
+            mPool.close();
+            mPool = new ParforThreadPool(aNumThreads);
+        }
+        return this;
+    }
     
     /** @deprecated use {@link #of(IAtomData)} */ @SuppressWarnings("DeprecatedIsStillUsed") @Deprecated
     AtomicParameterCalculator(IAtomData aAtomData, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {
-        super(new ParforThreadPool(aThreadNum));
-        
+        mPool = new ParforThreadPool(aThreadNum);
         // 获取模拟盒数据
         mBox = aAtomData.box().copy(); // 最大限度防止外部修改
         
         // 获取合适的 XYZ 数据和原子种类信息
-        mAtomNum = aAtomData.natoms();
-        mAtomTypeNum = aAtomData.ntypes();
-        mAtomDataXYZ = MatrixCache.getMatRow(mAtomNum, 3);
-        mTypeVec = IntVectorCache.getVec(mAtomNum);
-        mAtomNumType = IntVectorCache.getZeros(mAtomTypeNum);
+        mNumAtoms = aAtomData.natoms();
+        mNomTypes = aAtomData.ntypes();
+        mPosMat = MatrixCache.getMatRow(mNumAtoms, 3);
+        mTypeVec = IntVectorCache.getVec(mNumAtoms);
+        mNumAtomsType = IntVectorCache.getZeros(mNomTypes);
         XYZ tBuf = new XYZ();
-        for (int i = 0; i < mAtomNum; ++i) {
+        for (int i = 0; i < mNumAtoms; ++i) {
             IAtom tAtom = aAtomData.atom(i);
-            setValidXYZ_(mAtomDataXYZ, tAtom, i, tBuf);
+            setValidXYZ_(mPosMat, tAtom, i, tBuf);
             int tType = tAtom.type();
             mTypeVec.set(i, tType);
-            mAtomNumType.increment(tType-1);
+            mNumAtomsType.increment(tType-1);
         }
         
         // 计算单位长度供内部使用
         mVolume = mBox.volume();
-        mRho = mAtomNum / mVolume;
+        mRho = mNumAtoms / mVolume;
         mUnitLen = Fast.cbrt(1.0/mRho);
         
-        mNL = new NeighborListGetter(mAtomDataXYZ, mAtomNum, mBox);
+        mNL = new NeighborListGetter(mPosMat, mNumAtoms, mBox);
         mInitThread = Thread.currentThread();
     }
     /** @deprecated use {@link #of(IAtomData)} */ @SuppressWarnings("DeprecatedIsStillUsed") @Deprecated
-    AtomicParameterCalculator(IAtomData aAtomData) {this(aAtomData, 1);}
+    AtomicParameterCalculator(IAtomData aAtomData) {
+        this(aAtomData, 1);
+    }
     
     
     /**
@@ -153,12 +166,16 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * @param aAtomData 原子数据，会遍历读取原子数据进行值拷贝
      * @param aThreadNum APC 进行计算会使用的线程数，默认为 {@code 1}
      */
-    public static AtomicParameterCalculator of(IAtomData aAtomData, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {return new AtomicParameterCalculator(aAtomData, aThreadNum);}
+    public static AtomicParameterCalculator of(IAtomData aAtomData, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {
+        return new AtomicParameterCalculator(aAtomData, aThreadNum);
+    }
     /**
      * 根据输入数据直接创建 APC
      * @param aAtomData 原子数据，会遍历读取原子数据进行值拷贝
      */
-    public static AtomicParameterCalculator of(IAtomData aAtomData) {return new AtomicParameterCalculator(aAtomData);}
+    public static AtomicParameterCalculator of(IAtomData aAtomData) {
+        return new AtomicParameterCalculator(aAtomData);
+    }
     
     /**
      * 自动关闭的接口，例如通过：
@@ -171,7 +188,11 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * @param aDoLater 需要使用 APC 进行的相关操作，返回计算结果
      * @return {@code aDoLater} 输出的计算结果
      */
-    public static <T> T withOf(IAtomData aAtomData, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, IUnaryFullOperator<? extends T, ? super AtomicParameterCalculator> aDoLater) {try (AtomicParameterCalculator tAPC = new AtomicParameterCalculator(aAtomData, aThreadNum)) {return aDoLater.apply(tAPC);}}
+    public static <T> T withOf(IAtomData aAtomData, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, IUnaryFullOperator<? extends T, ? super AtomicParameterCalculator> aDoLater) {
+        try (AtomicParameterCalculator tAPC = new AtomicParameterCalculator(aAtomData, aThreadNum)) {
+            return aDoLater.apply(tAPC);
+        }
+    }
     /**
      * 自动关闭的接口，例如通过：
      * <pre> {@code
@@ -182,7 +203,11 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * @param aDoLater 需要使用 APC 进行的相关操作，返回计算结果
      * @return {@code aDoLater} 输出的计算结果
      */
-    public static <T> T withOf(IAtomData aAtomData, IUnaryFullOperator<? extends T, ? super AtomicParameterCalculator> aDoLater) {try (AtomicParameterCalculator tAPC = new AtomicParameterCalculator(aAtomData)) {return aDoLater.apply(tAPC);}}
+    public static <T> T withOf(IAtomData aAtomData, IUnaryFullOperator<? extends T, ? super AtomicParameterCalculator> aDoLater) {
+        try (AtomicParameterCalculator tAPC = new AtomicParameterCalculator(aAtomData)) {
+            return aDoLater.apply(tAPC);
+        }
+    }
     
     
     /// 内部使用方法，用来将 aAtomDataXYZ 转换成内部存储的格式，并且处理精度问题造成的超出边界问题
@@ -210,74 +235,80 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
     }
     
     
-    /// 参数设置
-    /**
-     * 修改线程数，如果相同则不会进行任何操作
-     * @param aNumThreads 线程数目
-     * @return 返回自身用于链式调用
-     */
-    public AtomicParameterCalculator setNthreads(@Range(from=1, to=Integer.MAX_VALUE) int aNumThreads)  {
-        if (aNumThreads != nthreads()) setPool(new ParforThreadPool(aNumThreads));
-        return this;
-    }
-    
-    
     /// 获取信息
     /**
      * @return 原子数目信息
      * @see IAtomData#natoms()
      */
-    public int natoms() {return mAtomNum;}
+    public int natoms() {
+        return mNumAtoms;
+    }
     /**
      * 指定种类的原子数
      * @param aType 种类编号，从 1 开始
      * @return 原子数目信息值
      */
-    public int natoms(int aType) {return mAtomNumType.get(aType-1);}
+    public int natoms(int aType) {
+        return mNumAtomsType.get(aType-1);
+    }
     
     /**
      * @return 原子种类数目
      * @see IAtomData#ntypes()
      */
-    public int ntypes() {return mAtomTypeNum;}
+    public int ntypes() {
+        return mNomTypes;
+    }
     
     /**
      * 单位长度，平均单个原子的距离，即 {@code cbrt(volume()/natoms())}
      * @return 单位长度值
      * @see Math#cbrt(double)
      */
-    public double unitLen() {return mUnitLen;}
+    public double unitLen() {
+        return mUnitLen;
+    }
     /**
      * 原子数据的体积
      * @return 体积值
      * @see IAtomData#volume()
      */
-    public double volume() {return mVolume;}
+    public double volume() {
+        return mVolume;
+    }
     
     /**
      * 原子数密度，即 {@code natoms()/volume()}
      * @return 原子数密度值
      */
-    public double rho() {return mRho;}
+    public double rho() {
+        return mRho;
+    }
     /**
      * 指定种类的原子数密度，即 {@code natoms(aType)/volume()}
      * @param aType 种类编号，从 1 开始
      * @return 原子数密度值
      */
-    public double rho(int aType) {return mAtomNumType.get(aType-1) / mVolume;}
+    public double rho(int aType) {
+        return mNumAtomsType.get(aType-1) / mVolume;
+    }
     /**
      * 两个种类的混合原子数密度，即 {@code sqrt(rho(aTypeA)*rho(aTypeB))}
      * @param aTypeA 第一个种类的编号，从 1 开始
      * @param aTypeB 第二个种类的编号，从 1 开始
      * @return 混合原子数密度值
      */
-    public double birho(int aTypeA, int aTypeB) {return Fast.sqrt(rho(aTypeA)*rho(aTypeB));}
+    public double birho(int aTypeA, int aTypeB) {
+        return Fast.sqrt(rho(aTypeA)*rho(aTypeB));
+    }
     /**
      * 和另一个 APC 的混合原子数密度，即 {@code sqrt(rho()*aAPC.rho())}
      * @param aAPC 另一个参数计算器
      * @return 混合原子数密度值
      */
-    public double birho(AtomicParameterCalculator aAPC) {return Fast.sqrt(mRho*aAPC.mRho);}
+    public double birho(AtomicParameterCalculator aAPC) {
+        return Fast.sqrt(mRho*aAPC.mRho);
+    }
 
     /// 现在支持合法修改 APC 中的原子位置和种类
     /**
@@ -290,7 +321,9 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * @return 自身方便链式调用
      * @see IXYZ
      */
-    public AtomicParameterCalculator setAtomXYZ(int aIdx, IXYZ aXYZ) {return setAtomXYZ(aIdx, aXYZ.x(), aXYZ.y(), aXYZ.z());}
+    public AtomicParameterCalculator setAtomXYZ(int aIdx, IXYZ aXYZ) {
+        return setAtomXYZ(aIdx, aXYZ.x(), aXYZ.y(), aXYZ.z());
+    }
     /**
      * 修改指定索引原子的坐标位置，会同步更新内部的近邻列表
      * <p>
@@ -303,11 +336,11 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * @return 自身方便链式调用
      */
     public AtomicParameterCalculator setAtomXYZ(int aIdx, double aX, double aY, double aZ) {
-        double oX = mAtomDataXYZ.get(aIdx, 0);
-        double oY = mAtomDataXYZ.get(aIdx, 1);
-        double oZ = mAtomDataXYZ.get(aIdx, 2);
+        double oX = mPosMat.get(aIdx, 0);
+        double oY = mPosMat.get(aIdx, 1);
+        double oZ = mPosMat.get(aIdx, 2);
         XYZ tBuf = new XYZ();
-        setValidXYZ_(mBox, mAtomDataXYZ, aX, aY, aZ, aIdx, tBuf);
+        setValidXYZ_(mBox, mPosMat, aX, aY, aZ, aIdx, tBuf);
         mNL.updateAtomXYZ_(aIdx, oX, oY, oZ, tBuf);
         return this;
     }
@@ -322,10 +355,10 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      */
     public AtomicParameterCalculator setAtomType(int aIdx, int aType) {
         // 简单更新
-        if (aType > mAtomTypeNum) throw new IllegalArgumentException("input type ("+aType+") Must <= ntypes ("+mAtomTypeNum+")");
-        mAtomNumType.decrement(mTypeVec.get(aIdx)-1);
+        if (aType > mNomTypes) throw new IllegalArgumentException("input type ("+aType+") Must <= ntypes ("+ mNomTypes +")");
+        mNumAtomsType.decrement(mTypeVec.get(aIdx)-1);
         mTypeVec.set(aIdx, aType);
-        mAtomNumType.increment(aType-1);
+        mNumAtomsType.increment(aType-1);
         return this;
     }
     /// 补充运算时使用
@@ -333,22 +366,30 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      * 外部为 APC 补充运算时使用，获取 APC 内部的并行线程池
      * @see ParforThreadPool
      */
-    @ApiStatus.Internal public ParforThreadPool pool_() {return pool();}
+    @ApiStatus.Internal public ParforThreadPool pool_() {
+        return mPool;
+    }
     /**
      * 外部为 APC 补充运算时使用，获取 APC 内部的近邻列表获取器
      * @see NeighborListGetter
      */
-    @ApiStatus.Internal public NeighborListGetter nl_() {return mNL;}
+    @ApiStatus.Internal public NeighborListGetter nl_() {
+        return mNL;
+    }
     /**
      * 外部为 APC 补充运算时使用，获取 APC 内部的原子坐标数据矩阵
      * @see IMatrix
      */
-    @ApiStatus.Internal public IMatrix atomDataXYZ_() {return mAtomDataXYZ;}
+    @ApiStatus.Internal public IMatrix positions() {
+        return mPosMat;
+    }
     /**
      * 外部为 APC 补充运算时使用，获取 APC 内部的原子种类编号向量
      * @see IIntVector
      */
-    @ApiStatus.Internal public IIntVector atomType_() {return mTypeVec;}
+    @ApiStatus.Internal public IIntVector types() {
+        return mTypeVec;
+    }
     
     
     /// 计算方法
@@ -368,7 +409,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         for (int i = 0; i < dnPar.length; ++i) dnPar[i] = FixBoundFunc1.zeros(0.0, dr, aN).setBound(0.0, 1.0);
         
         // 使用 mNL 的专门获取近邻距离的方法
-        pool().parfor(mAtomNum, (i, threadID) -> {
+        mPool.parfor(mNumAtoms, (i, threadID) -> {
             final IFunc1 dn = dnPar[threadID];
             mNL.forEachNeighbor(i, aRMax - dr*0.5, true, (dx, dy, dz, idx) -> {
                 dn.updateNear(Fast.hypot(dx, dy, dz), g->g+1);
@@ -378,7 +419,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         // 获取结果
         IFunc1 gr = dnPar[0];
         for (int i = 1; i < dnPar.length; ++i) gr.plus2this(dnPar[i]);
-        final double rho = dr * mAtomNum*0.5 * mRho; // mAtomNum*0.5 为对所有原子求和需要进行的平均
+        final double rho = dr * mNumAtoms *0.5 * mRho; // mAtomNum*0.5 为对所有原子求和需要进行的平均
         gr.operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*rho)));
         
         // 修复截断数据
@@ -419,7 +460,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         for (int i = 0; i < dnPar.length; ++i) dnPar[i] = FixBoundFunc1.zeros(0.0, dr, aN).setBound(0.0, 1.0);
         
         // 使用 mNL 的专门获取近邻距离的方法
-        pool().parfor(mAtomNum, (i, threadID) -> {
+        mPool.parfor(mNumAtoms, (i, threadID) -> {
             int tTypeI = mTypeVec.get(i);
             if (tTypeI==aTypeA || tTypeI==aTypeB) {
                 final int tTypeJ = tTypeI==aTypeA ? aTypeB : aTypeA;
@@ -435,7 +476,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         // 获取结果
         IFunc1 gr = dnPar[0];
         for (int i = 1; i < dnPar.length; ++i) gr.plus2this(dnPar[i]);
-        double rho = dr * mAtomNumType.get(aTypeA-1) * mAtomNumType.get(aTypeB-1) / mVolume;
+        double rho = dr * mNumAtomsType.get(aTypeA-1) * mNumAtomsType.get(aTypeB-1) / mVolume;
         if (aTypeA == aTypeB) rho *= 0.5;
         final double fRho = rho;
         gr.operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*fRho)));
@@ -485,12 +526,12 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
         // 当只有一个种类时不进行单独种类的计算
-        if (mAtomTypeNum == 1) return Collections.singletonList(calRDF(aN, aRMax));
+        if (mNomTypes == 1) return Collections.singletonList(calRDF(aN, aRMax));
         
         final double dr = aRMax/aN;
         // 这里需要使用 IFunc 来进行函数的相关运算操作
         final List<IFunc1[]> dnAllPar = NewCollections.from(nthreads(), i -> {
-            IFunc1[] dnAll = new IFunc1[(mAtomTypeNum*(mAtomTypeNum+1))/2 + 1];
+            IFunc1[] dnAll = new IFunc1[(mNomTypes *(mNomTypes +1))/2 + 1];
             for (int j = 0; j < dnAll.length; ++j) {
                 dnAll[j] = FixBoundFunc1.zeros(0.0, dr, aN).setBound(0.0, 1.0);
             }
@@ -498,7 +539,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         });
         
         // 使用 mNL 的专门获取近邻距离的方法
-        pool().parfor(mAtomNum, (i, threadID) -> {
+        mPool.parfor(mNumAtoms, (i, threadID) -> {
             final int tTypeA = mTypeVec.get(i);
             final IFunc1[] dnAll = dnAllPar.get(threadID);
             mNL.forEachNeighbor(i, aRMax - dr*0.5, true, (dx, dy, dz, idx) -> {
@@ -516,12 +557,12 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         it.forEachRemaining(dnAll -> {
             for (int i = 0; i < grAll.length; ++i) grAll[i].plus2this(dnAll[i]);
         });
-        double rho = dr * mAtomNum*0.5 * mRho; // mAtomNum*0.5 为对所有原子求和需要进行的平均
+        double rho = dr * mNumAtoms *0.5 * mRho; // mAtomNum*0.5 为对所有原子求和需要进行的平均
         final double fRho = rho;
         grAll[0].operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*fRho)));
         int idx = 1;
-        for (int typeAmm = 0; typeAmm < mAtomTypeNum; ++typeAmm) for (int typeBmm = 0; typeBmm <= typeAmm; ++typeBmm) {
-            rho = dr * mAtomNumType.get(typeAmm) * mAtomNumType.get(typeBmm) / mVolume;
+        for (int typeAmm = 0; typeAmm < mNomTypes; ++typeAmm) for (int typeBmm = 0; typeBmm <= typeAmm; ++typeBmm) {
+            rho = dr * mNumAtomsType.get(typeAmm) * mNumAtomsType.get(typeBmm) / mVolume;
             if (typeAmm == typeBmm) rho *= 0.5;
             final double fRhoAB = rho;
             grAll[idx].operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*fRhoAB)));
@@ -570,7 +611,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         final double tRShift = -tDeltaGPar[0].zeroBoundL();
         
         // 使用 mNL 的专门获取近邻距离的方法
-        pool().parfor(mAtomNum, (i, threadID) -> {
+        mPool.parfor(mNumAtoms, (i, threadID) -> {
             final IFunc1 dn = dnPar[threadID];
             final IZeroBoundFunc1 tDeltaG = tDeltaGPar[threadID];
             mNL.forEachNeighbor(i, aRMax+tRShift, true, (dx, dy, dz, idx) -> {
@@ -582,7 +623,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         // 获取结果
         IFunc1 gr = dnPar[0];
         for (int i = 1; i < dnPar.length; ++i) gr.plus2this(dnPar[i]);
-        final double rho = mAtomNum*0.5 * mRho; // mAtomNum*0.5 为对所有原子求和需要进行的平均
+        final double rho = mNumAtoms *0.5 * mRho; // mAtomNum*0.5 为对所有原子求和需要进行的平均
         gr.operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*rho)));
         
         // 修复截断数据
@@ -634,7 +675,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         final double tRShift = -tDeltaGPar[0].zeroBoundL();
         
         // 使用 mNL 的专门获取近邻距离的方法
-        pool().parfor(mAtomNum, (i, threadID) -> {
+        mPool.parfor(mNumAtoms, (i, threadID) -> {
             int tTypeI = mTypeVec.get(i);
             if (tTypeI==aTypeA || tTypeI==aTypeB) {
                 final int tTypeJ = tTypeI==aTypeA ? aTypeB : aTypeA;
@@ -652,7 +693,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         // 获取结果
         IFunc1 gr = dnPar[0];
         for (int i = 1; i < dnPar.length; ++i) gr.plus2this(dnPar[i]);
-        double rho = mAtomNumType.get(aTypeA-1) * mAtomNumType.get(aTypeB-1) / mVolume;
+        double rho = mNumAtomsType.get(aTypeA-1) * mNumAtomsType.get(aTypeB-1) / mVolume;
         if (aTypeA == aTypeB) rho *= 0.5;
         final double fRho = rho;
         gr.operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*fRho)));
@@ -708,12 +749,12 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
         // 当只有一个种类时不进行单独种类的计算
-        if (mAtomTypeNum == 1) return Collections.singletonList(calRDF_G(aN, aRMax, aSigmaMul));
+        if (mNomTypes == 1) return Collections.singletonList(calRDF_G(aN, aRMax, aSigmaMul));
         
         final double dr = aRMax/aN;
         // 这里需要使用 IFunc 来进行函数的相关运算操作
         final List<IFunc1[]> dnAllPar = NewCollections.from(nthreads(), i -> {
-            IFunc1[] dnAll = new IFunc1[(mAtomTypeNum*(mAtomTypeNum+1))/2 + 1];
+            IFunc1[] dnAll = new IFunc1[(mNomTypes *(mNomTypes +1))/2 + 1];
             for (int j = 0; j < dnAll.length; ++j) {
                 dnAll[j] = FixBoundFunc1.zeros(0.0, dr, aN).setBound(0.0, 1.0);
             }
@@ -727,7 +768,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         final double tRShift = -tDeltaGPar[0].zeroBoundL();
         
         // 使用 mNL 的专门获取近邻距离的方法
-        pool().parfor(mAtomNum, (i, threadID) -> {
+        mPool.parfor(mNumAtoms, (i, threadID) -> {
             final int tTypeA = mTypeVec.get(i);
             final IFunc1[] dnAll = dnAllPar.get(threadID);
             final IZeroBoundFunc1 tDeltaG = tDeltaGPar[threadID];
@@ -746,12 +787,12 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         it.forEachRemaining(dnAll -> {
             for (int i = 0; i < grAll.length; ++i) grAll[i].plus2this(dnAll[i]);
         });
-        double rho = mAtomNum*0.5 * mRho; // mAtomNum*0.5 为对所有原子求和需要进行的平均
+        double rho = mNumAtoms *0.5 * mRho; // mAtomNum*0.5 为对所有原子求和需要进行的平均
         final double fRho = rho;
         grAll[0].operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*fRho)));
         int idx = 1;
-        for (int typeAmm = 0; typeAmm < mAtomTypeNum; ++typeAmm) for (int typeBmm = 0; typeBmm <= typeAmm; ++typeBmm) {
-            rho = mAtomNumType.get(typeAmm) * mAtomNumType.get(typeBmm) / mVolume;
+        for (int typeAmm = 0; typeAmm < mNomTypes; ++typeAmm) for (int typeBmm = 0; typeBmm <= typeAmm; ++typeBmm) {
+            rho = mNumAtomsType.get(typeAmm) * mNumAtomsType.get(typeBmm) / mVolume;
             if (typeAmm == typeBmm) rho *= 0.5;
             final double fRhoAB = rho;
             grAll[idx].operation().mapFull2this((g, r) -> (g / (r*r*4.0*PI*fRhoAB)));
@@ -800,11 +841,11 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         for (int i = 0; i < HqPar.length; ++i) HqPar[i] = FixBoundFunc1.zeros(aQMin, dq, aN+1).setBound(0.0, 1.0);
         
         // 需要这样遍历才能得到正确结果
-        pool().parfor(mAtomNum, (i, threadID) -> {
-            XYZ cXYZ = new XYZ(mAtomDataXYZ.row(i));
+        mPool.parfor(mNumAtoms, (i, threadID) -> {
+            XYZ cXYZ = new XYZ(mPosMat.row(i));
             IFunc1 Hq = HqPar[threadID];
             for (int j = 0; j < i; ++j) {
-                final double dis = cXYZ.distance(mAtomDataXYZ.get(j, 0), mAtomDataXYZ.get(j, 1), mAtomDataXYZ.get(j, 2));
+                final double dis = cXYZ.distance(mPosMat.get(j, 0), mPosMat.get(j, 1), mPosMat.get(j, 2));
                 Hq.operation().mapFull2this((H, q) -> (H + Fast.sin(q*dis)/(q*dis)));
             }
         });
@@ -812,7 +853,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         // 获取结果
         IFunc1 Sq = HqPar[0];
         for (int i = 1; i < HqPar.length; ++i) Sq.plus2this(HqPar[i]);
-        Sq.div2this(mAtomNum*0.5);
+        Sq.div2this(mNumAtoms *0.5);
         Sq.plus2this(1.0);
         
         // 输出
@@ -857,14 +898,14 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         for (int i = 0; i < HqPar.length; ++i) HqPar[i] = FixBoundFunc1.zeros(aQMin, dq, aN+1).setBound(0.0, 1.0);
         
         // 需要这样遍历才能得到正确结果
-        pool().parfor(mAtomNum, (i, threadID) -> {
+        mPool.parfor(mNumAtoms, (i, threadID) -> {
             int tTypeI = mTypeVec.get(i);
             if (tTypeI==aTypeA || tTypeI==aTypeB) {
                 int tTypeJ = tTypeI==aTypeA ? aTypeB : aTypeA;
-                XYZ cXYZ = new XYZ(mAtomDataXYZ.row(i));
+                XYZ cXYZ = new XYZ(mPosMat.row(i));
                 IFunc1 Hq = HqPar[threadID];
                 for (int j = 0; j < i; ++j) if (mTypeVec.get(j) == tTypeJ) {
-                    final double dis = cXYZ.distance(mAtomDataXYZ.get(j, 0), mAtomDataXYZ.get(j, 1), mAtomDataXYZ.get(j, 2));
+                    final double dis = cXYZ.distance(mPosMat.get(j, 0), mPosMat.get(j, 1), mPosMat.get(j, 2));
                     Hq.operation().mapFull2this((H, q) -> (H + Fast.sin(q*dis)/(q*dis)));
                 }
             }
@@ -873,7 +914,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         // 获取结果
         IFunc1 Sq = HqPar[0];
         for (int i = 1; i < HqPar.length; ++i) Sq.plus2this(HqPar[i]);
-        double tDiv = Fast.sqrt(mAtomNumType.get(aTypeA-1) * mAtomNumType.get(aTypeB-1));
+        double tDiv = Fast.sqrt(mNumAtomsType.get(aTypeA-1) * mNumAtomsType.get(aTypeB-1));
         if (aTypeA == aTypeB) tDiv *= 0.5;
         Sq.div2this(tDiv);
         Sq.plus2this(1.0);
@@ -928,12 +969,12 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         if (mDead) throw new RuntimeException("This Calculator is dead");
         
         // 当只有一个种类时不进行单独种类的计算
-        if (mAtomTypeNum == 1) return Collections.singletonList(calSF(aN, aQMax, aQMin));
+        if (mNomTypes == 1) return Collections.singletonList(calSF(aN, aQMax, aQMin));
         
         final double dq = (aQMax-aQMin)/aN;
         // 这里需要使用 IFunc 来进行函数的相关运算操作
         final List<IFunc1[]> HqAllPar = NewCollections.from(nthreads(), i -> {
-            IFunc1[] HqAll = new IFunc1[(mAtomTypeNum*(mAtomTypeNum+1))/2 + 1];
+            IFunc1[] HqAll = new IFunc1[(mNomTypes *(mNomTypes +1))/2 + 1];
             for (int j = 0; j < HqAll.length; ++j) {
                 HqAll[j] = FixBoundFunc1.zeros(aQMin, dq, aN+1).setBound(0.0, 1.0);
             }
@@ -943,13 +984,13 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         final List<? extends IVector> tDeltaPar = VectorCache.getVec(aN+1, nthreads());
         
         // 需要这样遍历才能得到正确结果
-        pool().parfor(mAtomNum, (i, threadID) -> {
-            XYZ cXYZ = new XYZ(mAtomDataXYZ.row(i));
+        mPool.parfor(mNumAtoms, (i, threadID) -> {
+            XYZ cXYZ = new XYZ(mPosMat.row(i));
             int tTypeA = mTypeVec.get(i);
             IFunc1[] HqAll = HqAllPar.get(threadID);
             IVector tDelta = tDeltaPar.get(threadID);
             for (int j = 0; j < i; ++j) {
-                final double dis = cXYZ.distance(mAtomDataXYZ.get(j, 0), mAtomDataXYZ.get(j, 1), mAtomDataXYZ.get(j, 2));
+                final double dis = cXYZ.distance(mPosMat.get(j, 0), mPosMat.get(j, 1), mPosMat.get(j, 2));
                 tDelta.operation().operate2this(HqAll[0].x(), (any, q) -> Fast.sin(q*dis)/(q*dis));
                 HqAll[0].f().plus2this(tDelta);
                 int tTypeB = mTypeVec.get(j);
@@ -963,10 +1004,10 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         it.forEachRemaining(HqAll -> {
             for (int i = 0; i < HqAll.length; ++i) SqAll[i].plus2this(HqAll[i]);
         });
-        SqAll[0].div2this(mAtomNum*0.5);
+        SqAll[0].div2this(mNumAtoms *0.5);
         int idx = 1;
-        for (int typeAmm = 0; typeAmm < mAtomTypeNum; ++typeAmm) for (int typeBmm = 0; typeBmm <= typeAmm; ++typeBmm) {
-            double tDiv = Fast.sqrt(mAtomNumType.get(typeAmm) * mAtomNumType.get(typeBmm));
+        for (int typeAmm = 0; typeAmm < mNomTypes; ++typeAmm) for (int typeBmm = 0; typeBmm <= typeAmm; ++typeBmm) {
+            double tDiv = Fast.sqrt(mNumAtomsType.get(typeAmm) * mNumAtomsType.get(typeBmm));
             if (typeAmm == typeBmm) tDiv *= 0.5;
             SqAll[idx].div2this(tDiv);
             ++idx;
@@ -1233,9 +1274,9 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
      */
     public List<Vector> getFullNeighborList(int aIdx, double aRMax, int aNnn) {
         if (mDead) throw new RuntimeException("This Calculator is dead");
-        final double cX = mAtomDataXYZ.get(aIdx, 0);
-        final double cY = mAtomDataXYZ.get(aIdx, 1);
-        final double cZ = mAtomDataXYZ.get(aIdx, 2);
+        final double cX = mPosMat.get(aIdx, 0);
+        final double cY = mPosMat.get(aIdx, 1);
+        final double cZ = mPosMat.get(aIdx, 2);
         // 目前这种情况都需要遍历一下
         final Vector.Builder rNL = Vector.builder();
         final Vector.Builder rX = Vector.builder();
@@ -1350,7 +1391,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
     
     
     /** 用于分割模拟盒，判断给定 XYZ 或者 idx 处的原子是否在需要考虑的区域中 */
-    private class MPIInfo implements IAutoShutdown {
+    private class MPIInfo implements AutoCloseable {
         final MPI.Comm mComm;
         final int mRank, mSize;
         final XYZ mCellSize;
@@ -1408,11 +1449,11 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         }
         @SuppressWarnings("RedundantIfStatement")
         boolean inRegin(int aIdx) {
-            double tX = mAtomDataXYZ.get(aIdx, 0);
+            double tX = mPosMat.get(aIdx, 0);
             if (tX < mXLo || tX >= mXHi) return false;
-            double tY = mAtomDataXYZ.get(aIdx, 1);
+            double tY = mPosMat.get(aIdx, 1);
             if (tY < mYLo || tY >= mYHi) return false;
-            double tZ = mAtomDataXYZ.get(aIdx, 2);
+            double tZ = mPosMat.get(aIdx, 2);
             if (tZ < mZLo || tZ >= mZHi) return false;
             return true;
         }
@@ -1455,12 +1496,12 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             mEdgeRMax = aRMax;
             mCounts = IntVectorCache.getZeros(mSize);
             final int[][] rBuf2Idx = new int[mSize][];
-            IntArrayCache.getArrayTo(mAtomNum, mSize, (i, array) -> rBuf2Idx[i] = array);
+            IntArrayCache.getArrayTo(mNumAtoms, mSize, (i, array) -> rBuf2Idx[i] = array);
             // 遍历所有的原子统计位置
-            for (int i = 0; i < mAtomNum; ++i) {
-                double tX = mAtomDataXYZ.get(i, 0);
-                double tY = mAtomDataXYZ.get(i, 1);
-                double tZ = mAtomDataXYZ.get(i, 2);
+            for (int i = 0; i < mNumAtoms; ++i) {
+                double tX = mPosMat.get(i, 0);
+                double tY = mPosMat.get(i, 1);
+                double tZ = mPosMat.get(i, 2);
                 // 如果设置了 aRMax 则跳过在中间的原子即可
                 if (!tInitAll && !inEdge_(tX, tY, tZ, aRMax)) continue;
                 int tI = MathEX.Code.floor2int(tX / mCellSize.mX);
@@ -1472,7 +1513,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
                 rBuf2Idx[tRank][tCount] = i;
                 mCounts.increment(tRank);
             }
-            mBuf2Idx = IntVectorCache.getVec(mAtomNum);
+            mBuf2Idx = IntVectorCache.getVec(mNumAtoms);
             int tStart = 0;
             for (int i = 0; i < mSize; ++i) {
                 int tCount = mCounts.get(i);
@@ -1553,7 +1594,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         }
         
         private boolean mDead = false;
-        @Override public void shutdown() {
+        @Override public void close() {
             if (mDead) return;
             mDead = true;
             if (mInitialized) {
@@ -1585,9 +1626,9 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         if (aL < 0) throw new IllegalArgumentException("Input l MUST be Non-Negative, input: "+aL);
         
         // 构造用于并行的暂存数组，注意需要初始值为 0.0
-        final List<? extends IComplexMatrix> rDestPar = ComplexMatrixCache.getZerosRow(mAtomNum, aL+aL+1, nthreads());
+        final List<? extends IComplexMatrix> rDestPar = ComplexMatrixCache.getZerosRow(mNumAtoms, aL+aL+1, nthreads());
         // 统计近邻数用于求平均，同样也需要为并行使用数组
-        final List<? extends IVector> tNNPar = VectorCache.getZeros(mAtomNum, nthreads());
+        final List<? extends IVector> tNNPar = VectorCache.getZeros(mNumAtoms, nthreads());
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnn<=0;
         
@@ -1595,7 +1636,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         final List<? extends IComplexVector> tYPar = ComplexVectorCache.getVec(aL+aL+1, nthreads());
         
         // 遍历计算 Qlm，只对这个最耗时的部分进行并行优化
-        pool().parfor(mAtomNum, (i, threadID) -> {
+        mPool.parfor(mNumAtoms, (i, threadID) -> {
             // 先获取这个线程的 Qlm, tNN
             final IComplexMatrix Qlm = rDestPar.get(threadID);
             final IVector tNN = tNNPar.get(threadID);
@@ -1636,7 +1677,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             Qlm.plus2this(subQlm);
         }
         // 根据近邻数平均得到 Qlm
-        for (int i = 0; i < mAtomNum; ++i) Qlm.row(i).div2this(tNN.get(i));
+        for (int i = 0; i < mNumAtoms; ++i) Qlm.row(i).div2this(tNN.get(i));
         
         // 归还临时变量
         for (int i = 1; i < rDestPar.size(); ++i) ComplexMatrixCache.returnMat(rDestPar.get(i));
@@ -1675,9 +1716,9 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         if (aL < 0) throw new IllegalArgumentException("Input l MUST be Non-Negative, input: "+aL);
         
         // 构造用于输出的暂存数组，注意需要初始值为 0.0
-        final RowComplexMatrix Qlm = ComplexMatrixCache.getZerosRow(mAtomNum, aL+aL+1);
+        final RowComplexMatrix Qlm = ComplexMatrixCache.getZerosRow(mNumAtoms, aL+aL+1);
         // 统计近邻数用于求平均
-        final IVector tNN = VectorCache.getZeros(mAtomNum);
+        final IVector tNN = VectorCache.getZeros(mNumAtoms);
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnn<=0;
         
@@ -1685,7 +1726,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         final IComplexVector tY = ComplexVectorCache.getVec(aL+aL+1);
         
         // 遍历计算 Qlm，这里直接判断原子位置是否是需要计算的然后跳过
-        for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
+        for (int i = 0; i < mNumAtoms; ++i) if (aMPIInfo.inRegin(i)) {
             // 一次计算一行
             final IComplexVector Qlmi = Qlm.row(i);
             // 遍历近邻计算 Ylm
@@ -1716,7 +1757,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         }
         
         // 根据近邻数平均得到 Qlm
-        for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
+        for (int i = 0; i < mNumAtoms; ++i) if (aMPIInfo.inRegin(i)) {
             Qlm.row(i).div2this(tNN.get(i));
         }
         // 归还临时变量
@@ -1783,16 +1824,16 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         if (aL < 0) throw new IllegalArgumentException("Input l MUST be Non-Negative, input: "+aL);
         
         final IComplexMatrix Qlm = calYlmMean(aL, aRNearestY, aNnnY);
-        final IComplexMatrix qlm = ComplexMatrixCache.getZerosRow(mAtomNum, aL+aL+1);
+        final IComplexMatrix qlm = ComplexMatrixCache.getZerosRow(mNumAtoms, aL+aL+1);
         
         // 统计近邻数用于求平均（增加一个自身）
-        final IVector tNN = VectorCache.getVec(mAtomNum);
+        final IVector tNN = VectorCache.getVec(mNumAtoms);
         tNN.fill(1.0);
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnnQ<=0;
         
         // 遍历计算 qlm
-        for (int i = 0; i < mAtomNum; ++i) {
+        for (int i = 0; i < mNumAtoms; ++i) {
             // 一次计算一行
             final IComplexVector qlmi = qlm.row(i);
             final IComplexVector Qlmi = Qlm.row(i);
@@ -1817,7 +1858,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             });
         }
         // 根据近邻数平均得到 qlm
-        for (int i = 0; i < mAtomNum; ++i) qlm.row(i).div2this(tNN.get(i));
+        for (int i = 0; i < mNumAtoms; ++i) qlm.row(i).div2this(tNN.get(i));
         
         // 归还临时变量
         VectorCache.returnVec(tNN);
@@ -1882,16 +1923,16 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         
         final IComplexMatrix Qlm = calYlmMean_MPI_(true, aMPIInfo, aL, aRNearestY, aNnnY);
         aMPIInfo.allgather(Qlm, aRNearestQ); // 手动同步边界的数据用于计算 qlm
-        final RowComplexMatrix qlm = ComplexMatrixCache.getZerosRow(mAtomNum, aL+aL+1);
+        final RowComplexMatrix qlm = ComplexMatrixCache.getZerosRow(mNumAtoms, aL+aL+1);
         
         // 统计近邻数用于求平均（增加一个自身）
-        final IVector tNN = VectorCache.getVec(mAtomNum);
+        final IVector tNN = VectorCache.getVec(mNumAtoms);
         tNN.fill(1.0);
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnnQ<=0;
         
         // 遍历计算 Qlm，这里直接判断原子位置是否是需要计算的然后跳过
-        for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
+        for (int i = 0; i < mNumAtoms; ++i) if (aMPIInfo.inRegin(i)) {
             // 一次计算一行
             final IComplexVector qlmi = qlm.row(i);
             final IComplexVector Qlmi = Qlm.row(i);
@@ -1917,7 +1958,7 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
             });
         }
         // 根据近邻数平均得到 qlm
-        for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
+        for (int i = 0; i < mNumAtoms; ++i) if (aMPIInfo.inRegin(i)) {
             qlm.row(i).div2this(tNN.get(i));
         }
         
@@ -1990,8 +2031,8 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         IComplexMatrix Qlm = calYlmMean(aL, aRNearest, aNnn);
         
         // 直接求和
-        IVector Ql = VectorCache.getVec(mAtomNum);
-        for (int i = 0; i < mAtomNum; ++i) {
+        IVector Ql = VectorCache.getVec(mNumAtoms);
+        for (int i = 0; i < mNumAtoms; ++i) {
             // 直接计算复向量的点乘
             double tDot = Qlm.row(i).operation().dot();
             // 使用这个公式设置 Ql
@@ -2044,8 +2085,8 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         IComplexMatrix Qlm = calYlmMean_MPI_(true, aMPIInfo, aL, aRNearest, aNnn);
         
         // 直接求和
-        Vector Ql = VectorCache.getVec(mAtomNum);
-        for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
+        Vector Ql = VectorCache.getVec(mNumAtoms);
+        for (int i = 0; i < mNumAtoms; ++i) if (aMPIInfo.inRegin(i)) {
             // 直接计算复向量的点乘
             double tDot = Qlm.row(i).operation().dot();
             // 使用这个公式设置 Ql
@@ -2148,8 +2189,8 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         IComplexMatrix Qlm = calYlmMean(aL, aRNearest, aNnn);
         
         // 计算三阶的乘积
-        IVector Wl = VectorCache.getVec(mAtomNum);
-        for (int i = 0; i < mAtomNum; ++i) {
+        IVector Wl = VectorCache.getVec(mNumAtoms);
+        for (int i = 0; i < mNumAtoms; ++i) {
             IComplexVector Qlmi = Qlm.row(i);
             // 分母为复向量的点乘
             double rDiv = Qlmi.operation().dot();
@@ -2244,8 +2285,8 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         IComplexMatrix qlm = calQlmMean(aL, aRNearestY, aNnnY, aRNearestQ, aNnnQ);
         
         // 直接求和
-        IVector ql = VectorCache.getVec(mAtomNum);
-        for (int i = 0; i < mAtomNum; ++i) {
+        IVector ql = VectorCache.getVec(mNumAtoms);
+        for (int i = 0; i < mNumAtoms; ++i) {
             // 直接计算复向量的点乘
             double tDot = qlm.row(i).operation().dot();
             // 使用这个公式设置 ql
@@ -2321,8 +2362,8 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         IComplexMatrix qlm = calQlmMean_MPI_(true, aMPIInfo, aL, aRNearestY, aNnnY, aRNearestQ, aNnnQ);
         
         // 直接求和
-        Vector ql = VectorCache.getVec(mAtomNum);
-        for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
+        Vector ql = VectorCache.getVec(mNumAtoms);
+        for (int i = 0; i < mNumAtoms; ++i) if (aMPIInfo.inRegin(i)) {
             // 直接计算复向量的点乘
             double tDot = qlm.row(i).operation().dot();
             // 使用这个公式设置 ql
@@ -2432,8 +2473,8 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         IComplexMatrix qlm = calQlmMean(aL, aRNearestY, aNnnY, aRNearestQ, aNnnQ);
         
         // 计算 wl，这里同样不去考虑减少重复代码
-        IVector wl = VectorCache.getVec(mAtomNum);
-        for (int i = 0; i < mAtomNum; ++i) {
+        IVector wl = VectorCache.getVec(mNumAtoms);
+        for (int i = 0; i < mNumAtoms; ++i) {
             IComplexVector qlmi = qlm.row(i);
             // 分母为复向量的点乘，等于实部虚部分别点乘
             double rDiv = qlmi.operation().dot();
@@ -2558,16 +2599,16 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnnS<=0;
         // 统计连接数
-        final IVector tConnectCount = VectorCache.getZeros(mAtomNum);
+        final IVector tConnectCount = VectorCache.getZeros(mNumAtoms);
         
         // 注意需要先对 Qlm 归一化
-        for (int i = 0; i < mAtomNum; ++i) {
+        for (int i = 0; i < mNumAtoms; ++i) {
             IComplexVector Qlmi = Qlm.row(i);
             Qlmi.div2this(Qlmi.operation().norm());
         }
         
         // 计算近邻上 qlm 的标量积，根据标量积来统计连接数
-        for (int i = 0; i < mAtomNum; ++i) {
+        for (int i = 0; i < mNumAtoms; ++i) {
             // 统一获取行向量
             final IComplexVector Qlmi = Qlm.row(i);
             // 遍历近邻计算连接数
@@ -2671,16 +2712,16 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnnS<=0;
         // 统计连接数
-        final Vector tConnectCount = VectorCache.getZeros(mAtomNum);
+        final Vector tConnectCount = VectorCache.getZeros(mNumAtoms);
         
         // 注意需要先对 Qlm 归一化
-        for (int i = 0; i < mAtomNum; ++i) {
+        for (int i = 0; i < mNumAtoms; ++i) {
             IComplexVector Qlmi = Qlm.row(i);
             Qlmi.div2this(Qlmi.operation().norm());
         }
         
         // 计算近邻上 Qlm 的标量积，根据标量积来统计连接数
-        for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
+        for (int i = 0; i < mNumAtoms; ++i) if (aMPIInfo.inRegin(i)) {
             // 统一获取行向量
             final IComplexVector Qlmi = Qlm.row(i);
             // 遍历近邻计算连接数
@@ -2812,16 +2853,16 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnnS<=0;
         // 统计连接数，这里同样不去考虑减少重复代码
-        final IVector tConnectCount = VectorCache.getZeros(mAtomNum);
+        final IVector tConnectCount = VectorCache.getZeros(mNumAtoms);
         
         // 注意需要先对 qlm 归一化
-        for (int i = 0; i < mAtomNum; ++i) {
+        for (int i = 0; i < mNumAtoms; ++i) {
             IComplexVector qlmi = qlm.row(i);
             qlmi.div2this(qlmi.operation().norm());
         }
         
         // 计算近邻上 qlm 的标量积，根据标量积来统计连接数
-        for (int i = 0; i < mAtomNum; ++i) {
+        for (int i = 0; i < mNumAtoms; ++i) {
             // 统一获取行向量
             final IComplexVector qlmi = qlm.row(i);
             // 遍历近邻计算连接数
@@ -2917,16 +2958,16 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnnS<=0;
         // 统计连接数，这里同样不去考虑减少重复代码
-        final Vector tConnectCount = VectorCache.getZeros(mAtomNum);
+        final Vector tConnectCount = VectorCache.getZeros(mNumAtoms);
         
         // 注意需要先对 qlm 归一化
-        for (int i = 0; i < mAtomNum; ++i) {
+        for (int i = 0; i < mNumAtoms; ++i) {
             IComplexVector qlmi = qlm.row(i);
             qlmi.div2this(qlmi.operation().norm());
         }
         
         // 计算近邻上 qlm 的标量积，根据标量积来统计连接数
-        for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
+        for (int i = 0; i < mNumAtoms; ++i) if (aMPIInfo.inRegin(i)) {
             // 统一获取行向量
             final IComplexVector qlmi = qlm.row(i);
             // 遍历近邻计算连接数
@@ -3062,18 +3103,18 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnnS<=0;
         // 统计连接数
-        final IVector tConnectRatio = VectorCache.getZeros(mAtomNum);
+        final IVector tConnectRatio = VectorCache.getZeros(mNumAtoms);
         // 统计近邻数用于求平均
-        final IVector tNN = VectorCache.getZeros(mAtomNum);
+        final IVector tNN = VectorCache.getZeros(mNumAtoms);
         
         // 注意需要先对 Qlm 归一化
-        for (int i = 0; i < mAtomNum; ++i) {
+        for (int i = 0; i < mNumAtoms; ++i) {
             IComplexVector Qlmi = Qlm.row(i);
             Qlmi.div2this(Qlmi.operation().norm());
         }
         
         // 计算近邻上 qlm 的标量积，根据标量积来统计连接数
-        for (int i = 0; i < mAtomNum; ++i) {
+        for (int i = 0; i < mNumAtoms; ++i) {
             // 统一获取行向量
             final IComplexVector Qlmi = Qlm.row(i);
             // 遍历近邻计算连接数
@@ -3186,18 +3227,18 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnnS<=0;
         // 统计连接数
-        final Vector tConnectRatio = VectorCache.getZeros(mAtomNum);
+        final Vector tConnectRatio = VectorCache.getZeros(mNumAtoms);
         // 统计近邻数用于求平均
-        final IVector tNN = VectorCache.getZeros(mAtomNum);
+        final IVector tNN = VectorCache.getZeros(mNumAtoms);
         
         // 注意需要先对 Qlm 归一化
-        for (int i = 0; i < mAtomNum; ++i) {
+        for (int i = 0; i < mNumAtoms; ++i) {
             IComplexVector Qlmi = Qlm.row(i);
             Qlmi.div2this(Qlmi.operation().norm());
         }
         
         // 计算近邻上 Qlm 的标量积，根据标量积来统计连接数
-        for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
+        for (int i = 0; i < mNumAtoms; ++i) if (aMPIInfo.inRegin(i)) {
             // 统一获取行向量
             final IComplexVector Qlmi = Qlm.row(i);
             // 遍历近邻计算连接数
@@ -3338,18 +3379,18 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnnS<=0;
         // 统计连接数，这里同样不去考虑减少重复代码
-        final IVector tConnectRatio = VectorCache.getZeros(mAtomNum);
+        final IVector tConnectRatio = VectorCache.getZeros(mNumAtoms);
         // 统计近邻数用于求平均
-        final IVector tNN = VectorCache.getZeros(mAtomNum);
+        final IVector tNN = VectorCache.getZeros(mNumAtoms);
         
         // 注意需要先对 qlm 归一化
-        for (int i = 0; i < mAtomNum; ++i) {
+        for (int i = 0; i < mNumAtoms; ++i) {
             IComplexVector qlmi = qlm.row(i);
             qlmi.div2this(qlmi.operation().norm());
         }
         
         // 计算近邻上 qlm 的标量积，根据标量积来统计连接数
-        for (int i = 0; i < mAtomNum; ++i) {
+        for (int i = 0; i < mNumAtoms; ++i) {
             // 统一获取行向量
             final IComplexVector qlmi = qlm.row(i);
             // 遍历近邻计算连接数
@@ -3454,18 +3495,18 @@ public class AtomicParameterCalculator extends AbstractThreadPool<ParforThreadPo
         // 如果限制了 aNnn 需要关闭 half 遍历的优化
         final boolean aHalf = aNnnS<=0;
         // 统计连接数，这里同样不去考虑减少重复代码
-        final Vector tConnectRatio = VectorCache.getZeros(mAtomNum);
+        final Vector tConnectRatio = VectorCache.getZeros(mNumAtoms);
         // 统计近邻数用于求平均
-        final IVector tNN = VectorCache.getZeros(mAtomNum);
+        final IVector tNN = VectorCache.getZeros(mNumAtoms);
         
         // 注意需要先对 qlm 归一化
-        for (int i = 0; i < mAtomNum; ++i) {
+        for (int i = 0; i < mNumAtoms; ++i) {
             IComplexVector qlmi = qlm.row(i);
             qlmi.div2this(qlmi.operation().norm());
         }
         
         // 计算近邻上 qlm 的标量积，根据标量积来统计连接数
-        for (int i = 0; i < mAtomNum; ++i) if (aMPIInfo.inRegin(i)) {
+        for (int i = 0; i < mNumAtoms; ++i) if (aMPIInfo.inRegin(i)) {
             // 统一获取行向量
             final IComplexVector qlmi = qlm.row(i);
             // 遍历近邻计算连接数

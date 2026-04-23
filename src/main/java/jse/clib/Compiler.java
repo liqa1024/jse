@@ -211,7 +211,7 @@ public class Compiler {
                         if (tMajor<8 || (tMajor==8 && Integer.parseInt(tTokens[1])<5)) {
                             tGccOld = true;
                         }
-                    } catch (Exception ignore) {
+                    } catch (Exception ignored) {
                         /**/
                     } finally {
                         GCC_VERSION = tGccVersion;

@@ -235,5 +235,8 @@ public class SSHSystemExecutor extends RemoteSystemExecutor implements ISavable 
         if (mIOThreadNum>0) {mSSH.mCore.getFiles(aFiles, mIOThreadNum);} else {mSSH.mCore.getFiles(aFiles);}
     }
     /** 需要重写 shutdownFinal 方法将内部 ssh 的关闭包含进去 */
-    @Override protected void shutdownFinal() {mSSH.dispose();}
+    @Override protected void shutdownFinal() {
+        try {mSSH.dispose();}
+        catch (Exception e) {throw new RuntimeException(e);}
+    }
 }

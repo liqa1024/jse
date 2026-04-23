@@ -3,7 +3,6 @@ package jsex.rareevent;
 
 import jse.atom.IAtomData;
 import jse.code.random.IRandom;
-import jse.parallel.IAutoShutdown;
 import org.jetbrains.annotations.ApiStatus;
 
 /**
@@ -16,9 +15,9 @@ import org.jetbrains.annotations.ApiStatus;
  * @param <T> 获取到点的类型，对于 lammps 模拟则是原子结构信息 {@link IAtomData}
  */
 @ApiStatus.Experimental
-public interface IFullPathGenerator<T> extends IAutoShutdown {
+public interface IFullPathGenerator<T> extends AutoCloseable {
     ITimeAndParameterIterator<? extends T> fullPathInit(IRandom aRNG);
     ITimeAndParameterIterator<? extends T> fullPathFrom(T aStart, IRandom aRNG);
     
-    default void shutdown() {/**/}
+    @Override default void close() throws Exception {/**/}
 }

@@ -337,18 +337,18 @@ public class UT {
         private static @Nullable ParforThreadPool POOL = null;
         public static @NotNull ParforThreadPool pool(@Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {
             if (POOL==null || POOL.nthreads()!=aThreadNum) {
-                if (POOL != null) POOL.shutdown();
+                if (POOL != null) POOL.close();
                 POOL = new ParforThreadPool(aThreadNum);
             }
             return POOL;
         }
-        private static void shutdownPool_() {
+        private static void closePool_() {
             if (POOL != null) {
-                POOL.shutdown(); POOL = null;
+                POOL.close(); POOL = null;
             }
         }
         // 在程序结束时关闭 POOL
-        static {Main.addGlobalAutoCloseable(UT.Par::shutdownPool_);}
+        static {Main.addGlobalAutoCloseable(UT.Par::closePool_);}
         
         /**
          * parfor for groovy usage

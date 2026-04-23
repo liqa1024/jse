@@ -25,29 +25,30 @@ public class ReferenceChecker extends WeakReference<Object> {
     
     private volatile boolean mDisposed = false;
     public final boolean disposed() {return mDisposed;}
-    public final synchronized void dispose() {
+    public final synchronized void dispose() throws Exception {
         if (!mDisposed) {
             mDisposed = true;
             dispose_();
             sPointers.remove(this);
         }
     }
-    protected void dispose_() {}
+    protected void dispose_() throws Exception {}
     
     private final static ReferenceQueue<Object> sRefQueue = new ReferenceQueue<>();
     private final static Set<ReferenceChecker> sPointers = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private static ReferenceQueue<Object> getReferenceQueue() {
-        cleanupWeakReferences();
+        try {cleanupWeakReferences();}
+        catch (Exception e) {throw new RuntimeException(e);}
         return sRefQueue;
     }
-    private static void cleanupWeakReferences() {
+    private static void cleanupWeakReferences() throws Exception {
         ReferenceChecker p = (ReferenceChecker)sRefQueue.poll();
         while (p != null) {
             p.dispose();
             p = (ReferenceChecker)sRefQueue.poll();
         }
     }
-    private static void disposeAll() {
+    private static void disposeAll() throws Exception {
         Iterator<ReferenceChecker> it = sPointers.iterator();
         while (it.hasNext()) {
             ReferenceChecker ptr = it.next();

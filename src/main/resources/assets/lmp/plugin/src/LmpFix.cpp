@@ -36,7 +36,7 @@ static jmethodID sSetMask = 0;
 static jmethodID sInit = 0;
 static jmethodID sSetup = 0;
 static jmethodID sMinSetup = 0;
-static jmethodID sShutdown = 0;
+static jmethodID sClose = 0;
 static jmethodID sInitialIntegrate = 0;
 static jmethodID sPostIntegrate = 0;
 static jmethodID sPreExchange = 0;
@@ -102,9 +102,9 @@ void JSE_LMPFIX::minSetup(JNIEnv *aEnv, jobject aSelf, int vflag) {
         aEnv->CallVoidMethod(aSelf, sMinSetup, (jint)vflag);
     }
 }
-void JSE_LMPFIX::shutdown(JNIEnv *aEnv, jobject aSelf) {
-    if (sShutdown || (sShutdown = aEnv->GetMethodID(LMPFIX_CLAZZ, "shutdown", "()V"))) {
-        aEnv->CallVoidMethod(aSelf, sShutdown);
+void JSE_LMPFIX::close(JNIEnv *aEnv, jobject aSelf) {
+    if (sClose || (sClose = aEnv->GetMethodID(LMPFIX_CLAZZ, "close", "()V"))) {
+        aEnv->CallVoidMethod(aSelf, sClose);
     }
 }
 

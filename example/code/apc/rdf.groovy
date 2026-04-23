@@ -41,7 +41,6 @@ println('maxR_CuCu = ' + grCu_G.op().maxX())
 println('maxR_ZrZr = ' + grZr_G.op().maxX())
 println('maxR_CuZr = ' + grCuZr_G.op().maxX())
 
-apc.shutdown() // optional
 
 // 绘制
 plot(gr, 'RDF-All')

@@ -33,7 +33,7 @@ PairJSE::~PairJSE() {
         memory->destroy(cutsq);
     }
     if (mCore != NULL && mEnv != NULL) {
-        JSE_LMPPAIR::shutdown(mEnv, mCore);
+        JSE_LMPPAIR::close(mEnv, mCore);
         // only check, no error on destructor
         JSE_LMPPLUGIN::exceptionCheck(mEnv);
         

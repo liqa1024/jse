@@ -158,9 +158,9 @@ public class MergedBasis extends Basis {
     @Override public boolean hasSymbol() {return mSymbols != null;}
     @Override public String symbol(int aType) {return mSymbols==null ? null : mSymbols[aType-1];}
     
-    @Override protected void shutdown_() {
+    @Override protected void close_() {
         for (Basis tBasis : mMergedBasis) {
-            tBasis.shutdown();
+            tBasis.close();
         }
     }
     
@@ -275,7 +275,7 @@ public class MergedBasis extends Basis {
     
     @Override
     public final void forward(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector rFp, DoubleList rForwardCache, boolean aFullCache) {
-        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        if (isClosed()) throw new IllegalStateException("This Basis is dead");
         if (Conf.OPERATION_CHECK) {
             if (mSize != rFp.size()) throw new IllegalArgumentException("data size mismatch");
         } else {
@@ -298,7 +298,7 @@ public class MergedBasis extends Basis {
     }
     @Override
     public final void backward(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aGradFp, DoubleArrayVector rGradPara, DoubleList aForwardCache, DoubleList rBackwardCache, boolean aKeepCache) {
-        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        if (isClosed()) throw new IllegalStateException("This Basis is dead");
         if (Conf.OPERATION_CHECK) {
             if (mSize != aGradFp.size()) throw new IllegalArgumentException("data size mismatch");
             if (mTotParaSize != rGradPara.size()) throw new IllegalArgumentException("data size mismatch");
@@ -332,7 +332,7 @@ public class MergedBasis extends Basis {
     }
     @Override
     public final void forwardForce(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList rFx, DoubleList rFy, DoubleList rFz, DoubleList aForwardCache, DoubleList rForwardForceCache, boolean aFullCache) {
-        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        if (isClosed()) throw new IllegalStateException("This Basis is dead");
         // 这里需要手动清空旧值
         MergeableBasis.clearForce_(rFx, rFy, rFz);
         initForwardCacheShell_(aNlDx.size(), true);
@@ -358,7 +358,7 @@ public class MergedBasis extends Basis {
     @Override
     public final void backwardForce(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList aGradFx, DoubleList aGradFy, DoubleList aGradFz, DoubleArrayVector rGradNNGrad, @Nullable DoubleArrayVector rGradPara,
                                     DoubleList aForwardCache, DoubleList aForwardForceCache, DoubleList rBackwardCache, DoubleList rBackwardForceCache, boolean aKeepCache, boolean aFixBasis) {
-        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        if (isClosed()) throw new IllegalStateException("This Basis is dead");
         initForwardCacheShell_(aNlDx.size(), true);
         initForwardForceCacheShell_(aNlDx.size(), true);
         validCache_(rBackwardCache, initBackwardCacheShell_(aNlDx.size()));

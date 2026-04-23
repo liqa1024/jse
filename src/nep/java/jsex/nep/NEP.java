@@ -780,7 +780,8 @@ public class NEP implements IPairPotential {
     private static final int STATE_NORMAL = 0, STATE_REMOVE = 1, STATE_PICK = 4;
     
     boolean mDead = false;
-    @Override public void shutdown() {
+    @Override public boolean isClosed() {return mDead;}
+    @Override public void close() throws Exception {
         if (mDead) return;
         mDead = true;
         
@@ -794,41 +795,37 @@ public class NEP implements IPairPotential {
             mNlType.free(); mNlIdx.free();
             mNlDx.free(); mNlDy.free(); mNlDz.free();
             mNlFx.free(); mNlFy.free(); mNlFz.free();
-            mJITEngine.shutdown();
+            mJITEngine.close();
             paramb.free(); annmb.free(); zbl.free();
         }
-        try {
-            if (mCuda) {
-                cuda_Fp.free(); cuda_sum_fxyz.free();
-                cuda_gn_radial.free(); cuda_gnp_radial.free();
-                cuda_gn_angular.free(); cuda_gnp_angular.free();
-                mCudaX.free();
-                mCudaF0.free();
-                mCudaF1.free();
-                mCudaEatom0.free();
-                mCudaVatom0.free();
-                mCudaVatom1.free();
-                mCudaType.free();
-                mCudaIlist.free();
-                mCudaNumneigh.free();
-                mCudaGNeiNum.free();
-                mCudaGCType.free();
-                mCudaFirstneigh.free();
-                mCudaGNlType.free();
-                mCudaGNlIdx.free();
-                mCudaGNlDx.free();
-                mCudaGNlDy.free();
-                mCudaGNlDz.free();
-                mCudaGNlFx.free();
-                mCudaGNlFy.free();
-                mCudaGNlFz.free();
-            }
-            if (mCudaTypeMap != null) {
-                mCudaTypeMap.free();
-                mCudaTypeMap = null;
-            }
-        } catch (CudaException e) {
-            throw new RuntimeException(e);
+        if (mCuda) {
+            cuda_Fp.free(); cuda_sum_fxyz.free();
+            cuda_gn_radial.free(); cuda_gnp_radial.free();
+            cuda_gn_angular.free(); cuda_gnp_angular.free();
+            mCudaX.free();
+            mCudaF0.free();
+            mCudaF1.free();
+            mCudaEatom0.free();
+            mCudaVatom0.free();
+            mCudaVatom1.free();
+            mCudaType.free();
+            mCudaIlist.free();
+            mCudaNumneigh.free();
+            mCudaGNeiNum.free();
+            mCudaGCType.free();
+            mCudaFirstneigh.free();
+            mCudaGNlType.free();
+            mCudaGNlIdx.free();
+            mCudaGNlDx.free();
+            mCudaGNlDy.free();
+            mCudaGNlDz.free();
+            mCudaGNlFx.free();
+            mCudaGNlFy.free();
+            mCudaGNlFz.free();
+        }
+        if (mCudaTypeMap != null) {
+            mCudaTypeMap.free();
+            mCudaTypeMap = null;
         }
     }
     

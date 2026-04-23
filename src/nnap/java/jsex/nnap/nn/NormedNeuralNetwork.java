@@ -55,5 +55,5 @@ public class NormedNeuralNetwork extends NeuralNetwork {
         return tPred*mNormSigmaEng + mNormMuEng;
     }
     
-    @Override protected void shutdown_() {mNN.shutdown();}
+    @Override protected void close_() {mNN.close();}
 }

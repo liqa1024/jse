@@ -20,7 +20,6 @@ import jse.math.matrix.IMatrix;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
 import jse.math.vector.Vector;
-import jse.parallel.IAutoShutdown;
 import jsex.nnap.basis.Basis;
 import jsex.nnap.basis.MirrorBasis;
 import org.apache.groovy.util.Maps;
@@ -41,7 +40,7 @@ import java.util.function.IntUnaryOperator;
  */
 @Deprecated
 @SuppressWarnings("DeprecatedIsStillUsed")
-public class TrainerTorch implements IHasSymbol, IAutoShutdown, ISavable {
+public class TrainerTorch implements IHasSymbol, ISavable, AutoCloseable {
     protected final static String DEFAULT_UNITS = "metal";
     protected final static int[] DEFAULT_HIDDEN_DIMS = {32, 32}; // 现在统一默认为 32, 32
     protected final static double DEFAULT_FORCE_WEIGHT = 0.1;
@@ -102,8 +101,8 @@ public class TrainerTorch implements IHasSymbol, IAutoShutdown, ISavable {
     }
     
     private boolean mDead = false;
-    public boolean isShutdown() {return mDead;}
-    @Override public void shutdown() {
+    public boolean isClosed() {return mDead;}
+    @Override public void close() {
         if (!mDead) {
             mDead = true;
             if (mTrainer != null) {

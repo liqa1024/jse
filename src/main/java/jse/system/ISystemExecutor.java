@@ -1,6 +1,5 @@
 package jse.system;
 
-import jse.code.IO;
 import jse.parallel.IThreadPool;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;

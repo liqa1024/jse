@@ -46,7 +46,7 @@ FixJSE::FixJSE(LAMMPS *aLmp, int aArgc, char **aArgv) : Fix(aLmp, aArgc, aArgv) 
 
 FixJSE::~FixJSE() {
     if (mCore != NULL && mEnv != NULL) {
-        JSE_LMPFIX::shutdown(mEnv, mCore);
+        JSE_LMPFIX::close(mEnv, mCore);
         // only check, no error on destructor
         JSE_LMPPLUGIN::exceptionCheck(mEnv);
         

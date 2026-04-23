@@ -261,9 +261,9 @@ public class PairNNAP extends LmpPlugin.Pair {
         return mCutoff[i];
     }
     
-    @Override public void shutdown() {
+    @Override public void close() throws Exception {
         if (mNNAP != null) {
-            mNNAP.shutdown();
+            mNNAP.close();
             mNNAP = null;
         }
     }

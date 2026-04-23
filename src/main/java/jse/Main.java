@@ -52,7 +52,7 @@ public class Main {
     public static void removeGlobalAutoCloseable(@Nullable AutoCloseable aAutoCloseable) {
         if (aAutoCloseable != null) synchronized(GLOBAL_AUTO_CLOSEABLE) {GLOBAL_AUTO_CLOSEABLE.remove(aAutoCloseable);}
     }
-    public static void closeAllAutoCloseable() {
+    public static void closeAllAutoCloseable() throws Exception {
         // 需要先遍历添加到 List 固定，避免在 close 过程中被再次修改
         List<AutoCloseable> tGlobalAutoCloseable;
         synchronized(GLOBAL_AUTO_CLOSEABLE) {
@@ -60,7 +60,7 @@ public class Main {
             GLOBAL_AUTO_CLOSEABLE.clear();
         }
         for (AutoCloseable tAutoCloseable : tGlobalAutoCloseable) {
-            try {tAutoCloseable.close();} catch (Exception e) {UT.Code.printStackTrace(e);}
+            tAutoCloseable.close();
         }
     }
     
@@ -109,7 +109,7 @@ public class Main {
                     if (!tLmp.hasPlugin()) tLmp.loadPlugin();
                     tLmp.start();
                 } finally {
-                    NativeLmp.shutdownAll();
+                    NativeLmp.closeAll();
                 }
                 return 0;
             }
@@ -393,7 +393,8 @@ public class Main {
             UT.Code.printStackTrace(ex);
             return 1;
         } finally {
-            closeAllAutoCloseable();
+            try {closeAllAutoCloseable();}
+            catch (Exception e) {UT.Code.printStackTrace(e);}
         }
     }
     public static void main(String[] aArgs) {

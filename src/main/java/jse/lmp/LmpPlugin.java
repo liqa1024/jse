@@ -4,7 +4,6 @@ import jse.clib.*;
 import jse.code.IO;
 import jse.code.SP;
 import jse.code.UT;
-import jse.parallel.IAutoShutdown;
 import jse.parallel.MPI;
 import jse.parallel.MPIException;
 import jse.cptr.*;
@@ -111,7 +110,7 @@ public class LmpPlugin {
     }
     
     
-    public static abstract class Pair implements IAutoShutdown {
+    public static abstract class Pair implements AutoCloseable {
         static {
             // 确保 LmpPlugin 已经确实初始化
             LmpPlugin.InitHelper.init();
@@ -201,7 +200,7 @@ public class LmpPlugin {
         /**
          * lammps pair 析构时调用，用于手动释放一些资源
          */
-        @Override public void shutdown() {/**/}
+        @Override public void close() throws Exception {/**/}
         
         /**
          * lammps pair 中提供的 {@code pack_forward_comm} 方法包装，用于将数据送出到 ghost 原子
@@ -458,7 +457,7 @@ public class LmpPlugin {
     }
     
     
-    public static abstract class Fix implements IAutoShutdown {
+    public static abstract class Fix implements AutoCloseable {
         static {
             // 确保 LmpPlugin 已经确实初始化
             LmpPlugin.InitHelper.init();
@@ -540,7 +539,7 @@ public class LmpPlugin {
         /**
          * lammps fix 析构时调用，用于手动释放一些资源
          */
-        @Override public void shutdown() {/**/}
+        @Override public void close() throws Exception {/**/}
         
         /// lammps fix 固定步数回调的钩子
         public void initialIntegrate(int aVFlag) throws Exception {/**/}

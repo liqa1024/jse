@@ -100,5 +100,8 @@ public class SRUNSystemExecutor extends LocalSystemExecutor {
         }
     }
     
-    @Override protected void shutdownFinal() {mChecker.dispose();}
+    @Override protected void shutdownFinal() {
+        try {mChecker.dispose();}
+        catch (Exception e) {throw new RuntimeException(e);}
+    }
 }

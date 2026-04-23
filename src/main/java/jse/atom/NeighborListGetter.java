@@ -7,7 +7,6 @@ import jse.code.collection.IntList;
 import jse.code.functional.IIndexFilter;
 import jse.math.MathEX;
 import jse.math.matrix.IMatrix;
-import jse.parallel.IShutdownable;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,7 +25,7 @@ import java.util.function.IntConsumer;
  * <p>
  * 这里不会缓存实际的近邻列表，而是使用 lambda 表达式的方式来访问近邻列表：
  * <pre> {@code
- * apc.nl_().forEachNeighbor(i, rcut, false) {x, y, z, idx, dx, dy, dz ->
+ * apc.nl().forEachNeighbor(i, rcut, false) {x, y, z, idx, dx, dy, dz ->
  *     // use neighbor x,y,z,index,dx,dy,dz here
  * }
  * } </pre>
@@ -43,7 +42,7 @@ import java.util.function.IntConsumer;
  * @see AtomicParameterCalculator#getNeighborList(IXYZ, double)
  * @see AtomicParameterCalculator#getFullNeighborList(IXYZ, double)
  */
-public class NeighborListGetter implements IShutdownable {
+public class NeighborListGetter {
     private IMatrix mAtomDataXYZ;  // 现在改为 Matrix 存储，每行为一个原子的 xyz 数据
     private final IBox mBox;
     private final @Nullable XYZ mBoxA, mBoxB, mBoxC; // null for normal
@@ -919,7 +918,7 @@ public class NeighborListGetter implements IShutdownable {
     
     // 提供一个手动关闭的方法
     private volatile boolean mDead = false;
-    @Override public void shutdown() {
+    public void close() {
         mDead = true; mLinkedCells.clear(); mAtomDataXYZ = null;
         // 归还 Cells 的内存到缓存，这种写法保证永远能获取到 mAllCellsAlloc 时都是合法的
         // 只有相同线程关闭才会归还
@@ -928,7 +927,7 @@ public class NeighborListGetter implements IShutdownable {
             mAllCellsAlloc = null;
             sAllCellsAllocCache.returnObject(oAllCellsAlloc);
         } else {
-            UT.Code.warning("Thread of shutdown() and init should be SAME in NeighborListGetter");
+            UT.Code.warning("Thread of close() and init should be SAME in NeighborListGetter");
         }
     }
     

@@ -16,7 +16,7 @@ void coeff(JNIEnv *, jobject, int, char **);
 void settings(JNIEnv *, jobject, int, char **);
 void initStyle(JNIEnv *, jobject);
 double initOne(JNIEnv *, jobject, int, int);
-void shutdown(JNIEnv *, jobject);
+void close(JNIEnv *, jobject);
 
 int packForwardComm(JNIEnv *, jobject, int, int *, double *, int, int *);
 void unpackForwardComm(JNIEnv *, jobject, int, int, double *);

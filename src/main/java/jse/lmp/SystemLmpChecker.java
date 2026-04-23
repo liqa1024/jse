@@ -4,6 +4,8 @@ import jse.code.IO;
 import jse.code.ReferenceChecker;
 import jse.code.UT;
 
+import java.io.IOException;
+
 import static jse.code.Conf.WORKING_DIR_OF;
 
 /**
@@ -20,9 +22,7 @@ class SystemLmpChecker extends ReferenceChecker {
         mWorkingDir = WORKING_DIR_OF("LMP@"+ UT.Code.randID(), true);
     }
     
-    @Override protected void dispose_() {
-        try {
-            IO.removeDir(mWorkingDir);
-        } catch (Exception ignored) {}
+    @Override protected void dispose_() throws IOException {
+        IO.removeDir(mWorkingDir);
     }
 }

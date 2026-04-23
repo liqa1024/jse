@@ -8,7 +8,6 @@ import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
 import jse.code.io.ISavable;
 import jse.math.vector.*;
-import jse.parallel.IAutoShutdown;
 import jsex.nnap.NNAP;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
@@ -26,7 +25,7 @@ import java.util.function.IntUnaryOperator;
  * @author liqa
  */
 @ApiStatus.Experimental
-public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
+public abstract class Basis implements IHasSymbol, ISavable, AutoCloseable {
     static {
         // 依赖 nnap
         NNAP.InitHelper.init();
@@ -131,13 +130,15 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
     
     private boolean mDead = false;
     /** @return 此基组是否已经关闭 */
-    public final boolean isShutdown() {return mDead;}
-    @Override public final void shutdown() {
+    public final boolean isClosed() {
+        return mDead;
+    }
+    @Override public final void close() {
         if (mDead) return;
         mDead = true;
-        shutdown_();
+        close_();
     }
-    protected void shutdown_() {/**/}
+    protected void close_() {/**/}
     
     
     /**
@@ -254,7 +255,7 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
         mNlDx.clear(); mNlDy.clear(); mNlDz.clear();
         mNlType.clear();
         aAPC.nl_().forEachNeighbor(aIdx, rcut(), (dx, dy, dz, idx) -> {
-            int type = aTypeMap.applyAsInt(aAPC.atomType_().get(idx));
+            int type = aTypeMap.applyAsInt(aAPC.types().get(idx));
             if (type > tTypeNum) throw new IllegalArgumentException("Exist type ("+type+") greater than the input typeNum ("+tTypeNum+")");
             // 简单缓存近邻列表
             mNlDx.add(dx); mNlDy.add(dy); mNlDz.add(dz);
@@ -271,7 +272,7 @@ public abstract class Basis implements IHasSymbol, ISavable, IAutoShutdown {
      * @return 原子描述符向量组成的列表
      */
     public final List<Vector> evalAll(IAtomData aAtomData) {
-        if (isShutdown()) throw new IllegalStateException("This Basis is dead");
+        if (isClosed()) throw new IllegalStateException("This Basis is dead");
         IntUnaryOperator tTypeMap = hasSymbol() ? typeMap(aAtomData) : type->type;
         int tAtomNum = aAtomData.natoms();
         List<Vector> rFps = VectorCache.getVec(size(), tAtomNum);

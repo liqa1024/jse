@@ -17,7 +17,6 @@ import jse.math.matrix.*;
 import jse.math.vector.IVector;
 import jse.math.vector.IntVector;
 import jse.math.vector.Vector;
-import jse.parallel.IAutoShutdown;
 import jse.parallel.MPI;
 import jse.parallel.MPIException;
 import org.intellij.lang.annotations.Language;
@@ -43,7 +42,7 @@ import java.util.*;
  * @author liqa
  */
 @SuppressWarnings({"UnknownLanguage", "RedundantSuppression"})
-public class NativeLmp implements IAutoShutdown {
+public class NativeLmp implements AutoCloseable {
     
     /** 用于判断是否进行了静态初始化以及方便的手动初始化 */
     public final static class InitHelper {
@@ -282,37 +281,37 @@ public class NativeLmp implements IAutoShutdown {
     public static void initMPI() {lammpsMpiInit0();}
     private native static void lammpsMpiInit0();
     /**
-     * Shut down the MPI communication like {@link MPI#shutdown}
+     * Shut down the MPI communication like {@link MPI#close}
      * <p>
      * This is a wrapper around the {@code lammps_mpi_finalize()} function of the C-library interface.
      */
-    public static void shutdownMPI() {lammpsMpiFinalize0();}
+    public static void closeMPI() {lammpsMpiFinalize0();}
     private native static void lammpsMpiFinalize0();
     
     /**
      * This is a wrapper around the {@code lammps_kokkos_finalize()} function of the C-library interface.
      */
-    public static void shutdownKokkos() {lammpsKokkosFinalize0();}
+    public static void closeKokkos() {lammpsKokkosFinalize0();}
     private native static void lammpsKokkosFinalize0();
     /**
      * This is a wrapper around the {@code lammps_plugin_finalize()} function of the C-library interface.
      */
-    public static void shutdownPlugin() {lammpsPluginFinalize0();}
+    public static void closePlugin() {lammpsPluginFinalize0();}
     private native static void lammpsPluginFinalize0();
     /**
      * This is a wrapper around the {@code lammps_python_finalize()} function of the C-library interface.
      */
-    public static void shutdownPython() {lammpsPythonFinalize0();}
+    public static void closePython() {lammpsPythonFinalize0();}
     private native static void lammpsPythonFinalize0();
     
     /**
      * 关闭所有 lammps 依赖库的使用，用于所有程序的末尾
      */
-    public static void shutdownAll() {
-        shutdownKokkos();
-        shutdownPython();
-        shutdownPlugin();
-        shutdownMPI();
+    public static void closeAll() {
+        closeKokkos();
+        closePython();
+        closePlugin();
+        closeMPI();
     }
     
     
@@ -1031,7 +1030,7 @@ public class NativeLmp implements IAutoShutdown {
      * <p>
      * This is a wrapper around the {@code lammps_close()} function of the C-library interface.
      */
-    public void shutdown() {
+    public void close() throws Exception {
         if (!mDead) {
             mDead = true;
             mLmpPtr.dispose();

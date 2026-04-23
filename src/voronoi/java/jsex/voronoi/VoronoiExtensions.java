@@ -57,14 +57,14 @@ public class VoronoiExtensions {
      * @return Voronoi 分析的参数
      */
     public static ICalculator calVoronoi(final AtomicParameterCalculator self, double aRCutOff, boolean aNoWarning, int aIndexLength, double aAreaThreshold, double aLengthThreshold) {
-        if (self.isShutdown()) throw new RuntimeException("This Calculator is dead");
+        if (self.isClosed()) throw new RuntimeException("This Calculator is dead");
         final VoronoiBuilder rBuilder = new VoronoiBuilder().setNoWarning(aNoWarning).setIndexLength(aIndexLength).setAreaThreshold(aAreaThreshold).setLengthThreshold(aLengthThreshold);
         // 先增加内部原本的粒子，根据 cell 的顺序添加可以加速 voronoi 的构造
         final int[] idx2voronoi = new int[self.natoms()];
         self.nl_().forEachCell(aRCutOff, idx -> {
             idx2voronoi[idx] = rBuilder.sizeVertex();
             // 原则上 VoronoiBuilder.insert 内部也会进行一次拷贝避免坐标被意外修改，但是旧版本没有，这样写可以兼顾效率和旧版兼容
-            rBuilder.insert(self.atomDataXYZ_().get(idx, 0), self.atomDataXYZ_().get(idx, 1), self.atomDataXYZ_().get(idx, 2), idx);
+            rBuilder.insert(self.positions().get(idx, 0), self.positions().get(idx, 1), self.positions().get(idx, 2), idx);
         });
         // 然后增加一些镜像粒子保证 PBC 下的准确性
         self.nl_().forEachMirrorCell(aRCutOff, rBuilder::insert);

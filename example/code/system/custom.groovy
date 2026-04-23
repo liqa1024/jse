@@ -9,7 +9,7 @@ def exec = new CMD()
 exec.system('pwd')
 exec.system('cd')
 
-exec.shutdown() // optional
+exec.close() // optional
 
 //OUTPUT
 // 'pwd' 不是内部或外部命令，也不是可运行的程序

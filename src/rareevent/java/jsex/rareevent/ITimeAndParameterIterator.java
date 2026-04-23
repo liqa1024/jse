@@ -1,6 +1,5 @@
 package jsex.rareevent;
 
-import jse.parallel.IAutoShutdown;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.util.Iterator;
@@ -10,9 +9,9 @@ import java.util.Iterator;
  * @author liqa
  */
 @ApiStatus.Experimental
-public interface ITimeAndParameterIterator<E> extends Iterator<E>, IAutoShutdown {
+public interface ITimeAndParameterIterator<E> extends Iterator<E>, AutoCloseable {
     double timeConsumed();
     double lambda();
     
-    default void shutdown() {/**/}
+    @Override default void close() throws Exception {/**/}
 }

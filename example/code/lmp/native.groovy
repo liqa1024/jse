@@ -25,4 +25,3 @@ lmp.command('boundary        p p p')
 lmp.command('timestep        0.002')
 lmp.loadData(data)
 
-lmp.shutdown() // optional

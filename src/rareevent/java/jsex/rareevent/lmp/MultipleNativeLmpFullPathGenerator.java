@@ -10,7 +10,6 @@ import jse.lmp.LmpException;
 import jse.lmp.Lmpdat;
 import jse.lmp.NativeLmp;
 import jse.math.vector.IVector;
-import jse.parallel.IAutoShutdown;
 import jse.parallel.MPI;
 import jse.parallel.MPIException;
 import jsex.rareevent.IFullPathGenerator;
@@ -77,7 +76,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
             }
             mPathGen = aPathGen.setReturnLast();
         } catch (Exception e) {
-            mLmpComm.shutdown();
+            mLmpComm.close();
             throw e;
         }
     }
@@ -89,8 +88,21 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
             Future<Void> tLaterTask = null;
             if (tPathGen.mWorldMe == aWorldRoot) {
                 tLaterTask = UT.Par.runAsync(() -> {
-                    try {aDoLater.accept(tPathGen);}
-                    finally {tPathGen.shutdown();} // 需要在结束时手动关闭 tPathGen 让主线程 tServer 自动退出
+                    Throwable pe = null;
+                    try {
+                        aDoLater.accept(tPathGen);
+                    } catch (Throwable t) {
+                        pe = t; throw t;
+                    } finally {
+                        // 需要在结束时手动关闭 tPathGen 让主线程 tServer 自动退出
+                        if (pe==null) {
+                            try {tPathGen.close();}
+                            catch (Exception e) {throw new RuntimeException(e);}
+                        } else {
+                            try {tPathGen.close();}
+                            catch (Throwable ct) {pe.addSuppressed(ct);}
+                        }
+                    }
                 });
             }
             // 主线程开启服务器，现在所有进程都会阻塞，保证线程为主线程可以避免一些问题
@@ -159,24 +171,24 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
         ;
     /** 各种任务完成的信息 tag */
     private final static int
-          SHUTDOWN_FINISHED = 119
+          CLOSE_FINISHED = 119
         , PATH_INIT_FINISHED = 110, PATH_FROM_FINISHED = 111
         , PATH_NEXT_FINISHED = 112, PATH_TIME_FINISHED = 113, PATH_LAMBDA_FINISHED = 114
-        , PATH_SHUTDOWN_FINISHED = 118
+        , PATH_CLOSE_FINISHED = 118
         , TIMER_INIT_FINISHED = 115, TIMER_GET_FINISHED = 116, TIMER_RESET_FINISHED = 117
         ;
     /** 各种任务的种类 */
     private final static byte
-          SHUTDOWN = -1
+          CLOSE = -1
         , PATH_INIT = 0, PATH_FROM = 1
         , PATH_NEXT = 2, PATH_TIME = 3, PATH_LAMBDA = 4
-        , PATH_SHUTDOWN = -2
+        , PATH_CLOSE = -2
         , TIMER_INIT = 5, TIMER_GET = 6, TIMER_RESET = 7
         , JOBID_NULL = -9
         ;
     
     
-    private class PathGenServer implements IAutoShutdown, Runnable {
+    private class PathGenServer implements AutoCloseable, Runnable {
         private ITimeAndParameterIterator<Lmpdat> mIt = null;
         /** 一些用来统计效率的计时器 */
         private @Nullable FixedTimer mTotTimer = null;
@@ -207,17 +219,17 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                 byte tJob = getJobID_();
                 // 根据获取到的任务种类执行操作
                 switch (tJob) {
-                case SHUTDOWN: {
-                    shutdown();
+                case CLOSE: {
+                    close();
                     if (mLmpMe == 0) {
-                        mWorldComm.send(mWorldRoot, SHUTDOWN_FINISHED);
+                        mWorldComm.send(mWorldRoot, CLOSE_FINISHED);
                     }
-                    mWorldComm.barrier(); // 注意这个 shutdown 是全局操作，并且此时 mLmpComm 已经失效
+                    mWorldComm.barrier(); // 注意这个 close 是全局操作，并且此时 mLmpComm 已经失效
                     return;
                 }
                 case PATH_INIT: {
                     long tSeed = getSeed_();
-                    if (mIt != null) mIt.shutdown();
+                    if (mIt != null) mIt.close();
                     mIt = mPathGen.fullPathInit(new LocalRandom(tSeed)); // 暂定通过发送种子来传递随机流
                     if (mLmpMe == 0) {
                         mWorldComm.send(mWorldRoot, PATH_INIT_FINISHED);
@@ -233,7 +245,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                         tStart = Lmpdat.recv(mWorldRoot, mWorldComm);
                     }
                     tStart = Lmpdat.bcast(tStart, 0, mLmpComm);
-                    if (mIt != null) mIt.shutdown();
+                    if (mIt != null) mIt.close();
                     mIt = mPathGen.fullPathFrom(tStart, new LocalRandom(tSeed)); // 暂定通过发送种子来传递随机流
                     if (mLmpMe == 0) {
                         mWorldComm.send(mWorldRoot, PATH_FROM_FINISHED);
@@ -282,13 +294,13 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                     mLmpComm.barrier();
                     break;
                 }
-                case PATH_SHUTDOWN: {
+                case PATH_CLOSE: {
                     if (mIt != null) {
-                        mIt.shutdown();
+                        mIt.close();
                         mIt = null;
                     }
                     if (mLmpMe == 0) {
-                        mWorldComm.send(mWorldRoot, PATH_SHUTDOWN_FINISHED);
+                        mWorldComm.send(mWorldRoot, PATH_CLOSE_FINISHED);
                     }
                     mLmpComm.barrier();
                     break;
@@ -340,19 +352,19 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                 default: {
                     throw new IllegalArgumentException("job type: "+tJob);
                 }}
-            }} catch (MPIException e) {
+            }} catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
         
-        @Override public void shutdown() {
+        @Override public void close() throws Exception {
             if (mIt != null) {
-                mIt.shutdown();
+                mIt.close();
                 mIt = null;
             }
-            mPathGen.shutdown();
-            // 由于是 copy 的，可以并且应该直接 shutdown，注意线程安全的问题
-            synchronized (mLmpComm) {mLmpComm.shutdown();}
+            mPathGen.close();
+            // 由于是 copy 的，可以并且应该直接 close，注意线程安全的问题
+            synchronized (mLmpComm) {mLmpComm.close();}
         }
     }
     
@@ -419,7 +431,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
     }
     
     
-    private class RemotePathIterator implements ITimeAndParameterIterator<Lmpdat>, IAutoShutdown {
+    private class RemotePathIterator implements ITimeAndParameterIterator<Lmpdat>, AutoCloseable {
         private int mLmpRoot;
         /** 创建时进行初始化 */
         RemotePathIterator(@Nullable IAtomData aStart, IRandom aRNG) {
@@ -450,7 +462,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                 // 接收任务完成信息
                 mWorldComm.recv(mLmpRoot, aStart==null ? PATH_INIT_FINISHED : PATH_FROM_FINISHED);
             } catch (Throwable t) {
-                this.shutdown();
+                try {this.close();} catch (Exception ignored) {}
                 throw new RuntimeException(t);
             }
         }
@@ -501,14 +513,10 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
         @Override public boolean hasNext() {return true;}
         
         /** 关闭时归还 mLmpRoot */
-        @Override public void shutdown() {
+        @Override public void close() throws Exception {
             if (mLmpRoot >= 0) {
-                try {
-                    mWorldComm.sendB(PATH_SHUTDOWN, mLmpRoot, JOB_TYPE);
-                    mWorldComm.recv(mLmpRoot, PATH_SHUTDOWN_FINISHED);
-                } catch (MPIException e) {
-                    UT.Code.printStackTrace(e);
-                }
+                mWorldComm.sendB(PATH_CLOSE, mLmpRoot, JOB_TYPE);
+                mWorldComm.recv(mLmpRoot, PATH_CLOSE_FINISHED);
                 mLmpRoots.addLast(mLmpRoot);
                 mLmpRoot = -1;
             }
@@ -516,24 +524,20 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
     }
     
     
-    @Override public void shutdown() {
+    @Override public void close() throws Exception {
         if (mDead) return;
         mDead = true;
         if (mPathGen.threadValid()) {
-            mPathGen.shutdown(); // 这样会存在重复关闭的问题，不过不重要就是
+            mPathGen.close(); // 这样会存在重复关闭的问题，不过不重要就是
         }
         if (mWorldMe==mWorldRoot) {
             for (int tLmpRoot : mLmpRoots) {
-                try {
-                    mWorldComm.sendB(SHUTDOWN, tLmpRoot, JOB_TYPE);
-                    mWorldComm.recv(tLmpRoot, SHUTDOWN_FINISHED);
-                } catch (MPIException e) {
-                    UT.Code.printStackTrace(e);
-                }
+                mWorldComm.sendB(CLOSE, tLmpRoot, JOB_TYPE);
+                mWorldComm.recv(tLmpRoot, CLOSE_FINISHED);
             }
             mLmpRoots.clear();
         }
-        // 由于是 copy 的，可以并且应该直接 shutdown，注意线程安全的问题
-        synchronized (mLmpComm) {mLmpComm.shutdown();} // 这样会存在重复关闭的问题，不过不重要就是
+        // 由于是 copy 的，可以并且应该直接 close，注意线程安全的问题
+        synchronized (mLmpComm) {mLmpComm.close();} // 这样会存在重复关闭的问题，不过不重要就是
     }
 }

@@ -5,6 +5,7 @@ import jse.code.OS.Slurm;
 import jse.code.ReferenceChecker;
 import jse.code.UT;
 
+import java.io.IOException;
 import java.util.Map;
 
 import static jse.code.Conf.WORKING_DIR_OF;
@@ -26,12 +27,10 @@ class SRUNChecker extends ReferenceChecker {
         mWorkingDir = WORKING_DIR_OF("SRUN@"+ UT.Code.randID(), true);
     }
     
-    @Override protected void dispose_() {
-        // 虽然这个需要 srun shutdown 后并且等所有任务完成后才能合法调用；
+    @Override protected void dispose_() throws IOException {
+        // 虽然这个需要 srun close 后并且等所有任务完成后才能合法调用；
         // 但实际调用此方法时 srun 已经被垃圾回收，此时一定所有任务已经完成，因此永远合法
-        try {
-            IO.removeDir(mWorkingDir);
-        } catch (Exception ignored) {}
+        IO.removeDir(mWorkingDir);
         for (Slurm.Resource tResource : mAssignedResources.keySet()) RESOURCES_MANAGER.returnResource(tResource);
     }
 }

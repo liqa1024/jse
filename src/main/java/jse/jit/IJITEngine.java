@@ -1,11 +1,10 @@
 package jse.jit;
 
-import jse.parallel.IAutoShutdown;
 import org.intellij.lang.annotations.Language;
 
 import java.util.Collection;
 
-public interface IJITEngine extends IAutoShutdown {
+public interface IJITEngine extends AutoCloseable {
     /** 完全关闭 jit 的优化，主要用于调试或需要精确结果而不是速度 */
     int OPTIM_NONE = -1;
     /** 兼容性的 jit 的优化，只开启 fmath，理论上保持相同的跨机器兼容性 */
@@ -29,6 +28,6 @@ public interface IJITEngine extends IAutoShutdown {
     void compile() throws Exception;
     IJITMethod findMethod(CharSequence aMethodName) throws JITException;
     
-    void shutdown();
-    boolean isShutdown();
+    @Override void close() throws Exception;
+    boolean isClosed();
 }

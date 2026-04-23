@@ -37,7 +37,7 @@ static jmethodID sSingle = 0;
 static jmethodID sCoeff = 0;
 static jmethodID sSettings = 0;
 static jmethodID sInitStyle = 0;
-static jmethodID sShutdown = 0;
+static jmethodID sClose = 0;
 static jmethodID sInitOne = 0;
 static jmethodID sPackForwardComm = 0;
 static jmethodID sUnpackForwardComm = 0;
@@ -104,9 +104,9 @@ double JSE_LMPPAIR::initOne(JNIEnv *aEnv, jobject aSelf, int i, int j) {
     }
     return -1.0;
 }
-void JSE_LMPPAIR::shutdown(JNIEnv *aEnv, jobject aSelf) {
-    if (sShutdown || (sShutdown = aEnv->GetMethodID(LMPPAIR_CLAZZ, "shutdown", "()V"))) {
-        aEnv->CallVoidMethod(aSelf, sShutdown);
+void JSE_LMPPAIR::close(JNIEnv *aEnv, jobject aSelf) {
+    if (sClose || (sClose = aEnv->GetMethodID(LMPPAIR_CLAZZ, "close", "()V"))) {
+        aEnv->CallVoidMethod(aSelf, sClose);
     }
 }
 

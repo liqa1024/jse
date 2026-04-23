@@ -8,7 +8,6 @@ import jse.lmp.Lmpdat;
 import jse.lmp.NativeLmp;
 import jse.math.vector.IVector;
 import jse.math.vector.Vectors;
-import jse.parallel.IAutoShutdown;
 import jse.parallel.MPI;
 import jse.parallel.MPIException;
 import jsex.rareevent.IFullPathGenerator;
@@ -104,7 +103,7 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
     @Override public ITimeAndParameterIterator<Lmpdat> fullPathFrom(IAtomData aStart, IRandom aRNG) {return new NativeLmpIterator(aStart, aRNG);}
     @Override public ITimeAndParameterIterator<Lmpdat> fullPathInit(IRandom aRNG) {return new NativeLmpIterator(null, aRNG);}
     
-    private class NativeLmpIterator implements ITimeAndParameterIterator<Lmpdat>, IAutoShutdown {
+    private class NativeLmpIterator implements ITimeAndParameterIterator<Lmpdat> {
         /** 一些状态存储，专门优化第一次调用 */
         private boolean mIsFirst = true;
         private boolean mLmpNeedInit = true;
@@ -195,17 +194,18 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
         /** 完整路径永远都有 next */
         @Override public boolean hasNext() {return true;}
         
-        @Override public void shutdown() {
+        @Override public void close() throws LmpException {
             if (!mDead) {
                 mDead = true;
-                try {mLmp.clear();}
-                catch (LmpException ignored) {}
+                mLmp.clear();
                 mUsing = false;
             }
         }
     }
     
-    @Override public void shutdown() {mLmp.shutdown();}
+    @Override public void close() throws Exception {
+        mLmp.close();
+    }
     
     
     public boolean threadValid() {return mLmp.threadValid();}

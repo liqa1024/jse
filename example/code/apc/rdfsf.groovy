@@ -14,7 +14,6 @@ def gr = apc.calRDF_AB(1, 1)
 def Sq = apc.calSF_AB(1, 1)
 def SqFT = apc.RDF2SF(gr)
 def grFT = apc.SF2RDF(Sq)
-apc.shutdown() // optional
 
 // 绘制
 plot(gr, 'RDF').color(0)

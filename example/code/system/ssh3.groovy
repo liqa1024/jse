@@ -18,7 +18,7 @@ def ssh = new SSH(IO.json2map('.SECRET/SSH_INFO.json'))
 ssh.system('echo 123456')
 ssh.system('hostname')
 
-ssh.shutdown() // optional
+ssh.close() // optional
 
 //OUTPUT:
 // 123456

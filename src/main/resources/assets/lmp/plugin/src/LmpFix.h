@@ -14,7 +14,7 @@ int setMask(JNIEnv *, jobject);
 void init(JNIEnv *, jobject);
 void setup(JNIEnv *, jobject, int);
 void minSetup(JNIEnv *, jobject, int);
-void shutdown(JNIEnv *, jobject);
+void close(JNIEnv *, jobject);
 
 void initialIntegrate(JNIEnv *, jobject, int);
 void postIntegrate(JNIEnv *, jobject);

@@ -90,15 +90,15 @@ public class LmpPotential extends AbstractLmpPotential {
     
     private boolean mDead = false;
     /** @return 此 lammps 势函数是否已经关闭 */
-    @Override public boolean isShutdown() {return mDead;}
+    @Override public boolean isClosed() {return mDead;}
     /**
      * 关闭此 lammps 势函数，会同时关闭内部使用的
      * {@link NativeLmp} 对象
      */
-    @Override public void shutdown() {
+    @Override public void close() throws Exception {
         if (mDead) return;
         mDead = true;
-        mLmp.shutdown();
+        mLmp.close();
     }
     
     /**

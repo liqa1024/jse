@@ -22,12 +22,11 @@ class JITLibHandle extends ReferenceChecker {
     }
     boolean isNull() {return mPtr==0 || mPtr==-1;}
     
-    @Override protected void dispose_() {
+    @Override protected void dispose_() throws IOException {
         // free lib，并在不缓存时清理文件
         if (!isNull()) freeLibrary0(mPtr);
         if (mDirToRemove!=null) {
-            try {IO.removeDir(mDirToRemove);}
-            catch (IOException ignore) {}
+            IO.removeDir(mDirToRemove);
         }
     }
     

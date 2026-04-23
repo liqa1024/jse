@@ -1,7 +1,6 @@
 package jse.lmp;
 
 import jse.code.ReferenceChecker;
-import jse.code.UT;
 
 /**
  * 用来自动回收 {@link NativeLmp} 内部的指针，这里采取的策略是每次创建之前清理旧的数据
@@ -18,13 +17,9 @@ class NativeLmpPointer extends ReferenceChecker {
         mInitThead = Thread.currentThread();
     }
     
-    @Override protected void dispose_() {
-        try {
-            checkThread();
-            try {lammpsClose0(mPtr);} catch (LmpException ignored) {}
-        } catch (LmpException e) {
-            UT.Code.printStackTrace(e);
-        }
+    @Override protected void dispose_() throws LmpException {
+        checkThread();
+        lammpsClose0(mPtr);
     }
     void checkThread() throws LmpException {
         Thread tCurrentThread = Thread.currentThread();

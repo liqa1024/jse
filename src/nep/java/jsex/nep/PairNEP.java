@@ -109,7 +109,7 @@ public class PairNEP extends LmpPlugin.Pair {
         return mCutoff;
     }
     
-    @Override public void shutdown() {
+    @Override public void close() throws Exception {
         if (mTypeMap != null) {
             mTypeMap.free();
             mTypeMap = null;
@@ -119,7 +119,7 @@ public class PairNEP extends LmpPlugin.Pair {
             mCutoffsq = null;
         }
         if (mNEP != null) {
-            mNEP.shutdown();
+            mNEP.close();
             mNEP = null;
         }
     }
