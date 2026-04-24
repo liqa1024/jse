@@ -64,10 +64,10 @@ public class MergedBasis2 extends Basis2 {
             tPtr.rightShift(mCParaSizes[i]);
         }
     }
-    @Override public void mountGradCptrParameter(IDoubleOrFloatCPointer aPtr) {
+    @Override public void mountGradCptrParameter(int aThreadID, IDoubleOrFloatCPointer aPtr) {
         IDoubleOrFloatCPointer tPtr = aPtr.copy();
         for (int i = 0; i < mMergedBasis.length; ++i) {
-            mMergedBasis[i].mountGradCptrParameter(tPtr);
+            mMergedBasis[i].mountGradCptrParameter(aThreadID, tPtr);
             tPtr.rightShift(mCParaSizes[i]);
         }
     }
@@ -102,7 +102,7 @@ public class MergedBasis2 extends Basis2 {
             tShift += tSize;
         }
     }
-    @Override public void mountGradParameter(Vector aVec) {
+    @Override public void mountGradParameter(int aThreadID, Vector aVec) {
         if (Conf.OPERATION_CHECK) {
             if (mTotParaSize != aVec.size()) throw new IllegalArgumentException("data size mismatch");
         } else {
@@ -111,7 +111,7 @@ public class MergedBasis2 extends Basis2 {
         int tShift = 0;
         for (int i = 0; i < mMergedBasis.length; ++i) {
             int tSize = mParaSizes[i];
-            mMergedBasis[i].mountGradParameter(aVec.subVec(tShift, tShift+tSize));
+            mMergedBasis[i].mountGradParameter(aThreadID, aVec.subVec(tShift, tShift+tSize));
             tShift += tSize;
         }
     }
@@ -119,14 +119,19 @@ public class MergedBasis2 extends Basis2 {
         return mTotParaSize;
     }
     
+    @Override public void requireGrad(int aNumThreads) {
+        for (MergeableBasis2 tMergedBasis : mMergedBasis) {
+            tMergedBasis.requireGrad(aNumThreads);
+        }
+    }
     @Override public void updateParameters() {
         for (MergeableBasis2 tMergedBasis : mMergedBasis) {
             tMergedBasis.updateParameters();
         }
     }
-    @Override public void backwardParameter() {
+    @Override public void backwardParameter(int aThreadID) {
         for (MergeableBasis2 tMergedBasis : mMergedBasis) {
-            tMergedBasis.backwardParameter();
+            tMergedBasis.backwardParameter(aThreadID);
         }
     }
     

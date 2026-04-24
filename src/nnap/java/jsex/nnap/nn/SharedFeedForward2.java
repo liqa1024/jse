@@ -35,8 +35,8 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
     private final int[] mSharedHiddenDims;
     private Vector mNoSharedHiddenWeights, mNoSharedHiddenBiases;
     private Vector mNoSharedOutputWeight, mNoSharedOutputBias;
-    private Vector mGradNoSharedHiddenWeights = null, mGradNoSharedHiddenBiases = null;
-    private Vector mGradNoSharedOutputWeight = null, mGradNoSharedOutputBias = null;
+    private Vector[] mGradNoSharedHiddenWeights = null, mGradNoSharedHiddenBiases = null;
+    private Vector[] mGradNoSharedOutputWeight = null, mGradNoSharedOutputBias = null;
     private final int mNumLayers;
     private final int mNoSharedHiddenWeightsSize;
     private final int mNoSharedHiddenBiasesSize;
@@ -44,8 +44,8 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
     
     private IDoubleOrFloatCPointer mInternalHiddenWeights = null, mInternalHiddenBiases = null;
     private IDoubleOrFloatCPointer mInternalOutputWeight = null, mInternalOutputBias = null;
-    private IDoubleOrFloatCPointer mInternalGradHiddenWeights = null, mInternalGradHiddenBiases = null;
-    private IDoubleOrFloatCPointer mInternalGradOutputWeight = null, mInternalGradOutputBias = null;
+    private IDoubleOrFloatCPointer[] mInternalGradHiddenWeights = null, mInternalGradHiddenBiases = null;
+    private IDoubleOrFloatCPointer[] mInternalGradOutputWeight = null, mInternalGradOutputBias = null;
     
     SharedFeedForward2(int aInputDim, FeedForward2 aBase, int aSharedType, int[] aSharedHiddenDims, Vector aNoSharedHiddenWeights, Vector aNoSharedHiddenBiases, Vector aNoSharedOutputWeight, Vector aNoSharedOutputBias) {
         mInputDim = aInputDim;
@@ -88,15 +88,35 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
         if (mNoSharedOutputWeight.size() != mNoSharedOutputWeightSize) throw new IllegalArgumentException("The size of output weight mismatch");
         if (mNoSharedOutputBias.size() != mNoSharedOutputBiasSize) throw new IllegalArgumentException("The size of output biases mismatch");
     }
+    @Override public void requireGrad(int aNumThreads) {
+        if (mGradNoSharedHiddenWeights!=null) return;
+        mGradNoSharedHiddenWeights = new Vector[aNumThreads];
+        mGradNoSharedHiddenBiases = new Vector[aNumThreads];
+        mGradNoSharedOutputWeight = new Vector[aNumThreads];
+        mGradNoSharedOutputBias = new Vector[aNumThreads];
+        mInternalGradHiddenWeights = new IDoubleOrFloatCPointer[aNumThreads];
+        mInternalGradHiddenBiases = new IDoubleOrFloatCPointer[aNumThreads];
+        mInternalGradOutputWeight = new IDoubleOrFloatCPointer[aNumThreads];
+        mInternalGradOutputBias = new IDoubleOrFloatCPointer[aNumThreads];
+    }
     
     @Override public void updateParameters() {
         updateParameters_();
     }
-    @Override public void backwardParameter() {
-        if (mGradNoSharedHiddenWeights==null) throw new IllegalStateException();
+    @Override public void backwardParameter(int aThreadID) {
+        if (mGradNoSharedHiddenWeights==null) throw new IllegalStateException("invoke `requireGrad(nthreads)` first.");
+        Vector tGradSharedHiddenWeights = mBase.mGradHiddenWeights[aThreadID];
+        Vector tGradSharedOutputWeight = mBase.mGradOutputWeight[aThreadID];
+        Vector tGradSharedHiddenBiases = mBase.mGradHiddenBiases[aThreadID];
+        Vector tGradNoSharedHiddenWeights = mGradNoSharedHiddenWeights[aThreadID];
+        Vector tGradNoSharedOutputWeight = mGradNoSharedOutputWeight[aThreadID];
+        Vector tGradNoSharedHiddenBiases = mGradNoSharedHiddenBiases[aThreadID];
+        IDoubleOrFloatCPointer tInternalGradHiddenWeights = mInternalGradHiddenWeights[aThreadID];
+        IDoubleOrFloatCPointer tInternalGradOutputWeight = mInternalGradOutputWeight[aThreadID];
+        IDoubleOrFloatCPointer tInternalGradHiddenBiases = mInternalGradHiddenBiases[aThreadID];
         int tColNum = mInputDim;
         int tShift = 0, tNoSharedShift = 0;
-        IDoubleOrFloatCPointer tPtr = mInternalGradHiddenWeights.copy();
+        IDoubleOrFloatCPointer tPtr = tInternalGradHiddenWeights.copy();
         for (int i = 0; i < mNumLayers; ++i) {
             int tHiddenDim = mBase.mHiddenDims[i];
             int tSharedHiddenDim = mSharedHiddenDims[i];
@@ -104,11 +124,11 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
             int tSize = tHiddenDim*tColNum;
             int tNoSharedSize = tNoSharedHiddenDim*tColNum;
             for (int j = 0; j < tNoSharedSize; ++j) {
-                mGradNoSharedHiddenWeights.add(j+tNoSharedShift, tPtr.getAtD(j));
+                tGradNoSharedHiddenWeights.add(j+tNoSharedShift, tPtr.getAtD(j));
             }
             // shared last
             for (int j = tNoSharedSize; j < tSize; ++j) {
-                mBase.mGradHiddenWeights.add(j+tShift, tPtr.getAtD(j));
+                tGradSharedHiddenWeights.add(j+tShift, tPtr.getAtD(j));
             }
             tShift += tSize;
             tNoSharedShift += tNoSharedSize;
@@ -116,17 +136,17 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
             tColNum = tHiddenDim;
         }
         tShift = 0; tNoSharedShift = 0;
-        tPtr = mInternalGradHiddenBiases.copy();
+        tPtr = tInternalGradHiddenBiases.copy();
         for (int i = 0; i < mNumLayers; ++i) {
             int tHiddenDim = mBase.mHiddenDims[i];
             int tSharedHiddenDim = mSharedHiddenDims[i];
             int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
             for (int j = 0; j < tNoSharedHiddenDim; ++j) {
-                mGradNoSharedHiddenBiases.add(j+tNoSharedShift, tPtr.getAtD(j));
+                tGradNoSharedHiddenBiases.add(j+tNoSharedShift, tPtr.getAtD(j));
             }
             // shared last
             for (int j = tNoSharedHiddenDim; j < tHiddenDim; ++j) {
-                mBase.mGradHiddenBiases.add(j+tShift, tPtr.getAtD(j));
+                tGradSharedHiddenBiases.add(j+tShift, tPtr.getAtD(j));
             }
             tShift += tHiddenDim;
             tNoSharedShift += tNoSharedHiddenDim;
@@ -134,14 +154,14 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
         }
         if (mSharedHiddenDims[mNumLayers]==0) {
             for (int j = 0; j < mBase.mOutputWeightSize; ++j) {
-                mGradNoSharedOutputWeight.add(j, mInternalGradOutputWeight.getAtD(j));
+                tGradNoSharedOutputWeight.add(j, tInternalGradOutputWeight.getAtD(j));
             }
-            mGradNoSharedOutputBias.add(0, mInternalGradOutputBias.getD());
+            mGradNoSharedOutputBias[aThreadID].add(0, mInternalGradOutputBias[aThreadID].getD());
         } else {
             for (int j = 0; j < mBase.mOutputWeightSize; ++j) {
-                mBase.mGradOutputWeight.add(j, mInternalGradOutputWeight.getAtD(j));
+                tGradSharedOutputWeight.add(j, tInternalGradOutputWeight.getAtD(j));
             }
-            mBase.mGradOutputBias.add(0, mInternalGradOutputBias.getD());
+            mBase.mGradOutputBias[aThreadID].add(0, mInternalGradOutputBias[aThreadID].getD());
         }
     }
     @SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
@@ -367,20 +387,21 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
         mNoSharedOutputBias = aVec.subVec(tShift, tShift+mNoSharedOutputBiasSize);
         mNoSharedOutputBias.fill(oVec);
     }
-    @Override public void mountGradParameter(Vector aVec) {
+    @Override public void mountGradParameter(int aThreadID, Vector aVec) {
+        if (mGradNoSharedHiddenWeights==null) throw new IllegalStateException("invoke `requireGrad(nthreads)` first.");
         if (Conf.OPERATION_CHECK) {
             if (parameterSize() != aVec.size()) throw new IllegalArgumentException("data size mismatch");
         } else {
             if (parameterSize() > aVec.size()) throw new IllegalArgumentException("data size mismatch");
         }
         int tShift = 0;
-        mGradNoSharedHiddenWeights = aVec.subVec(tShift, tShift+mNoSharedHiddenWeightsSize);
+        mGradNoSharedHiddenWeights[aThreadID] = aVec.subVec(tShift, tShift+mNoSharedHiddenWeightsSize);
         tShift += mNoSharedHiddenWeightsSize;
-        mGradNoSharedOutputWeight = aVec.subVec(tShift, tShift+mNoSharedOutputWeightSize);
+        mGradNoSharedOutputWeight[aThreadID] = aVec.subVec(tShift, tShift+mNoSharedOutputWeightSize);
         tShift += mNoSharedOutputWeightSize;
-        mGradNoSharedHiddenBiases = aVec.subVec(tShift, tShift+mNoSharedHiddenBiasesSize);
+        mGradNoSharedHiddenBiases[aThreadID] = aVec.subVec(tShift, tShift+mNoSharedHiddenBiasesSize);
         tShift += mNoSharedHiddenBiasesSize;
-        mGradNoSharedOutputBias = aVec.subVec(tShift, tShift+mNoSharedOutputBiasSize);
+        mGradNoSharedOutputBias[aThreadID] = aVec.subVec(tShift, tShift+mNoSharedOutputBiasSize);
     }
     
     @Override public int cptrParameterSize() {
@@ -396,11 +417,12 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
         mInternalOutputBias = mInternalHiddenBiases.plus(mBase.mHiddenBiasesSize);
         updateParameters_();
     }
-    @Override public void mountGradCptrParameter(IDoubleOrFloatCPointer aPtr) {
-        mInternalGradHiddenWeights = aPtr.copy();
-        mInternalGradOutputWeight = mInternalGradHiddenWeights.plus(mBase.mHiddenWeightsSize);
-        mInternalGradHiddenBiases = mInternalGradOutputWeight.plus(mBase.mOutputWeightSize);
-        mInternalGradOutputBias = mInternalGradHiddenBiases.plus(mBase.mHiddenBiasesSize);
+    @Override public void mountGradCptrParameter(int aThreadID, IDoubleOrFloatCPointer aPtr) {
+        if (mGradNoSharedHiddenWeights==null) throw new IllegalStateException("invoke `requireGrad(nthreads)` first.");
+        mInternalGradHiddenWeights[aThreadID] = aPtr.copy();
+        mInternalGradOutputWeight[aThreadID] = mInternalGradHiddenWeights[aThreadID].plus(mBase.mHiddenWeightsSize);
+        mInternalGradHiddenBiases[aThreadID] = mInternalGradOutputWeight[aThreadID].plus(mBase.mOutputWeightSize);
+        mInternalGradOutputBias[aThreadID] = mInternalGradHiddenBiases[aThreadID].plus(mBase.mHiddenBiasesSize);
     }
     
     @Override public int forwardCacheSize() {

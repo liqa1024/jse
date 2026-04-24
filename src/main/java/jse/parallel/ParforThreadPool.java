@@ -43,18 +43,18 @@ public final class ParforThreadPool implements IThreadPool {
     // ParforThreadPool close 时不需要 awaitTermination
     @Override public void close() {shutdown();}
     
-    public ParforThreadPool(@Range(from=1, to=Integer.MAX_VALUE) int aThreadNum, boolean aNoCompetitive) {
-        mPool = aThreadNum==1 ? ExecutorsEX.SERIAL_EXECUTOR : ExecutorsEX.newFixedThreadPool(aThreadNum);
-        if (aThreadNum==1) {
+    public ParforThreadPool(@Range(from=1, to=Integer.MAX_VALUE) int aNumThreads, boolean aNoCompetitive) {
+        mPool = aNumThreads==1 ? ExecutorsEX.SERIAL_EXECUTOR : ExecutorsEX.newFixedThreadPool(aNumThreads);
+        if (aNumThreads==1) {
             mLocks = null;
         } else {
-            mLocks = new Lock[aThreadNum];
-            for (int i = 0; i < aThreadNum; ++i) mLocks[i] = new ReentrantLock();
+            mLocks = new Lock[aNumThreads];
+            for (int i = 0; i < aNumThreads; ++i) mLocks[i] = new ReentrantLock();
         }
         mNoCompetitive = aNoCompetitive;
     }
-    public ParforThreadPool(@Range(from=1, to=Integer.MAX_VALUE) int aThreadNum) {
-        this(aThreadNum, Conf.PARFOR_NO_COMPETITIVE);
+    public ParforThreadPool(@Range(from=1, to=Integer.MAX_VALUE) int aNumThreads) {
+        this(aNumThreads, Conf.PARFOR_NO_COMPETITIVE);
     }
     
     
@@ -82,20 +82,20 @@ public final class ParforThreadPool implements IThreadPool {
         }
         // 并行的情况，现在默认不进行分组，使用竞争获取任务的思路来获取任务，保证实际创建的线程在 parfor 任务中不会提前结束，并且可控
         else synchronized (this) {
-            int tThreadNum = nthreads();
+            int tNumThreads = nthreads();
             // 获取错误，保留执行中的错误，并在任意一个线程发生错误时中断
             final AtomicReference<Exception> tException = new AtomicReference<>(null);
-            final CountDownLatch tLatch = new CountDownLatch(tThreadNum);
+            final CountDownLatch tLatch = new CountDownLatch(tNumThreads);
             if (mNoCompetitive) {
                 // 非竞争获取任务
-                for (int id = 0; id < tThreadNum; ++id) {
+                for (int id = 0; id < tNumThreads; ++id) {
                     final int fId = id;
                     mPool.execute(() -> {
                         assert mLocks != null;
                         mLocks[fId].lock(); // 加锁在结束后进行数据同步
                         try {
                             if (aInitDo != null) aInitDo.run(fId);
-                            for (int i = fId; i < aSize; i += tThreadNum) {
+                            for (int i = fId; i < aSize; i += tNumThreads) {
                                 aTaskWithIDAndException.run(i, fId);
                             }
                             if (aFinalDo != null) aFinalDo.run(fId);
@@ -110,7 +110,7 @@ public final class ParforThreadPool implements IThreadPool {
             } else {
                 // 竞争获取任务
                 final AtomicInteger currentIdx = new AtomicInteger(0);
-                for (int id = 0; id < tThreadNum; ++id) {
+                for (int id = 0; id < tNumThreads; ++id) {
                     final int fId = id;
                     mPool.execute(() -> {
                         assert mLocks != null;
@@ -170,12 +170,12 @@ public final class ParforThreadPool implements IThreadPool {
         }
         // 并行的情况，现在默认不进行分组，使用竞争获取任务的思路来获取任务，保证实际创建的线程在 parwhile 任务中不会提前结束，并且可控
         else synchronized (this) {
-            int tThreadNum = nthreads();
+            int tNumThreads = nthreads();
             // 获取错误，保留执行中的错误，并在任意一个线程发生错误时中断
             final AtomicReference<Throwable> tThrowable = new AtomicReference<>(null);
-            final CountDownLatch tLatch = new CountDownLatch(tThreadNum);
+            final CountDownLatch tLatch = new CountDownLatch(tNumThreads);
             // parwhile 不存在不竞争的情况
-            for (int id = 0; id < tThreadNum; ++id) {
+            for (int id = 0; id < tNumThreads; ++id) {
                 final int fId = id;
                 mPool.execute(() -> {
                     assert mLocks != null;

@@ -27,14 +27,14 @@ public class FeedForward2 extends NeuralNetwork2 {
     final int[] mHiddenDims;
     Vector mHiddenWeights, mHiddenBiases;
     Vector mOutputWeight, mOutputBias;
-    Vector mGradHiddenWeights = null, mGradHiddenBiases = null;
-    Vector mGradOutputWeight = null, mGradOutputBias = null;
+    Vector[] mGradHiddenWeights = null, mGradHiddenBiases = null;
+    Vector[] mGradOutputWeight = null, mGradOutputBias = null;
     final int mNumLayers, mHiddenWeightsSize, mHiddenBiasesSize, mOutputWeightSize;
     
     private IDoubleOrFloatCPointer mInternalHiddenWeights = null, mInternalHiddenBiases = null;
     private IDoubleOrFloatCPointer mInternalOutputWeight = null, mInternalOutputBias = null;
-    private IDoubleOrFloatCPointer mInternalGradHiddenWeights = null, mInternalGradHiddenBiases = null;
-    private IDoubleOrFloatCPointer mInternalGradOutputWeight = null, mInternalGradOutputBias = null;
+    private IDoubleOrFloatCPointer[] mInternalGradHiddenWeights = null, mInternalGradHiddenBiases = null;
+    private IDoubleOrFloatCPointer[] mInternalGradOutputWeight = null, mInternalGradOutputBias = null;
     
     FeedForward2(int aInputDim, int[] aHiddenDims, Vector aHiddenWeights, Vector aHiddenBiases, Vector aOutputWeight, Vector aOutputBias) {
         mInputDim = aInputDim;
@@ -61,22 +61,39 @@ public class FeedForward2 extends NeuralNetwork2 {
         if (mOutputWeight.size() != mOutputWeightSize) throw new IllegalArgumentException("The size of output weight mismatch");
         if (mOutputBias.size() != 1) throw new IllegalArgumentException("The size of output biases mismatch");
     }
+    @Override public void requireGrad(int aNumThreads) {
+        if (mGradHiddenWeights!=null) return;
+        mGradHiddenWeights = new Vector[aNumThreads];
+        mGradHiddenBiases = new Vector[aNumThreads];
+        mGradOutputWeight = new Vector[aNumThreads];
+        mGradOutputBias = new Vector[aNumThreads];
+        mInternalGradHiddenWeights = new IDoubleOrFloatCPointer[aNumThreads];
+        mInternalGradHiddenBiases = new IDoubleOrFloatCPointer[aNumThreads];
+        mInternalGradOutputWeight = new IDoubleOrFloatCPointer[aNumThreads];
+        mInternalGradOutputBias = new IDoubleOrFloatCPointer[aNumThreads];
+    }
     
     @Override public void updateParameters() {
         updateParameters_();
     }
-    @Override public void backwardParameter() {
-        if (mGradHiddenWeights==null) throw new IllegalStateException();
+    @Override public void backwardParameter(int aThreadID) {
+        if (mGradHiddenWeights==null) throw new IllegalStateException("invoke `requireGrad(nthreads)` first.");
+        Vector tGradHiddenWeights = mGradHiddenWeights[aThreadID];
+        Vector tGradOutputWeight = mGradOutputWeight[aThreadID];
+        Vector tGradHiddenBiases = mGradHiddenBiases[aThreadID];
+        IDoubleOrFloatCPointer tInternalGradHiddenWeights = mInternalGradHiddenWeights[aThreadID];
+        IDoubleOrFloatCPointer tInternalGradOutputWeight = mInternalGradOutputWeight[aThreadID];
+        IDoubleOrFloatCPointer tInternalGradHiddenBiases = mInternalGradHiddenBiases[aThreadID];
         for (int i = 0; i < mHiddenWeightsSize; ++i) {
-            mGradHiddenWeights.add(i, mInternalGradHiddenWeights.getAtD(i));
+            tGradHiddenWeights.add(i, tInternalGradHiddenWeights.getAtD(i));
         }
         for (int i = 0; i < mOutputWeightSize; ++i) {
-            mGradOutputWeight.add(i, mInternalGradOutputWeight.getAtD(i));
+            tGradOutputWeight.add(i, tInternalGradOutputWeight.getAtD(i));
         }
         for (int i = 0; i < mHiddenBiasesSize; ++i) {
-            mGradHiddenBiases.add(i, mInternalGradHiddenBiases.getAtD(i));
+            tGradHiddenBiases.add(i, tInternalGradHiddenBiases.getAtD(i));
         }
-        mGradOutputBias.add(0, mInternalGradOutputBias.getD());
+        mGradOutputBias[aThreadID].add(0, mInternalGradOutputBias[aThreadID].getD());
     }
     final void updateParameters_() {
         mInternalHiddenWeights.fillD(mHiddenWeights);
@@ -226,20 +243,21 @@ public class FeedForward2 extends NeuralNetwork2 {
         mOutputBias = aVec.subVec(tShift, tShift+1);
         mOutputBias.set(0, tOutputBias);
     }
-    @Override public void mountGradParameter(Vector aVec) {
+    @Override public void mountGradParameter(int aThreadID, Vector aVec) {
+        if (mGradHiddenWeights==null) throw new IllegalStateException("invoke `requireGrad(nthreads)` first.");
         if (Conf.OPERATION_CHECK) {
             if (parameterSize() != aVec.size()) throw new IllegalArgumentException("data size mismatch");
         } else {
             if (parameterSize() > aVec.size()) throw new IllegalArgumentException("data size mismatch");
         }
         int tShift = 0;
-        mGradHiddenWeights = aVec.subVec(tShift, tShift+mHiddenWeightsSize);
+        mGradHiddenWeights[aThreadID] = aVec.subVec(tShift, tShift+mHiddenWeightsSize);
         tShift += mHiddenWeightsSize;
-        mGradOutputWeight = aVec.subVec(tShift, tShift+mOutputWeightSize);
+        mGradOutputWeight[aThreadID] = aVec.subVec(tShift, tShift+mOutputWeightSize);
         tShift += mOutputWeightSize;
-        mGradHiddenBiases = aVec.subVec(tShift, tShift+mHiddenBiasesSize);
+        mGradHiddenBiases[aThreadID] = aVec.subVec(tShift, tShift+mHiddenBiasesSize);
         tShift += mHiddenBiasesSize;
-        mGradOutputBias = aVec.subVec(tShift, tShift+1);
+        mGradOutputBias[aThreadID] = aVec.subVec(tShift, tShift+1);
     }
     
     @Override public int cptrParameterSize() {
@@ -255,11 +273,12 @@ public class FeedForward2 extends NeuralNetwork2 {
         mInternalOutputBias = mInternalHiddenBiases.plus(mHiddenBiasesSize);
         updateParameters_();
     }
-    @Override public void mountGradCptrParameter(IDoubleOrFloatCPointer aPtr) {
-        mInternalGradHiddenWeights = aPtr.copy();
-        mInternalGradOutputWeight = mInternalGradHiddenWeights.plus(mHiddenWeightsSize);
-        mInternalGradHiddenBiases = mInternalGradOutputWeight.plus(mOutputWeightSize);
-        mInternalGradOutputBias = mInternalGradHiddenBiases.plus(mHiddenBiasesSize);
+    @Override public void mountGradCptrParameter(int aThreadID, IDoubleOrFloatCPointer aPtr) {
+        if (mGradHiddenWeights==null) throw new IllegalStateException("invoke `requireGrad(nthreads)` first.");
+        mInternalGradHiddenWeights[aThreadID] = aPtr.copy();
+        mInternalGradOutputWeight[aThreadID] = mInternalGradHiddenWeights[aThreadID].plus(mHiddenWeightsSize);
+        mInternalGradHiddenBiases[aThreadID] = mInternalGradOutputWeight[aThreadID].plus(mOutputWeightSize);
+        mInternalGradOutputBias[aThreadID] = mInternalGradHiddenBiases[aThreadID].plus(mHiddenBiasesSize);
     }
     
     @Override public int forwardCacheSize() {

@@ -34,18 +34,18 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
     final int mTypedWType;
     
     @Nullable Vector mFuseWeight;
-    @Nullable Vector mGradFuseWeight = null;
+    @Nullable Vector[] mGradFuseWeight = null;
     final int mSizeN;
     final int mFuseSize;
     
     @Nullable Vector mPostFuseWeight;
-    @Nullable Vector mGradPostFuseWeight = null;
+    @Nullable Vector[] mGradPostFuseWeight = null;
     final int mPostFuseSize;
     final double[] mPostFuseScale;
     
     final int mSizeNP;
     IDoubleOrFloatCPointer mRFuseWeight = null;
-    IDoubleOrFloatCPointer mGradRFuseWeight = null;
+    IDoubleOrFloatCPointer[] mGradRFuseWeight = null;
     
     WTypeBasis2(double aRCut, int aNumTypes, int aNMax, int aWType, @Nullable Vector aFuseWeight, @Nullable Vector aPostFuseWeight, double @Nullable[] aPostFuseScale) {
         if (aNumTypes <= 0) throw new IllegalArgumentException("Inpute ntypes MUST be Positive, input: "+ aNumTypes);
@@ -97,39 +97,51 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
             mInternalWType = WTYPE_RFUSE;
         }
     }
+    @Override public void requireGrad(int aNumThreads) {
+        if (mGradRFuseWeight!=null) return;
+        mGradRFuseWeight = new IDoubleOrFloatCPointer[aNumThreads];
+        if (mTypedWType==WTYPE_FUSE || mTypedWType==WTYPE_EXFUSE) {
+            mGradFuseWeight = new Vector[aNumThreads];
+        }
+        if (mPostFuseWeight==null) return;
+        mGradPostFuseWeight = new Vector[aNumThreads];
+    }
     
     @Override public void updateParameters() {
         updateParameters_(true);
     }
     @SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
-    @Override public void backwardParameter() {
-        if (mGradRFuseWeight==null) throw new IllegalStateException();
+    @Override public void backwardParameter(int aThreadID) {
+        if (mGradRFuseWeight==null) throw new IllegalStateException("invoke `requireGrad(nthreads)` first.");
         if (mTypedWType!=WTYPE_FUSE && mTypedWType!=WTYPE_EXFUSE && mPostFuseWeight==null) return;
+        IDoubleOrFloatCPointer tGradRFuseWeight = mGradRFuseWeight[aThreadID];
+        Vector tGradFuseWeight = (mTypedWType==WTYPE_FUSE || mTypedWType==WTYPE_EXFUSE) ? mGradFuseWeight[aThreadID] : null;
+        Vector tGradPostFuseWeight = (mPostFuseWeight!=null) ? mGradPostFuseWeight[aThreadID] : null;
         double tScale = mPostFuseScale[0];
         if (mPostFuseWeight==null) {
             switch(mTypedWType) {
             case WTYPE_FUSE: {
-                assert mGradFuseWeight!=null;
+                assert tGradFuseWeight!=null;
                 for (int type = 1; type <= mNumTypes; ++type) {
                     for (int k = 0; k < mFuseSize; ++k) {
                         double rGradWt = 0.0;
                         for (int n = 0; n <= mNMax; ++n) {
-                            rGradWt += mGradRFuseWeight.getAtD(((type-1)*mSizeNP + k*(mNMax+1) + n)*(mNMax+1) + n);
+                            rGradWt += tGradRFuseWeight.getAtD(((type-1)*mSizeNP + k*(mNMax+1) + n)*(mNMax+1) + n);
                         }
-                        mGradFuseWeight.add((type-1)*mFuseSize + k, tScale*rGradWt);
+                        tGradFuseWeight.add((type-1)*mFuseSize + k, tScale*rGradWt);
                     }
                 }
                 break;
             }
             case WTYPE_EXFUSE: {
-                assert mGradFuseWeight!=null;
+                assert tGradFuseWeight!=null;
                 for (int type = 1; type <= mNumTypes; ++type) {
                     for (int k = 0; k < mFuseSize; ++k) {
                         double rGradWt = 0.0;
                         for (int n = 0; n <= mNMax; ++n) {
-                            rGradWt += mGradRFuseWeight.getAtD(((type-1)*mSizeNP + (k+1)*(mNMax+1) + n)*(mNMax+1) + n);
+                            rGradWt += tGradRFuseWeight.getAtD(((type-1)*mSizeNP + (k+1)*(mNMax+1) + n)*(mNMax+1) + n);
                         }
-                        mGradFuseWeight.add((type-1)*mFuseSize + k, tScale*rGradWt);
+                        tGradFuseWeight.add((type-1)*mFuseSize + k, tScale*rGradWt);
                     }
                 }
                 break;
@@ -137,7 +149,7 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
         } else {
             switch(mTypedWType) {
             case WTYPE_FUSE: {
-                assert mFuseWeight!=null && mGradFuseWeight!=null && mGradPostFuseWeight!=null;
+                assert mFuseWeight!=null && tGradFuseWeight!=null && tGradPostFuseWeight!=null;
                 for (int type = 1; type <= mNumTypes; ++type) {
                     for (int np = 0; np < mSizeNP; ++np) {
                         int tShiftL = ((type-1)*mSizeNP + np)*(mNMax+1);
@@ -146,98 +158,98 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
                             int tShiftR = np*mSizeN + k*(mNMax+1);
                             double rGradWt = 0.0;
                             for (int n = 0; n <= mNMax; ++n) {
-                                double tSubGradRFW = mGradRFuseWeight.getAtD(tShiftL+n);
+                                double tSubGradRFW = tGradRFuseWeight.getAtD(tShiftL+n);
                                 rGradWt += tSubGradRFW*mPostFuseWeight.get(tShiftR+n);
-                                mGradPostFuseWeight.add(tShiftR+n, tScale*tSubGradRFW*wt);
+                                tGradPostFuseWeight.add(tShiftR+n, tScale*tSubGradRFW*wt);
                             }
-                            mGradFuseWeight.add((type-1)*mFuseSize + k, tScale*rGradWt);
+                            tGradFuseWeight.add((type-1)*mFuseSize + k, tScale*rGradWt);
                         }
                     }
                 }
                 break;
             }
             case WTYPE_EXFUSE: {
-                assert mFuseWeight!=null && mGradFuseWeight!=null && mGradPostFuseWeight!=null;
+                assert mFuseWeight!=null && tGradFuseWeight!=null && tGradPostFuseWeight!=null;
                 for (int type = 1; type <= mNumTypes; ++type) {
                     for (int np = 0; np < mSizeNP; ++np) {
                         int tShiftL = ((type-1)*mSizeNP + np)*(mNMax+1);
                         int tShiftR = np*mSizeN;
                         // ex term
                         for (int n = 0; n <= mNMax; ++n) {
-                            mGradPostFuseWeight.add(tShiftR+n, tScale*mGradRFuseWeight.getAtD(tShiftL+n));
+                            tGradPostFuseWeight.add(tShiftR+n, tScale*tGradRFuseWeight.getAtD(tShiftL+n));
                         }
                         for (int k = 0; k < mFuseSize; ++k) {
                             double wt = mFuseWeight.get((type-1)*mFuseSize + k);
                             tShiftR = np*mSizeN + (k+1)*(mNMax+1);
                             double rGradWt = 0.0;
                             for (int n = 0; n <= mNMax; ++n) {
-                                double tSubGradRFW = mGradRFuseWeight.getAtD(tShiftL+n);
+                                double tSubGradRFW = tGradRFuseWeight.getAtD(tShiftL+n);
                                 rGradWt += tSubGradRFW*mPostFuseWeight.get(tShiftR+n);
-                                mGradPostFuseWeight.add(tShiftR+n, tScale*tSubGradRFW*wt);
+                                tGradPostFuseWeight.add(tShiftR+n, tScale*tSubGradRFW*wt);
                             }
-                            mGradFuseWeight.add((type-1)*mFuseSize + k, tScale*rGradWt);
+                            tGradFuseWeight.add((type-1)*mFuseSize + k, tScale*rGradWt);
                         }
                     }
                 }
                 break;
             }
             case WTYPE_FULL: {
-                assert mGradPostFuseWeight!=null;
+                assert tGradPostFuseWeight!=null;
                 for (int type = 1; type <= mNumTypes; ++type) {
                     for (int np = 0; np < mSizeNP; ++np) {
                         int tShiftL = ((type-1)*mSizeNP + np)*(mNMax+1);
                         int tShiftR = np*mSizeN + (type-1)*(mNMax+1);
                         for (int n = 0; n <= mNMax; ++n) {
-                            mGradPostFuseWeight.add(tShiftR+n, tScale*mGradRFuseWeight.getAtD(tShiftL+n));
+                            tGradPostFuseWeight.add(tShiftR+n, tScale*tGradRFuseWeight.getAtD(tShiftL+n));
                         }
                     }
                 }
                 break;
             }
             case WTYPE_EXFULL: {
-                assert mGradPostFuseWeight!=null;
+                assert tGradPostFuseWeight!=null;
                 for (int type = 1; type <= mNumTypes; ++type) {
                     for (int np = 0; np < mSizeNP; ++np) {
                         int tShiftL = ((type-1)*mSizeNP + np)*(mNMax+1);
                         int tShiftR = np*mSizeN;
                         // ex term
                         for (int n = 0; n <= mNMax; ++n) {
-                            mGradPostFuseWeight.add(tShiftR+n, tScale*mGradRFuseWeight.getAtD(tShiftL+n));
+                            tGradPostFuseWeight.add(tShiftR+n, tScale*tGradRFuseWeight.getAtD(tShiftL+n));
                         }
                         tShiftR = np*mSizeN + type*(mNMax+1);
                         for (int n = 0; n <= mNMax; ++n) {
-                            mGradPostFuseWeight.add(tShiftR+n, tScale*mGradRFuseWeight.getAtD(tShiftL+n));
+                            tGradPostFuseWeight.add(tShiftR+n, tScale*tGradRFuseWeight.getAtD(tShiftL+n));
                         }
                     }
                 }
                 break;
             }
             case WTYPE_NONE: {
-                assert mGradPostFuseWeight!=null;
+                assert tGradPostFuseWeight!=null;
                 for (int type = 1; type <= mNumTypes; ++type) {
                     for (int np = 0; np < mSizeNP; ++np) {
                         int tShiftL = ((type-1)*mSizeNP + np)*(mNMax+1);
                         int tShiftR = np*mSizeN;
                         for (int n = 0; n <= mNMax; ++n) {
-                            mGradPostFuseWeight.add(tShiftR+n, tScale*mGradRFuseWeight.getAtD(tShiftL+n));
+                            tGradPostFuseWeight.add(tShiftR+n, tScale*tGradRFuseWeight.getAtD(tShiftL+n));
                         }
                     }
                 }
                 break;
             }
             case WTYPE_DEFAULT: {
-                assert mGradPostFuseWeight!=null;
+                assert tGradPostFuseWeight!=null;
                 for (int type = 1; type <= mNumTypes; ++type) {
                     double wt = ((type&1)==1) ? type : (-type);
                     for (int np = 0; np < mSizeNP; ++np) {
                         int tShiftL = ((type-1)*mSizeNP + np)*(mNMax+1);
                         int tShiftR = np*mSizeN;
                         for (int n = 0; n <= mNMax; ++n) {
-                            mGradPostFuseWeight.add(tShiftR+n, tScale*mGradRFuseWeight.getAtD(tShiftL+n));
+                            tGradPostFuseWeight.add(tShiftR+n, tScale*tGradRFuseWeight.getAtD(tShiftL+n));
                         }
                         tShiftR = np*mSizeN + (mNMax+1);
                         for (int n = 0; n <= mNMax; ++n) {
-                            mGradPostFuseWeight.add(tShiftR+n, tScale*wt*mGradRFuseWeight.getAtD(tShiftL+n));
+                            tGradPostFuseWeight.add(tShiftR+n, tScale*wt*tGradRFuseWeight.getAtD(tShiftL+n));
                         }
                     }
                 }
@@ -572,8 +584,9 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
         mRFuseWeight = aPtr.copy();
         updateParameters_(false);
     }
-    @Override public void mountGradCptrParameter(IDoubleOrFloatCPointer aPtr) {
-        mGradRFuseWeight = aPtr.copy();
+    @Override public void mountGradCptrParameter(int aThreadID, IDoubleOrFloatCPointer aPtr) {
+        if (mGradRFuseWeight==null) throw new IllegalStateException("invoke `requireGrad(nthreads)` first.");
+        mGradRFuseWeight[aThreadID] = aPtr.copy();
     }
     @Override public int cptrParameterSize() {
         return (mSizeNP*mNumTypes) * (mNMax+1);
@@ -600,7 +613,8 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
         mPostFuseWeight = aVec.subVec(tShift, tShift+tSize);
         mPostFuseWeight.fill(oPostFuseWeight);
     }
-    @Override public void mountGradParameter(Vector aVec) {
+    @Override public void mountGradParameter(int aThreadID, Vector aVec) {
+        if (mGradRFuseWeight==null) throw new IllegalStateException("invoke `requireGrad(nthreads)` first.");
         if (Conf.OPERATION_CHECK) {
             if (parameterSize() != aVec.size()) throw new IllegalArgumentException("data size mismatch");
         } else {
@@ -610,12 +624,12 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
         if (mTypedWType==WTYPE_FUSE || mTypedWType==WTYPE_EXFUSE) {
             assert mFuseWeight != null;
             int tSize = mFuseWeight.size();
-            mGradFuseWeight = aVec.subVec(tShift, tShift+tSize);
+            mGradFuseWeight[aThreadID] = aVec.subVec(tShift, tShift+tSize);
             tShift += tSize;
         }
         if (mPostFuseWeight==null) return;
         int tSize = mPostFuseWeight.size();
-        mGradPostFuseWeight = aVec.subVec(tShift, tShift+tSize);
+        mGradPostFuseWeight[aThreadID] = aVec.subVec(tShift, tShift+tSize);
     }
     @Override public int parameterSize() {
         final int tParaSize;

@@ -69,37 +69,39 @@ public abstract class NeuralNetwork2 implements ISavable {
      * 输入指针包装是临时的，因此需要内部拷贝或等价形式
      */
     public abstract void mountCptrParameter(IDoubleOrFloatCPointer aPtr);
-    /**
-     * 挂载内部的参量的梯度到一个指针，从而自动同步修改
-     * <p>
-     * 输入指针包装是临时的，因此需要内部拷贝或等价形式
-     */
-    public abstract void mountGradCptrParameter(IDoubleOrFloatCPointer aPtr);
     /** @return 内部参数的长度 */
     public abstract int cptrParameterSize();
-    
-    /** 随机初始化内部存在的可拟合参数 */
-    public abstract void initParameters();
     
     /**
      * 挂载内部的可拟合参数到一个数组，从而自动同步修改
      */
     public abstract void mountParameter(Vector aVec);
-    /**
-     * 挂载内部的可拟合参数的梯度到一个数组，从而自动同步修改
-     */
-    public abstract void mountGradParameter(Vector aVec);
     /** @return 内部可拟合参数的长度 */
     public abstract int parameterSize();
     
+    /** 随机初始化内部存在的可拟合参数 */
+    public abstract void initParameters();
     /** 更新同步内部参数 */
     public abstract void updateParameters();
+    
+    /** 告知此网络需要缓存参数梯度 */
+    public abstract void requireGrad(int aNumThreads);
+    /**
+     * 挂载内部的参量的梯度到一个指针，从而自动同步修改
+     * <p>
+     * 输入指针包装是临时的，因此需要内部拷贝或等价形式
+     */
+    public abstract void mountGradCptrParameter(int aThreadID, IDoubleOrFloatCPointer aPtr);
+    /**
+     * 挂载内部的可拟合参数的梯度到一个数组，从而自动同步修改
+     */
+    public abstract void mountGradParameter(int aThreadID, Vector aVec);
     /**
      * 反向传播参数梯度到可拟合参数
      * <p>
      * 注意输入指针包装是临时的，因此可能需要内部拷贝或等价形式
      */
-    public abstract void backwardParameter();
+    public abstract void backwardParameter(int aThreadID);
     
     /** @return 前向传播中需要的缓存大小 */
     public abstract int forwardCacheSize();

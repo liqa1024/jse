@@ -64,7 +64,7 @@ public class NNAP2 implements IPairPotential {
     final @Nullable String mUnits;
     final boolean mSingle;
     boolean mDead = false;
-    final int mThreadNumber;
+    final int mNumThreads;
     final Basis2[] mBasis;
     final NeuralNetwork2[] mNN;
     public int ntypes() {return mSymbols.length;}
@@ -73,23 +73,26 @@ public class NNAP2 implements IPairPotential {
     public String units() {return mUnits;}
     public String precision() {return mSingle ? "single" : "double";}
     // 现在所有数据都改为 c 指针
-    final AnyCPointer mDataIn, mDataOut;
-    final IntCPointer mInNums, mOutNums;
+    final AnyCPointer[] mDataIn, mDataOut;
+    final IntCPointer[] mInNums, mOutNums;
     final AnyCPointer mFpHyperParam, mFpParam, mNnParam, mNormParam;
-    final IDoubleOrFloatCPointer mOutEng;
-    final IGrowableDoubleOrFloatCPointer mNlDx, mNlDy, mNlDz, mGradNlDx, mGradNlDy, mGradNlDz, mFpForwardCache, mFpBackwardCache;
-    final GrowableIntCPointer mNlType, mNlIdx;
+    final IDoubleOrFloatCPointer[] mOutEng;
+    final IGrowableDoubleOrFloatCPointer[] mNlDx, mNlDy, mNlDz, mGradNlDx, mGradNlDy, mGradNlDz, mFpForwardCache, mFpBackwardCache;
+    final GrowableIntCPointer[] mNlType, mNlIdx;
+    
+    private final DoubleList[] mNlDxBuf, mNlDyBuf, mNlDzBuf;
+    private final IntList[] mNlTypeBuf, mNlIdxBuf;
     
     final int mTotCParamSize, mTotGradCParamSize, mTotParamSize;
     final IDoubleOrFloatCPointer mTotCParam;
-    IDoubleOrFloatCPointer mGradTotCParam = null;
-    AnyCPointer mGradFpParam, mGradNnParam;
+    IDoubleOrFloatCPointer[] mGradTotCParam = null;
+    AnyCPointer[] mGradFpParam, mGradNnParam;
     final Vector mTotParam;
-    Vector mGradTotParam = null;
+    Vector[] mGradTotParam = null;
     
     @SuppressWarnings("unchecked")
-    NNAP2(@Nullable String aLibDir, @Nullable String aProjectName, Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber, @Nullable String aPrecision) throws Exception {
-        mThreadNumber = aThreadNumber;
+    NNAP2(@Nullable String aLibDir, @Nullable String aProjectName, Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aNumThreads, @Nullable String aPrecision) throws Exception {
+        mNumThreads = aNumThreads;
         Number tVersion = (Number)aModelInfo.get("version");
         if (tVersion != null) {
             int tVersionValue = tVersion.intValue();
@@ -125,21 +128,46 @@ public class NNAP2 implements IPairPotential {
         }));
         mNNAPGEN = new NNAPGEN(aLibDir, aProjectName, mBasis, mNN);
         // 初始化数组
-        mDataIn = AnyCPointer.calloc(32);
-        mDataOut = AnyCPointer.calloc(32);
-        mInNums = IntCPointer.calloc(32);
-        mOutNums = IntCPointer.calloc(32);
-        mNlDx = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
-        mNlDy = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
-        mNlDz = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
-        mNlType = new GrowableIntCPointer(16);
-        mNlIdx = new GrowableIntCPointer(16);
-        mGradNlDx = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
-        mGradNlDy = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
-        mGradNlDz = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
-        mOutEng = mSingle ? FloatCPointer.malloc(1) : DoubleCPointer.malloc(1);
-        mFpForwardCache = mSingle ? new GrowableFloatCPointer(128) : new GrowableDoubleCPointer(128);
-        mFpBackwardCache = mSingle ? new GrowableFloatCPointer(128) : new GrowableDoubleCPointer(128);
+        mDataIn = new AnyCPointer[mNumThreads]; mDataOut = new AnyCPointer[mNumThreads];
+        mInNums = new IntCPointer[mNumThreads]; mOutNums = new IntCPointer[mNumThreads];
+        mNlDx = new IGrowableDoubleOrFloatCPointer[mNumThreads];
+        mNlDy = new IGrowableDoubleOrFloatCPointer[mNumThreads];
+        mNlDz = new IGrowableDoubleOrFloatCPointer[mNumThreads];
+        mNlType = new GrowableIntCPointer[mNumThreads];
+        mNlIdx = new GrowableIntCPointer[mNumThreads];
+        mGradNlDx = new IGrowableDoubleOrFloatCPointer[mNumThreads];
+        mGradNlDy = new IGrowableDoubleOrFloatCPointer[mNumThreads];
+        mGradNlDz = new IGrowableDoubleOrFloatCPointer[mNumThreads];
+        mOutEng = new IDoubleOrFloatCPointer[mNumThreads];
+        mFpForwardCache = new IGrowableDoubleOrFloatCPointer[mNumThreads];
+        mFpBackwardCache = new IGrowableDoubleOrFloatCPointer[mNumThreads];
+        mNlDxBuf = new DoubleList[mNumThreads];
+        mNlDyBuf = new DoubleList[mNumThreads];
+        mNlDzBuf = new DoubleList[mNumThreads];
+        mNlTypeBuf = new IntList[mNumThreads];
+        mNlIdxBuf = new IntList[mNumThreads];
+        for (int ti = 0; ti < mNumThreads; ++ti) {
+            mDataIn[ti] = AnyCPointer.calloc(32);
+            mDataOut[ti] = AnyCPointer.calloc(32);
+            mInNums[ti] = IntCPointer.calloc(32);
+            mOutNums[ti] = IntCPointer.calloc(32);
+            mNlDx[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+            mNlDy[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+            mNlDz[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+            mNlType[ti] = new GrowableIntCPointer();
+            mNlIdx[ti] = new GrowableIntCPointer();
+            mGradNlDx[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+            mGradNlDy[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+            mGradNlDz[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+            mOutEng[ti] = mSingle ? FloatCPointer.malloc(1) : DoubleCPointer.malloc(1);
+            mFpForwardCache[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+            mFpBackwardCache[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+            mNlDxBuf[ti] = new DoubleList(16);
+            mNlDyBuf[ti] = new DoubleList(16);
+            mNlDzBuf[ti] = new DoubleList(16);
+            mNlTypeBuf[ti] = new IntList(16);
+            mNlIdxBuf[ti] = new IntList(16);
+        }
         // 初始化参数数组
         int tTotCParamSize = 0, tTotGradCParamSize = 0, tTotParamSize = 0;
         for (int i = 0; i < tModelSize; ++i) {
@@ -214,14 +242,14 @@ public class NNAP2 implements IPairPotential {
             tParam.rightShift(tBasisSize);
         }
     }
-    public NNAP2(Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws Exception {
-        this(null, null, aModelInfo, aThreadNumber, null);
+    public NNAP2(Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aNumThreads) throws Exception {
+        this(null, null, aModelInfo, aNumThreads, null);
         // 直接开始 jit 编译
         compileJIT_();
     }
-    public NNAP2(String aModelPath, @Range(from=1, to=Integer.MAX_VALUE) int aThreadNumber) throws Exception {
+    public NNAP2(String aModelPath, @Range(from=1, to=Integer.MAX_VALUE) int aNumThreads) throws Exception {
         this(IO.toParentPath(aModelPath), toValidProjectName(IO.toFileName(aModelPath)),
-             aModelPath.endsWith(".yaml") || aModelPath.endsWith(".yml") ? IO.yaml2map(aModelPath) : IO.json2map(aModelPath), aThreadNumber, null);
+             aModelPath.endsWith(".yaml") || aModelPath.endsWith(".yml") ? IO.yaml2map(aModelPath) : IO.json2map(aModelPath), aNumThreads, null);
         // 直接开始 jit 编译
         compileJIT_();
     }
@@ -264,28 +292,31 @@ public class NNAP2 implements IPairPotential {
         close_();
     }
     void close_() throws Exception {
-        mInNums.free();
-        mOutNums.free();
-        mNlDx.free(); mNlDy.free(); mNlDz.free();
-        mNlType.free();
-        mDataIn.free();
-        
+        for (int ti = 0; ti < mNumThreads; ++ti) {
+            mInNums[ti].free();
+            mOutNums[ti].free();
+            mNlDx[ti].free(); mNlDy[ti].free(); mNlDz[ti].free();
+            mNlType[ti].free();
+            mDataIn[ti].free();
+        }
         mTotCParam.free();
         mFpHyperParam.free(); mFpParam.free(); mNnParam.free(); mNormParam.free();
         if (mGradTotCParam != null) {
-            mGradTotCParam.free();
-            mGradFpParam.free(); mGradNnParam.free();
+            for (int ti = 0; ti < mNumThreads; ++ti) {
+                mGradTotCParam[ti].free();
+                mGradFpParam[ti].free(); mGradNnParam[ti].free();
+            }
         }
-        
-        mOutEng.free();
-        mFpForwardCache.free(); mFpBackwardCache.free();
-        mDataOut.free();
-        
+        for (int ti = 0; ti < mNumThreads; ++ti) {
+            mOutEng[ti].free();
+            mFpForwardCache[ti].free(); mFpBackwardCache[ti].free();
+            mDataOut[ti].free();
+        }
         if (mJITEngine!=null) mJITEngine.close();
     }
     
     @Override public boolean isClosed() {return mDead;}
-    @Override public int nthreads() {return mThreadNumber;}
+    @Override public int nthreads() {return mNumThreads;}
     @Override public double rcutMax() {
         double tRCut = 0.0;
         for (Basis2 tBasis : mBasis) {
@@ -297,32 +328,34 @@ public class NNAP2 implements IPairPotential {
         return mBasis[aType-1].rcut();
     }
     
-    private final DoubleList mNlDxBuf = new DoubleList(16), mNlDyBuf = new DoubleList(16), mNlDzBuf = new DoubleList(16);
-    private final IntList mNlTypeBuf = new IntList(16), mNlIdxBuf = new IntList(16);
     
-    
-    private int buildNL_(IDxyzTypeIdxIterable aNL, double aRCut, boolean aRequireGrad) {
+    private int buildNL_(int aThreadID, IDxyzTypeIdxIterable aNL, double aRCut, boolean aRequireGrad) {
+        final DoubleList tNlDxBuf = mNlDxBuf[aThreadID], tNlDyBuf = mNlDyBuf[aThreadID], tNlDzBuf = mNlDzBuf[aThreadID];
+        final IntList tNlTypeBuf = mNlTypeBuf[aThreadID], tNlIdxBuf = mNlIdxBuf[aThreadID];
+        IGrowableDoubleOrFloatCPointer tNlDx = mNlDx[aThreadID], tNlDy = mNlDy[aThreadID], tNlDz = mNlDz[aThreadID];
+        IGrowableDoubleOrFloatCPointer tGradNlDx = mGradNlDx[aThreadID], tGradNlDy = mGradNlDy[aThreadID], tGradNlDz = mGradNlDz[aThreadID];
+        GrowableIntCPointer tNlType = mNlType[aThreadID];
         final int tTypeNum = ntypes();
         // 缓存情况需要先清空这些
-        mNlDxBuf.clear(); mNlDyBuf.clear(); mNlDzBuf.clear();
-        mNlTypeBuf.clear(); mNlIdxBuf.clear();
+        tNlDxBuf.clear(); tNlDyBuf.clear(); tNlDzBuf.clear();
+        tNlTypeBuf.clear(); tNlIdxBuf.clear();
         aNL.forEachDxyzTypeIdx(aRCut, (dx, dy, dz, type, idx) -> {
             // 为了效率这里不进行近邻检查，因此需要上层近邻列表提供时进行检查
             if (type > tTypeNum) throw new IllegalArgumentException("Exist type ("+type+") greater than the input typeNum ("+tTypeNum+")");
             // 简单缓存近邻列表
-            mNlDxBuf.add(dx); mNlDyBuf.add(dy); mNlDzBuf.add(dz);
-            mNlTypeBuf.add(type); mNlIdxBuf.add(idx);
+            tNlDxBuf.add(dx); tNlDyBuf.add(dy); tNlDzBuf.add(dz);
+            tNlTypeBuf.add(type); tNlIdxBuf.add(idx);
         });
-        int tNeiNum = mNlIdxBuf.size();
-        mNlDx.ensureCapacity(tNeiNum); mNlDx.fillD(mNlDxBuf);
-        mNlDy.ensureCapacity(tNeiNum); mNlDy.fillD(mNlDyBuf);
-        mNlDz.ensureCapacity(tNeiNum); mNlDz.fillD(mNlDzBuf);
-        mNlType.ensureCapacity(tNeiNum);
-        mNlType.fill(mNlTypeBuf);
+        int tNeiNum = tNlIdxBuf.size();
+        tNlDx.ensureCapacity(tNeiNum); tNlDx.fillD(tNlDxBuf);
+        tNlDy.ensureCapacity(tNeiNum); tNlDy.fillD(tNlDyBuf);
+        tNlDz.ensureCapacity(tNeiNum); tNlDz.fillD(tNlDzBuf);
+        tNlType.ensureCapacity(tNeiNum);
+        tNlType.fill(tNlTypeBuf);
         if (aRequireGrad) {
-            mGradNlDx.ensureCapacity(tNeiNum);
-            mGradNlDy.ensureCapacity(tNeiNum);
-            mGradNlDz.ensureCapacity(tNeiNum);
+            tGradNlDx.ensureCapacity(tNeiNum);
+            tGradNlDy.ensureCapacity(tNeiNum);
+            tGradNlDz.ensureCapacity(tNeiNum);
         }
         return tNeiNum;
     }
@@ -336,25 +369,29 @@ public class NNAP2 implements IPairPotential {
     @Override public void calEnergy(int aAtomNumber, INeighborListGetter aNeighborListGetter, IEnergyAccumulator rEnergyAccumulator) throws Exception {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         aNeighborListGetter.forEachNLWithException(null, null, (threadID, cIdx, cType, nl) -> {
+            IntCPointer tInNums = mInNums[threadID];
+            AnyCPointer tDataIn = mDataIn[threadID];
+            AnyCPointer tDataOut = mDataOut[threadID];
+            IDoubleOrFloatCPointer tOutEng = mOutEng[threadID];
             // 近邻列表构建以及相关值设置
-            int tNeiNum = buildNL_(nl, mBasis[cType-1].rcut(), false);
-            mInNums.putAt(0, tNeiNum);
-            mInNums.putAt(1, cType);
+            int tNeiNum = buildNL_(threadID, nl, mBasis[cType-1].rcut(), false);
+            tInNums.putAt(0, tNeiNum);
+            tInNums.putAt(1, cType);
             // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
-            mDataIn.putAt(0, mInNums);
-            mDataIn.putAt(1, mNlDx);
-            mDataIn.putAt(2, mNlDy);
-            mDataIn.putAt(3, mNlDz);
-            mDataIn.putAt(4, mNlType);
-            mDataIn.putAt(5, mFpHyperParam);
-            mDataIn.putAt(6, mFpParam);
-            mDataIn.putAt(7, mNnParam);
-            mDataIn.putAt(8, mNormParam.getAt(cType-1));
-            mDataOut.putAt(0, mOutEng);
+            tDataIn.putAt(0, tInNums);
+            tDataIn.putAt(1, mNlDx[threadID]);
+            tDataIn.putAt(2, mNlDy[threadID]);
+            tDataIn.putAt(3, mNlDz[threadID]);
+            tDataIn.putAt(4, mNlType[threadID]);
+            tDataIn.putAt(5, mFpHyperParam);
+            tDataIn.putAt(6, mFpParam);
+            tDataIn.putAt(7, mNnParam);
+            tDataIn.putAt(8, mNormParam.getAt(cType-1));
+            tDataOut.putAt(0, tOutEng);
             // 调用 jit 方法获取结果
-            int tCode = mCalEnergy.invoke(mDataIn, mDataOut);
+            int tCode = mCalEnergy.invoke(tDataIn, tDataOut);
             if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
-            double tEng = mOutEng.getD();
+            double tEng = tOutEng.getD();
             rEnergyAccumulator.add(threadID, cIdx, -1, tEng);
         });
     }
@@ -370,44 +407,56 @@ public class NNAP2 implements IPairPotential {
     @Override public void calEnergyForceVirial(int aAtomNumber, INeighborListGetter aNeighborListGetter, @Nullable IEnergyAccumulator rEnergyAccumulator, @Nullable IForceAccumulator rForceAccumulator, @Nullable IVirialAccumulator rVirialAccumulator) throws Exception {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         aNeighborListGetter.forEachNLWithException(null, null, (threadID, cIdx, cType, nl) -> {
+            IntCPointer tInNums = mInNums[threadID];
+            AnyCPointer tDataIn = mDataIn[threadID];
+            AnyCPointer tDataOut = mDataOut[threadID];
+            IGrowableDoubleOrFloatCPointer tFpForwardCache = mFpForwardCache[threadID];
+            IDoubleOrFloatCPointer tOutEng = mOutEng[threadID];
+            IGrowableDoubleOrFloatCPointer tGradNlDx = mGradNlDx[threadID];
+            IGrowableDoubleOrFloatCPointer tGradNlDy = mGradNlDy[threadID];
+            IGrowableDoubleOrFloatCPointer tGradNlDz = mGradNlDz[threadID];
+            DoubleList tNlDxBuf = mNlDxBuf[threadID];
+            DoubleList tNlDyBuf = mNlDyBuf[threadID];
+            DoubleList tNlDzBuf = mNlDzBuf[threadID];
+            IntList tNlIdxBuf = mNlIdxBuf[threadID];
             // 近邻列表构建以及相关值设置
-            int tNeiNum = buildNL_(nl, mBasis[cType-1].rcut(), true);
-            mInNums.putAt(0, tNeiNum);
-            mInNums.putAt(1, cType);
-            mFpForwardCache.ensureCapacity(mBasis[cType-1].forwardCacheSize(tNeiNum));
+            int tNeiNum = buildNL_(threadID, nl, mBasis[cType-1].rcut(), true);
+            tInNums.putAt(0, tNeiNum);
+            tInNums.putAt(1, cType);
+            tFpForwardCache.ensureCapacity(mBasis[cType-1].forwardCacheSize(tNeiNum));
             // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
-            mDataIn.putAt(0, mInNums);
-            mDataIn.putAt(1, mNlDx);
-            mDataIn.putAt(2, mNlDy);
-            mDataIn.putAt(3, mNlDz);
-            mDataIn.putAt(4, mNlType);
-            mDataIn.putAt(5, mFpHyperParam);
-            mDataIn.putAt(6, mFpParam);
-            mDataIn.putAt(7, mNnParam);
-            mDataIn.putAt(8, mNormParam.getAt(cType-1));
-            mDataOut.putAt(0, mOutEng);
-            mDataOut.putAt(1, mGradNlDx);
-            mDataOut.putAt(2, mGradNlDy);
-            mDataOut.putAt(3, mGradNlDz);
-            mDataOut.putAt(4, mFpForwardCache);
+            tDataIn.putAt(0, tInNums);
+            tDataIn.putAt(1, mNlDx[threadID]);
+            tDataIn.putAt(2, mNlDy[threadID]);
+            tDataIn.putAt(3, mNlDz[threadID]);
+            tDataIn.putAt(4, mNlType[threadID]);
+            tDataIn.putAt(5, mFpHyperParam);
+            tDataIn.putAt(6, mFpParam);
+            tDataIn.putAt(7, mNnParam);
+            tDataIn.putAt(8, mNormParam.getAt(cType-1));
+            tDataOut.putAt(0, tOutEng);
+            tDataOut.putAt(1, tGradNlDx);
+            tDataOut.putAt(2, tGradNlDy);
+            tDataOut.putAt(3, tGradNlDz);
+            tDataOut.putAt(4, tFpForwardCache);
             // 调用 jit 方法获取结果
-            int tCode = mCalEnergyForce.invoke(mDataIn, mDataOut);
+            int tCode = mCalEnergyForce.invoke(tDataIn, tDataOut);
             if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
-            double tEng = mOutEng.getD();
+            double tEng = tOutEng.getD();
             if (rEnergyAccumulator != null) {
                 rEnergyAccumulator.add(threadID, cIdx, -1, tEng);
             }
             // 累加交叉项到近邻
             for (int j = 0; j < tNeiNum; ++j) {
-                double dx = mNlDxBuf.get(j);
-                double dy = mNlDyBuf.get(j);
-                double dz = mNlDzBuf.get(j);
-                int idx = mNlIdxBuf.get(j);
+                double dx = tNlDxBuf.get(j);
+                double dy = tNlDyBuf.get(j);
+                double dz = tNlDzBuf.get(j);
+                int idx = tNlIdxBuf.get(j);
                 // 为了效率这里不进行近邻检查，因此需要上层近邻列表提供时进行检查；
                 // 直接遍历查询不走合并了，实测专门合并还会影响效率
-                double fx = mGradNlDx.getAtD(j);
-                double fy = mGradNlDy.getAtD(j);
-                double fz = mGradNlDz.getAtD(j);
+                double fx = tGradNlDx.getAtD(j);
+                double fy = tGradNlDy.getAtD(j);
+                double fz = tGradNlDz.getAtD(j);
                 if (rForceAccumulator != null) {
                     rForceAccumulator.add(threadID, cIdx, idx, fx, fy, fz);
                 }
@@ -420,20 +469,22 @@ public class NNAP2 implements IPairPotential {
     }
     
     private void validNlLammps_(int aNeiNum) {
-        mNlDx.ensureCapacity(aNeiNum);
-        mNlDy.ensureCapacity(aNeiNum);
-        mNlDz.ensureCapacity(aNeiNum);
-        mNlType.ensureCapacity(aNeiNum);
-        mNlIdx.ensureCapacity(aNeiNum);
-        mGradNlDx.ensureCapacity(aNeiNum);
-        mGradNlDy.ensureCapacity(aNeiNum);
-        mGradNlDz.ensureCapacity(aNeiNum);
+        mNlDx[0].ensureCapacity(aNeiNum);
+        mNlDy[0].ensureCapacity(aNeiNum);
+        mNlDz[0].ensureCapacity(aNeiNum);
+        mNlType[0].ensureCapacity(aNeiNum);
+        mNlIdx[0].ensureCapacity(aNeiNum);
+        mGradNlDx[0].ensureCapacity(aNeiNum);
+        mGradNlDy[0].ensureCapacity(aNeiNum);
+        mGradNlDz[0].ensureCapacity(aNeiNum);
+        IGrowableDoubleOrFloatCPointer tFpForwardCache = mFpForwardCache[0];
         for (int i = 0; i < mSymbols.length; ++i) {
-            mFpForwardCache.ensureCapacity(mBasis[i].forwardCacheSize(aNeiNum));
+            tFpForwardCache.ensureCapacity(mBasis[i].forwardCacheSize(aNeiNum));
         }
     }
     
     void computeLammps(PairNNAP2 aPair) throws Exception {
+        if (mDead) throw new IllegalStateException("This NNAP is dead");
         // 种类的缓存优化
         int inum = aPair.listInum();
         for (int type = 1; type <= aPair.mTypeNum; ++type) {
@@ -441,68 +492,72 @@ public class NNAP2 implements IPairPotential {
             tList.ensureCapacity(inum);
             aPair.mTypeIlist.putAt(type, tList);
         }
+        IntCPointer tInNums = mInNums[0];
+        IntCPointer tOutNums = mOutNums[0];
+        AnyCPointer tDataIn = mDataIn[0];
+        AnyCPointer tDataOut = mDataOut[0];
         // 近邻列表大小获取和缓存合理化
         IntCPointer ilist = aPair.listIlist();
         IntCPointer numneigh = aPair.listNumneigh();
-        mInNums.putAt(0, inum);
-        mDataIn.putAt(0, mInNums);
-        mDataIn.putAt(1, ilist);
-        mDataIn.putAt(2, numneigh);
-        mStatNeiNumLammps.invoke(mDataIn, mOutNums);
-        validNlLammps_(mOutNums.getAt(0));
+        tInNums.putAt(0, inum);
+        tDataIn.putAt(0, tInNums);
+        tDataIn.putAt(1, ilist);
+        tDataIn.putAt(2, numneigh);
+        mStatNeiNumLammps.invoke(tDataIn, tOutNums);
+        validNlLammps_(tOutNums.getAt(0));
         
         // compute 开始，参数设置
-        mInNums.putAt(0, inum);
-        mInNums.putAt(1, aPair.mTypeNum);
-        mInNums.putAt(2, aPair.eflagEither()?1:0);
-        mInNums.putAt(3, aPair.vflagEither()?1:0);
-        mInNums.putAt(4, aPair.eflagAtom()?1:0);
-        mInNums.putAt(5, aPair.vflagAtom()?1:0);
-        mInNums.putAt(6, aPair.cvflagAtom()?1:0);
+        tInNums.putAt(0, inum);
+        tInNums.putAt(1, aPair.mTypeNum);
+        tInNums.putAt(2, aPair.eflagEither()?1:0);
+        tInNums.putAt(3, aPair.vflagEither()?1:0);
+        tInNums.putAt(4, aPair.eflagAtom()?1:0);
+        tInNums.putAt(5, aPair.vflagAtom()?1:0);
+        tInNums.putAt(6, aPair.cvflagAtom()?1:0);
         
         // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
-        mDataIn.putAt(0, mInNums);
-        mDataIn.putAt(1, mNlDx);
-        mDataIn.putAt(2, mNlDy);
-        mDataIn.putAt(3, mNlDz);
-        mDataIn.putAt(4, mNlType);
-        mDataIn.putAt(5, mNlIdx);
-        mDataIn.putAt(6, mFpHyperParam);
-        mDataIn.putAt(7, mFpParam);
-        mDataIn.putAt(8, mNnParam);
-        mDataIn.putAt(9, mNormParam);
-        mDataIn.putAt(10, aPair.atomX());
-        mDataIn.putAt(11, aPair.atomType());
-        mDataIn.putAt(12, ilist);
-        mDataIn.putAt(13, numneigh);
-        mDataIn.putAt(14, aPair.listFirstneigh());
-        mDataIn.putAt(15, aPair.mCutsq);
-        mDataIn.putAt(16, aPair.mLmpType2NNAPType);
-        mDataIn.putAt(17, aPair.mTypeIlist);
-        mDataIn.putAt(18, aPair.mTypeInum);
+        tDataIn.putAt(0, tInNums);
+        tDataIn.putAt(1, mNlDx[0]);
+        tDataIn.putAt(2, mNlDy[0]);
+        tDataIn.putAt(3, mNlDz[0]);
+        tDataIn.putAt(4, mNlType[0]);
+        tDataIn.putAt(5, mNlIdx[0]);
+        tDataIn.putAt(6, mFpHyperParam);
+        tDataIn.putAt(7, mFpParam);
+        tDataIn.putAt(8, mNnParam);
+        tDataIn.putAt(9, mNormParam);
+        tDataIn.putAt(10, aPair.atomX());
+        tDataIn.putAt(11, aPair.atomType());
+        tDataIn.putAt(12, ilist);
+        tDataIn.putAt(13, numneigh);
+        tDataIn.putAt(14, aPair.listFirstneigh());
+        tDataIn.putAt(15, aPair.mCutsq);
+        tDataIn.putAt(16, aPair.mLmpType2NNAPType);
+        tDataIn.putAt(17, aPair.mTypeIlist);
+        tDataIn.putAt(18, aPair.mTypeInum);
         
-        mDataOut.putAt(0, aPair.atomF());
-        mDataOut.putAt(1, mGradNlDx);
-        mDataOut.putAt(2, mGradNlDy);
-        mDataOut.putAt(3, mGradNlDz);
-        mDataOut.putAt(4, mFpForwardCache);
-        mDataOut.putAt(5, aPair.engVdwl());
-        mDataOut.putAt(6, aPair.eatom());
-        mDataOut.putAt(7, aPair.virial());
-        mDataOut.putAt(8, aPair.vatom());
-        mDataOut.putAt(9, aPair.cvatom());
+        tDataOut.putAt(0, aPair.atomF());
+        tDataOut.putAt(1, mGradNlDx[0]);
+        tDataOut.putAt(2, mGradNlDy[0]);
+        tDataOut.putAt(3, mGradNlDz[0]);
+        tDataOut.putAt(4, mFpForwardCache[0]);
+        tDataOut.putAt(5, aPair.engVdwl());
+        tDataOut.putAt(6, aPair.eatom());
+        tDataOut.putAt(7, aPair.virial());
+        tDataOut.putAt(8, aPair.vatom());
+        tDataOut.putAt(9, aPair.cvatom());
         
         // 调用 jit 方法计算
-        int tCode = mComputeLammps.invoke(mDataIn, mDataOut);
+        int tCode = mComputeLammps.invoke(tDataIn, tDataOut);
         if (tCode>0) throw new IllegalStateException("Exit code: "+tCode);
     }
     
     public IVector parameters() {
         return mTotParam;
     }
-    public IVector gradParameters() {
+    public IVector gradParameters(int aThreadID) {
         if (mGradTotParam == null) throw new IllegalStateException("No grad in NNAP, invoke `requireGrad()` first.");
-        return mGradTotParam;
+        return mGradTotParam[aThreadID];
     }
     public void updateParameters() {
         int tModelSize = mSymbols.length;
@@ -513,100 +568,124 @@ public class NNAP2 implements IPairPotential {
             mNN[i].updateParameters();
         }
     }
-    public void backwardParameter() {
+    public void backwardParameter(int aThreadID) {
         if (mGradTotParam == null) throw new IllegalStateException("No grad in NNAP, invoke `requireGrad()` first.");
         int tModelSize = mSymbols.length;
         for (int i = 0; i < tModelSize; ++i) {
-            mBasis[i].backwardParameter();
+            mBasis[i].backwardParameter(aThreadID);
         }
         for (int i = 0; i < tModelSize; ++i) {
-            mNN[i].backwardParameter();
+            mNN[i].backwardParameter(aThreadID);
         }
     }
     public void requireGrad() {
-        if (mGradTotParam != null) return;
+        if (mGradTotParam!=null) return;
         int tModelSize = mSymbols.length;
-        mGradTotCParam = mSingle ? FloatCPointer.malloc(mTotGradCParamSize) : DoubleCPointer.malloc(mTotGradCParamSize);
-        mGradTotParam = Vectors.zeros(mTotParamSize);
-        mGradFpParam = AnyCPointer.malloc(tModelSize);
-        mGradNnParam = AnyCPointer.malloc(tModelSize);
-        IDoubleOrFloatCPointer tGradParam = mGradTotCParam.copy();
-        int tShift = 0;
+        mGradTotCParam = new IDoubleOrFloatCPointer[mNumThreads];
+        mGradTotParam = new Vector[mNumThreads];
+        mGradFpParam = new AnyCPointer[mNumThreads];
+        mGradNnParam = new AnyCPointer[mNumThreads];
         for (int i = 0; i < tModelSize; ++i) {
-            mGradFpParam.putAt(i, tGradParam);
-            mBasis[i].mountGradCptrParameter(tGradParam);
-            tGradParam.rightShift(mBasis[i].cptrParameterSize());
-            
-            int tSize = mBasis[i].parameterSize();
-            mBasis[i].mountGradParameter(mGradTotParam.subVec(tShift, tShift+tSize));
-            tShift += tSize;
+            mBasis[i].requireGrad(mNumThreads);
+            mNN[i].requireGrad(mNumThreads);
         }
-        for (int i = 0; i < tModelSize; ++i) {
-            mGradNnParam.putAt(i, tGradParam);
-            mNN[i].mountGradCptrParameter(tGradParam);
-            tGradParam.rightShift(mNN[i].cptrParameterSize());
-            
-            int tSize = mNN[i].parameterSize();
-            mNN[i].mountGradParameter(mGradTotParam.subVec(tShift, tShift+tSize));
-            tShift += tSize;
+        for (int ti = 0; ti < mNumThreads; ++ti) {
+            IDoubleOrFloatCPointer tGradTotCParam = mSingle ? FloatCPointer.malloc(mTotGradCParamSize) : DoubleCPointer.malloc(mTotGradCParamSize);
+            Vector tGradTotParam = Vectors.zeros(mTotParamSize);
+            AnyCPointer tGradFpParam = AnyCPointer.malloc(tModelSize);
+            AnyCPointer tGradNnParam = AnyCPointer.malloc(tModelSize);
+            IDoubleOrFloatCPointer tGradParam = tGradTotCParam.copy();
+            int tShift = 0;
+            for (int i = 0; i < tModelSize; ++i) {
+                tGradFpParam.putAt(i, tGradParam);
+                mBasis[i].mountGradCptrParameter(ti, tGradParam);
+                tGradParam.rightShift(mBasis[i].cptrParameterSize());
+                
+                int tSize = mBasis[i].parameterSize();
+                mBasis[i].mountGradParameter(ti, tGradTotParam.subVec(tShift, tShift+tSize));
+                tShift += tSize;
+            }
+            for (int i = 0; i < tModelSize; ++i) {
+                tGradNnParam.putAt(i, tGradParam);
+                mNN[i].mountGradCptrParameter(ti, tGradParam);
+                tGradParam.rightShift(mNN[i].cptrParameterSize());
+                
+                int tSize = mNN[i].parameterSize();
+                mNN[i].mountGradParameter(ti, tGradTotParam.subVec(tShift, tShift+tSize));
+                tShift += tSize;
+            }
+            mGradTotCParam[ti] = tGradTotCParam;
+            mGradTotParam[ti] = tGradTotParam;
+            mGradFpParam[ti] = tGradFpParam;
+            mGradNnParam[ti] = tGradNnParam;
         }
     }
     public void zeroGrad() {
         if (mGradTotParam == null) throw new IllegalStateException("No grad in NNAP, invoke `requireGrad()` first.");
-        mGradTotCParam.fillD(0.0, mTotGradCParamSize);
-        mGradTotParam.fill(0.0);
+        for (int ti = 0; ti < mNumThreads; ++ti) {
+            mGradTotCParam[ti].fillD(0.0, mTotGradCParamSize);
+            mGradTotParam[ti].fill(0.0);
+        }
     }
     
-    public double forwardEnergy(IDoubleOrFloatCPointer aNlDx, IDoubleOrFloatCPointer aNlDy, IDoubleOrFloatCPointer aNlDz, IntCPointer aNlType,
-                                int aNumNei, int aCType, IGrowableDoubleOrFloatCPointer rCaches) throws Exception {
+    public double forwardEnergy(int aThreadID, IDoubleOrFloatCPointer aNlDx, IDoubleOrFloatCPointer aNlDy, IDoubleOrFloatCPointer aNlDz,
+                                IntCPointer aNlType, int aNumNei, int aCType, IGrowableDoubleOrFloatCPointer rCaches) throws Exception {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
-        mInNums.putAt(0, aNumNei);
-        mInNums.putAt(1, aCType);
+        IntCPointer tInNums = mInNums[aThreadID];
+        AnyCPointer tDataIn = mDataIn[aThreadID];
+        AnyCPointer tDataOut = mDataOut[aThreadID];
+        IDoubleOrFloatCPointer tOutEng = mOutEng[aThreadID];
+        tInNums.putAt(0, aNumNei);
+        tInNums.putAt(1, aCType);
         // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
-        mDataIn.putAt(0, mInNums);
-        mDataIn.putAt(1, aNlDx);
-        mDataIn.putAt(2, aNlDy);
-        mDataIn.putAt(3, aNlDz);
-        mDataIn.putAt(4, aNlType);
-        mDataIn.putAt(5, mFpHyperParam);
-        mDataIn.putAt(6, mFpParam);
-        mDataIn.putAt(7, mNnParam);
-        mDataIn.putAt(8, mNormParam.getAt(aCType-1));
-        mDataOut.putAt(0, mOutEng);
+        tDataIn.putAt(0, tInNums);
+        tDataIn.putAt(1, aNlDx);
+        tDataIn.putAt(2, aNlDy);
+        tDataIn.putAt(3, aNlDz);
+        tDataIn.putAt(4, aNlType);
+        tDataIn.putAt(5, mFpHyperParam);
+        tDataIn.putAt(6, mFpParam);
+        tDataIn.putAt(7, mNnParam);
+        tDataIn.putAt(8, mNormParam.getAt(aCType-1));
+        tDataOut.putAt(0, tOutEng);
         int tSizeFpForwardCache = mBasis[aCType-1].forwardCacheSize(aNumNei);
         int tSizeNnForwardCache = mNN[aCType-1].forwardCacheSize();
         rCaches.ensureCapacity(tSizeFpForwardCache + tSizeNnForwardCache);
-        mDataOut.putAt(1, rCaches);
-        mDataOut.putAt(2, rCaches.plus(tSizeFpForwardCache));
+        tDataOut.putAt(1, rCaches);
+        tDataOut.putAt(2, rCaches.plus(tSizeFpForwardCache));
         // 调用 jit 方法获取结果
-        int tCode = mForwardEnergy.invoke(mDataIn, mDataOut);
+        int tCode = mForwardEnergy.invoke(tDataIn, tDataOut);
         if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
-        return mOutEng.getD();
+        return tOutEng.getD();
     }
-    public void backwardEnergy(double aGradEng, IDoubleOrFloatCPointer aNlDx, IDoubleOrFloatCPointer aNlDy, IDoubleOrFloatCPointer aNlDz, IntCPointer aNlType,
-                               int aNumNei, int aCType, IDoubleOrFloatCPointer aCaches) throws Exception {
+    public void backwardEnergy(int aThreadID, double aGradEng, IDoubleOrFloatCPointer aNlDx, IDoubleOrFloatCPointer aNlDy, IDoubleOrFloatCPointer aNlDz,
+                               IntCPointer aNlType, int aNumNei, int aCType, IDoubleOrFloatCPointer aCaches) throws Exception {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         if (mGradTotParam == null) throw new IllegalStateException("No grad in NNAP, invoke `requireGrad()` first.");
-        mInNums.putAt(0, aNumNei);
-        mInNums.putAt(1, aCType);
-        mOutEng.setD(aGradEng);
+        IntCPointer tInNums = mInNums[aThreadID];
+        AnyCPointer tDataIn = mDataIn[aThreadID];
+        AnyCPointer tDataOut = mDataOut[aThreadID];
+        IDoubleOrFloatCPointer tOutEng = mOutEng[aThreadID];
+        tInNums.putAt(0, aNumNei);
+        tInNums.putAt(1, aCType);
+        tOutEng.setD(aGradEng);
         // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
-        mDataIn.putAt(0, mInNums);
-        mDataIn.putAt(1, aNlDx);
-        mDataIn.putAt(2, aNlDy);
-        mDataIn.putAt(3, aNlDz);
-        mDataIn.putAt(4, aNlType);
-        mDataIn.putAt(5, mFpHyperParam);
-        mDataIn.putAt(6, mFpParam);
-        mDataIn.putAt(7, mNnParam);
-        mDataIn.putAt(8, mNormParam.getAt(aCType-1));
-        mDataIn.putAt(9, aCaches);
-        mDataIn.putAt(10, aCaches.plus(mBasis[aCType-1].forwardCacheSize(aNumNei)));
-        mDataOut.putAt(0, mOutEng);
-        mDataOut.putAt(1, mGradFpParam);
-        mDataOut.putAt(2, mGradNnParam);
+        tDataIn.putAt(0, tInNums);
+        tDataIn.putAt(1, aNlDx);
+        tDataIn.putAt(2, aNlDy);
+        tDataIn.putAt(3, aNlDz);
+        tDataIn.putAt(4, aNlType);
+        tDataIn.putAt(5, mFpHyperParam);
+        tDataIn.putAt(6, mFpParam);
+        tDataIn.putAt(7, mNnParam);
+        tDataIn.putAt(8, mNormParam.getAt(aCType-1));
+        tDataIn.putAt(9, aCaches);
+        tDataIn.putAt(10, aCaches.plus(mBasis[aCType-1].forwardCacheSize(aNumNei)));
+        tDataOut.putAt(0, tOutEng);
+        tDataOut.putAt(1, mGradFpParam[aThreadID]);
+        tDataOut.putAt(2, mGradNnParam[aThreadID]);
         // 调用 jit 方法获取结果
-        int tCode = mBackwardEnergy.invoke(mDataIn, mDataOut);
+        int tCode = mBackwardEnergy.invoke(tDataIn, tDataOut);
         if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
     }
 }
