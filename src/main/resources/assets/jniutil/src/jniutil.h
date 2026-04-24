@@ -560,10 +560,12 @@ GEN_PARSE_JANY_TO_NESTED_ANY(jdouble, float)
 static inline char *parseStr(JNIEnv *aEnv, jstring aStr) {
 #ifdef __cplusplus
     const char *tBuf = aEnv->GetStringUTFChars(aStr, NULL);
+    if (tBuf==NULL) return NULL; // OOM
     char *rStr = STRDUP(tBuf);
     aEnv->ReleaseStringUTFChars(aStr, tBuf);
 #else
     const char *tBuf = (*aEnv)->GetStringUTFChars(aEnv, aStr, NULL);
+    if (tBuf==NULL) return NULL; // OOM
     char *rStr = STRDUP(tBuf);
     (*aEnv)->ReleaseStringUTFChars(aEnv, aStr, tBuf);
 #endif
@@ -593,7 +595,10 @@ static inline char **parseStrBuf(JNIEnv *aEnv, jobjectArray aStrBuf, int *rLen) 
     return rStrBuf;
 }
 static inline void freeStrBuf(char **aStrBuf, int aLen) {
-    for(int i = 0; i < aLen; ++i) FREE(aStrBuf[i]);
+    for(int i = 0; i < aLen; ++i) {
+        char *tStr = aStrBuf[i];
+        if (tStr!=NULL) FREE(tStr);
+    }
     FREE(aStrBuf);
 }
 

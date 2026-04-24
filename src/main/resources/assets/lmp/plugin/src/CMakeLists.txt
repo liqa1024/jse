@@ -74,6 +74,12 @@ else()
     include_directories(STUBS)
 endif()
 
+# debug mode
+option(JSE_DEBUG_MODE "Debug mode, lmpplugin will print exceptions for all rank" OFF)
+if(JSE_DEBUG_MODE)
+    add_definitions(-DJSE_DEBUG)
+endif()
+
 # compat
 include_directories(compat)
 

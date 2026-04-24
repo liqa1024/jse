@@ -128,21 +128,21 @@ public class LmpCore {
         // 依赖 MPICore
         MPICore.InitHelper.init();
         // 这样来统一增加 nativelmp 需要的默认额外设置
-        Map<String, String> rCmakeSettingLmp = new LinkedHashMap<>();
+        Map<String, String> rCmakeSetting = new LinkedHashMap<>();
         // 这里先添加一个简单的环境变量设置的 lammps pkg
         @Nullable String tLmpPkgStr = OS.env("JSE_LMP_PKG");
         if (tLmpPkgStr!=null) {
             String[] tLmpPkgs = IO.Text.splitStr(tLmpPkgStr);
             for (String tLmpPkg : tLmpPkgs) {
-                rCmakeSettingLmp.put("PKG_"+tLmpPkg, "ON");
+                rCmakeSetting.put("PKG_"+tLmpPkg, "ON");
             }
         }
-        rCmakeSettingLmp.putAll(Conf.CMAKE_SETTING);
-        rCmakeSettingLmp.putAll(Conf.CMAKE_SETTING_SHARE);
-        rCmakeSettingLmp.put("BUILD_SHARED_LIBS", "ON");
-        rCmakeSettingLmp.put("LAMMPS_EXCEPTIONS:BOOL", "ON");
-        rCmakeSettingLmp.put("PKG_PLUGIN", "ON"); // 现在统一打开插件支持
-        rCmakeSettingLmp.put("CMAKE_BUILD_TYPE", "Release");
+        rCmakeSetting.putAll(Conf.CMAKE_SETTING);
+        rCmakeSetting.putAll(Conf.CMAKE_SETTING_SHARE);
+        rCmakeSetting.put("BUILD_SHARED_LIBS", "ON");
+        rCmakeSetting.put("LAMMPS_EXCEPTIONS:BOOL", "ON");
+        rCmakeSetting.put("PKG_PLUGIN", "ON"); // 现在统一打开插件支持
+        rCmakeSetting.put("CMAKE_BUILD_TYPE", "Release");
         // 初始化 LIB_DIR 和 INCLUDE_DIR
         String tLmpHome = null;
         String tLmpBuildDir = null;
@@ -153,7 +153,7 @@ public class LmpCore {
             LIB_DIR = tLmpBuildDir + "lib/";
         } else {
             // 否则直接版本隔离，采用内部 lammps
-            String tLmpDir = ROOT+"core/" + UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, MPICore.EXE_PATH, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, rCmakeSettingLmp) + "/";
+            String tLmpDir = ROOT+"core/" + UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, MPICore.EXE_PATH, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, rCmakeSetting) + "/";
             INCLUDE_DIR = tLmpDir + "includes/";
             LIB_DIR = tLmpDir + "lib/";
         }
@@ -212,7 +212,7 @@ public class LmpCore {
             return null;
         };
         // 现在直接使用 JNIUtil.buildLib 来统一初始化
-        LIB_PATH = new JNIUtil.LibBuilder("lammps", "LMP_CORE", LIB_DIR, rCmakeSettingLmp)
+        LIB_PATH = new JNIUtil.LibBuilder("lammps", "LMP_CORE", LIB_DIR, rCmakeSetting)
             .setMT(Conf.USE_MT)
             .setParallel(Conf.CMAKE_PARALLEL)
             .setEnvChecker(() -> {

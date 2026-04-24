@@ -1,9 +1,7 @@
 package jse.lmp;
 
 import jse.clib.*;
-import jse.code.IO;
-import jse.code.SP;
-import jse.code.UT;
+import jse.code.*;
 import jse.parallel.MPI;
 import jse.parallel.MPIException;
 import jse.cptr.*;
@@ -11,6 +9,8 @@ import org.codehaus.groovy.runtime.InvokerHelper;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static jse.code.OS.*;
 
@@ -41,6 +41,9 @@ public class LmpPlugin {
         /** 插件依赖的 lammps 版本字符串，默认自动检测 */
         public static String LMP_VERSION = null;
         private final static String DEFAULT_LMP_VERSION = "22 Jul 2025";
+        
+        /** 插件是否开启 debug 模式，此时会让所有 rank 都输出异常 */
+        public static boolean DEBUG = OS.envZ("JSE_DEBUG_LMPPLUGIN", jse.code.Conf.DEBUG);
     }
     
     public final static String LIB_DIR;
@@ -75,10 +78,12 @@ public class LmpPlugin {
         // 依赖 lmpjni
         NativeLmp.InitHelper.init();
         // 构建 lmpplugin
-        LIB_DIR = LmpCore.ROOT+"plugin/" + UT.Code.uniqueID(LmpCore.LIB_PATH, Conf.JVM_XMX, LmpCore.Conf.CMAKE_SETTING_SHARE) + "/";
+        Map<String, String> rCmakeSetting = new LinkedHashMap<>(LmpCore.Conf.CMAKE_SETTING_SHARE);
+        if (Conf.DEBUG) rCmakeSetting.put("JSE_DEBUG_MODE", "ON");
+        LIB_DIR = LmpCore.ROOT+"plugin/" + UT.Code.uniqueID(LmpCore.LIB_PATH, Conf.JVM_XMX, rCmakeSetting) + "/";
         final String[] fLmpVersion = new String[1];
         // 现在直接使用 JNIUtil.buildLib 来统一初始化
-        LIB_PATH = new JNIUtil.LibBuilder("lmpplugin", "LMPPLUGIN", LIB_DIR, LmpCore.Conf.CMAKE_SETTING_SHARE)
+        LIB_PATH = new JNIUtil.LibBuilder("lmpplugin", "LMPPLUGIN", LIB_DIR, rCmakeSetting)
             .setEnvChecker(() -> {
                 // 获取 lammps 版本字符串
                 if (Conf.LMP_VERSION != null) {

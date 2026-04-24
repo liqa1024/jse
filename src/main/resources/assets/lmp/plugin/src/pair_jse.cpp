@@ -35,7 +35,7 @@ PairJSE::~PairJSE() {
     if (mCore != NULL && mEnv != NULL) {
         JSE_LMPPAIR::close(mEnv, mCore);
         // only check, no error on destructor
-        JSE_LMPPLUGIN::exceptionCheck(mEnv);
+        JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me);
         
         mEnv->DeleteGlobalRef(mCore);
         mCore = NULL;
@@ -48,12 +48,12 @@ PairJSE::~PairJSE() {
 void PairJSE::compute(int eflag, int vflag) {
     ev_init(eflag, vflag);
     JSE_LMPPAIR::compute(mEnv, mCore);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to compute");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to compute");
 }
 
 double PairJSE::single(int i, int j, int itype, int jtype, double rsq, double factor_coul, double factor_lj, double &fforce) {
     double out = JSE_LMPPAIR::single(mEnv, mCore, i, j, itype, jtype, rsq, factor_coul, factor_lj, fforce);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to call single");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to call single");
     return out;
 }
 
@@ -79,15 +79,15 @@ void PairJSE::settings(int aArgc, char **aArgv) {
     }
     // init java LmpPair object
     jboolean tSuc = JSE_LMPPAIR::cacheJClass(mEnv);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv) || !tSuc) error->all(FLERR, "Fail to cache class of java LmpPair");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me) || !tSuc) error->all(FLERR, "Fail to cache class of java LmpPair");
     jobject tObj = JSE_LMPPAIR::newJObject(mEnv, aArgv[0], this);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv) || tObj==NULL) error->all(FLERR, "Fail to create java LmpPair object");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me) || tObj==NULL) error->all(FLERR, "Fail to create java LmpPair object");
     if (mCore != NULL) mEnv->DeleteGlobalRef(mCore);
     mCore = mEnv->NewGlobalRef(tObj);
     mEnv->DeleteLocalRef(tObj);
     // call settings in LmpPair
     JSE_LMPPAIR::settings(mEnv, mCore, aArgc, aArgv);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to call settings");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to call settings");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -95,43 +95,43 @@ void PairJSE::settings(int aArgc, char **aArgv) {
 void PairJSE::coeff(int aArgc, char **aArgv) {
     if (!allocated) allocate();
     JSE_LMPPAIR::coeff(mEnv, mCore, aArgc, aArgv);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to set coeff");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to set coeff");
 }
 
 void PairJSE::init_style() {
     JSE_LMPPAIR::initStyle(mEnv, mCore);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to init_style");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to init_style");
 }
 
 double PairJSE::init_one(int i, int j) {
     double cutij = JSE_LMPPAIR::initOne(mEnv, mCore, i, j);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv) || cutij<=0.0) error->all(FLERR, "Fail to init_one");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me) || cutij<=0.0) error->all(FLERR, "Fail to init_one");
     return cutij;
 }
 
 int PairJSE::pack_forward_comm(int n, int *list, double *buf, int pbc_flag, int *pbc) {
     int out = JSE_LMPPAIR::packForwardComm(mEnv, mCore, n, list, buf, pbc_flag, pbc);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to pack_forward_comm");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to pack_forward_comm");
     return out;
 }
 void PairJSE::unpack_forward_comm(int n, int first, double *buf) {
     JSE_LMPPAIR::unpackForwardComm(mEnv, mCore, n, first, buf);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to unpack_forward_comm");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to unpack_forward_comm");
 }
 int PairJSE::pack_reverse_comm(int n, int first, double *buf) {
     int out = JSE_LMPPAIR::packReverseComm(mEnv, mCore, n, first, buf);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to pack_reverse_comm");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to pack_reverse_comm");
     return out;
 }
 void PairJSE::unpack_reverse_comm(int n, int *list, double *buf) {
     JSE_LMPPAIR::unpackReverseComm(mEnv, mCore, n, list, buf);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to unpack_reverse_comm");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to unpack_reverse_comm");
 }
 
 /* ---------------------------------------------------------------------- */
 jint PairJSE::findVariable(jstring name) {
     const char *name_c = mEnv->GetStringUTFChars(name, NULL);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) return -1;
+    if (name_c==NULL) return -1; // OOM
     int ivar = input->variable->find(name_c);
     mEnv->ReleaseStringUTFChars(name, name_c);
     return (jint)ivar;
@@ -141,7 +141,7 @@ jdouble PairJSE::computeVariable(jint ivar) {
 }
 void PairJSE::citemeAdd(jstring cite) {
     const char *cite_c = mEnv->GetStringUTFChars(cite, NULL);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) return;
+    if (cite_c==NULL) return; // OOM
     lmp->citeme->add(cite_c);
     mEnv->ReleaseStringUTFChars(cite, cite_c);
 }
@@ -209,7 +209,7 @@ jlong PairJSE::atomMass() {
 }
 jlong PairJSE::atomExtract(jstring name) {
     const char *name_c = mEnv->GetStringUTFChars(name, NULL);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) return 0;
+    if (name_c==NULL) return 0; // OOM
     jlong ptr = (jlong)(intptr_t) atom->extract(name_c);
     mEnv->ReleaseStringUTFChars(name, name_c);
     return ptr;

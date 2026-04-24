@@ -42,9 +42,13 @@ jboolean JSE_LMPPLUGIN::initJVM(JNIEnv **rEnv) {
     return tOut==JNI_OK ? JNI_TRUE : JNI_FALSE;
 }
 
-jboolean JSE_LMPPLUGIN::exceptionCheck(JNIEnv *aEnv) {
+jboolean JSE_LMPPLUGIN::exceptionCheck(JNIEnv *aEnv, int aMe) {
     if (aEnv->ExceptionCheck()) {
+#ifdef JSE_DEBUG
         aEnv->ExceptionDescribe();
+#else
+        if (aMe==0) aEnv->ExceptionDescribe();
+#endif
         aEnv->ExceptionClear();
         return JNI_TRUE;
     }

@@ -34,9 +34,9 @@ FixJSE::FixJSE(LAMMPS *aLmp, int aArgc, char **aArgv) : Fix(aLmp, aArgc, aArgv) 
     }
     // init java LmpFix object
     jboolean tSuc = JSE_LMPFIX::cacheJClass(mEnv);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv) || !tSuc) error->all(FLERR, "Fail to cache class of java LmpFix");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me) || !tSuc) error->all(FLERR, "Fail to cache class of java LmpFix");
     jobject tObj = JSE_LMPFIX::newJObject(mEnv, aArgv[3], this, aArgc, aArgv);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv) || tObj==NULL) error->all(FLERR, "Fail to create java LmpFix object");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me) || tObj==NULL) error->all(FLERR, "Fail to create java LmpFix object");
     if (mCore != NULL) mEnv->DeleteGlobalRef(mCore);
     mCore = mEnv->NewGlobalRef(tObj);
     mEnv->DeleteLocalRef(tObj);
@@ -48,7 +48,7 @@ FixJSE::~FixJSE() {
     if (mCore != NULL && mEnv != NULL) {
         JSE_LMPFIX::close(mEnv, mCore);
         // only check, no error on destructor
-        JSE_LMPPLUGIN::exceptionCheck(mEnv);
+        JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me);
         
         mEnv->DeleteGlobalRef(mCore);
         mCore = NULL;
@@ -60,13 +60,13 @@ FixJSE::~FixJSE() {
 
 int FixJSE::setmask() {
     int mask = JSE_LMPFIX::setMask(mEnv, mCore);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to setmask");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to setmask");
     return mask;
 }
 
 void FixJSE::init() {
     JSE_LMPFIX::init(mEnv, mCore);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to init");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to init");
 }
 void FixJSE::init_list(int id, NeighList *ptr) {
     mNL = ptr;
@@ -74,123 +74,123 @@ void FixJSE::init_list(int id, NeighList *ptr) {
 
 void FixJSE::setup(int vflag) {
     JSE_LMPFIX::setup(mEnv, mCore, vflag);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to call setup");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to call setup");
 }
 void FixJSE::min_setup(int vflag) {
     JSE_LMPFIX::minSetup(mEnv, mCore, vflag);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to call min_setup");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to call min_setup");
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixJSE::initial_integrate(int vflag) {
     JSE_LMPFIX::initialIntegrate(mEnv, mCore, vflag);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to call initial_integrate");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to call initial_integrate");
 }
 void FixJSE::post_integrate() {
     JSE_LMPFIX::postIntegrate(mEnv, mCore);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to call post_integrate");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to call post_integrate");
 }
 void FixJSE::pre_exchange() {
     JSE_LMPFIX::preExchange(mEnv, mCore);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to call pre_exchange");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to call pre_exchange");
 }
 void FixJSE::pre_neighbor() {
     JSE_LMPFIX::preNeighbor(mEnv, mCore);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to call pre_neighbor");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to call pre_neighbor");
 }
 void FixJSE::post_neighbor() {
     JSE_LMPFIX::postNeighbor(mEnv, mCore);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to call post_neighbor");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to call post_neighbor");
 }
 void FixJSE::pre_force(int vflag) {
     JSE_LMPFIX::preForce(mEnv, mCore, vflag);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to call pre_force");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to call pre_force");
 }
 void FixJSE::pre_reverse(int eflag, int vflag) {
     JSE_LMPFIX::preReverse(mEnv, mCore, eflag, vflag);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to call pre_reverse");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to call pre_reverse");
 }
 void FixJSE::post_force(int vflag) {
     JSE_LMPFIX::postForce(mEnv, mCore, vflag);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to call post_force");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to call post_force");
 }
 void FixJSE::final_integrate() {
     JSE_LMPFIX::finalIntegrate(mEnv, mCore);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to call final_integrate");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to call final_integrate");
 }
 void FixJSE::end_of_step() {
     JSE_LMPFIX::endOfStep(mEnv, mCore);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to call end_of_step");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to call end_of_step");
 }
 void FixJSE::post_run() {
     JSE_LMPFIX::postRun(mEnv, mCore);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to call post_run");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to call post_run");
 }
 void FixJSE::min_pre_exchange() {
     JSE_LMPFIX::minPreExchange(mEnv, mCore);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to call min_pre_exchange");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to call min_pre_exchange");
 }
 void FixJSE::min_pre_neighbor() {
     JSE_LMPFIX::minPreNeighbor(mEnv, mCore);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to call min_pre_neighbor");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to call min_pre_neighbor");
 }
 void FixJSE::min_post_neighbor() {
     JSE_LMPFIX::minPostNeighbor(mEnv, mCore);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to call min_post_neighbor");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to call min_post_neighbor");
 }
 void FixJSE::min_pre_force(int vflag) {
     JSE_LMPFIX::minPreForce(mEnv, mCore, vflag);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to call min_pre_force");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to call min_pre_force");
 }
 void FixJSE::min_pre_reverse(int eflag, int vflag) {
     JSE_LMPFIX::minPreReverse(mEnv, mCore, eflag, vflag);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to call min_pre_reverse");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to call min_pre_reverse");
 }
 void FixJSE::min_post_force(int vflag) {
     JSE_LMPFIX::minPostForce(mEnv, mCore, vflag);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to call min_post_force");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to call min_post_force");
 }
 
 int FixJSE::pack_forward_comm(int n, int *list, double *buf, int pbc_flag, int *pbc) {
     int out = JSE_LMPFIX::packForwardComm(mEnv, mCore, n, list, buf, pbc_flag, pbc);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to pack_forward_comm");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to pack_forward_comm");
     return out;
 }
 void FixJSE::unpack_forward_comm(int n, int first, double *buf) {
     JSE_LMPFIX::unpackForwardComm(mEnv, mCore, n, first, buf);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to unpack_forward_comm");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to unpack_forward_comm");
 }
 int FixJSE::pack_reverse_comm(int n, int first, double *buf) {
     int out = JSE_LMPFIX::packReverseComm(mEnv, mCore, n, first, buf);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to pack_reverse_comm");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to pack_reverse_comm");
     return out;
 }
 void FixJSE::unpack_reverse_comm(int n, int *list, double *buf) {
     JSE_LMPFIX::unpackReverseComm(mEnv, mCore, n, list, buf);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to unpack_reverse_comm");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to unpack_reverse_comm");
 }
 
 double FixJSE::compute_scalar() {
     double out = JSE_LMPFIX::computeScalar(mEnv, mCore);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to compute_scalar");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to compute_scalar");
     return out;
 }
 double FixJSE::compute_vector(int i) {
     double out = JSE_LMPFIX::computeVector(mEnv, mCore, i);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to compute_vector");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to compute_vector");
     return out;
 }
 double FixJSE::compute_array(int i, int j) {
     double out = JSE_LMPFIX::computeArray(mEnv, mCore, i, j);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) error->all(FLERR, "Fail to compute_array");
+    if (JSE_LMPPLUGIN::exceptionCheck(mEnv, comm->me)) error->all(FLERR, "Fail to compute_array");
     return out;
 }
 
 /* ---------------------------------------------------------------------- */
 jint FixJSE::findVariable(jstring name) {
     const char *name_c = mEnv->GetStringUTFChars(name, NULL);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) return -1;
+    if (name_c==NULL) return -1; // OOM
     int ivar = input->variable->find(name_c);
     mEnv->ReleaseStringUTFChars(name, name_c);
     return (jint)ivar;
@@ -200,7 +200,7 @@ jdouble FixJSE::computeVariable(jint ivar) {
 }
 void FixJSE::citemeAdd(jstring cite) {
     const char *cite_c = mEnv->GetStringUTFChars(cite, NULL);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) return;
+    if (cite_c==NULL) return; // OOM
     lmp->citeme->add(cite_c);
     mEnv->ReleaseStringUTFChars(cite, cite_c);
 }
@@ -345,7 +345,7 @@ jlong FixJSE::atomMass() {
 }
 jlong FixJSE::atomExtract(jstring name) {
     const char *name_c = mEnv->GetStringUTFChars(name, NULL);
-    if (JSE_LMPPLUGIN::exceptionCheck(mEnv)) return 0;
+    if (name_c==NULL) return 0; // OOM
     jlong ptr = (jlong)(intptr_t) atom->extract(name_c);
     mEnv->ReleaseStringUTFChars(name, name_c);
     return ptr;
