@@ -337,19 +337,52 @@ public class Lmpdat extends AbstractSettableAtomData {
         return tOut;
     }
     /// 创建 Lmpdat
-    /** 拷贝一份 Lmpdat，为了简洁还是只保留 copy 一种方法 */
     @Override public Lmpdat copy() {return new Lmpdat(mAtomTypeNum, mBondTypeNum, mBondNum, mBox.copy(), mMasses==null?null:mMasses.copy(), mAtomID.copy(), mAtomType.copy(), mAtomXYZ.copy(), mVelocities==null?null:mVelocities.copy(), copyBondInfo_(mBondID), copyBondInfo_(mBondType), copyBondInfo_(mBondIndex));}
     @Override protected Lmpdat newSame_() {return new Lmpdat(mAtomTypeNum, mBondTypeNum, mBondNum, mBox.copy(), mMasses==null?null:mMasses.copy(), mAtomID.copy(), mAtomType.copy(), mAtomXYZ.copy(), mVelocities==null?null:mVelocities.copy(), copyBondInfo_(mBondID), copyBondInfo_(mBondType), copyBondInfo_(mBondIndex));}
     @Override protected Lmpdat newZeros_(int aAtomNum) {return new Lmpdat(mAtomTypeNum, mBondTypeNum, mBondNum, mBox.copy(), mMasses==null?null:mMasses.copy(), IntVector.zeros(aAtomNum), IntVector.zeros(aAtomNum), RowMatrix.zeros(aAtomNum, mAtomXYZ.ncols()), mVelocities==null?null:RowMatrix.zeros(aAtomNum, mVelocities.ncols()), copyBondInfo_(mBondID), copyBondInfo_(mBondType), copyBondInfo_(mBondIndex));}
     @Override protected Lmpdat newZeros_(int aAtomNum, IBox aBox) {return new Lmpdat(mAtomTypeNum, mBondTypeNum, mBondNum, LmpBox.of(aBox), mMasses==null?null:mMasses.copy(), IntVector.zeros(aAtomNum), IntVector.zeros(aAtomNum), RowMatrix.zeros(aAtomNum, mAtomXYZ.ncols()), mVelocities==null?null:RowMatrix.zeros(aAtomNum, mVelocities.ncols()), copyBondInfo_(mBondID), copyBondInfo_(mBondType), copyBondInfo_(mBondIndex));}
     
-    /** 从 IAtomData 来创建，一般来说 Lmpdat 需要一个额外的质量信息 */
-    public static Lmpdat fromAtomData(IAtomData aAtomData) {return fromAtomData_(aAtomData, Vectors.from(aAtomData.masses()));}
-    public static Lmpdat fromAtomData(IAtomData aAtomData, IVector aMasses) {return fromAtomData_(aAtomData, Vectors.from(aMasses));}
-    public static Lmpdat fromAtomData(IAtomData aAtomData, Collection<? extends Number> aMasses) {return fromAtomData_(aAtomData, Vectors.from(aMasses));}
-    public static Lmpdat fromAtomData(IAtomData aAtomData, double... aMasses) {return fromAtomData_(aAtomData, Vectors.from(aMasses));}
+    /**
+     * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 lammps data 数据
+     * <p>
+     * 默认会尝试自动从 {@link IAtomData} 获取质量，使用
+     * {@link #of(IAtomData, double...)} 来手动指定质量信息
+     *
+     * @param aAtomData 输入的原子数据
+     * @return 创建的 lammps data 数据
+     * @see #of(IAtomData, double...)
+     */
+    public static Lmpdat of(IAtomData aAtomData) {
+        return of_(aAtomData, Vectors.from(aAtomData.masses()));
+    }
+    /**
+     * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 lammps data 数据
+     * @param aAtomData 输入的原子数据
+     * @param aMasses 可选的质量信息，默认会自动通过输入原子数据获取
+     * @return 创建的 lammps data 数据
+     * @see #of(IAtomData)
+     */
+    public static Lmpdat of(IAtomData aAtomData, double... aMasses) {
+        return of_(aAtomData, Vectors.from(aMasses));
+    }
+    /**
+     * 传入向量形式质量数据的转换
+     * @see #of(IAtomData, double...)
+     * @see IVector
+     */
+    public static Lmpdat of(IAtomData aAtomData, IVector aMasses) {
+        return of_(aAtomData, Vectors.from(aMasses));
+    }
+    /**
+     * 传入列表形式质量数据的转换
+     * @see #of(IAtomData, double...)
+     * @see Collection
+     */
+    public static Lmpdat of(IAtomData aAtomData, Collection<? extends Number> aMasses) {
+        return of_(aAtomData, Vectors.from(aMasses));
+    }
     
-    static Lmpdat fromAtomData_(IAtomData aAtomData, @Nullable IVector aMasses) {
+    static Lmpdat of_(IAtomData aAtomData, @Nullable IVector aMasses) {
         // 根据输入的 aAtomData 类型来具体判断需要如何获取 rAtomData
         if (aAtomData instanceof Lmpdat) {
             // Lmpdat 则直接获取即可（专门优化，保留完整模拟盒信息）
@@ -437,11 +470,6 @@ public class Lmpdat extends AbstractSettableAtomData {
             return new Lmpdat(tAtomTypeNum, tBondTypeNumber, tBondNum/2, rBox, aMasses, rAtomID, rAtomType, rAtomXYZ, rVelocities, rBondID, rBondType, rBondIndex);
         }
     }
-    /** 按照规范，这里还提供这种构造方式；目前暂不清楚何种更好，因此不做注解 */
-    public static Lmpdat of(IAtomData aAtomData) {return fromAtomData(aAtomData);}
-    public static Lmpdat of(IAtomData aAtomData, IVector aMasses) {return fromAtomData(aAtomData, aMasses);}
-    public static Lmpdat of(IAtomData aAtomData, Collection<? extends Number> aMasses) {return fromAtomData(aAtomData, aMasses);}
-    public static Lmpdat of(IAtomData aAtomData, double... aMasses) {return fromAtomData(aAtomData, aMasses);}
     
     
     /// 文件读写

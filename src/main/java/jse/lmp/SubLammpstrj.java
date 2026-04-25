@@ -569,10 +569,26 @@ public class SubLammpstrj extends AbstractSettableAtomData {
     
     
     /// 创建 SubLammpstrj
-    public static SubLammpstrj fromAtomData(IAtomData aAtomData) {
-        return fromAtomData(aAtomData, getTimeStep(aAtomData, 0));
+    /**
+     * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 lammps dump 单帧数据
+     * <p>
+     * 使用 {@link #of(IAtomData, long)} 来手动指定其时间步
+     *
+     * @param aAtomData 输入的原子数据
+     * @return 创建的 lammps dump 单帧数据
+     * @see #of(IAtomData, long)
+     */
+    public static SubLammpstrj of(IAtomData aAtomData) {
+        return of(aAtomData, getTimeStep(aAtomData, 0));
     }
-    public static SubLammpstrj fromAtomData(IAtomData aAtomData, long aTimeStep) {
+    /**
+     * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 lammps dump 单帧数据
+     * @param aAtomData 输入的原子数据
+     * @param aTimeStep 可选的时间步
+     * @return 创建的 lammps dump 单帧数据
+     * @see #of(IAtomData)
+     */
+    public static SubLammpstrj of(IAtomData aAtomData, long aTimeStep) {
         // 根据输入的 aAtomData 类型来具体判断需要如何获取 rAtomData
         if (aAtomData instanceof SubLammpstrj) {
             // SubLammpstrj 则直接获取即可（专门优化，保留排序，具体坐标的形式，对应的标签等）
@@ -659,9 +675,6 @@ public class SubLammpstrj extends AbstractSettableAtomData {
         if (aAtomData instanceof SubLammpstrj) return ((SubLammpstrj)aAtomData).mTimeStep;
         return aDefault;
     }
-    /** 按照规范，这里还提供这种构造方式；目前暂不清楚何种更好，因此不做注解 */
-    public static SubLammpstrj of(IAtomData aAtomData) {return fromAtomData(aAtomData);}
-    public static SubLammpstrj of(IAtomData aAtomData, long aTimeStep) {return fromAtomData(aAtomData, aTimeStep);}
     
     
     /// 文件读写

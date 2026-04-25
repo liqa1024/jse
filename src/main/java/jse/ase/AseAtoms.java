@@ -907,28 +907,23 @@ public class AseAtoms extends AbstractSettableAtomData {
     /**
      * 通过一个 ase atoms 对应的 {@link PyObject} 来创建对应的 jse 版
      * {@link AseAtoms}，会重新拷贝一次内部数据加快频繁访问下的性能
-     * <p>
-     * {@link #of(PyObject)} 为等价的别名方法
      *
      * @param aPyAtoms 输入的 ase atoms 对象
      * @return 创建的 jse 版 AseAtoms
-     * @see #of(PyObject)
      */
-    public static AseAtoms fromPyObject(PyObject aPyAtoms) throws JepException {
-        return fromPyObject(aPyAtoms, false);
+    public static AseAtoms of(PyObject aPyAtoms) throws JepException {
+        return of(aPyAtoms, false);
     }
     /**
      * 通过一个 ase atoms 对应的 {@link PyObject} 来创建对应的 jse 版
      * {@link AseAtoms}，会重新拷贝一次内部数据加快频繁访问下的性能
-     * <p>
-     * {@link #of(PyObject)} 为等价的别名方法
      *
      * @param aPyAtoms 输入的 ase atoms 对象
      * @param aLimited 是否限制属性转换，此时会只转换必要的坐标和原子需要信息，默认为 {@code false}
      * @return 创建的 jse 版 AseAtoms
      * @see #of(PyObject)
      */
-    public static AseAtoms fromPyObject(PyObject aPyAtoms, boolean aLimited) throws JepException {
+    public static AseAtoms of(PyObject aPyAtoms, boolean aLimited) throws JepException {
         SP.Python.exec("from jsepy.atom import convertPyObjectToAseAtoms");
         return (AseAtoms)SP.Python.invoke("convertPyObjectToAseAtoms", aPyAtoms, aLimited);
     }
@@ -957,34 +952,26 @@ public class AseAtoms extends AbstractSettableAtomData {
      * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 jse 版 {@link AseAtoms}
      * <p>
      * 默认会尝试自动从 {@link IAtomData} 获取元素符号信息，使用
-     * {@link #fromAtomData(IAtomData, String...)} 来手动指定元素符号信息
-     * <p>
-     * {@link #of(IAtomData)} 为等价的别名方法
+     * {@link #of(IAtomData, String...)} 来手动指定元素符号信息
      *
      * @param aAtomData 输入的原子数据
      * @return 创建的 jse 版 AseAtoms
      * @throws IllegalArgumentException 如果包含非法的元素符号
-     * @see #of(IAtomData)
-     * @see #fromAtomData(IAtomData, String...)
+     * @see #of(IAtomData, String...)
      */
-    public static AseAtoms fromAtomData(IAtomData aAtomData) {
+    public static AseAtoms of(IAtomData aAtomData) {
         @Nullable List<@Nullable String> tSymbols = aAtomData.symbols();
-        return fromAtomData(aAtomData, tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
+        return of(aAtomData, tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
     }
-    
     /**
      * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 jse 版 {@link AseAtoms}
-     * <p>
-     * {@link #of(IAtomData, String...)} 为等价的别名方法
-     *
      * @param aAtomData 输入的原子数据
      * @param aSymbols 可选的元素符号信息，默认会自动通过输入原子数据获取
      * @return 创建的 jse 版 AseAtoms
      * @throws IllegalArgumentException 如果包含非法的元素符号
-     * @see #of(IAtomData, String...)
-     * @see #fromAtomData(IAtomData)
+     * @see #of(IAtomData)
      */
-    public static AseAtoms fromAtomData(IAtomData aAtomData, String... aSymbols) {
+    public static AseAtoms of(IAtomData aAtomData, String... aSymbols) {
         if (aSymbols == null) aSymbols = ZL_STR;
         // 根据输入的 aAtomData 类型来具体判断需要如何获取 rAtomData
         if (aAtomData instanceof AseAtoms) {
@@ -1180,55 +1167,12 @@ public class AseAtoms extends AbstractSettableAtomData {
         return rAtoms;
     }
     /**
-     * 传入列表形式元素符号的创建
-     * @see #fromAtomData(IAtomData, String...)
-     * @see Collection
-     */
-    public static AseAtoms fromAtomData(IAtomData aAtomData, Collection<? extends CharSequence> aSymbols) {
-        return fromAtomData(aAtomData, IO.Text.toArray(aSymbols));
-    }
-    /**
-     * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 jse 版 {@link AseAtoms}
-     * <p>
-     * 默认会尝试自动从 {@link IAtomData} 获取元素符号信息，使用
-     * {@link #of(IAtomData, String...)} 来手动指定元素符号信息
-     *
-     * @param aAtomData 输入的原子数据
-     * @return 创建的 jse 版 AseAtoms
-     * @throws IllegalArgumentException 如果包含非法的元素符号
-     * @see #of(IAtomData, String...)
-     */
-    public static AseAtoms of(IAtomData aAtomData) {
-        return fromAtomData(aAtomData);
-    }
-    /**
-     * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 jse 版 {@link AseAtoms}
-     * @param aAtomData 输入的原子数据
-     * @param aSymbols 可选的元素符号信息，默认会自动通过输入原子数据获取
-     * @return 创建的 jse 版 AseAtoms
-     * @throws IllegalArgumentException 如果包含非法的元素符号
-     * @see #of(IAtomData)
-     */
-    public static AseAtoms of(IAtomData aAtomData, String... aSymbols) {
-        return fromAtomData(aAtomData, aSymbols);
-    }
-    /**
      * 传入列表形式元素符号的转换
      * @see #of(IAtomData, String...)
      * @see Collection
      */
     public static AseAtoms of(IAtomData aAtomData, Collection<? extends CharSequence> aSymbols) {
-        return fromAtomData(aAtomData, aSymbols);
-    }
-    /**
-     * 通过一个 ase atoms 对应的 {@link PyObject} 来创建对应的 jse 版
-     * {@link AseAtoms}，会重新拷贝一次内部数据加快频繁访问下的性能
-     *
-     * @param aPyAtoms 输入的 ase atoms 对象
-     * @return 创建的 jse 版 AseAtoms
-     */
-    public static AseAtoms of(PyObject aPyAtoms) throws JepException {
-        return fromPyObject(aPyAtoms);
+        return of(aAtomData, IO.Text.toArray(aSymbols));
     }
     /**
      * python 中使用的兼容接口，避免 jep 检测重载方法失效
@@ -1239,10 +1183,10 @@ public class AseAtoms extends AbstractSettableAtomData {
     public static AseAtoms of_compat(Object aAnyData) throws JepException {
         // 手动实现动态加载
         if (aAnyData instanceof PyObject) {
-            return fromPyObject((PyObject)aAnyData);
+            return of((PyObject)aAnyData);
         } else
         if (aAnyData instanceof IAtomData) {
-            return fromAtomData((IAtomData)aAnyData);
+            return of((IAtomData)aAnyData);
         } else {
             throw new IllegalArgumentException("Invalid data type: " + aAnyData.getClass().getName());
         }
@@ -1260,7 +1204,7 @@ public class AseAtoms extends AbstractSettableAtomData {
     public static AseAtoms read(String aFilePath) throws JepException {
         SP.Python.exec("from ase.io import read");
         try (PyCallable tPyRead = SP.Python.getValue("read", PyCallable.class)) {
-            return fromPyObject(tPyRead.callAs(PyObject.class, aFilePath));
+            return of(tPyRead.callAs(PyObject.class, aFilePath));
         }
     }
     /**
@@ -1277,11 +1221,11 @@ public class AseAtoms extends AbstractSettableAtomData {
             if (tOut instanceof List) {
                 List<AseAtoms> rOut = new ArrayList<>(((List<?>)tOut).size());
                 for (Object tAtoms: (List<?>)tOut) {
-                    rOut.add(fromPyObject((PyObject)tAtoms));
+                    rOut.add(of((PyObject)tAtoms));
                 }
                 return rOut;
             } else {
-                return fromPyObject((PyObject)tOut);
+                return of((PyObject)tOut);
             }
         }
     }

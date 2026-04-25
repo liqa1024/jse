@@ -473,29 +473,53 @@ public class POSCAR extends AbstractSettableAtomData {
     @Override public int ntypes() {return mNumAtomsVec.size();}
     
     
-    /** 拷贝一份 POSCAR */
     @Override public POSCAR copy() {
         return new POSCAR(mComment, mBox.copy(), copyTypeNames(mTypeNames), mNumAtomsVec.copy(), mSelectiveDynamics, mDirect.copy(), mIsCartesian);
     }
     // 由于 POSCAR 不是全都可以修改，因此不重写另外两个
     
-    /** 从 IAtomData 来创建，POSCAR 需要额外的原子种类字符串以及额外的是否开启 SelectiveDynamics */
-    public static POSCAR fromAtomData(IAtomData aAtomData) {
+    /// 创建 POSCAR
+    /**
+     * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 POSCAR 数据
+     * <p>
+     * 默认会尝试自动从 {@link IAtomData} 获取元素符号信息，使用
+     * {@link #of(IAtomData, String...)} 来手动指定元素符号信息
+     *
+     * @param aAtomData 输入的原子数据
+     * @return 创建的 POSCAR 数据
+     * @see #of(IAtomData, String...)
+     */
+    public static POSCAR of(IAtomData aAtomData) {
         @Nullable List<@Nullable String> tSymbols = aAtomData.symbols();
-        return fromAtomData(aAtomData, tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
+        return of(aAtomData, tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
     }
-    public static POSCAR fromAtomData(IAtomData aAtomData, String... aTypeNames) {
-        return fromAtomData(aAtomData, (aAtomData instanceof POSCAR) && ((POSCAR)aAtomData).mSelectiveDynamics, aTypeNames);
+    /**
+     * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 POSCAR 数据
+     * @param aAtomData 输入的原子数据
+     * @param aSymbols 可选的元素符号信息，默认会自动通过输入原子数据获取
+     * @return 创建的 POSCAR 数据
+     * @see #of(IAtomData)
+     */
+    public static POSCAR of(IAtomData aAtomData, String... aSymbols) {
+        return of(aAtomData, (aAtomData instanceof POSCAR) && ((POSCAR)aAtomData).mSelectiveDynamics, aSymbols);
     }
-    public static POSCAR fromAtomData(IAtomData aAtomData, boolean aSelectiveDynamics, String... aTypeNames) {
-        if (aTypeNames == null) aTypeNames = ZL_STR;
+    /**
+     * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 POSCAR 数据
+     * @param aAtomData 输入的原子数据
+     * @param aSelectiveDynamics 可选是否开启 {@code Selective dynamics}
+     * @param aSymbols 可选的元素符号信息，默认会自动通过输入原子数据获取
+     * @return 创建的 POSCAR 数据
+     * @see #of(IAtomData)
+     */
+    public static POSCAR of(IAtomData aAtomData, boolean aSelectiveDynamics, String... aSymbols) {
+        if (aSymbols == null) aSymbols = ZL_STR;
         // 根据输入的 aAtomData 类型来具体判断需要如何获取 rAtomData
         if (aAtomData instanceof POSCAR) {
             // POSCAR 则直接获取即可（专门优化，保留完整模拟盒信息等）
-            return ((POSCAR)aAtomData).copy().setSelectiveDynamics(aSelectiveDynamics).setSymbols(aTypeNames);
+            return ((POSCAR)aAtomData).copy().setSelectiveDynamics(aSelectiveDynamics).setSymbols(aSymbols);
         } else {
             // 一般的情况，这里直接遍历 atoms 来创建，这里需要按照 type 来排序
-            int tAtomTypeNum = Math.max(aAtomData.ntypes(), aTypeNames.length);
+            int tAtomTypeNum = Math.max(aAtomData.ntypes(), aSymbols.length);
             IIntVector rNumAtomsVec = IntVector.zeros(tAtomTypeNum);
             IMatrix rDirect = Matrices.zeros(aAtomData.natoms(), 3);
             int tIdx = 0;
@@ -513,36 +537,30 @@ public class POSCAR extends AbstractSettableAtomData {
             VaspBox rBox = tBox.isPrism() ?
                 new VaspBoxPrism(tBox.ax(), tBox.ay(), tBox.az(), tBox.bx(), tBox.by(), tBox.bz(), tBox.cx(), tBox.cy(), tBox.cz()) :
                 new VaspBox(tBox.x(), tBox.y(), tBox.z());
-            if (aTypeNames.length!=0 && aTypeNames.length<tAtomTypeNum) {
+            if (aSymbols.length!=0 && aSymbols.length<tAtomTypeNum) {
                 String[] rTypeNames = new String[tAtomTypeNum];
-                System.arraycopy(aTypeNames, 0, rTypeNames, 0, aTypeNames.length);
-                for (int tType = aTypeNames.length+1; tType <= tAtomTypeNum; ++tType) rTypeNames[tType-1] = "T" + tType;
-                aTypeNames = rTypeNames;
+                System.arraycopy(aSymbols, 0, rTypeNames, 0, aSymbols.length);
+                for (int tType = aSymbols.length+1; tType <= tAtomTypeNum; ++tType) rTypeNames[tType-1] = "T" + tType;
+                aSymbols = rTypeNames;
             }
-            return new POSCAR(null, rBox, copyTypeNames(aTypeNames), rNumAtomsVec, aSelectiveDynamics, rDirect, true);
+            return new POSCAR(null, rBox, copyTypeNames(aSymbols), rNumAtomsVec, aSelectiveDynamics, rDirect, true);
         }
     }
-    public static POSCAR fromAtomData(IAtomData aAtomData, Collection<? extends CharSequence> aTypeNames) {
-        return fromAtomData(aAtomData, IO.Text.toArray(aTypeNames));
-    }
-    public static POSCAR fromAtomData(IAtomData aAtomData, boolean aSelectiveDynamics, Collection<? extends CharSequence> aTypeNames) {
-        return fromAtomData(aAtomData, aSelectiveDynamics, IO.Text.toArray(aTypeNames));
-    }
-    /** 按照规范，这里还提供这种构造方式；目前暂不清楚何种更好，因此不做注解 */
-    public static POSCAR of(IAtomData aAtomData) {
-        return fromAtomData(aAtomData);
-    }
-    public static POSCAR of(IAtomData aAtomData, String... aTypeNames) {
-        return fromAtomData(aAtomData, aTypeNames);
-    }
-    public static POSCAR of(IAtomData aAtomData, boolean aSelectiveDynamics, String... aTypeNames) {
-        return fromAtomData(aAtomData, aSelectiveDynamics, aTypeNames);
-    }
+    /**
+     * 传入列表形式元素符号的转换
+     * @see #of(IAtomData, String...)
+     * @see Collection
+     */
     public static POSCAR of(IAtomData aAtomData, Collection<? extends CharSequence> aTypeNames) {
-        return fromAtomData(aAtomData, aTypeNames);
+        return of(aAtomData, IO.Text.toArray(aTypeNames));
     }
+    /**
+     * 传入列表形式元素符号的转换
+     * @see #of(IAtomData, boolean, String...)
+     * @see Collection
+     */
     public static POSCAR of(IAtomData aAtomData, boolean aSelectiveDynamics, Collection<? extends CharSequence> aTypeNames) {
-        return fromAtomData(aAtomData, aSelectiveDynamics, aTypeNames);
+        return of(aAtomData, aSelectiveDynamics, IO.Text.toArray(aTypeNames));
     }
     
     

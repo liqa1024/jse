@@ -1,11 +1,15 @@
 package jse.atom;
 
+import jep.JepException;
 import jep.NDArray;
+import jep.python.PyObject;
+import jse.ase.AseAtoms;
 import jse.code.CS;
 import jse.math.vector.IVector;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -178,6 +182,31 @@ public interface IAtomData extends IHasSymbol {
     /** @see #operation() */
     @VisibleForTesting default IAtomDataOperation op() {return operation();}
     
+    
+    /// ase stuffs
+    /**
+     * 转为 ase 的 Atoms，总是会进行值拷贝
+     * @return 对应 ase 的 Atoms 的 python 对象
+     */
+    default PyObject ase() throws JepException {
+        return AseAtoms.of(this).toPyObject();
+    }
+    /**
+     * 转为 ase 的 Atoms，总是会进行值拷贝
+     * @param aSymbols 可选的元素符号信息，默认会自动通过输入原子数据获取
+     * @return 对应 ase 的 Atoms 的 python 对象
+     */
+    default PyObject ase(String... aSymbols) throws JepException {
+        return AseAtoms.of(this, aSymbols).toPyObject();
+    }
+    /**
+     * 传入列表形式元素符号的转换
+     * @see #ase(String...)
+     * @see Collection
+     */
+    default PyObject ase(Collection<? extends CharSequence> aSymbols) throws JepException {
+        return AseAtoms.of(this, aSymbols).toPyObject();
+    }
     
     /// numpy stuffs
     /**

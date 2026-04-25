@@ -7,6 +7,7 @@ import jse.code.collection.AbstractCollections;
 import jse.code.collection.AbstractListWrapper;
 import jse.code.collection.NewCollections;
 import jse.math.table.ITable;
+import jse.math.vector.ILongVector;
 import jse.math.vector.ILongVectorGetter;
 import jse.parallel.MPI;
 import jse.parallel.MPIException;
@@ -52,14 +53,14 @@ public class Lammpstrj extends AbstractListWrapper<SubLammpstrj, IAtomData, SubL
     Lammpstrj(List<SubLammpstrj> aData) {super(aData);}
     
     /** AbstractListWrapper stuffs */
-    @Override protected final SubLammpstrj toInternal_(IAtomData aAtomData) {return SubLammpstrj.fromAtomData(aAtomData, SubLammpstrj.getTimeStep(aAtomData, size()));}
+    @Override protected final SubLammpstrj toInternal_(IAtomData aAtomData) {return SubLammpstrj.of(aAtomData, SubLammpstrj.getTimeStep(aAtomData, size()));}
     @Override protected final SubLammpstrj toOutput_(SubLammpstrj aSubLammpstrj) {return aSubLammpstrj;}
     
     /** 提供更加易用的添加方法，返回自身支持链式调用 */
     @Override public Lammpstrj append(IAtomData aAtomData) {return (Lammpstrj)super.append(aAtomData);}
     @Override public Lammpstrj appendAll(Collection<? extends IAtomData> aAtomDataList) {return (Lammpstrj)super.appendAll(aAtomDataList);}
     public Lammpstrj append(IAtomData aAtomData, long aTimeStep) {
-        mList.add(SubLammpstrj.fromAtomData(aAtomData, aTimeStep));
+        mList.add(SubLammpstrj.of(aAtomData, aTimeStep));
         return this;
     }
     public Lammpstrj appendFile(String aFilePath) throws IOException {
@@ -112,82 +113,149 @@ public class Lammpstrj extends AbstractListWrapper<SubLammpstrj, IAtomData, SubL
     }
     
     /// 创建 Lammpstrj
-    /** 从 IAtomData 来创建，对于 Lammpstrj 可以支持容器的 aAtomData */
-    public static Lammpstrj fromAtomData(IAtomData aAtomData) {
-        return new Lammpstrj(SubLammpstrj.fromAtomData(aAtomData));
+    /**
+     * 创建一个空的多帧 lammps dump 数据
+     * @return 新创建的空的 {@link Lammpstrj}
+     */
+    public static Lammpstrj zl() {
+        return new Lammpstrj();
     }
-    public static Lammpstrj fromAtomData(IAtomData aAtomData, long aTimeStep) {
-        return new Lammpstrj(SubLammpstrj.fromAtomData(aAtomData, aTimeStep));
+    /**
+     * 通过一个一般的原子数据 {@link IAtomData} 来创建一个多帧的 lammps dump 数据（内部只有一帧）
+     * <p>
+     * 使用 {@link #of(IAtomData, long)} 来手动指定其时间步
+     *
+     * @param aAtomData 输入的原子数据
+     * @return 创建的多帧的 lammps dump 数据
+     * @see SubLammpstrj#of(IAtomData)
+     * @see #of(IAtomData, long)
+     */
+    public static Lammpstrj of(IAtomData aAtomData) {
+        return new Lammpstrj(SubLammpstrj.of(aAtomData));
     }
-    public static Lammpstrj fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList) {
+    /**
+     * 通过一个一般的原子数据 {@link IAtomData} 来创建一个多帧的 lammps dump 数据（内部只有一帧）
+     * @param aAtomData 输入的原子数据
+     * @param aTimeStep 可选的时间步
+     * @return 创建的多帧的 lammps dump 数据
+     * @see SubLammpstrj#of(IAtomData, long)
+     * @see #of(IAtomData)
+     */
+    public static Lammpstrj of(IAtomData aAtomData, long aTimeStep) {
+        return new Lammpstrj(SubLammpstrj.of(aAtomData, aTimeStep));
+    }
+    /**
+     * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个多帧的 lammps dump 数据
+     * <p>
+     * 使用 {@link #of(Iterable, ILongVectorGetter)} 来手动指定每帧的时间步
+     *
+     * @param aAtomDataList 输入的原子数据组成的列表
+     * @return 创建的多帧的 lammps dump 数据
+     * @see #of(Iterable, ILongVectorGetter)
+     */
+    public static Lammpstrj of(Iterable<? extends IAtomData> aAtomDataList) {
         if (aAtomDataList == null) return new Lammpstrj();
         
         List<SubLammpstrj> rLammpstrj = new ArrayList<>();
         int i = 0;
         for (IAtomData subAtomData : aAtomDataList) {
-            rLammpstrj.add(SubLammpstrj.fromAtomData(subAtomData, SubLammpstrj.getTimeStep(subAtomData, i)));
+            rLammpstrj.add(SubLammpstrj.of(subAtomData, SubLammpstrj.getTimeStep(subAtomData, i)));
             ++i;
         }
         return new Lammpstrj(rLammpstrj);
     }
-    public static Lammpstrj fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList, ILongVectorGetter aTimeStepGetter) {
+    /**
+     * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个多帧的 lammps dump 数据
+     * @param aAtomDataList 输入的原子数据组成的列表
+     * @param aTimeStepGetter 可选的时间步获取器，可以使用 lammbda 表达式或者直接传入 {@link ILongVector}
+     * @return 创建的多帧的 lammps dump 数据
+     * @see #of(Iterable)
+     * @see ILongVectorGetter
+     */
+    public static Lammpstrj of(Iterable<? extends IAtomData> aAtomDataList, ILongVectorGetter aTimeStepGetter) {
         if (aAtomDataList == null) return new Lammpstrj();
         
         List<SubLammpstrj> rLammpstrj = new ArrayList<>();
         int i = 0;
         for (IAtomData subAtomData : aAtomDataList) {
-            rLammpstrj.add(SubLammpstrj.fromAtomData(subAtomData, aTimeStepGetter.get(i)));
+            rLammpstrj.add(SubLammpstrj.of(subAtomData, aTimeStepGetter.get(i)));
             ++i;
         }
         return new Lammpstrj(rLammpstrj);
     }
-    public static Lammpstrj fromAtomDataList(Collection<? extends IAtomData> aAtomDataList) {
+    /**
+     * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个多帧的 lammps dump 数据
+     * <p>
+     * 使用 {@link #of(Collection, ILongVectorGetter)} 来手动指定每帧的时间步
+     *
+     * @param aAtomDataList 输入的原子数据组成的列表
+     * @return 创建的多帧的 lammps dump 数据
+     * @see #of(Collection, ILongVectorGetter)
+     */
+    public static Lammpstrj of(Collection<? extends IAtomData> aAtomDataList) {
         if (aAtomDataList == null) return new Lammpstrj();
         
         List<SubLammpstrj> rLammpstrj = new ArrayList<>(aAtomDataList.size());
         int i = 0;
         for (IAtomData subAtomData : aAtomDataList) {
-            rLammpstrj.add(SubLammpstrj.fromAtomData(subAtomData, SubLammpstrj.getTimeStep(subAtomData, i)));
+            rLammpstrj.add(SubLammpstrj.of(subAtomData, SubLammpstrj.getTimeStep(subAtomData, i)));
             ++i;
         }
         return new Lammpstrj(rLammpstrj);
     }
-    public static Lammpstrj fromAtomDataList(Collection<? extends IAtomData> aAtomDataList, ILongVectorGetter aTimeStepGetter) {
+    /**
+     * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个多帧的 lammps dump 数据
+     * @param aAtomDataList 输入的原子数据组成的列表
+     * @param aTimeStepGetter 可选的时间步获取器，可以使用 lammbda 表达式或者直接传入 {@link ILongVector}
+     * @return 创建的多帧的 lammps dump 数据
+     * @see #of(Collection)
+     * @see ILongVectorGetter
+     */
+    public static Lammpstrj of(Collection<? extends IAtomData> aAtomDataList, ILongVectorGetter aTimeStepGetter) {
         if (aAtomDataList == null) return new Lammpstrj();
         
         List<SubLammpstrj> rLammpstrj = new ArrayList<>(aAtomDataList.size());
         int i = 0;
         for (IAtomData subAtomData : aAtomDataList) {
-            rLammpstrj.add(SubLammpstrj.fromAtomData(subAtomData, aTimeStepGetter.get(i)));
+            rLammpstrj.add(SubLammpstrj.of(subAtomData, aTimeStepGetter.get(i)));
             ++i;
         }
         return new Lammpstrj(rLammpstrj);
     }
-    /** 对于 matlab 调用的兼容 */
-    public static Lammpstrj fromAtomData_compat(Object[] aAtomDataArray) {
+    /**
+     * 传入 {@link AbstractListWrapper} 形式的创建，保证
+     * {@link Lammpstrj} 也能直接输入
+     * @see #of(Collection)
+     * @see AbstractListWrapper
+     */
+    public static Lammpstrj of(AbstractListWrapper<? extends IAtomData, ?, ?> aAtomDataList) {
+        return of(aAtomDataList.asList());
+    }
+    /**
+     * 传入 {@link AbstractListWrapper} 形式的创建，保证
+     * {@link Lammpstrj} 也能直接输入
+     * @see #of(Collection, ILongVectorGetter)
+     * @see AbstractListWrapper
+     */
+    public static Lammpstrj of(AbstractListWrapper<? extends IAtomData, ?, ?> aAtomDataList, ILongVectorGetter aTimeStepGetter) {
+        return of(aAtomDataList.asList(), aTimeStepGetter);
+    }
+    /// matlab stuffs
+    /**
+     * 对于 matlab 调用的兼容方法
+     * @see #of(Collection)
+     */
+    public static Lammpstrj of_compat(Object[] aAtomDataArray) {
         if (aAtomDataArray==null || aAtomDataArray.length==0) return new Lammpstrj();
         
         List<SubLammpstrj> rLammpstrj = new ArrayList<>();
         int i = 0;
         for (Object subAtomData : aAtomDataArray) if (subAtomData instanceof IAtomData) {
-            rLammpstrj.add(SubLammpstrj.fromAtomData((IAtomData)subAtomData, SubLammpstrj.getTimeStep((IAtomData)subAtomData, i)));
+            rLammpstrj.add(SubLammpstrj.of((IAtomData)subAtomData, SubLammpstrj.getTimeStep((IAtomData)subAtomData, i)));
             ++i;
         }
         return new Lammpstrj(rLammpstrj);
     }
-    /** 按照规范，这里还提供这种构造方式；目前暂不清楚何种更好，因此不做注解 */
-    public static Lammpstrj zl() {return new Lammpstrj();}
-    public static Lammpstrj of(IAtomData aAtomData) {return fromAtomData(aAtomData);}
-    public static Lammpstrj of(IAtomData aAtomData, long aTimeStep) {return fromAtomData(aAtomData, aTimeStep);}
-    public static Lammpstrj of(Iterable<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList);}
-    public static Lammpstrj of(Iterable<? extends IAtomData> aAtomDataList, ILongVectorGetter aTimeStepGetter) {return fromAtomDataList(aAtomDataList, aTimeStepGetter);}
-    public static Lammpstrj of(Collection<? extends IAtomData> aAtomDataList) {return fromAtomDataList(aAtomDataList);}
-    public static Lammpstrj of(Collection<? extends IAtomData> aAtomDataList, ILongVectorGetter aTimeStepGetter) {return fromAtomDataList(aAtomDataList, aTimeStepGetter);}
-    /** 再提供一个 IListWrapper 的接口保证 Lammpstrj 也能输入 */
-    public static Lammpstrj of(AbstractListWrapper<? extends IAtomData, ?, ?> aAtomDataList) {return fromAtomDataList(aAtomDataList.asList());}
-    public static Lammpstrj of(AbstractListWrapper<? extends IAtomData, ?, ?> aAtomDataList, ILongVectorGetter aTimeStepGetter) {return fromAtomDataList(aAtomDataList.asList(), aTimeStepGetter);}
-    /** matlab stuffs */
-    public static Lammpstrj of_compat(Object[] aAtomDataArray) {return fromAtomData_compat(aAtomDataArray);}
     
     
     /// 文件读写

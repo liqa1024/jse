@@ -7,6 +7,7 @@ import jse.ase.AseAtoms;
 import jse.cache.MatrixCache;
 import jse.cache.VectorCache;
 import jse.code.SP;
+import jse.code.UT;
 import jse.code.collection.ISlice;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.IVector;
@@ -57,9 +58,14 @@ public interface IPotential extends AutoCloseable {
      *
      * @return ase 计算器的 python 对象
      */
-    default PyObject asAseCalculator() throws JepException {
+    default PyObject ase() throws JepException {
         SP.Python.exec("from jsepy.atom import PotentialCalculator");
         return (PyObject)SP.Python.invoke("PotentialCalculator", this);
+    }
+    /** @deprecated use {@link #ase()} */
+    @Deprecated default PyObject asAseCalculator() throws JepException {
+        UT.Code.warning("`IPotential.asAseCalculator()` is deprecated, use `IPotential.ase()`.");
+        return ase();
     }
     @ApiStatus.Internal
     default Map<String, Object> calculate_(Map<String, Object> rResults, PyObject aPyAseAtoms, String[] aProperties, boolean aSystemChanges) throws Exception {
@@ -72,7 +78,7 @@ public interface IPotential extends AutoCloseable {
             }
         }
         if (!aSystemChanges && tAllInResults) return rResults;
-        IAtomData tAtoms = AseAtoms.fromPyObject(aPyAseAtoms, true);
+        IAtomData tAtoms = AseAtoms.of(aPyAseAtoms, true);
         // 遍历统计需要的量
         boolean tRequireEnergy = false, tRequirePreAtomEnergy = false;
         boolean tRequireForces = false;

@@ -42,7 +42,7 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
     
     /// AbstractListWrapper stuffs
     /** 将输入的原子数据转换成内部存储的数据，这里的实现会导致添加原子数据统一进行一次值拷贝 */
-    @Override protected final DataXYZ toInternal_(IAtomData aAtomData) {return DataXYZ.fromAtomData(aAtomData);}
+    @Override protected final DataXYZ toInternal_(IAtomData aAtomData) {return DataXYZ.of(aAtomData);}
     /** 将内部存储的数据转换成外部访问会获取到的类型，这里的实现直接返回引用 */
     @Override protected final DataXYZ toOutput_(DataXYZ aDataXYZ) {return aDataXYZ;}
     
@@ -135,216 +135,6 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
     
     /// 创建 DumpXYZ
     /**
-     * 通过一个一般的原子数据 {@link IAtomData} 来创建一个多帧的 XYZ 数据（内部只有一帧）
-     * <p>
-     * 默认会尝试自动从 {@link IAtomData} 获取元素符号信息，使用
-     * {@link #fromAtomData(IAtomData, String...)} 来手动指定元素符号信息
-     * <p>
-     * {@link #of(IAtomData)} 为等价的别名方法
-     *
-     * @param aAtomData 输入的原子数据
-     * @return 创建的多帧的 XYZ 数据
-     * @see DataXYZ#fromAtomData(IAtomData)
-     * @see #of(IAtomData)
-     * @see #fromAtomData(IAtomData, String...)
-     */
-    public static DumpXYZ fromAtomData(IAtomData aAtomData) {
-        return new DumpXYZ(DataXYZ.fromAtomData(aAtomData));
-    }
-    /**
-     * 通过一个一般的原子数据 {@link IAtomData} 来创建一个多帧的 XYZ 数据（内部只有一帧）
-     * <p>
-     * {@link #of(IAtomData, String...)} 为等价的别名方法
-     *
-     * @param aAtomData 输入的原子数据
-     * @param aSymbols 可选的元素符号信息，默认会自动通过输入原子数据获取
-     * @return 创建的多帧的 XYZ 数据
-     * @see DataXYZ#fromAtomData(IAtomData, String...)
-     * @see #of(IAtomData, String...)
-     * @see #fromAtomData(IAtomData)
-     */
-    public static DumpXYZ fromAtomData(IAtomData aAtomData, String... aSymbols) {
-        return new DumpXYZ(DataXYZ.fromAtomData(aAtomData, aSymbols));
-    }
-    /**
-     * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个多帧的 XYZ 数据
-     * <p>
-     * 默认会尝试自动从 {@link IAtomData} 获取元素符号信息，使用
-     * {@link #fromAtomDataList(Iterable, String...)} 来手动指定元素符号信息
-     * <p>
-     * {@link #of(Iterable)} 为等价的别名方法
-     *
-     * @param aAtomDataList 输入的原子数据组成的列表
-     * @return 创建的多帧的 XYZ 数据
-     * @see #of(Iterable)
-     * @see #fromAtomDataList(Iterable, String...)
-     */
-    public static DumpXYZ fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList) {
-        if (aAtomDataList == null) return new DumpXYZ();
-        List<DataXYZ> rDumpXYZ = new ArrayList<>();
-        for (IAtomData subAtomData : aAtomDataList) {
-            rDumpXYZ.add(DataXYZ.fromAtomData(subAtomData));
-        }
-        return new DumpXYZ(rDumpXYZ);
-    }
-    /**
-     * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个多帧的 XYZ 数据
-     * <p>
-     * {@link #of(Iterable, String...)} 为等价的别名方法
-     *
-     * @param aAtomDataList 输入的原子数据组成的列表
-     * @param aSymbols 可选的元素符号信息，默认会自动通过输入原子数据获取
-     * @return 创建的多帧的 XYZ 数据
-     * @see #of(Iterable, String...)
-     * @see #fromAtomDataList(Iterable)
-     */
-    public static DumpXYZ fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList, final String... aSymbols) {
-        return fromAtomDataList(aAtomDataList, i -> aSymbols);
-    }
-    /**
-     * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个多帧的 XYZ 数据
-     * <p>
-     * {@link #of(Iterable, IListGetter)} 为等价的别名方法
-     *
-     * @param aAtomDataList 输入的原子数据组成的列表
-     * @param aSymbolsGetter 可选的指定帧对应的元素符号信息，默认会自动通过输入原子数据获取
-     * @return 创建的多帧的 XYZ 数据
-     * @see #of(Iterable, IListGetter)
-     * @see #fromAtomDataList(Iterable)
-     */
-    @SuppressWarnings("unchecked")
-    public static DumpXYZ fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList, IListGetter<Object> aSymbolsGetter) {
-        if (aAtomDataList == null) return new DumpXYZ();
-        List<DataXYZ> rDumpXYZ = new ArrayList<>();
-        int i = 0;
-        for (IAtomData subAtomData : aAtomDataList) {
-            Object tSymbols = aSymbolsGetter.get(i);
-            if (tSymbols instanceof String[]) {
-                rDumpXYZ.add(DataXYZ.fromAtomData(subAtomData, (String[])tSymbols));
-            } else
-            if (tSymbols instanceof Collection) {
-                rDumpXYZ.add(DataXYZ.fromAtomData(subAtomData, (Collection<? extends CharSequence>)tSymbols));
-            } else {
-                rDumpXYZ.add(DataXYZ.fromAtomData(subAtomData));
-            }
-            ++i;
-        }
-        return new DumpXYZ(rDumpXYZ);
-    }
-    /**
-     * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个多帧的 XYZ 数据
-     * <p>
-     * 默认会尝试自动从 {@link IAtomData} 获取元素符号信息，使用
-     * {@link #fromAtomDataList(Collection, String...)} 来手动指定元素符号信息
-     * <p>
-     * {@link #of(Collection)} 为等价的别名方法
-     *
-     * @param aAtomDataList 输入的原子数据组成的列表
-     * @return 创建的多帧的 XYZ 数据
-     * @see #of(Collection)
-     * @see #fromAtomDataList(Collection, String...)
-     */
-    public static DumpXYZ fromAtomDataList(Collection<? extends IAtomData> aAtomDataList) {
-        if (aAtomDataList == null) return new DumpXYZ();
-        List<DataXYZ> rDumpXYZ = new ArrayList<>(aAtomDataList.size());
-        for (IAtomData subAtomData : aAtomDataList) {
-            rDumpXYZ.add(DataXYZ.fromAtomData(subAtomData));
-        }
-        return new DumpXYZ(rDumpXYZ);
-    }
-    /**
-     * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个多帧的 XYZ 数据
-     * <p>
-     * {@link #of(Collection, String...)} 为等价的别名方法
-     *
-     * @param aAtomDataList 输入的原子数据组成的列表
-     * @param aSymbols 可选的元素符号信息，默认会自动通过输入原子数据获取
-     * @return 创建的多帧的 XYZ 数据
-     * @see #of(Collection, String...)
-     * @see #fromAtomDataList(Collection)
-     */
-    public static DumpXYZ fromAtomDataList(Collection<? extends IAtomData> aAtomDataList, final String... aSymbols) {
-        return fromAtomDataList(aAtomDataList, i -> aSymbols);
-    }
-    /**
-     * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个多帧的 XYZ 数据
-     * <p>
-     * {@link #of(Collection, IListGetter)} 为等价的别名方法
-     *
-     * @param aAtomDataList 输入的原子数据组成的列表
-     * @param aSymbolsGetter 可选的指定帧对应的元素符号信息，默认会自动通过输入原子数据获取
-     * @return 创建的多帧的 XYZ 数据
-     * @see #of(Collection, IListGetter)
-     * @see #fromAtomDataList(Collection)
-     */
-    @SuppressWarnings("unchecked")
-    public static DumpXYZ fromAtomDataList(Collection<? extends IAtomData> aAtomDataList, IListGetter<Object> aSymbolsGetter) {
-        if (aAtomDataList == null) return new DumpXYZ();
-        List<DataXYZ> rDumpXYZ = new ArrayList<>(aAtomDataList.size());
-        int i = 0;
-        for (IAtomData subAtomData : aAtomDataList) {
-            Object tSymbols = aSymbolsGetter.get(i);
-            if (tSymbols instanceof String[]) {
-                rDumpXYZ.add(DataXYZ.fromAtomData(subAtomData, (String[])tSymbols));
-            } else
-            if (tSymbols instanceof Collection) {
-                rDumpXYZ.add(DataXYZ.fromAtomData(subAtomData, (Collection<? extends CharSequence>)tSymbols));
-            } else {
-                rDumpXYZ.add(DataXYZ.fromAtomData(subAtomData));
-            }
-            ++i;
-        }
-        return new DumpXYZ(rDumpXYZ);
-    }
-    /**
-     * 传入列表形式元素符号的创建
-     * @see #fromAtomData(IAtomData, String...)
-     * @see Collection
-     */
-    public static DumpXYZ fromAtomData(IAtomData aAtomData, Collection<? extends CharSequence> aSymbols) {
-        return fromAtomData(aAtomData, IO.Text.toArray(aSymbols));
-    }
-    /**
-     * 传入列表形式元素符号的创建
-     * @see #fromAtomDataList(Iterable, String...)
-     * @see Collection
-     */
-    public static DumpXYZ fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList, Collection<? extends CharSequence> aSymbols) {
-        return fromAtomDataList(aAtomDataList, IO.Text.toArray(aSymbols));
-    }
-    /**
-     * 传入列表形式元素符号的创建
-     * @see #fromAtomDataList(Collection, String...)
-     * @see Collection
-     */
-    public static DumpXYZ fromAtomDataList(Collection<? extends IAtomData> aAtomDataList, Collection<? extends CharSequence> aSymbols) {
-        return fromAtomDataList(aAtomDataList, IO.Text.toArray(aSymbols));
-    }
-    /**
-     * 对于 matlab 调用的兼容方法
-     * @see #fromAtomDataList(Collection)
-     */
-    public static DumpXYZ fromAtomData_compat(Object[] aAtomDataArray) {
-        if (aAtomDataArray==null || aAtomDataArray.length==0) return new DumpXYZ();
-        List<DataXYZ> rDumpXYZ = new ArrayList<>();
-        for (Object subAtomData : aAtomDataArray) if (subAtomData instanceof IAtomData) {
-            rDumpXYZ.add(DataXYZ.fromAtomData((IAtomData)subAtomData));
-        }
-        return new DumpXYZ(rDumpXYZ);
-    }
-    /**
-     * 对于 matlab 调用的兼容方法
-     * @see #fromAtomDataList(Collection, String...)
-     */
-    public static DumpXYZ fromAtomData_compat(Object[] aAtomDataArray, String... aSymbols) {
-        if (aAtomDataArray==null || aAtomDataArray.length==0) return new DumpXYZ();
-        List<DataXYZ> rDumpXYZ = new ArrayList<>();
-        for (Object subAtomData : aAtomDataArray) if (subAtomData instanceof IAtomData) {
-            rDumpXYZ.add(DataXYZ.fromAtomData((IAtomData)subAtomData, aSymbols));
-        }
-        return new DumpXYZ(rDumpXYZ);
-    }
-    /**
      * 创建一个空的多帧 XYZ 数据
      * @return 新创建的空的 {@link DumpXYZ}
      */
@@ -359,11 +149,11 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
      *
      * @param aAtomData 输入的原子数据
      * @return 创建的多帧的 XYZ 数据
-     * @see DataXYZ#fromAtomData(IAtomData)
+     * @see DataXYZ#of(IAtomData)
      * @see #of(IAtomData, String...)
      */
     public static DumpXYZ of(IAtomData aAtomData) {
-        return fromAtomData(aAtomData);
+        return new DumpXYZ(DataXYZ.of(aAtomData));
     }
     /**
      * 通过一个一般的原子数据 {@link IAtomData} 来创建一个多帧的 XYZ 数据（内部只有一帧）
@@ -375,15 +165,7 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
      * @see #of(IAtomData)
      */
     public static DumpXYZ of(IAtomData aAtomData, String... aSymbols) {
-        return fromAtomData(aAtomData, aSymbols);
-    }
-    /**
-     * 传入列表形式元素符号的创建
-     * @see #of(IAtomData, String...)
-     * @see Collection
-     */
-    public static DumpXYZ of(IAtomData aAtomData, Collection<? extends CharSequence> aSymbols) {
-        return fromAtomData(aAtomData, aSymbols);
+        return new DumpXYZ(DataXYZ.of(aAtomData, aSymbols));
     }
     /**
      * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个多帧的 XYZ 数据
@@ -396,7 +178,12 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
      * @see #of(Iterable, String...)
      */
     public static DumpXYZ of(Iterable<? extends IAtomData> aAtomDataList) {
-        return fromAtomDataList(aAtomDataList);
+        if (aAtomDataList == null) return new DumpXYZ();
+        List<DataXYZ> rDumpXYZ = new ArrayList<>();
+        for (IAtomData subAtomData : aAtomDataList) {
+            rDumpXYZ.add(DataXYZ.of(subAtomData));
+        }
+        return new DumpXYZ(rDumpXYZ);
     }
     /**
      * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个多帧的 XYZ 数据
@@ -406,16 +193,8 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
      * @return 创建的多帧的 XYZ 数据
      * @see #of(Iterable)
      */
-    public static DumpXYZ of(Iterable<? extends IAtomData> aAtomDataList, String... aSymbols) {
-        return fromAtomDataList(aAtomDataList, aSymbols);
-    }
-    /**
-     * 传入列表形式元素符号的创建
-     * @see #of(Iterable, String...)
-     * @see Collection
-     */
-    public static DumpXYZ of(Iterable<? extends IAtomData> aAtomDataList, Collection<? extends CharSequence> aSymbols) {
-        return fromAtomDataList(aAtomDataList, aSymbols);
+    public static DumpXYZ of(Iterable<? extends IAtomData> aAtomDataList, final String... aSymbols) {
+        return of(aAtomDataList, i -> aSymbols);
     }
     /**
      * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个多帧的 XYZ 数据
@@ -425,8 +204,24 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
      * @return 创建的多帧的 XYZ 数据
      * @see #of(Iterable)
      */
+    @SuppressWarnings("unchecked")
     public static DumpXYZ of(Iterable<? extends IAtomData> aAtomDataList, IListGetter<Object> aSymbolsGetter) {
-        return fromAtomDataList(aAtomDataList, aSymbolsGetter);
+        if (aAtomDataList == null) return new DumpXYZ();
+        List<DataXYZ> rDumpXYZ = new ArrayList<>();
+        int i = 0;
+        for (IAtomData subAtomData : aAtomDataList) {
+            Object tSymbols = aSymbolsGetter.get(i);
+            if (tSymbols instanceof String[]) {
+                rDumpXYZ.add(DataXYZ.of(subAtomData, (String[])tSymbols));
+            } else
+            if (tSymbols instanceof Collection) {
+                rDumpXYZ.add(DataXYZ.of(subAtomData, (Collection<? extends CharSequence>)tSymbols));
+            } else {
+                rDumpXYZ.add(DataXYZ.of(subAtomData));
+            }
+            ++i;
+        }
+        return new DumpXYZ(rDumpXYZ);
     }
     /**
      * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个多帧的 XYZ 数据
@@ -439,7 +234,12 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
      * @see #of(Collection, String...)
      */
     public static DumpXYZ of(Collection<? extends IAtomData> aAtomDataList) {
-        return fromAtomDataList(aAtomDataList);
+        if (aAtomDataList == null) return new DumpXYZ();
+        List<DataXYZ> rDumpXYZ = new ArrayList<>(aAtomDataList.size());
+        for (IAtomData subAtomData : aAtomDataList) {
+            rDumpXYZ.add(DataXYZ.of(subAtomData));
+        }
+        return new DumpXYZ(rDumpXYZ);
     }
     /**
      * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个多帧的 XYZ 数据
@@ -449,16 +249,8 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
      * @return 创建的多帧的 XYZ 数据
      * @see #of(Collection)
      */
-    public static DumpXYZ of(Collection<? extends IAtomData> aAtomDataList, String... aSymbols) {
-        return fromAtomDataList(aAtomDataList, aSymbols);
-    }
-    /**
-     * 传入列表形式元素符号的创建
-     * @see #of(Collection, String...)
-     * @see Collection
-     */
-    public static DumpXYZ of(Collection<? extends IAtomData> aAtomDataList, Collection<? extends CharSequence> aSymbols) {
-        return fromAtomDataList(aAtomDataList, aSymbols);
+    public static DumpXYZ of(Collection<? extends IAtomData> aAtomDataList, final String... aSymbols) {
+        return of(aAtomDataList, i -> aSymbols);
     }
     /**
      * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个多帧的 XYZ 数据
@@ -468,8 +260,48 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
      * @return 创建的多帧的 XYZ 数据
      * @see #of(Collection)
      */
+    @SuppressWarnings("unchecked")
     public static DumpXYZ of(Collection<? extends IAtomData> aAtomDataList, IListGetter<Object> aSymbolsGetter) {
-        return fromAtomDataList(aAtomDataList, aSymbolsGetter);
+        if (aAtomDataList == null) return new DumpXYZ();
+        List<DataXYZ> rDumpXYZ = new ArrayList<>(aAtomDataList.size());
+        int i = 0;
+        for (IAtomData subAtomData : aAtomDataList) {
+            Object tSymbols = aSymbolsGetter.get(i);
+            if (tSymbols instanceof String[]) {
+                rDumpXYZ.add(DataXYZ.of(subAtomData, (String[])tSymbols));
+            } else
+            if (tSymbols instanceof Collection) {
+                rDumpXYZ.add(DataXYZ.of(subAtomData, (Collection<? extends CharSequence>)tSymbols));
+            } else {
+                rDumpXYZ.add(DataXYZ.of(subAtomData));
+            }
+            ++i;
+        }
+        return new DumpXYZ(rDumpXYZ);
+    }
+    /**
+     * 传入列表形式元素符号的创建
+     * @see #of(IAtomData, String...)
+     * @see Collection
+     */
+    public static DumpXYZ of(IAtomData aAtomData, Collection<? extends CharSequence> aSymbols) {
+        return of(aAtomData, IO.Text.toArray(aSymbols));
+    }
+    /**
+     * 传入列表形式元素符号的创建
+     * @see #of(Iterable, String...)
+     * @see Collection
+     */
+    public static DumpXYZ of(Iterable<? extends IAtomData> aAtomDataList, Collection<? extends CharSequence> aSymbols) {
+        return of(aAtomDataList, IO.Text.toArray(aSymbols));
+    }
+    /**
+     * 传入列表形式元素符号的创建
+     * @see #of(Collection, String...)
+     * @see Collection
+     */
+    public static DumpXYZ of(Collection<? extends IAtomData> aAtomDataList, Collection<? extends CharSequence> aSymbols) {
+        return of(aAtomDataList, IO.Text.toArray(aSymbols));
     }
     /**
      * 传入 {@link AbstractListWrapper} 形式的创建，保证
@@ -478,7 +310,7 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
      * @see AbstractListWrapper
      */
     public static DumpXYZ of(AbstractListWrapper<? extends IAtomData, ?, ?> aAtomDataList) {
-        return fromAtomDataList(aAtomDataList.asList());
+        return of(aAtomDataList.asList());
     }
     /**
      * 传入 {@link AbstractListWrapper} 形式的创建，保证
@@ -487,7 +319,7 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
      * @see AbstractListWrapper
      */
     public static DumpXYZ of(AbstractListWrapper<? extends IAtomData, ?, ?> aAtomDataList, String... aSymbols) {
-        return fromAtomDataList(aAtomDataList.asList(), aSymbols);
+        return of(aAtomDataList.asList(), aSymbols);
     }
     /**
      * 传入 {@link AbstractListWrapper} 形式的创建，保证
@@ -496,7 +328,7 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
      * @see AbstractListWrapper
      */
     public static DumpXYZ of(AbstractListWrapper<? extends IAtomData, ?, ?> aAtomDataList, Collection<? extends CharSequence> aSymbols) {
-        return fromAtomDataList(aAtomDataList.asList(), aSymbols);
+        return of(aAtomDataList.asList(), aSymbols);
     }
     /**
      * 传入 {@link AbstractListWrapper} 形式的创建，保证
@@ -505,7 +337,7 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
      * @see AbstractListWrapper
      */
     public static DumpXYZ of(AbstractListWrapper<? extends IAtomData, ?, ?> aAtomDataList, IListGetter<Object> aSymbolsGetter) {
-        return fromAtomDataList(aAtomDataList.asList(), aSymbolsGetter);
+        return of(aAtomDataList.asList(), aSymbolsGetter);
     }
     /// matlab stuffs
     /**
@@ -513,14 +345,24 @@ public class DumpXYZ extends AbstractListWrapper<DataXYZ, IAtomData, DataXYZ> {
      * @see #of(Collection)
      */
     public static DumpXYZ of_compat(Object[] aAtomDataArray) {
-        return fromAtomData_compat(aAtomDataArray);
+        if (aAtomDataArray==null || aAtomDataArray.length==0) return new DumpXYZ();
+        List<DataXYZ> rDumpXYZ = new ArrayList<>();
+        for (Object subAtomData : aAtomDataArray) if (subAtomData instanceof IAtomData) {
+            rDumpXYZ.add(DataXYZ.of((IAtomData)subAtomData));
+        }
+        return new DumpXYZ(rDumpXYZ);
     }
     /**
      * 对于 matlab 调用的兼容方法
      * @see #of(Collection, String...)
      */
     public static DumpXYZ of_compat(Object[] aAtomDataArray, String... aSymbols) {
-        return fromAtomData_compat(aAtomDataArray, aSymbols);
+        if (aAtomDataArray==null || aAtomDataArray.length==0) return new DumpXYZ();
+        List<DataXYZ> rDumpXYZ = new ArrayList<>();
+        for (Object subAtomData : aAtomDataArray) if (subAtomData instanceof IAtomData) {
+            rDumpXYZ.add(DataXYZ.of((IAtomData)subAtomData, aSymbols));
+        }
+        return new DumpXYZ(rDumpXYZ);
     }
     
     /// 文件读写

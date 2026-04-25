@@ -74,7 +74,7 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
      */
     public NativeLmpFullPathGenerator(MPI.Comm aLmpComm, IParameterCalculator<? super IAtomData> aParameterCalculator, Iterable<? extends IAtomData> aInitAtomDataList, IVector aMasses, double aTemperature, String aPairStyle, String aPairCoeff, double aTimestep, int aDumpStep, byte aThermostat) throws LmpException {
         // 基本参数存储
-        mInitPoints = NewCollections.map(aInitAtomDataList, data -> Lmpdat.fromAtomData(data).setNoVelocity()); // 初始点也需要移除速度，保证会从不同路径开始
+        mInitPoints = NewCollections.map(aInitAtomDataList, data -> Lmpdat.of(data).setNoVelocity()); // 初始点也需要移除速度，保证会从不同路径开始
         mMasses = aMasses.copy();
         mTemperature = aTemperature;
         mPairStyle = aPairStyle; mPairCoeff = aPairCoeff;
@@ -118,7 +118,7 @@ public class NativeLmpFullPathGenerator implements IFullPathGenerator<IAtomData>
             if (mUsing) throw new RuntimeException("NativeLmpFullPathGenerator can ONLY have ONE active path.");
             mUsing = true;
             mRNG = aRNG;
-            mNext = aStart==null ? mInitPoints.get(mRNG.nextInt(mInitPoints.size())) : ((aStart instanceof Lmpdat) ? (Lmpdat)aStart : Lmpdat.fromAtomData(aStart));
+            mNext = aStart==null ? mInitPoints.get(mRNG.nextInt(mInitPoints.size())) : ((aStart instanceof Lmpdat) ? (Lmpdat)aStart : Lmpdat.of(aStart));
         }
         
         /** 用于方便子类重写从而实现自定义的策略 */

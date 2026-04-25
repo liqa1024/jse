@@ -134,7 +134,7 @@ public class AseCalculator implements IPotential {
      * 转换为 ase 计算器，这里直接返回创建时使用的 ase 计算器对象
      * @return {@inheritDoc}
      */
-    @Override public PyObject asAseCalculator() throws JepException {return mCalc;}
+    @Override public PyObject ase() throws JepException {return mCalc;}
     
     /** 常规的 ase 计算器不支持计算部分原子能量，因此会直接抛出 {@link UnsupportedOperationException} */
     @Override public double calEnergyAt(IAtomData aAPC, ISlice aIndices) {

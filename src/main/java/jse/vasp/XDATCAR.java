@@ -25,7 +25,7 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, POSCAR> {
     XDATCAR(List<POSCAR> aData) {super(aData);}
     
     /** AbstractListWrapper stuffs */
-    @Override protected final POSCAR toInternal_(IAtomData aAtomData) {return POSCAR.fromAtomData(aAtomData);}
+    @Override protected final POSCAR toInternal_(IAtomData aAtomData) {return POSCAR.of(aAtomData);}
     @Override protected final POSCAR toOutput_(POSCAR aPOSCAR) {return aPOSCAR;}
     
     
@@ -118,216 +118,6 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, POSCAR> {
     
     /// 创建 XDATCAR
     /**
-     * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 XDATCAR 数据（内部只有一帧）
-     * <p>
-     * 默认会尝试自动从 {@link IAtomData} 获取元素符号信息，使用
-     * {@link #fromAtomData(IAtomData, String...)} 来手动指定元素符号信息
-     * <p>
-     * {@link #of(IAtomData)} 为等价的别名方法
-     *
-     * @param aAtomData 输入的原子数据
-     * @return 创建的 XDATCAR 数据
-     * @see POSCAR#fromAtomData(IAtomData)
-     * @see #of(IAtomData)
-     * @see #fromAtomData(IAtomData, String...)
-     */
-    public static XDATCAR fromAtomData(IAtomData aAtomData) {
-        return new XDATCAR(POSCAR.fromAtomData(aAtomData));
-    }
-    /**
-     * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 XDATCAR 数据（内部只有一帧）
-     * <p>
-     * {@link #of(IAtomData, String...)} 为等价的别名方法
-     *
-     * @param aAtomData 输入的原子数据
-     * @param aTypeNames 可选的元素符号信息，默认会自动通过输入原子数据获取
-     * @return 创建的 XDATCAR 数据
-     * @see POSCAR#fromAtomData(IAtomData, String...)
-     * @see #of(IAtomData, String...)
-     * @see #fromAtomData(IAtomData)
-     */
-    public static XDATCAR fromAtomData(IAtomData aAtomData, String... aTypeNames) {
-        return new XDATCAR(POSCAR.fromAtomData(aAtomData, aTypeNames));
-    }
-    /**
-     * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个 XDATCAR 数据
-     * <p>
-     * 默认会尝试自动从 {@link IAtomData} 获取元素符号信息，使用
-     * {@link #fromAtomDataList(Iterable, String...)} 来手动指定元素符号信息
-     * <p>
-     * {@link #of(Iterable)} 为等价的别名方法
-     *
-     * @param aAtomDataList 输入的原子数据组成的列表
-     * @return 创建的 XDATCAR 数据
-     * @see #of(Iterable)
-     * @see #fromAtomDataList(Iterable, String...)
-     */
-    public static XDATCAR fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList) {
-        if (aAtomDataList == null) return new XDATCAR();
-        List<POSCAR> rXDATCAR = new ArrayList<>();
-        for (IAtomData subAtomData : aAtomDataList) {
-            rXDATCAR.add(POSCAR.fromAtomData(subAtomData));
-        }
-        return new XDATCAR(rXDATCAR);
-    }
-    /**
-     * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个 XDATCAR 数据
-     * <p>
-     * {@link #of(Iterable, String...)} 为等价的别名方法
-     *
-     * @param aAtomDataList 输入的原子数据组成的列表
-     * @param aTypeNames 可选的元素符号信息，默认会自动通过输入原子数据获取
-     * @return 创建的 XDATCAR 数据
-     * @see #of(Iterable, String...)
-     * @see #fromAtomDataList(Iterable)
-     */
-    public static XDATCAR fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList, String... aTypeNames) {
-        return fromAtomDataList(aAtomDataList, i -> aTypeNames);
-    }
-    /**
-     * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个 XDATCAR 数据
-     * <p>
-     * {@link #of(Iterable, IListGetter)} 为等价的别名方法
-     *
-     * @param aAtomDataList 输入的原子数据组成的列表
-     * @param aTypeNamesGetter 可选的指定帧对应的元素符号信息，默认会自动通过输入原子数据获取
-     * @return 创建的 XDATCAR 数据
-     * @see #of(Iterable, IListGetter)
-     * @see #fromAtomDataList(Iterable)
-     */
-    @SuppressWarnings("unchecked")
-    public static XDATCAR fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList, IListGetter<Object> aTypeNamesGetter) {
-        if (aAtomDataList == null) return new XDATCAR();
-        List<POSCAR> rXDATCAR = new ArrayList<>();
-        int i = 0;
-        for (IAtomData subAtomData : aAtomDataList) {
-            Object tTypeNames = aTypeNamesGetter.get(i);
-            if (tTypeNames instanceof String[]) {
-                rXDATCAR.add(POSCAR.fromAtomData(subAtomData, (String[])tTypeNames));
-            } else
-            if (tTypeNames instanceof Collection) {
-                rXDATCAR.add(POSCAR.fromAtomData(subAtomData, (Collection<? extends CharSequence>)tTypeNames));
-            } else {
-                rXDATCAR.add(POSCAR.fromAtomData(subAtomData));
-            }
-            ++i;
-        }
-        return new XDATCAR(rXDATCAR);
-    }
-    /**
-     * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个 XDATCAR 数据
-     * <p>
-     * 默认会尝试自动从 {@link IAtomData} 获取元素符号信息，使用
-     * {@link #fromAtomDataList(Collection, String...)} 来手动指定元素符号信息
-     * <p>
-     * {@link #of(Collection)} 为等价的别名方法
-     *
-     * @param aAtomDataList 输入的原子数据组成的列表
-     * @return 创建的 XDATCAR 数据
-     * @see #of(Collection)
-     * @see #fromAtomDataList(Collection, String...)
-     */
-    public static XDATCAR fromAtomDataList(Collection<? extends IAtomData> aAtomDataList) {
-        if (aAtomDataList == null) return new XDATCAR();
-        List<POSCAR> rXDATCAR = new ArrayList<>(aAtomDataList.size());
-        for (IAtomData subAtomData : aAtomDataList) {
-            rXDATCAR.add(POSCAR.fromAtomData(subAtomData));
-        }
-        return new XDATCAR(rXDATCAR);
-    }
-    /**
-     * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个 XDATCAR 数据
-     * <p>
-     * {@link #of(Collection, String...)} 为等价的别名方法
-     *
-     * @param aAtomDataList 输入的原子数据组成的列表
-     * @param aTypeNames 可选的元素符号信息，默认会自动通过输入原子数据获取
-     * @return 创建的 XDATCAR 数据
-     * @see #of(Collection, String...)
-     * @see #fromAtomDataList(Collection)
-     */
-    public static XDATCAR fromAtomDataList(Collection<? extends IAtomData> aAtomDataList, String... aTypeNames) {
-        return fromAtomDataList(aAtomDataList, i -> aTypeNames);
-    }
-    /**
-     * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个 XDATCAR 数据
-     * <p>
-     * {@link #of(Collection, IListGetter)} 为等价的别名方法
-     *
-     * @param aAtomDataList 输入的原子数据组成的列表
-     * @param aTypeNamesGetter 可选的指定帧对应的元素符号信息，默认会自动通过输入原子数据获取
-     * @return 创建的 XDATCAR 数据
-     * @see #of(Collection, IListGetter)
-     * @see #fromAtomDataList(Collection)
-     */
-    @SuppressWarnings("unchecked")
-    public static XDATCAR fromAtomDataList(Collection<? extends IAtomData> aAtomDataList, IListGetter<Object> aTypeNamesGetter) {
-        if (aAtomDataList == null) return new XDATCAR();
-        List<POSCAR> rXDATCAR = new ArrayList<>(aAtomDataList.size());
-        int i = 0;
-        for (IAtomData subAtomData : aAtomDataList) {
-            Object tTypeNames = aTypeNamesGetter.get(i);
-            if (tTypeNames instanceof String[]) {
-                rXDATCAR.add(POSCAR.fromAtomData(subAtomData, (String[])tTypeNames));
-            } else
-            if (tTypeNames instanceof Collection) {
-                rXDATCAR.add(POSCAR.fromAtomData(subAtomData, (Collection<? extends CharSequence>)tTypeNames));
-            } else {
-                rXDATCAR.add(POSCAR.fromAtomData(subAtomData));
-            }
-            ++i;
-        }
-        return new XDATCAR(rXDATCAR);
-    }
-    /**
-     * 传入列表形式元素符号的创建
-     * @see #fromAtomData(IAtomData, String...)
-     * @see Collection
-     */
-    public static XDATCAR fromAtomData(IAtomData aAtomData, Collection<? extends CharSequence> aTypeNames) {
-        return fromAtomData(aAtomData, IO.Text.toArray(aTypeNames));
-    }
-    /**
-     * 传入列表形式元素符号的创建
-     * @see #fromAtomDataList(Iterable, String...)
-     * @see Collection
-     */
-    public static XDATCAR fromAtomDataList(Iterable<? extends IAtomData> aAtomDataList, Collection<? extends CharSequence> aTypeNames) {
-        return fromAtomDataList(aAtomDataList, IO.Text.toArray(aTypeNames));
-    }
-    /**
-     * 传入列表形式元素符号的创建
-     * @see #fromAtomDataList(Collection, String...)
-     * @see Collection
-     */
-    public static XDATCAR fromAtomDataList(Collection<? extends IAtomData> aAtomDataList, Collection<? extends CharSequence> aTypeNames) {
-        return fromAtomDataList(aAtomDataList, IO.Text.toArray(aTypeNames));
-    }
-    /**
-     * 对于 matlab 调用的兼容方法
-     * @see #fromAtomDataList(Collection)
-     */
-    public static XDATCAR fromAtomData_compat(Object[] aAtomDataArray) {
-        if (aAtomDataArray==null || aAtomDataArray.length==0) return new XDATCAR();
-        List<POSCAR> rXDATCAR = new ArrayList<>();
-        for (Object subAtomData : aAtomDataArray) if (subAtomData instanceof IAtomData) {
-            rXDATCAR.add(POSCAR.fromAtomData((IAtomData)subAtomData));
-        }
-        return new XDATCAR(rXDATCAR);
-    }
-    /**
-     * 对于 matlab 调用的兼容方法
-     * @see #fromAtomDataList(Collection, String...)
-     */
-    public static XDATCAR fromAtomData_compat(Object[] aAtomDataArray, String... aTypeNames) {
-        if (aAtomDataArray==null || aAtomDataArray.length==0) return new XDATCAR();
-        List<POSCAR> rXDATCAR = new ArrayList<>();
-        for (Object subAtomData : aAtomDataArray) if (subAtomData instanceof IAtomData) {
-            rXDATCAR.add(POSCAR.fromAtomData((IAtomData)subAtomData, aTypeNames));
-        }
-        return new XDATCAR(rXDATCAR);
-    }
-    /**
      * 创建一个空的 XDATCAR 数据
      * @return 新创建的空的 {@link XDATCAR}
      */
@@ -342,31 +132,23 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, POSCAR> {
      *
      * @param aAtomData 输入的原子数据
      * @return 创建的 XDATCAR 数据
-     * @see POSCAR#fromAtomData(IAtomData)
+     * @see POSCAR#of(IAtomData)
      * @see #of(IAtomData, String...)
      */
     public static XDATCAR of(IAtomData aAtomData) {
-        return fromAtomData(aAtomData);
+        return new XDATCAR(POSCAR.of(aAtomData));
     }
     /**
      * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 XDATCAR 数据（内部只有一帧）
      *
      * @param aAtomData 输入的原子数据
-     * @param aTypeNames 可选的元素符号信息，默认会自动通过输入原子数据获取
+     * @param aSymbols 可选的元素符号信息，默认会自动通过输入原子数据获取
      * @return 创建的 XDATCAR 数据
      * @see POSCAR#of(IAtomData, String...)
      * @see #of(IAtomData)
      */
-    public static XDATCAR of(IAtomData aAtomData, String... aTypeNames) {
-        return fromAtomData(aAtomData, aTypeNames);
-    }
-    /**
-     * 传入列表形式元素符号的创建
-     * @see #of(IAtomData, String...)
-     * @see Collection
-     */
-    public static XDATCAR of(IAtomData aAtomData, Collection<? extends CharSequence> aTypeNames) {
-        return fromAtomData(aAtomData, aTypeNames);
+    public static XDATCAR of(IAtomData aAtomData, String... aSymbols) {
+        return new XDATCAR(POSCAR.of(aAtomData, aSymbols));
     }
     /**
      * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个 XDATCAR 数据
@@ -379,26 +161,23 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, POSCAR> {
      * @see #of(Iterable, String...)
      */
     public static XDATCAR of(Iterable<? extends IAtomData> aAtomDataList) {
-        return fromAtomDataList(aAtomDataList);
+        if (aAtomDataList == null) return new XDATCAR();
+        List<POSCAR> rXDATCAR = new ArrayList<>();
+        for (IAtomData subAtomData : aAtomDataList) {
+            rXDATCAR.add(POSCAR.of(subAtomData));
+        }
+        return new XDATCAR(rXDATCAR);
     }
     /**
      * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个 XDATCAR 数据
      *
      * @param aAtomDataList 输入的原子数据组成的列表
-     * @param aTypeNames 可选的元素符号信息，默认会自动通过输入原子数据获取
+     * @param aSymbols 可选的元素符号信息，默认会自动通过输入原子数据获取
      * @return 创建的 XDATCAR 数据
      * @see #of(Iterable)
      */
-    public static XDATCAR of(Iterable<? extends IAtomData> aAtomDataList, String... aTypeNames) {
-        return fromAtomDataList(aAtomDataList, aTypeNames);
-    }
-    /**
-     * 传入列表形式元素符号的创建
-     * @see #of(Iterable, String...)
-     * @see Collection
-     */
-    public static XDATCAR of(Iterable<? extends IAtomData> aAtomDataList, Collection<? extends CharSequence> aTypeNames) {
-        return fromAtomDataList(aAtomDataList, aTypeNames);
+    public static XDATCAR of(Iterable<? extends IAtomData> aAtomDataList, String... aSymbols) {
+        return of(aAtomDataList, i -> aSymbols);
     }
     /**
      * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个 XDATCAR 数据
@@ -408,8 +187,24 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, POSCAR> {
      * @return 创建的 XDATCAR 数据
      * @see #of(Iterable)
      */
+    @SuppressWarnings("unchecked")
     public static XDATCAR of(Iterable<? extends IAtomData> aAtomDataList, IListGetter<Object> aSymbolsGetter) {
-        return fromAtomDataList(aAtomDataList, aSymbolsGetter);
+        if (aAtomDataList == null) return new XDATCAR();
+        List<POSCAR> rXDATCAR = new ArrayList<>();
+        int i = 0;
+        for (IAtomData subAtomData : aAtomDataList) {
+            Object tTypeNames = aSymbolsGetter.get(i);
+            if (tTypeNames instanceof String[]) {
+                rXDATCAR.add(POSCAR.of(subAtomData, (String[])tTypeNames));
+            } else
+            if (tTypeNames instanceof Collection) {
+                rXDATCAR.add(POSCAR.of(subAtomData, (Collection<? extends CharSequence>)tTypeNames));
+            } else {
+                rXDATCAR.add(POSCAR.of(subAtomData));
+            }
+            ++i;
+        }
+        return new XDATCAR(rXDATCAR);
     }
     /**
      * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个 XDATCAR 数据
@@ -422,26 +217,23 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, POSCAR> {
      * @see #of(Collection, String...)
      */
     public static XDATCAR of(Collection<? extends IAtomData> aAtomDataList) {
-        return fromAtomDataList(aAtomDataList);
+        if (aAtomDataList == null) return new XDATCAR();
+        List<POSCAR> rXDATCAR = new ArrayList<>(aAtomDataList.size());
+        for (IAtomData subAtomData : aAtomDataList) {
+            rXDATCAR.add(POSCAR.of(subAtomData));
+        }
+        return new XDATCAR(rXDATCAR);
     }
     /**
      * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个 XDATCAR 数据
      *
      * @param aAtomDataList 输入的原子数据组成的列表
-     * @param aTypeNames 可选的元素符号信息，默认会自动通过输入原子数据获取
+     * @param aSymbols 可选的元素符号信息，默认会自动通过输入原子数据获取
      * @return 创建的 XDATCAR 数据
      * @see #of(Collection)
      */
-    public static XDATCAR of(Collection<? extends IAtomData> aAtomDataList, String... aTypeNames) {
-        return fromAtomDataList(aAtomDataList, aTypeNames);
-    }
-    /**
-     * 传入列表形式元素符号的创建
-     * @see #of(Collection, String...)
-     * @see Collection
-     */
-    public static XDATCAR of(Collection<? extends IAtomData> aAtomDataList, Collection<? extends CharSequence> aTypeNames) {
-        return fromAtomDataList(aAtomDataList, aTypeNames);
+    public static XDATCAR of(Collection<? extends IAtomData> aAtomDataList, String... aSymbols) {
+        return of(aAtomDataList, i -> aSymbols);
     }
     /**
      * 通过一般的原子数据 {@link IAtomData} 组成的列表来创建一个 XDATCAR 数据
@@ -451,8 +243,48 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, POSCAR> {
      * @return 创建的 XDATCAR 数据
      * @see #of(Collection)
      */
+    @SuppressWarnings("unchecked")
     public static XDATCAR of(Collection<? extends IAtomData> aAtomDataList, IListGetter<Object> aSymbolsGetter) {
-        return fromAtomDataList(aAtomDataList, aSymbolsGetter);
+        if (aAtomDataList == null) return new XDATCAR();
+        List<POSCAR> rXDATCAR = new ArrayList<>(aAtomDataList.size());
+        int i = 0;
+        for (IAtomData subAtomData : aAtomDataList) {
+            Object tTypeNames = aSymbolsGetter.get(i);
+            if (tTypeNames instanceof String[]) {
+                rXDATCAR.add(POSCAR.of(subAtomData, (String[])tTypeNames));
+            } else
+            if (tTypeNames instanceof Collection) {
+                rXDATCAR.add(POSCAR.of(subAtomData, (Collection<? extends CharSequence>)tTypeNames));
+            } else {
+                rXDATCAR.add(POSCAR.of(subAtomData));
+            }
+            ++i;
+        }
+        return new XDATCAR(rXDATCAR);
+    }
+    /**
+     * 传入列表形式元素符号的创建
+     * @see #of(IAtomData, String...)
+     * @see Collection
+     */
+    public static XDATCAR of(IAtomData aAtomData, Collection<? extends CharSequence> aSymbols) {
+        return of(aAtomData, IO.Text.toArray(aSymbols));
+    }
+    /**
+     * 传入列表形式元素符号的创建
+     * @see #of(Iterable, String...)
+     * @see Collection
+     */
+    public static XDATCAR of(Iterable<? extends IAtomData> aAtomDataList, Collection<? extends CharSequence> aSymbols) {
+        return of(aAtomDataList, IO.Text.toArray(aSymbols));
+    }
+    /**
+     * 传入列表形式元素符号的创建
+     * @see #of(Collection, String...)
+     * @see Collection
+     */
+    public static XDATCAR of(Collection<? extends IAtomData> aAtomDataList, Collection<? extends CharSequence> aSymbols) {
+        return of(aAtomDataList, IO.Text.toArray(aSymbols));
     }
     /**
      * 传入 {@link AbstractListWrapper} 形式的创建，保证
@@ -461,7 +293,7 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, POSCAR> {
      * @see AbstractListWrapper
      */
     public static XDATCAR of(AbstractListWrapper<? extends IAtomData, ?, ?> aAtomDataList) {
-        return fromAtomDataList(aAtomDataList.asList());
+        return of(aAtomDataList.asList());
     }
     /**
      * 传入 {@link AbstractListWrapper} 形式的创建，保证
@@ -469,8 +301,8 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, POSCAR> {
      * @see #of(Collection, String...)
      * @see AbstractListWrapper
      */
-    public static XDATCAR of(AbstractListWrapper<? extends IAtomData, ?, ?> aAtomDataList, String... aTypeNames) {
-        return fromAtomDataList(aAtomDataList.asList(), aTypeNames);
+    public static XDATCAR of(AbstractListWrapper<? extends IAtomData, ?, ?> aAtomDataList, String... aSymbols) {
+        return of(aAtomDataList.asList(), aSymbols);
     }
     /**
      * 传入 {@link AbstractListWrapper} 形式的创建，保证
@@ -478,8 +310,8 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, POSCAR> {
      * @see #of(Collection, Collection)
      * @see AbstractListWrapper
      */
-    public static XDATCAR of(AbstractListWrapper<? extends IAtomData, ?, ?> aAtomDataList, Collection<? extends CharSequence> aTypeNames) {
-        return fromAtomDataList(aAtomDataList.asList(), aTypeNames);
+    public static XDATCAR of(AbstractListWrapper<? extends IAtomData, ?, ?> aAtomDataList, Collection<? extends CharSequence> aSymbols) {
+        return of(aAtomDataList.asList(), aSymbols);
     }
     /**
      * 传入 {@link AbstractListWrapper} 形式的创建，保证
@@ -488,7 +320,7 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, POSCAR> {
      * @see AbstractListWrapper
      */
     public static XDATCAR of(AbstractListWrapper<? extends IAtomData, ?, ?> aAtomDataList, IListGetter<Object> aSymbolsGetter) {
-        return fromAtomDataList(aAtomDataList.asList(), aSymbolsGetter);
+        return of(aAtomDataList.asList(), aSymbolsGetter);
     }
     /// matlab stuffs
     /**
@@ -496,14 +328,24 @@ public class XDATCAR extends AbstractListWrapper<POSCAR, IAtomData, POSCAR> {
      * @see #of(Collection)
      */
     public static XDATCAR of_compat(Object[] aAtomDataArray) {
-        return fromAtomData_compat(aAtomDataArray);
+        if (aAtomDataArray==null || aAtomDataArray.length==0) return new XDATCAR();
+        List<POSCAR> rXDATCAR = new ArrayList<>();
+        for (Object subAtomData : aAtomDataArray) if (subAtomData instanceof IAtomData) {
+            rXDATCAR.add(POSCAR.of((IAtomData)subAtomData));
+        }
+        return new XDATCAR(rXDATCAR);
     }
     /**
      * 对于 matlab 调用的兼容方法
      * @see #of(Collection, String...)
      */
     public static XDATCAR of_compat(Object[] aAtomDataArray, String... aSymbols) {
-        return fromAtomData_compat(aAtomDataArray, aSymbols);
+        if (aAtomDataArray==null || aAtomDataArray.length==0) return new XDATCAR();
+        List<POSCAR> rXDATCAR = new ArrayList<>();
+        for (Object subAtomData : aAtomDataArray) if (subAtomData instanceof IAtomData) {
+            rXDATCAR.add(POSCAR.of((IAtomData)subAtomData, aSymbols));
+        }
+        return new XDATCAR(rXDATCAR);
     }
     
     /// 文件读写

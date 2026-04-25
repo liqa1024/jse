@@ -762,32 +762,25 @@ public class DataXYZ extends AbstractSettableAtomData {
      * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 XYZ 数据
      * <p>
      * 默认会尝试自动从 {@link IAtomData} 获取元素符号信息，使用
-     * {@link #fromAtomData(IAtomData, String...)} 来手动指定元素符号信息
-     * <p>
-     * {@link #of(IAtomData)} 为等价的别名方法
+     * {@link #of(IAtomData, String...)} 来手动指定元素符号信息
      *
      * @param aAtomData 输入的原子数据
      * @return 创建的 XYZ 数据
-     * @see #of(IAtomData)
-     * @see #fromAtomData(IAtomData, String...)
+     * @see #of(IAtomData, String...)
      */
-    public static DataXYZ fromAtomData(IAtomData aAtomData) {
+    public static DataXYZ of(IAtomData aAtomData) {
         @Nullable List<@Nullable String> tSymbols = aAtomData.symbols();
-        return fromAtomData(aAtomData, tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
+        return of(aAtomData, tSymbols==null ? ZL_STR : tSymbols.toArray(ZL_STR));
     }
     /**
      * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 XYZ 数据
-     * <p>
-     * {@link #of(IAtomData, String...)} 为等价的别名方法
-     *
      * @param aAtomData 输入的原子数据
      * @param aSymbols 可选的元素符号信息，默认会自动通过输入原子数据获取
      * @return 创建的 XYZ 数据
-     * @see #of(IAtomData, String...)
-     * @see #fromAtomData(IAtomData)
+     * @see #of(IAtomData)
      */
     @SuppressWarnings("unchecked")
-    public static DataXYZ fromAtomData(IAtomData aAtomData, String... aSymbols) {
+    public static DataXYZ of(IAtomData aAtomData, String... aSymbols) {
         if (aSymbols == null) aSymbols = ZL_STR;
         // 根据输入的 aAtomData 类型来具体判断需要如何获取 rAtomData
         if (aAtomData instanceof DataXYZ) {
@@ -998,43 +991,12 @@ public class DataXYZ extends AbstractSettableAtomData {
         return rDataXYZ;
     }
     /**
-     * 传入列表形式元素符号的创建
-     * @see #fromAtomData(IAtomData, String...)
-     * @see Collection
-     */
-    public static DataXYZ fromAtomData(IAtomData aAtomData, Collection<? extends CharSequence> aSymbols) {
-        return fromAtomData(aAtomData, IO.Text.toArray(aSymbols));
-    }
-    /**
-     * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 XYZ 数据
-     * <p>
-     * 默认会尝试自动从 {@link IAtomData} 获取元素符号信息，使用
-     * {@link #of(IAtomData, String...)} 来手动指定元素符号信息
-     *
-     * @param aAtomData 输入的原子数据
-     * @return 创建的 XYZ 数据
-     * @see #of(IAtomData, String...)
-     */
-    public static DataXYZ of(IAtomData aAtomData) {
-        return fromAtomData(aAtomData);
-    }
-    /**
-     * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 XYZ 数据
-     * @param aAtomData 输入的原子数据
-     * @param aSymbols 可选的元素符号信息，默认会自动通过输入原子数据获取
-     * @return 创建的 XYZ 数据
-     * @see #of(IAtomData)
-     */
-    public static DataXYZ of(IAtomData aAtomData, String... aSymbols) {
-        return fromAtomData(aAtomData, aSymbols);
-    }
-    /**
      * 传入列表形式元素符号的转换
      * @see #of(IAtomData, String...)
      * @see Collection
      */
     public static DataXYZ of(IAtomData aAtomData, Collection<? extends CharSequence> aSymbols) {
-        return fromAtomData(aAtomData, aSymbols);
+        return of(aAtomData, IO.Text.toArray(aSymbols));
     }
     
     

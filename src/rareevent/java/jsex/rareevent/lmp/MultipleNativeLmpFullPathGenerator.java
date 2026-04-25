@@ -456,7 +456,7 @@ public class MultipleNativeLmpFullPathGenerator implements IFullPathGenerator<IA
                 mWorldComm.sendL(aRNG.nextLong(), mLmpRoot, SEED);
                 if (aStart != null) {
                     // from 需要发送整个 Lmpdat
-                    Lmpdat tStart = (aStart instanceof Lmpdat) ? (Lmpdat)aStart : Lmpdat.fromAtomData(aStart);
+                    Lmpdat tStart = (aStart instanceof Lmpdat) ? (Lmpdat)aStart : Lmpdat.of(aStart);
                     Lmpdat.send(tStart, mLmpRoot, mWorldComm);
                 }
                 // 接收任务完成信息
