@@ -3,9 +3,12 @@ package jse.vasp;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import jse.atom.*;
+import jse.cache.IntVectorCache;
+import jse.cache.MatrixCache;
 import jse.code.Conf;
 import jse.code.FileEndException;
 import jse.code.IO;
+import jse.code.UT;
 import jse.code.collection.AbstractCollections;
 import jse.math.MathEX;
 import jse.math.matrix.IMatrix;
@@ -109,25 +112,111 @@ public class POSCAR extends AbstractSettableAtomData {
     public POSCAR setSelectiveDynamics(boolean aSelectiveDynamics) {mSelectiveDynamics = aSelectiveDynamics; return this;}
     
     
-    /** 支持直接修改 TypeNames，只会增大种类数，不会减少 */
-    @Override public POSCAR setSymbols(String... aTypeNames) {
-        if (aTypeNames==null || aTypeNames.length==0) {
+    /**
+     * {@inheritDoc}
+     * @param aSymbolOrder {@inheritDoc}
+     * @return {@inheritDoc}
+     * @see #setSymbols(String...)
+     */
+    @Override public POSCAR setSymbolOrder(String... aSymbolOrder) {
+        if (mTypeNames == null) throw new UnsupportedOperationException("`setSymbolOrder` for POSCAR without symbols");
+        if (aSymbolOrder==null || aSymbolOrder.length==0) return this;
+        // 先更新 mKey2Type
+        mKey2Type.clear();
+        for (String tSymbol : aSymbolOrder) {
+            // 即使 POSCAR 支持相同的 symbol，这里也需要进行去重操作
+            if (!mKey2Type.containsKey(tSymbol)) {
+                int tType = mKey2Type.size() + 1;
+                mKey2Type.put(tSymbol, tType);
+            }
+        }
+        // 遍历一次 mTypeNames 确保 mKey2Type 全部覆盖
+        int tNumTypes = ntypes();
+        for (int type = 1; type <= tNumTypes; ++type) {
+            String tSymbol = symbol(type);
+            if (!mKey2Type.containsKey(tSymbol)) {
+                int tType = mKey2Type.size() + 1;
+                mKey2Type.put(tSymbol, tType);
+            }
+        }
+        // 设置 mDirect，mNumAtomsVec，这里使用设置到临时缓存的方式实现
+        IMatrix tDirect = MatrixCache.getMatRow(mDirect.nrows(), mDirect.ncols());
+        IIntVector tNumAtomsVec = IntVectorCache.getZeros(mKey2Type.size());
+        IIntVector tNumAtomsVec2 = IntVectorCache.getZeros(mKey2Type.size());
+        // 先获取 tNumAtomsVec
+        for (int type = 1; type <= tNumTypes; ++type) {
+            int tTypeNew = UT.Code.first(mKey2Type.get(symbol(type)));
+            tNumAtomsVec.add(tTypeNew-1, natoms(type));
+        }
+        // 再获取 tDirect
+        int i = 0;
+        for (int type = 1; type <= tNumTypes; ++type) {
+            int tNumAtoms = natoms(type);
+            int tTypeMMNew = UT.Code.first(mKey2Type.get(symbol(type))) - 1;
+            int i2 = 0;
+            for (int ti = 0; ti < tTypeMMNew; ++ti) {
+                i2 += tNumAtomsVec.get(ti);
+            }
+            i2 += tNumAtomsVec2.get(tTypeMMNew);
+            for (int ii = 0; ii < tNumAtoms; ++ii, ++i, ++i2) {
+                tDirect.set(i2, 0, mDirect.get(i, 0));
+                tDirect.set(i2, 1, mDirect.get(i, 1));
+                tDirect.set(i2, 2, mDirect.get(i, 2));
+            }
+            tNumAtomsVec2.add(tTypeMMNew, tNumAtoms);
+        }
+        mDirect.fill(tDirect);
+        mNumAtomsVec.fill(tNumAtomsVec);
+        IntVectorCache.returnVec(tNumAtomsVec2);
+        IntVectorCache.returnVec(tNumAtomsVec);
+        MatrixCache.returnMat(tDirect);
+        // 最后简单更新 mTypeNames
+        if (mKey2Type.size()>mTypeNames.length) mTypeNames = new String[mKey2Type.size()];
+        for (Map.Entry<String, Integer> tEntry : mKey2Type.entries()) {
+            mTypeNames[tEntry.getValue()-1] = tEntry.getKey();
+        }
+        return this;
+    }
+    /**
+     * {@inheritDoc}
+     * @param aSymbols {@inheritDoc}
+     * @return {@inheritDoc}
+     * @see #symbols()
+     * @see IAtom#symbol()
+     * @see #setSymbolOrder(String...)
+     */
+    @Override public POSCAR setSymbols(String... aSymbols) {
+        if (aSymbols==null || aSymbols.length==0) {
             mTypeNames = null;
             validKey2Type_();
             return this;
         }
-        if (mTypeNames==null || aTypeNames.length>mTypeNames.length) mTypeNames = Arrays.copyOf(aTypeNames, aTypeNames.length);
-        else System.arraycopy(aTypeNames, 0, mTypeNames, 0, aTypeNames.length);
-        if (aTypeNames.length > mNumAtomsVec.size()) {
+        if (mTypeNames==null || aSymbols.length>mTypeNames.length) mTypeNames = Arrays.copyOf(aSymbols, aSymbols.length);
+        else System.arraycopy(aSymbols, 0, mTypeNames, 0, aSymbols.length);
+        if (aSymbols.length > mNumAtomsVec.size()) {
             IIntVector oAtomNumbers = mNumAtomsVec;
-            mNumAtomsVec = IntVector.zeros(aTypeNames.length);
+            mNumAtomsVec = IntVector.zeros(aSymbols.length);
             mNumAtomsVec.subVec(0, oAtomNumbers.size()).fill(oAtomNumbers);
         }
         validKey2Type_();
         return this;
     }
-    @Override public POSCAR setNoSymbol() {return setSymbols(ZL_STR);}
-    /** 设置原子种类数目 */
+    /**
+     * {@inheritDoc}
+     * @return {@inheritDoc}
+     * @see #hasSymbol()
+     * @see #setSymbols(String...)
+     */
+    @Override public POSCAR setNoSymbol() {
+        return setSymbols(ZL_STR);
+    }
+    /**
+     * {@inheritDoc}
+     * @param aNumTypes {@inheritDoc}
+     * @return {@inheritDoc}
+     * @see #ntypes()
+     * @see IAtom#type()
+     */
     @Override public POSCAR setNtypes(int aNumTypes) {
         int oNumTypes = mNumAtomsVec.size();
         if (aNumTypes == oNumTypes) return this;
@@ -138,10 +227,12 @@ public class POSCAR extends AbstractSettableAtomData {
             validKey2Type_();
             return this;
         }
-        if (mTypeNames!=null && mTypeNames.length< aNumTypes) {
+        if (mTypeNames!=null && mTypeNames.length<aNumTypes) {
             String[] rTypeNames = new String[aNumTypes];
             System.arraycopy(mTypeNames, 0, rTypeNames, 0, mTypeNames.length);
-            for (int tType = mTypeNames.length+1; tType <= aNumTypes; ++tType) rTypeNames[tType-1] = "T" + tType;
+            for (int tType = mTypeNames.length+1; tType <= aNumTypes; ++tType) {
+                rTypeNames[tType-1] = "T" + tType;
+            }
             mTypeNames = rTypeNames;
         }
         IIntVector oAtomNumbers = mNumAtomsVec;
@@ -154,10 +245,9 @@ public class POSCAR extends AbstractSettableAtomData {
     void validKey2Type_() {
         mKey2Type.clear();
         if (mTypeNames != null) {
-            int rType = 0;
-            for (String tKey : mTypeNames) {
-                ++rType;
-                mKey2Type.put(tKey, rType);
+            int tNumTypes = ntypes();
+            for (int type = 1; type <= tNumTypes; ++type) {
+                mKey2Type.put(mTypeNames[type-1], type);
             }
         }
     }
@@ -235,7 +325,7 @@ public class POSCAR extends AbstractSettableAtomData {
     }
     @Override protected void validAtomPosition_(boolean aKeepAtomPosition, IBox aOldBox) {
         // 对于 Cartesian 和 Direct 要分开讨论
-        final int tNumAtoms = this.natoms();
+        final int tNumAtoms = natoms();
         XYZ tBuf = new XYZ();
         if (mIsCartesian) {
             if (aKeepAtomPosition) return;
@@ -284,7 +374,7 @@ public class POSCAR extends AbstractSettableAtomData {
      */
     @ApiStatus.Obsolete
     public POSCAR setDenseNormalized() {
-        double tScale = MathEX.Fast.cbrt(volume() / this.natoms());
+        double tScale = MathEX.Fast.cbrt(volume() / natoms());
         // 直接通过调整 boxScale 来实现
         mBox.setScale(mBox.scale() / tScale);
         return this;
@@ -444,7 +534,7 @@ public class POSCAR extends AbstractSettableAtomData {
                     double tX = mDirect.get(mIdx, 0);
                     double tY = mDirect.get(mIdx, 1);
                     double tZ = mDirect.get(mIdx, 2);
-                    int from = POSCAR.this.natoms();
+                    int from = natoms();
                     for (int typeMM = mNumAtomsVec.size()-1; typeMM >= oType; --typeMM) {
                         from -= mNumAtomsVec.get(typeMM);
                     }

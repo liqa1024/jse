@@ -88,7 +88,7 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
      * @see IAtom#type()
      * @see SettableAtomData SettableAtomData: 关于具体实现的例子
      */
-    @Override public AbstractSettableAtomData setNtypes(int aNumTypes) {throw new UnsupportedOperationException("setAtomTypeNumber");}
+    @Override public AbstractSettableAtomData setNtypes(int aNumTypes) {throw new UnsupportedOperationException("setNtypes");}
     /**
      * {@inheritDoc}
      * @param aKeepAtomPosition {@inheritDoc}
@@ -379,6 +379,23 @@ public abstract class AbstractSettableAtomData extends AbstractAtomData implemen
      * @see #setNoVelocity()
      */
     @Override public AbstractSettableAtomData setHasVelocity() {throw new UnsupportedOperationException("setHasVelocity");}
+    /**
+     * {@inheritDoc}
+     * @param aSymbolOrder {@inheritDoc}
+     * @return {@inheritDoc}
+     * @throws UnsupportedOperationException {@inheritDoc}
+     * @see #setSymbols(String...)
+     * @see SettableAtomData SettableAtomData: 关于具体实现的例子
+     * @implSpec 目前实现会要求对输入进行一次值拷贝，以避免存在可能的引用
+     */
+    @Override public AbstractSettableAtomData setSymbolOrder(String... aSymbolOrder) {throw new UnsupportedOperationException("setSymbolOrder");}
+    /**
+     * {@inheritDoc}
+     * @see #setSymbolOrder(String...)
+     * @see Collection
+     * @implSpec 需要调用 {@link #setSymbolOrder(String...)} 或任何等价形式
+     */
+    @Override public AbstractSettableAtomData setSymbolOrder(Collection<? extends CharSequence> aSymbolOrder) {return setSymbolOrder(IO.Text.toArray(aSymbolOrder));}
     /**
      * {@inheritDoc}
      * @param aSymbols {@inheritDoc}

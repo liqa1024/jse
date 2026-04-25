@@ -456,6 +456,27 @@ public interface ISettableAtomData extends IAtomData {
     ISettableAtomData setHasVelocity();
     
     /**
+     * 设置此原子数据元素符号排列顺序，从而调整元素符号对应的 {@code type} 值
+     * <p>
+     * 一般来说，如果设置数量少于 {@link #ntypes()} 则其余种类会按照旧值排序，
+     * 如果大于 {@link #ntypes()} 则会同时设置总原子种类数目
+     * <p>
+     * 这里总是会进行去重并忽略相同的键，即使对于支持相同 symbol 的类型。这是因为相同符号在
+     * symbol order 中不存在准确语义
+     *
+     * @param aSymbolOrder 需要设置的元素符号数组
+     * @return 自身方便链式调用
+     * @throws UnsupportedOperationException 如果原子数据不支持设置元素符号操作
+     * @see #setSymbols(String...)
+     */
+    ISettableAtomData setSymbolOrder(String... aSymbolOrder);
+    /**
+     * 传入列表形式元素符号的设置顺序实现
+     * @see #setSymbolOrder(String...)
+     * @see Collection
+     */
+    ISettableAtomData setSymbolOrder(Collection<? extends CharSequence> aSymbolOrder);
+    /**
      * 设置此原子数据的元素符号，按照元素编号排序进行设置（和
      * {@link #symbols()} 返回值保持一致）
      * <p>

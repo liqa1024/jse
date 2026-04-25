@@ -444,37 +444,39 @@ public class DataXYZ extends AbstractSettableAtomData {
     }
     
     /**
-     * 直接调整元素符号的顺序，由于 XYZ 格式中是采用额外一列元素符号来存储种类信息的，
-     * 因此并没有指明元素种类的编号顺序，在 jse 中默认会使用元素符号出现的顺序来排列种类编号，
-     * 而如果需要手动设置特定的编号顺序则需要通过类似 {@code data.setSymbolOrder('Cu', 'Zr')}
-     * 的方式设置顺序
-     * @param aSymbolOrder 需要的元素符号顺序
-     * @return 自身方便链式调用
+     * {@inheritDoc}
+     * @param aSymbolOrder {@inheritDoc}
+     * @return {@inheritDoc}
+     * @throws UnsupportedOperationException 如果不包含元素符号信息
      * @see #setSymbols(String...)
      */
-    public DataXYZ setSymbolOrder(String... aSymbolOrder) {
+    @Override public DataXYZ setSymbolOrder(String... aSymbolOrder) {
         if (mSpecies == null) throw new UnsupportedOperationException("`setSymbolOrder` for DataXYZ without species data");
         assert mType2Symbol != null;
-        if (aSymbolOrder == null) aSymbolOrder = ZL_STR;
-        if (aSymbolOrder.length > this.ntypes()) {
-            mType2Symbol = new String[aSymbolOrder.length+1];
-        }
-        System.arraycopy(aSymbolOrder, 0, mType2Symbol, 1, aSymbolOrder.length);
+        if (aSymbolOrder==null || aSymbolOrder.length==0) return this;
         // 先更新 mSymbol2Type
-        validSymbol2Type_();
-        // 遍历一次 mSymbols 确保 mType2Symbol 全部覆盖
-        for (String tSymbol : mSpecies) {
+        mSymbol2Type.clear();
+        for (String tSymbol : aSymbolOrder) {
+            // 注意这里需要考虑可能存在相同符号的情况
             if (!mSymbol2Type.containsKey(tSymbol)) {
                 int tType = mSymbol2Type.size() + 1;
                 mSymbol2Type.put(tSymbol, tType);
             }
         }
-        // 如果有缺失需要补充
-        if (mSymbol2Type.size() > mType2Symbol.length-1) {
-            mType2Symbol = new String[mSymbol2Type.size()+1];
-            for (Map.Entry<String, Integer> tEntry : mSymbol2Type.entrySet()) {
-                mType2Symbol[tEntry.getValue()] = tEntry.getKey();
+        // 遍历一次 mType2Symbol 确保 mSymbol2Type 全部覆盖
+        for (int type = 1; type < mType2Symbol.length; ++type) {
+            String tSymbol = mType2Symbol[type];
+            if (!mSymbol2Type.containsKey(tSymbol)) {
+                int tType = mSymbol2Type.size() + 1;
+                mSymbol2Type.put(tSymbol, tType);
             }
+        }
+        // 总是重新构建 mType2Symbol
+        if (mSymbol2Type.size() != mType2Symbol.length-1) {
+            mType2Symbol = new String[mSymbol2Type.size()+1];
+        }
+        for (Map.Entry<String, Integer> tEntry : mSymbol2Type.entrySet()) {
+            mType2Symbol[tEntry.getValue()] = tEntry.getKey();
         }
         return this;
     }
@@ -492,15 +494,37 @@ public class DataXYZ extends AbstractSettableAtomData {
         if (mSpecies == null) throw new UnsupportedOperationException("`setSymbols` for DataXYZ without species data");
         assert mType2Symbol != null;
         if (aSymbols==null || aSymbols.length==0) return this;
-        if (aSymbols.length > this.ntypes()) {
-            mType2Symbol = new String[aSymbols.length+1];
-        }
-        System.arraycopy(aSymbols, 0, mType2Symbol, 1, aSymbols.length);
-        // 更新 mSymbols，此时需要旧的 mSymbol2Type
+        // 先更新 mSymbols，此时需要旧的 mSymbol2Type
         for (int i = 0; i < mSpecies.length; ++i) {
-            mSpecies[i] = mType2Symbol[mSymbol2Type.get(mSpecies[i])];
+            int tTypeMM = mSymbol2Type.get(mSpecies[i]) - 1;
+            if (tTypeMM < aSymbols.length) {
+                mSpecies[i] = aSymbols[tTypeMM];
+            }
         }
-        validSymbol2Type_();
+        // 更新 mSymbol2Type
+        mSymbol2Type.clear();
+        for (String tSymbol : aSymbols) {
+            // 注意这里需要考虑可能存在相同符号的情况
+            if (!mSymbol2Type.containsKey(tSymbol)) {
+                int tType = mSymbol2Type.size() + 1;
+                mSymbol2Type.put(tSymbol, tType);
+            }
+        }
+        // 遍历剩余 mType2Symbol 确保 mSymbol2Type 全部覆盖
+        for (int type = aSymbols.length+1; type < mType2Symbol.length; ++type) {
+            String tSymbol = mType2Symbol[type];
+            if (!mSymbol2Type.containsKey(tSymbol)) {
+                int tType = mSymbol2Type.size() + 1;
+                mSymbol2Type.put(tSymbol, tType);
+            }
+        }
+        // 总是重新构建 mType2Symbol
+        if (mSymbol2Type.size() != mType2Symbol.length-1) {
+            mType2Symbol = new String[mSymbol2Type.size()+1];
+        }
+        for (Map.Entry<String, Integer> tEntry : mSymbol2Type.entrySet()) {
+            mType2Symbol[tEntry.getValue()] = tEntry.getKey();
+        }
         return this;
     }
     /**
@@ -514,7 +538,7 @@ public class DataXYZ extends AbstractSettableAtomData {
     @Override public DataXYZ setNtypes(int aNumTypes) {
         if (mSpecies == null) throw new UnsupportedOperationException("`setNtypes` for DataXYZ without species data");
         assert mType2Symbol != null;
-        int oTypeNum = this.ntypes();
+        int oTypeNum = ntypes();
         if (aNumTypes == oTypeNum) return this;
         if (aNumTypes < oTypeNum) {
             // 现在支持设置更小的值，更大的种类会直接截断
@@ -525,13 +549,13 @@ public class DataXYZ extends AbstractSettableAtomData {
                 }
             }
             String[] oType2Symbol = mType2Symbol;
-            mType2Symbol = new String[aNumTypes +1];
+            mType2Symbol = new String[aNumTypes+1];
             System.arraycopy(oType2Symbol, 0, mType2Symbol, 0, mType2Symbol.length);
             validSymbol2Type_();
             return this;
         }
         String[] oType2Symbol = mType2Symbol;
-        mType2Symbol = new String[aNumTypes +1];
+        mType2Symbol = new String[aNumTypes+1];
         System.arraycopy(oType2Symbol, 0, mType2Symbol, 0, oType2Symbol.length);
         for (int tType = oType2Symbol.length; tType <= aNumTypes; ++tType) {
             mType2Symbol[tType] = "T"+tType;
@@ -539,12 +563,11 @@ public class DataXYZ extends AbstractSettableAtomData {
         validSymbol2Type_();
         return this;
     }
-    void validSymbol2Type_() {
+    private void validSymbol2Type_() {
         assert mType2Symbol != null;
         mSymbol2Type.clear();
-        int tAtomTypeNumber = this.ntypes();
-        for (int tType = 1; tType <= tAtomTypeNumber; ++tType) {
-            mSymbol2Type.put(mType2Symbol[tType], tType);
+        for (int type = 1; type < mType2Symbol.length; ++type) {
+            mSymbol2Type.put(mType2Symbol[type], type);
         }
     }
     /**
@@ -568,7 +591,7 @@ public class DataXYZ extends AbstractSettableAtomData {
     @Override public DataXYZ setHasVelocity() {
         validComment_();
         if (mVelocities == null) {
-            mVelocities = RowMatrix.zeros(this.natoms(), ATOM_DATA_KEYS_VELOCITY.length);
+            mVelocities = RowMatrix.zeros(natoms(), ATOM_DATA_KEYS_VELOCITY.length);
             mProperties.put("velo", mVelocities);
         }
         return this;
@@ -594,7 +617,7 @@ public class DataXYZ extends AbstractSettableAtomData {
     }
     @Override protected void validAtomPosition_(boolean aKeepAtomPosition, IBox aOldBox) {
         if (aKeepAtomPosition) return;
-        final int tAtomNum = this.natoms();
+        final int tAtomNum = natoms();
         XYZ tBuf = new XYZ();
         assert mBox != null;
         if (mBox.isPrism() || aOldBox.isPrism()) {
@@ -701,11 +724,17 @@ public class DataXYZ extends AbstractSettableAtomData {
      * @return {@inheritDoc}
      * @see IBox
      */
-    @Override public IBox box() {return mBox;}
+    @Override public IBox box() {
+        return mBox;
+    }
     /** @return {@inheritDoc} */
-    @Override public int natoms() {return mNumAtoms;}
+    @Override public int natoms() {
+        return mNumAtoms;
+    }
     /** @return {@inheritDoc} */
-    @Override public int ntypes() {return mType2Symbol==null ? 1 : mType2Symbol.length-1;}
+    @Override public int ntypes() {
+        return mType2Symbol==null ? 1 : mType2Symbol.length-1;
+    }
     
     /** @return {@inheritDoc} */
     @Override public DataXYZ copy() {

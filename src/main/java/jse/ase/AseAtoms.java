@@ -536,45 +536,41 @@ public class AseAtoms extends AbstractSettableAtomData {
     }
     
     /**
-     * 直接调整元素符号的顺序，由于 ase atoms 中是采用一列原子序数来存储种类信息的，
-     * 因此并没有指明元素种类的编号顺序，在 jse 中默认会使用元素符号出现的顺序来排列种类编号，
-     * 而如果需要手动设置特定的编号顺序则需要通过类似 {@code data.setSymbolOrder('Cu', 'Zr')}
-     * 的方式设置顺序
-     * @param aSymbolOrder 需要的元素符号顺序
-     * @return 自身方便链式调用
+     * {@inheritDoc}
+     * @param aSymbolOrder {@inheritDoc}
+     * @return {@inheritDoc}
      * @throws IllegalArgumentException 如果包含非法的元素符号
      * @see #setSymbols(String...)
      */
-    public AseAtoms setSymbolOrder(String... aSymbolOrder) {
+    @Override public AseAtoms setSymbolOrder(String... aSymbolOrder) {
         if (mAtomicNumbers == null) throw new UnsupportedOperationException("`setSymbolOrder` for AseAtoms without atomic number numbers data");
         assert mType2AtomicNumber != null;
-        if (aSymbolOrder == null) aSymbolOrder = ZL_STR;
-        if (aSymbolOrder.length > ntypes()) {
-            IIntVector oType2AtomicNumber = mType2AtomicNumber;
-            mType2AtomicNumber = Vectors.range(aSymbolOrder.length+1);
-            mType2AtomicNumber.subVec(0, oType2AtomicNumber.size()).fill(oType2AtomicNumber);
-        }
-        for (int tType = 1; tType <= aSymbolOrder.length; ++tType) {
-            String tSymbol = aSymbolOrder[tType-1];
+        if (aSymbolOrder==null || aSymbolOrder.length==0) return this;
+        // 先更新 AtomicNumber2Type
+        mAtomicNumber2Type.clear();
+        for (String tSymbol : aSymbolOrder) {
             @Nullable Integer tAtomicNumber = SYMBOL_TO_ATOMIC_NUMBER.get(tSymbol);
             if (tAtomicNumber == null) throw new IllegalArgumentException("symbol: " + tSymbol);
-            mType2AtomicNumber.set(tType, tAtomicNumber);
-        }
-        // 先更新 mAtomicNumber2Type
-        validAtomicNumber2Type_();
-        // 遍历一次 mAtomicNumbers 确保 mType2AtomicNumber 全部覆盖
-        mAtomicNumbers.forEach(atomicNumber -> {
-            if (!mAtomicNumber2Type.containsKey(atomicNumber)) {
+            // 注意这里需要考虑可能存在相同符号的情况
+            if (!mAtomicNumber2Type.containsKey(tAtomicNumber)) {
                 int tType = mAtomicNumber2Type.size() + 1;
-                mAtomicNumber2Type.put(atomicNumber, tType);
+                mAtomicNumber2Type.put(tAtomicNumber, tType);
             }
-        });
-        // 如果有缺失需要补充
-        if (mAtomicNumber2Type.size() > mType2AtomicNumber.size()-1) {
+        }
+        // 遍历一次 mType2AtomicNumber 确保 mAtomicNumber2Type 全部覆盖
+        for (int type = 1; type < mType2AtomicNumber.size(); ++type) {
+            int tAtomicNumber = mType2AtomicNumber.get(type);
+            if (!mAtomicNumber2Type.containsKey(tAtomicNumber)) {
+                int tType = mAtomicNumber2Type.size() + 1;
+                mAtomicNumber2Type.put(tAtomicNumber, tType);
+            }
+        }
+        // 总是重新构建 mType2AtomicNumber
+        if (mAtomicNumber2Type.size() != mType2AtomicNumber.size()-1) {
             mType2AtomicNumber = IntVector.zeros(mAtomicNumber2Type.size()+1);
-            for (Map.Entry<Integer, Integer> tEntry : mAtomicNumber2Type.entrySet()) {
-                mType2AtomicNumber.set(tEntry.getValue(), tEntry.getKey());
-            }
+        }
+        for (Map.Entry<Integer, Integer> tEntry : mAtomicNumber2Type.entrySet()) {
+            mType2AtomicNumber.set(tEntry.getValue(), tEntry.getKey());
         }
         return this;
     }
@@ -592,20 +588,43 @@ public class AseAtoms extends AbstractSettableAtomData {
         if (mAtomicNumbers == null) throw new UnsupportedOperationException("`setSymbols` for AseAtoms without atomic number numbers data");
         assert mType2AtomicNumber != null;
         if (aSymbols==null || aSymbols.length==0) return this;
-        if (aSymbols.length > ntypes()) {
-            IIntVector oType2AtomicNumber = mType2AtomicNumber;
-            mType2AtomicNumber = Vectors.range(aSymbols.length+1);
-            mType2AtomicNumber.subVec(0, oType2AtomicNumber.size()).fill(oType2AtomicNumber);
+        // 更新 mAtomicNumbers，此时需要旧的 mAtomicNumber2Type
+        int tNumAtoms = mAtomicNumbers.size();
+        for (int i = 0; i < tNumAtoms; ++i) {
+            int tTypeMM = mAtomicNumber2Type.get(mAtomicNumbers.get(i)) - 1;
+            if (tTypeMM < aSymbols.length) {
+                String tSymbol = aSymbols[tTypeMM];
+                @Nullable Integer tAtomicNumber = SYMBOL_TO_ATOMIC_NUMBER.get(tSymbol);
+                if (tAtomicNumber == null) throw new IllegalArgumentException("symbol: " + tSymbol);
+                mAtomicNumbers.set(i, tAtomicNumber);
+            }
         }
-        for (int tType = 1; tType <= aSymbols.length; ++tType) {
-            String tSymbol = aSymbols[tType-1];
+        // 更新 AtomicNumber2Type
+        mAtomicNumber2Type.clear();
+        for (String tSymbol : aSymbols) {
             @Nullable Integer tAtomicNumber = SYMBOL_TO_ATOMIC_NUMBER.get(tSymbol);
             if (tAtomicNumber == null) throw new IllegalArgumentException("symbol: " + tSymbol);
-            mType2AtomicNumber.set(tType, tAtomicNumber);
+            // 注意这里需要考虑可能存在相同符号的情况
+            if (!mAtomicNumber2Type.containsKey(tAtomicNumber)) {
+                int tType = mAtomicNumber2Type.size() + 1;
+                mAtomicNumber2Type.put(tAtomicNumber, tType);
+            }
         }
-        // 更新 mAtomicNumbers，此时需要旧的 mAtomicNumber2Type
-        mAtomicNumbers.op().map2this(i -> mType2AtomicNumber.get(mAtomicNumber2Type.get(i)));
-        validAtomicNumber2Type_();
+        // 遍历剩余 mType2AtomicNumber 确保 mAtomicNumber2Type 全部覆盖
+        for (int type = aSymbols.length+1; type < mType2AtomicNumber.size(); ++type) {
+            int tAtomicNumber = mType2AtomicNumber.get(type);
+            if (!mAtomicNumber2Type.containsKey(tAtomicNumber)) {
+                int tType = mAtomicNumber2Type.size() + 1;
+                mAtomicNumber2Type.put(tAtomicNumber, tType);
+            }
+        }
+        // 总是重新构建 mType2AtomicNumber
+        if (mAtomicNumber2Type.size() != mType2AtomicNumber.size()-1) {
+            mType2AtomicNumber = IntVector.zeros(mAtomicNumber2Type.size()+1);
+        }
+        for (Map.Entry<Integer, Integer> tEntry : mAtomicNumber2Type.entrySet()) {
+            mType2AtomicNumber.set(tEntry.getValue(), tEntry.getKey());
+        }
         return this;
     }
     /**
@@ -627,22 +646,21 @@ public class AseAtoms extends AbstractSettableAtomData {
                 int tType = mAtomicNumber2Type.get(i);
                 return tType> aNumTypes ? mType2AtomicNumber.get(aNumTypes) : i;
             });
-            mType2AtomicNumber = mType2AtomicNumber.subVec(0, aNumTypes +1).copy();
+            mType2AtomicNumber = mType2AtomicNumber.subVec(0, aNumTypes+1).copy();
             validAtomicNumber2Type_();
             return this;
         }
         IIntVector oType2AtomicNumber = mType2AtomicNumber;
-        mType2AtomicNumber = Vectors.range(aNumTypes +1);
+        mType2AtomicNumber = Vectors.range(aNumTypes+1);
         mType2AtomicNumber.subVec(0, oTypeNum).fill(oType2AtomicNumber);
         validAtomicNumber2Type_();
         return this;
     }
-    void validAtomicNumber2Type_() {
+    private void validAtomicNumber2Type_() {
         assert mType2AtomicNumber != null;
         mAtomicNumber2Type.clear();
-        int tAtomTypeNumber = ntypes();
-        for (int tType = 1; tType <= tAtomTypeNumber; ++tType) {
-            mAtomicNumber2Type.put(mType2AtomicNumber.get(tType), tType);
+        for (int type = 1; type < mType2AtomicNumber.size(); ++type) {
+            mAtomicNumber2Type.put(mType2AtomicNumber.get(type), type);
         }
     }
     /**
