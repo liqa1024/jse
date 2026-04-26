@@ -102,7 +102,7 @@ public class MergedBasis2 extends Basis2 {
             tShift += tSize;
         }
     }
-    @Override public void mountGradParameter(int aThreadID, Vector aVec) {
+    @Override public void mountGradParameter(Vector aVec) {
         if (Conf.OPERATION_CHECK) {
             if (mTotParaSize != aVec.size()) throw new IllegalArgumentException("data size mismatch");
         } else {
@@ -111,7 +111,7 @@ public class MergedBasis2 extends Basis2 {
         int tShift = 0;
         for (int i = 0; i < mMergedBasis.length; ++i) {
             int tSize = mParaSizes[i];
-            mMergedBasis[i].mountGradParameter(aThreadID, aVec.subVec(tShift, tShift+tSize));
+            mMergedBasis[i].mountGradParameter(aVec.subVec(tShift, tShift+tSize));
             tShift += tSize;
         }
     }
@@ -129,9 +129,9 @@ public class MergedBasis2 extends Basis2 {
             tMergedBasis.updateParameters();
         }
     }
-    @Override public void backwardParameter(int aThreadID) {
+    @Override public void backwardParameter() {
         for (MergeableBasis2 tMergedBasis : mMergedBasis) {
-            tMergedBasis.backwardParameter(aThreadID);
+            tMergedBasis.backwardParameter();
         }
     }
     

@@ -8,8 +8,10 @@ import jse.math.MathEX;
 import jse.math.matrix.Matrices;
 import jse.math.matrix.RowMatrix;
 import jse.math.vector.*;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -35,8 +37,8 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
     private final int[] mSharedHiddenDims;
     private Vector mNoSharedHiddenWeights, mNoSharedHiddenBiases;
     private Vector mNoSharedOutputWeight, mNoSharedOutputBias;
-    private Vector[] mGradNoSharedHiddenWeights = null, mGradNoSharedHiddenBiases = null;
-    private Vector[] mGradNoSharedOutputWeight = null, mGradNoSharedOutputBias = null;
+    private Vector mGradNoSharedHiddenWeights = null, mGradNoSharedHiddenBiases = null;
+    private Vector mGradNoSharedOutputWeight = null, mGradNoSharedOutputBias = null;
     private final int mNumLayers;
     private final int mNoSharedHiddenWeightsSize;
     private final int mNoSharedHiddenBiasesSize;
@@ -89,11 +91,7 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
         if (mNoSharedOutputBias.size() != mNoSharedOutputBiasSize) throw new IllegalArgumentException("The size of output biases mismatch");
     }
     @Override public void requireGrad(int aNumThreads) {
-        if (mGradNoSharedHiddenWeights!=null) return;
-        mGradNoSharedHiddenWeights = new Vector[aNumThreads];
-        mGradNoSharedHiddenBiases = new Vector[aNumThreads];
-        mGradNoSharedOutputWeight = new Vector[aNumThreads];
-        mGradNoSharedOutputBias = new Vector[aNumThreads];
+        if (mInternalGradHiddenWeights!=null) return;
         mInternalGradHiddenWeights = new IDoubleOrFloatCPointer[aNumThreads];
         mInternalGradHiddenBiases = new IDoubleOrFloatCPointer[aNumThreads];
         mInternalGradOutputWeight = new IDoubleOrFloatCPointer[aNumThreads];
@@ -103,65 +101,62 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
     @Override public void updateParameters() {
         updateParameters_();
     }
-    @Override public void backwardParameter(int aThreadID) {
-        if (mGradNoSharedHiddenWeights==null) throw new IllegalStateException("invoke `requireGrad(nthreads)` first.");
-        Vector tGradSharedHiddenWeights = mBase.mGradHiddenWeights[aThreadID];
-        Vector tGradSharedOutputWeight = mBase.mGradOutputWeight[aThreadID];
-        Vector tGradSharedHiddenBiases = mBase.mGradHiddenBiases[aThreadID];
-        Vector tGradNoSharedHiddenWeights = mGradNoSharedHiddenWeights[aThreadID];
-        Vector tGradNoSharedOutputWeight = mGradNoSharedOutputWeight[aThreadID];
-        Vector tGradNoSharedHiddenBiases = mGradNoSharedHiddenBiases[aThreadID];
-        IDoubleOrFloatCPointer tInternalGradHiddenWeights = mInternalGradHiddenWeights[aThreadID];
-        IDoubleOrFloatCPointer tInternalGradOutputWeight = mInternalGradOutputWeight[aThreadID];
-        IDoubleOrFloatCPointer tInternalGradHiddenBiases = mInternalGradHiddenBiases[aThreadID];
-        int tColNum = mInputDim;
-        int tShift = 0, tNoSharedShift = 0;
-        IDoubleOrFloatCPointer tPtr = tInternalGradHiddenWeights.copy();
-        for (int i = 0; i < mNumLayers; ++i) {
-            int tHiddenDim = mBase.mHiddenDims[i];
-            int tSharedHiddenDim = mSharedHiddenDims[i];
-            int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
-            int tSize = tHiddenDim*tColNum;
-            int tNoSharedSize = tNoSharedHiddenDim*tColNum;
-            for (int j = 0; j < tNoSharedSize; ++j) {
-                tGradNoSharedHiddenWeights.add(j+tNoSharedShift, tPtr.getAtD(j));
+    @Override public void backwardParameter() {
+        if (mInternalGradHiddenWeights==null) throw new IllegalStateException("invoke `requireGrad(nthreads)` first.");
+        int tNumThreads = mInternalGradHiddenWeights.length;
+        for (int ti = 0; ti < tNumThreads; ++ti) {
+            IDoubleOrFloatCPointer tInternalGradHiddenWeights = mInternalGradHiddenWeights[ti];
+            IDoubleOrFloatCPointer tInternalGradOutputWeight = mInternalGradOutputWeight[ti];
+            IDoubleOrFloatCPointer tInternalGradHiddenBiases = mInternalGradHiddenBiases[ti];
+            int tColNum = mInputDim;
+            int tShift = 0, tNoSharedShift = 0;
+            IDoubleOrFloatCPointer tPtr = tInternalGradHiddenWeights.copy();
+            for (int i = 0; i < mNumLayers; ++i) {
+                int tHiddenDim = mBase.mHiddenDims[i];
+                int tSharedHiddenDim = mSharedHiddenDims[i];
+                int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
+                int tSize = tHiddenDim*tColNum;
+                int tNoSharedSize = tNoSharedHiddenDim*tColNum;
+                for (int j = 0; j < tNoSharedSize; ++j) {
+                    mGradNoSharedHiddenWeights.add(j+tNoSharedShift, tPtr.getAtD(j));
+                }
+                // shared last
+                for (int j = tNoSharedSize; j < tSize; ++j) {
+                    mBase.mGradHiddenWeights.add(j+tShift, tPtr.getAtD(j));
+                }
+                tShift += tSize;
+                tNoSharedShift += tNoSharedSize;
+                tPtr.rightShift(tSize);
+                tColNum = tHiddenDim;
             }
-            // shared last
-            for (int j = tNoSharedSize; j < tSize; ++j) {
-                tGradSharedHiddenWeights.add(j+tShift, tPtr.getAtD(j));
+            tShift = 0; tNoSharedShift = 0;
+            tPtr = tInternalGradHiddenBiases.copy();
+            for (int i = 0; i < mNumLayers; ++i) {
+                int tHiddenDim = mBase.mHiddenDims[i];
+                int tSharedHiddenDim = mSharedHiddenDims[i];
+                int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
+                for (int j = 0; j < tNoSharedHiddenDim; ++j) {
+                    mGradNoSharedHiddenBiases.add(j+tNoSharedShift, tPtr.getAtD(j));
+                }
+                // shared last
+                for (int j = tNoSharedHiddenDim; j < tHiddenDim; ++j) {
+                    mBase.mGradHiddenBiases.add(j+tShift, tPtr.getAtD(j));
+                }
+                tShift += tHiddenDim;
+                tNoSharedShift += tNoSharedHiddenDim;
+                tPtr.rightShift(tHiddenDim);
             }
-            tShift += tSize;
-            tNoSharedShift += tNoSharedSize;
-            tPtr.rightShift(tSize);
-            tColNum = tHiddenDim;
-        }
-        tShift = 0; tNoSharedShift = 0;
-        tPtr = tInternalGradHiddenBiases.copy();
-        for (int i = 0; i < mNumLayers; ++i) {
-            int tHiddenDim = mBase.mHiddenDims[i];
-            int tSharedHiddenDim = mSharedHiddenDims[i];
-            int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
-            for (int j = 0; j < tNoSharedHiddenDim; ++j) {
-                tGradNoSharedHiddenBiases.add(j+tNoSharedShift, tPtr.getAtD(j));
+            if (mSharedHiddenDims[mNumLayers]==0) {
+                for (int j = 0; j < mBase.mOutputWeightSize; ++j) {
+                    mGradNoSharedOutputWeight.add(j, tInternalGradOutputWeight.getAtD(j));
+                }
+                mGradNoSharedOutputBias.add(0, mInternalGradOutputBias[ti].getD());
+            } else {
+                for (int j = 0; j < mBase.mOutputWeightSize; ++j) {
+                    mBase.mGradOutputWeight.add(j, tInternalGradOutputWeight.getAtD(j));
+                }
+                mBase.mGradOutputBias.add(0, mInternalGradOutputBias[ti].getD());
             }
-            // shared last
-            for (int j = tNoSharedHiddenDim; j < tHiddenDim; ++j) {
-                tGradSharedHiddenBiases.add(j+tShift, tPtr.getAtD(j));
-            }
-            tShift += tHiddenDim;
-            tNoSharedShift += tNoSharedHiddenDim;
-            tPtr.rightShift(tHiddenDim);
-        }
-        if (mSharedHiddenDims[mNumLayers]==0) {
-            for (int j = 0; j < mBase.mOutputWeightSize; ++j) {
-                tGradNoSharedOutputWeight.add(j, tInternalGradOutputWeight.getAtD(j));
-            }
-            mGradNoSharedOutputBias[aThreadID].add(0, mInternalGradOutputBias[aThreadID].getD());
-        } else {
-            for (int j = 0; j < mBase.mOutputWeightSize; ++j) {
-                tGradSharedOutputWeight.add(j, tInternalGradOutputWeight.getAtD(j));
-            }
-            mBase.mGradOutputBias[aThreadID].add(0, mInternalGradOutputBias[aThreadID].getD());
         }
     }
     @SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
@@ -237,20 +232,36 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
-    static SharedFeedForward2 load_(NeuralNetwork2[] aNN, Map aMap) {
-        Object tShare = aMap.get("share");
-        if (tShare == null) throw new IllegalArgumentException("Key `share` required for shared_feed_forward");
+    public static SharedFeedForward2 load(int aInputDim, NeuralNetwork2[] aNN, Map aMap) {
+        @Nullable Object tShare = aMap.get("share");
+        if (tShare==null) {
+            throw new IllegalArgumentException("Key `share` required for shared_feed_forward");
+        }
         int tSharedType = ((Number)tShare).intValue();
         FeedForward2 tBase = (FeedForward2)aNN[tSharedType-1];
         // 旧版分层 share 情况现在不再支持
         if (aMap.get("shared_flags") != null) {
             throw new IllegalArgumentException("shared in layer nn is invalid now");
         }
-        int aInputDim = ((Number)UT.Code.get(aMap, "input_dim")).intValue();
-        List<?> tSharedHiddenDims = (List<?>)UT.Code.get(aMap, "shared_hidden_dims");
-        int[] aSharedHiddenDims = new int[tSharedHiddenDims.size()];
-        for (int i = 0; i < aSharedHiddenDims.length; ++i) {
-            aSharedHiddenDims[i] = ((Number)tSharedHiddenDims.get(i)).intValue();
+        @Nullable Number tInputDim = (Number)UT.Code.get(aMap, "input_dim");
+        if (tInputDim!=null && tInputDim.intValue()!=aInputDim) {
+            throw new IllegalArgumentException("Input dimension mismatch: "+tInputDim.intValue()+" vs "+aInputDim);
+        }
+        int[] aSharedHiddenDims;
+        @Nullable Object tSharedHiddenDims = UT.Code.get(aMap, "shared_hidden_dims", "shared_nnarch");
+        if (tSharedHiddenDims == null) {
+            throw new IllegalArgumentException("Key `shared_hidden_dims` required for shared_feed_forward");
+        }
+        if (tSharedHiddenDims instanceof int[]) {
+            aSharedHiddenDims = Arrays.copyOf((int[])tSharedHiddenDims, ((int[])tSharedHiddenDims).length);
+        } else
+        if (tSharedHiddenDims instanceof List) {
+            aSharedHiddenDims = new int[((List<?>)tSharedHiddenDims).size()];
+            for (int i = 0; i < aSharedHiddenDims.length; ++i) {
+                aSharedHiddenDims[i] = ((Number)((List<?>)tSharedHiddenDims).get(i)).intValue();
+            }
+        } else {
+            throw new IllegalArgumentException("invalid type of shared_hidden_dims: " + tSharedHiddenDims.getClass().getName());
         }
         // 最后值缺省支持
         if (aSharedHiddenDims.length == tBase.mNumLayers) {
@@ -259,7 +270,9 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
             System.arraycopy(oSharedHiddenDims, 0, aSharedHiddenDims, 0, oSharedHiddenDims.length);
         }
         int tNumLayers = aSharedHiddenDims.length-1;
-        if (tNumLayers != tBase.mNumLayers) throw new IllegalArgumentException("Hidden number mismatch");
+        if (tNumLayers!=tBase.mNumLayers) {
+            throw new IllegalArgumentException("The number of hidden layers mismatch: "+tNumLayers+" vs "+tBase.mNumLayers);
+        }
         int tNoSharedHiddenWeightsSize = 0;
         int tNoSharedHiddenBiasesSize = 0;
         int tColNum = aInputDim;
@@ -272,46 +285,70 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
             tNoSharedHiddenBiasesSize += tNoSharedHiddenDim;
             tColNum = tHiddenDim;
         }
-        List<?> tNoSharedHiddenWeights = (List<?>)UT.Code.get(aMap, "hidden_weights");
-        if (tNoSharedHiddenWeights.size() != tNumLayers) throw new IllegalArgumentException("The number of hidden weights mismatch");
-        Vector aNoSharedHiddenWeights = Vectors.zeros(tNoSharedHiddenWeightsSize);
-        tColNum = aInputDim;
-        int tShift = 0;
-        for (int i = 0; i < tNumLayers; ++i) {
-            int tHiddenDim = tBase.mHiddenDims[i];
-            int tSharedHiddenDim = aSharedHiddenDims[i];
-            int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
-            int tSize = tNoSharedHiddenDim*tColNum;
-            RowMatrix tWeight = Matrices.fromRows((List<?>)tNoSharedHiddenWeights.get(i));
-            if (tWeight.nrows() != tNoSharedHiddenDim) throw new IllegalArgumentException("Row number of hidden weight '"+i+"' mismatch");
-            if (tNoSharedHiddenDim>0 && tWeight.ncols()!=tColNum) throw new IllegalArgumentException("Column number of hidden weight '"+i+"' mismatch");
-            aNoSharedHiddenWeights.subVec(tShift, tShift+tSize).fill(tWeight.asVecRow());
-            tShift += tSize;
-            tColNum = tHiddenDim;
+        Vector aNoSharedHiddenWeights = null;
+        @Nullable List<?> tNoSharedHiddenWeights = (List<?>)UT.Code.get(aMap, "hidden_weights");
+        if (tNoSharedHiddenWeights != null) {
+            if (tNoSharedHiddenWeights.size()!=tNumLayers) {
+                throw new IllegalArgumentException("The number of hidden weights mismatch: "+tNoSharedHiddenWeights.size()+" vs "+tNumLayers);
+            }
+            aNoSharedHiddenWeights = Vectors.zeros(tNoSharedHiddenWeightsSize);
+            tColNum = aInputDim;
+            int tShift = 0;
+            for (int i = 0; i < tNumLayers; ++i) {
+                int tHiddenDim = tBase.mHiddenDims[i];
+                int tSharedHiddenDim = aSharedHiddenDims[i];
+                int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
+                int tSize = tNoSharedHiddenDim*tColNum;
+                RowMatrix tWeight = Matrices.fromRows((List<?>)tNoSharedHiddenWeights.get(i));
+                if (tWeight.nrows()!=tNoSharedHiddenDim) {
+                    throw new IllegalArgumentException("nrows of hidden weight '"+i+"' mismatch: "+tWeight.nrows()+" vs "+tNoSharedHiddenDim);
+                }
+                if (tNoSharedHiddenDim>0 && tWeight.ncols()!=tColNum) {
+                    throw new IllegalArgumentException("ncols of hidden weight '"+i+"' mismatch: "+tWeight.ncols()+" vs "+tColNum);
+                }
+                aNoSharedHiddenWeights.subVec(tShift, tShift+tSize).fill(tWeight.asVecRow());
+                tShift += tSize;
+                tColNum = tHiddenDim;
+            }
         }
-        List<?> tNoSharedHiddenBiases = (List<?>)UT.Code.get(aMap, "hidden_biases");
-        if (tNoSharedHiddenBiases.size() != tNumLayers) throw new IllegalArgumentException("The number of hidden biases mismatch");
-        Vector aNoSharedHiddenBiases = Vectors.zeros(tNoSharedHiddenBiasesSize);
-        tShift = 0;
-        for (int i = 0; i < tNumLayers; ++i) {
-            int tHiddenDim = tBase.mHiddenDims[i];
-            int tSharedHiddenDim = aSharedHiddenDims[i];
-            int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
-            Vector tBias = Vectors.from((List<? extends Number>)tNoSharedHiddenBiases.get(i));
-            if (tBias.size() != tNoSharedHiddenDim) throw new IllegalArgumentException("Size of hidden bias '"+i+"' mismatch");
-            aNoSharedHiddenBiases.subVec(tShift, tShift+tNoSharedHiddenDim).fill(tBias);
-            tShift += tNoSharedHiddenDim;
+        Vector aNoSharedHiddenBiases = null;
+        @Nullable List<?> tNoSharedHiddenBiases = (List<?>)UT.Code.get(aMap, "hidden_biases");
+        if (tNoSharedHiddenBiases != null) {
+            if (tNoSharedHiddenBiases.size()!=tNumLayers) {
+                throw new IllegalArgumentException("The number of hidden biases mismatch: "+tNoSharedHiddenBiases.size()+" vs "+tNumLayers);
+            }
+            aNoSharedHiddenBiases = Vectors.zeros(tNoSharedHiddenBiasesSize);
+            int tShift = 0;
+            for (int i = 0; i < tNumLayers; ++i) {
+                int tHiddenDim = tBase.mHiddenDims[i];
+                int tSharedHiddenDim = aSharedHiddenDims[i];
+                int tNoSharedHiddenDim = tHiddenDim-tSharedHiddenDim;
+                Vector tBias = Vectors.from((List<? extends Number>)tNoSharedHiddenBiases.get(i));
+                if (tBias.size()!=tNoSharedHiddenDim) {
+                    throw new IllegalArgumentException("Size of hidden bias '"+i+"' mismatch: "+tBias.size()+" vs "+tNoSharedHiddenDim);
+                }
+                aNoSharedHiddenBiases.subVec(tShift, tShift+tNoSharedHiddenDim).fill(tBias);
+                tShift += tNoSharedHiddenDim;
+            }
         }
-        Vector aNoSharedOutputWeight;
-        Vector aNoSharedOutputBias;
+        Vector aNoSharedOutputWeight = null;
+        Vector aNoSharedOutputBias = null;
         if (aSharedHiddenDims[tNumLayers]==1) {
             aNoSharedOutputWeight = ZL_VEC;
             aNoSharedOutputBias = ZL_VEC;
         } else {
-            aNoSharedOutputWeight = Vectors.zeros(tBase.mHiddenDims[tNumLayers-1]);
-            aNoSharedOutputBias = Vectors.zeros(1);
-            aNoSharedOutputWeight.fill((List<? extends Number>)aMap.get("output_weight"));
-            aNoSharedOutputBias.set(0, ((Number)aMap.get("output_bias")).doubleValue());
+            @Nullable Object tNoSharedOutputWeight = aMap.get("output_weight");
+            if (tNoSharedOutputWeight != null) {
+                aNoSharedOutputWeight = Vectors.from((List<? extends Number>)tNoSharedOutputWeight);
+                if (aNoSharedOutputWeight.size()!=tBase.mHiddenDims[tNumLayers-1]) {
+                    throw new IllegalArgumentException("Size of output weight mismatch: "+aNoSharedOutputWeight.size()+" vs "+tBase.mHiddenDims[tNumLayers-1]);
+                }
+            }
+            @Nullable Object tNoSharedOutputBias = aMap.get("output_bias");
+            if (tNoSharedOutputBias != null) {
+                aNoSharedOutputBias = Vectors.zeros(1);
+                aNoSharedOutputBias.set(0, ((Number)tNoSharedOutputBias).doubleValue());
+            }
         }
         return new SharedFeedForward2(aInputDim, tBase, tSharedType, aSharedHiddenDims, aNoSharedHiddenWeights, aNoSharedHiddenBiases, aNoSharedOutputWeight, aNoSharedOutputBias);
     }
@@ -387,21 +424,21 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
         mNoSharedOutputBias = aVec.subVec(tShift, tShift+mNoSharedOutputBiasSize);
         mNoSharedOutputBias.fill(oVec);
     }
-    @Override public void mountGradParameter(int aThreadID, Vector aVec) {
-        if (mGradNoSharedHiddenWeights==null) throw new IllegalStateException("invoke `requireGrad(nthreads)` first.");
+    @Override public void mountGradParameter(Vector aVec) {
+        if (mInternalGradHiddenWeights==null) throw new IllegalStateException("invoke `requireGrad(nthreads)` first.");
         if (Conf.OPERATION_CHECK) {
             if (parameterSize() != aVec.size()) throw new IllegalArgumentException("data size mismatch");
         } else {
             if (parameterSize() > aVec.size()) throw new IllegalArgumentException("data size mismatch");
         }
         int tShift = 0;
-        mGradNoSharedHiddenWeights[aThreadID] = aVec.subVec(tShift, tShift+mNoSharedHiddenWeightsSize);
+        mGradNoSharedHiddenWeights = aVec.subVec(tShift, tShift+mNoSharedHiddenWeightsSize);
         tShift += mNoSharedHiddenWeightsSize;
-        mGradNoSharedOutputWeight[aThreadID] = aVec.subVec(tShift, tShift+mNoSharedOutputWeightSize);
+        mGradNoSharedOutputWeight = aVec.subVec(tShift, tShift+mNoSharedOutputWeightSize);
         tShift += mNoSharedOutputWeightSize;
-        mGradNoSharedHiddenBiases[aThreadID] = aVec.subVec(tShift, tShift+mNoSharedHiddenBiasesSize);
+        mGradNoSharedHiddenBiases = aVec.subVec(tShift, tShift+mNoSharedHiddenBiasesSize);
         tShift += mNoSharedHiddenBiasesSize;
-        mGradNoSharedOutputBias[aThreadID] = aVec.subVec(tShift, tShift+mNoSharedOutputBiasSize);
+        mGradNoSharedOutputBias = aVec.subVec(tShift, tShift+mNoSharedOutputBiasSize);
     }
     
     @Override public int cptrParameterSize() {
@@ -418,7 +455,7 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
         updateParameters_();
     }
     @Override public void mountGradCptrParameter(int aThreadID, IDoubleOrFloatCPointer aPtr) {
-        if (mGradNoSharedHiddenWeights==null) throw new IllegalStateException("invoke `requireGrad(nthreads)` first.");
+        if (mInternalGradHiddenWeights==null) throw new IllegalStateException("invoke `requireGrad(nthreads)` first.");
         mInternalGradHiddenWeights[aThreadID] = aPtr.copy();
         mInternalGradOutputWeight[aThreadID] = mInternalGradHiddenWeights[aThreadID].plus(mBase.mHiddenWeightsSize);
         mInternalGradHiddenBiases[aThreadID] = mInternalGradOutputWeight[aThreadID].plus(mBase.mOutputWeightSize);

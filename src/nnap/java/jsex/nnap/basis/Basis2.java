@@ -106,13 +106,13 @@ public abstract class Basis2 implements ISavable {
     /**
      * 挂载内部的可拟合参数的梯度到一个数组，从而自动同步修改
      */
-    public void mountGradParameter(int aThreadID, Vector aVec) {}
+    public void mountGradParameter(Vector aVec) {}
     /**
      * 反向传播参数梯度到可拟合参数
      * <p>
      * 注意输入指针包装是临时的，因此可能需要内部拷贝或等价形式
      */
-    public void backwardParameter(int aThreadID) {}
+    public void backwardParameter() {}
     
     /** @return 基组需要的近邻截断半径 */
     public abstract double rcut();

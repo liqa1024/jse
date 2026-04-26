@@ -21,11 +21,11 @@ public abstract class NeuralNetwork2 implements ISavable {
     /** 提供直接加载完整神经网络的通用接口 */
     @SuppressWarnings("rawtypes")
     public static NeuralNetwork2[] load(Basis2[] aBasis, List aData) {
-        final int tTypeNum = aData.size();
-        if (aBasis.length!=tTypeNum) throw new IllegalArgumentException("Input size of basis and nn mismatch");
-        NeuralNetwork2[] rNN = new NeuralNetwork2[tTypeNum];
-        for (int i = 0; i < tTypeNum; ++i) {
-//            Basis2 tBasis = aBasis[i];
+        final int tNumTypes = aData.size();
+        if (aBasis.length!=tNumTypes) throw new IllegalArgumentException("Input size of basis and nn mismatch");
+        NeuralNetwork2[] rNN = new NeuralNetwork2[tNumTypes];
+        for (int i = 0; i < tNumTypes; ++i) {
+            Basis2 tBasis = aBasis[i];
 //            // mirror 情况延迟初始化
 //            if (tBasis instanceof MirrorBasis) continue;
             Map tModelMap = (Map)aData.get(i);
@@ -39,15 +39,15 @@ public abstract class NeuralNetwork2 implements ISavable {
                 break;
             }
             case "feed_forward": {
-                rNN[i] = FeedForward2.load(tModelMap);
+                rNN[i] = FeedForward2.load(tBasis.size(), tModelMap);
                 break;
             }
             default: {
                 throw new IllegalArgumentException("Unsupported nn type: " + tModelType);
             }}
         }
-        for (int i = 0; i < tTypeNum; ++i) {
-//            Basis2 tBasis = aBasis[i];
+        for (int i = 0; i < tNumTypes; ++i) {
+            Basis2 tBasis = aBasis[i];
             Map tModelMap = (Map)aData.get(i);
 //            // mirror 情况不得有 nn
 //            if (tBasis instanceof MirrorBasis) {
@@ -57,7 +57,7 @@ public abstract class NeuralNetwork2 implements ISavable {
 //            }
             Object tModelType = tModelMap.get("type");
             if (tModelType.equals("shared_feed_forward")) {
-                rNN[i] = SharedFeedForward2.load_(rNN, tModelMap);
+                rNN[i] = SharedFeedForward2.load(tBasis.size(), rNN, tModelMap);
             }
         }
         return rNN;
@@ -95,13 +95,13 @@ public abstract class NeuralNetwork2 implements ISavable {
     /**
      * 挂载内部的可拟合参数的梯度到一个数组，从而自动同步修改
      */
-    public abstract void mountGradParameter(int aThreadID, Vector aVec);
+    public abstract void mountGradParameter(Vector aVec);
     /**
      * 反向传播参数梯度到可拟合参数
      * <p>
      * 注意输入指针包装是临时的，因此可能需要内部拷贝或等价形式
      */
-    public abstract void backwardParameter(int aThreadID);
+    public abstract void backwardParameter();
     
     /** @return 前向传播中需要的缓存大小 */
     public abstract int forwardCacheSize();
