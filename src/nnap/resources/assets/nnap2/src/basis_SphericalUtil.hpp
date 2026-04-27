@@ -9,71 +9,57 @@
 
 namespace JSE_NNAP {
 
-template <int M, int L>
-static NNAP_DEVICE void realNormalizedLegendreInterLoopSubSub_(flt_t aX, flt_t *rDest) noexcept {
-    constexpr flt_t tSHAlm = SH_Alm[L*(L+1)/2 + M];
-    constexpr flt_t tSHBlm = SH_Blm[L*(L+1)/2 + M];
-    const flt_t tPlm = tSHAlm * (aX*rDest[(L-1)*(L-1)+(L-1) + M] + tSHBlm*rDest[(L-2)*(L-2)+(L-2) + M]);
-    if (M == 0) {
-        rDest[L*L+L] = tPlm;
-    } else {
-        rDest[L*L+L + M] = tPlm;
-        rDest[L*L+L - M] = tPlm;
-    }
-}
 template <int L>
 static NNAP_DEVICE void realNormalizedLegendreInterLoopSub_(flt_t aX, flt_t *rDest) noexcept {
+    flt_t tPlm;
 // >>> NNAPGEN REPEAT
-    if (L-1==__NNAPGENS_X__) {return;} realNormalizedLegendreInterLoopSubSub_<__NNAPGENS_X__, L>(aX, rDest);
+    if (L-1==__NNAPGENS_X__) return;
+    constexpr flt_t tSHAlm__NNAPGENS_X__ = SH_Alm[L*(L+1)/2 + __NNAPGENS_X__];
+    constexpr flt_t tSHBlm__NNAPGENS_X__ = SH_Blm[L*(L+1)/2 + __NNAPGENS_X__];
+    tPlm = tSHAlm__NNAPGENS_X__ * (
+        aX*rDest[(L-1)*(L-1)+(L-1) + __NNAPGENS_X__] +
+        tSHBlm__NNAPGENS_X__*rDest[(L-2)*(L-2)+(L-2) + __NNAPGENS_X__]
+    );
+    if (__NNAPGENS_X__ == 0) {
+        rDest[L*L+L] = tPlm;
+    } else {
+        rDest[L*L+L + __NNAPGENS_X__] = tPlm;
+        rDest[L*L+L - __NNAPGENS_X__] = tPlm;
+    }
 // <<< NNAPGEN REPEAT 0..12
-}
-template <int L>
-static inline NNAP_DEVICE void realNormalizedLegendreInterLoop_(flt_t aX, flt_t aY, flt_t *rDest, flt_t &rPll) noexcept {
-    realNormalizedLegendreInterLoopSub_<L>(aX, rDest);
-    constexpr flt_t tMul1 = SQRT_2LM1P3[L];
-    const flt_t tPlm = tMul1 * aX * rPll;
-    rDest[L*L+L + (L-1)] = tPlm;
-    rDest[L*L+L - (L-1)] = tPlm;
-    constexpr flt_t tMul2 = -SQRT_1P1D2L[L];
-    rPll *= tMul2 * aY;
-    rDest[L*L+L + L] = rPll;
-    rDest[L*L+L - L] = rPll;
 }
 template <int LMAX>
 static NNAP_DEVICE void realNormalizedLegendreFull(flt_t aX, flt_t aY, flt_t *rDest) noexcept {
     flt_t tPll = 0.28209479177387814347403972578039; // = sqrt(1/(4*PI))
     rDest[0] = tPll;
     if (LMAX == 0) return;
-    rDest[2] = SQRT3 * aX * tPll;
+    flt_t tPlm = SQRT3 * aX * tPll;
+    rDest[2] = tPlm;
     tPll *= (-SQRT3DIV2 * aY);
     rDest[2+1] = tPll;
     rDest[2-1] = tPll;
     if (LMAX == 1) return;
 // >>> NNAPGEN REPEAT
-    realNormalizedLegendreInterLoop_<__NNAPGENS_X__>(aX, aY, rDest, tPll); if (LMAX==__NNAPGENS_X__) return;
+    realNormalizedLegendreInterLoopSub_<__NNAPGENS_X__>(aX, rDest);
+    constexpr flt_t tMul1__NNAPGENS_X__ =  SQRT_2LM1P3[__NNAPGENS_X__];
+    constexpr flt_t tMul2__NNAPGENS_X__ = -SQRT_1P1D2L[__NNAPGENS_X__];
+    tPlm = tMul1__NNAPGENS_X__ * aX * tPll;
+    rDest[__NNAPGENS_X__*__NNAPGENS_X__+__NNAPGENS_X__ + (__NNAPGENS_X__-1)] = tPlm;
+    rDest[__NNAPGENS_X__*__NNAPGENS_X__+__NNAPGENS_X__ - (__NNAPGENS_X__-1)] = tPlm;
+    tPll *= tMul2__NNAPGENS_X__ * aY;
+    rDest[__NNAPGENS_X__*__NNAPGENS_X__+__NNAPGENS_X__ + __NNAPGENS_X__] = tPll;
+    rDest[__NNAPGENS_X__*__NNAPGENS_X__+__NNAPGENS_X__ - __NNAPGENS_X__] = tPll;
+    if (LMAX==__NNAPGENS_X__) return;
 // <<< NNAPGEN REPEAT 2..12
 }
 
-template <int M, int L>
-static inline NNAP_DEVICE void realSphericalHarmonicsFull4InterLoopSubSub_(flt_t aSqrt2CosMPhi, flt_t aSqrt2SinMPhi, flt_t *rDest) noexcept {
-    rDest[L*L+L + M] *= aSqrt2CosMPhi;
-    rDest[L*L+L - M] *= aSqrt2SinMPhi;
-}
 template <int M, int LMAX>
 static NNAP_DEVICE void realSphericalHarmonicsFull4InterLoopSub_(flt_t aSqrt2CosMPhi, flt_t aSqrt2SinMPhi, flt_t *rDest) noexcept {
 // >>> NNAPGEN REPEAT
-    realSphericalHarmonicsFull4InterLoopSubSub_<M, M+__NNAPGENS_X__>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest); if (LMAX==M+__NNAPGENS_X__) return;
+    rDest[(M+__NNAPGENS_X__)*(M+__NNAPGENS_X__) + (M+__NNAPGENS_X__) + M] *= aSqrt2CosMPhi;
+    rDest[(M+__NNAPGENS_X__)*(M+__NNAPGENS_X__) + (M+__NNAPGENS_X__) - M] *= aSqrt2SinMPhi;
+    if (LMAX==M+__NNAPGENS_X__) return;
 // <<< NNAPGEN REPEAT 0..12
-}
-template <int M, int LMAX>
-static inline NNAP_DEVICE void realSphericalHarmonicsFull4InterLoop_(flt_t aCosPhi2, flt_t &rSinMPhi, flt_t &rSinMmmPhi, flt_t &rCosMPhi, flt_t &rCosMmmPhi, flt_t *rDest) noexcept {
-    const flt_t fSqrt2CosMPhi = SQRT2*rCosMPhi;
-    const flt_t fSqrt2SinMPhi = SQRT2*rSinMPhi;
-    realSphericalHarmonicsFull4InterLoopSub_<M, LMAX>(fSqrt2CosMPhi, fSqrt2SinMPhi, rDest);
-    const flt_t tSinMppPhi = aCosPhi2 * rSinMPhi - rSinMmmPhi;
-    const flt_t tCosMppPhi = aCosPhi2 * rCosMPhi - rCosMmmPhi;
-    rSinMmmPhi = rSinMPhi; rCosMmmPhi = rCosMPhi;
-    rSinMPhi = tSinMppPhi; rCosMPhi = tCosMppPhi;
 }
 template <int LMAX>
 static NNAP_DEVICE void realSphericalHarmonicsFull4_(flt_t aCosTheta, flt_t aSinTheta, flt_t aCosPhi, flt_t aSinPhi, flt_t *rDest) noexcept {
@@ -86,8 +72,14 @@ static NNAP_DEVICE void realSphericalHarmonicsFull4_(flt_t aCosTheta, flt_t aSin
     flt_t rSinMPhi = aSinPhi;
     flt_t rCosMPhi = aCosPhi;
     const flt_t tCosPhi2 = rCosMPhi+rCosMPhi;
+    flt_t tSinMppPhi, tCosMppPhi;
 // >>> NNAPGEN REPEAT
-    realSphericalHarmonicsFull4InterLoop_<__NNAPGENS_X__, LMAX>(tCosPhi2, rSinMPhi, rSinMmmPhi, rCosMPhi, rCosMmmPhi, rDest); if (LMAX==__NNAPGENS_X__) return;
+    realSphericalHarmonicsFull4InterLoopSub_<__NNAPGENS_X__, LMAX>(SQRT2*rCosMPhi, SQRT2*rSinMPhi, rDest);
+    if (LMAX==__NNAPGENS_X__) return;
+    tSinMppPhi = tCosPhi2*rSinMPhi - rSinMmmPhi;
+    tCosMppPhi = tCosPhi2*rCosMPhi - rCosMmmPhi;
+    rSinMmmPhi = rSinMPhi; rCosMmmPhi = rCosMPhi;
+    rSinMPhi = tSinMppPhi; rCosMPhi = tCosMppPhi;
 // <<< NNAPGEN REPEAT 1..12
 }
 template <int LMAX>
@@ -156,7 +148,9 @@ static NNAP_DEVICE void calYPtheta_(flt_t *rYPtheta, flt_t *aY, flt_t aCosPhi, f
 template <int LMAX>
 static NNAP_DEVICE void calYPthetaPphi_(flt_t *rYPtheta, flt_t *rYPphi, flt_t *aY, flt_t aCosPhi, flt_t aSinPhi) noexcept {
 // >>> NNAPGEN REPEAT
-    calYPphi_<__NNAPGENS_X__>(rYPphi, aY); calYPtheta_<__NNAPGENS_X__>(rYPtheta, aY, aCosPhi, aSinPhi); if (LMAX==__NNAPGENS_X__) return;
+    calYPphi_<__NNAPGENS_X__>(rYPphi, aY);
+    calYPtheta_<__NNAPGENS_X__>(rYPtheta, aY, aCosPhi, aSinPhi);
+    if (LMAX==__NNAPGENS_X__) return;
 // <<< NNAPGEN REPEAT 0..12
 }
 template <int LMAX>
@@ -301,7 +295,8 @@ static NNAP_DEVICE void calSphL2(flt_t *aCnlm, flt_t *rFp) noexcept {
     }
     if (LMAX == 0) return;
 // >>> NNAPGEN REPEAT
-    calL2Sub_<__NNAPGENS_X__>(aCnlm, tFp); if (LMAX==__NNAPGENS_X__) return;
+    calL2Sub_<__NNAPGENS_X__>(aCnlm, tFp);
+    if (LMAX==__NNAPGENS_X__) return;
 // <<< NNAPGEN REPEAT 1..12
 }
 template <int L3IDX, int SUBIDX>
@@ -317,7 +312,8 @@ static NNAP_DEVICE flt_t calL3Sub_(flt_t *aCnlm) noexcept {
     flt_t rFp3 = ZERO;
     constexpr int tSize = L3_SIZE[L3IDX];
 // >>> NNAPGEN REPEAT
-    if (tSize==__NNAPGENS_X__) {return rFp3;} rFp3 += calL3SubSub_<L3IDX, __NNAPGENS_X__>(aCnlm);
+    if (tSize==__NNAPGENS_X__) return rFp3;
+    rFp3 += calL3SubSub_<L3IDX, __NNAPGENS_X__>(aCnlm);
 // <<< NNAPGEN REPEAT 0..<110
     return rFp3;
 }
@@ -358,7 +354,8 @@ static NNAP_DEVICE flt_t calL4Sub_(flt_t *aCnlm) noexcept {
     flt_t rFp4 = ZERO;
     constexpr int tSize = L4_SIZE[L4IDX];
 // >>> NNAPGEN REPEAT
-    if (tSize==__NNAPGENS_X__) {return rFp4;} rFp4 += calL4SubSub_<L4IDX, __NNAPGENS_X__>(aCnlm);
+    if (tSize==__NNAPGENS_X__) return rFp4;
+    rFp4 += calL4SubSub_<L4IDX, __NNAPGENS_X__>(aCnlm);
 // <<< NNAPGEN REPEAT 0..<100
     return rFp4;
 }
@@ -396,7 +393,8 @@ static NNAP_DEVICE void calGradSphL2(flt_t *aCnlm, flt_t *rGradCnlm, flt_t *aNNG
     }
     if (LMAX == 0) return;
 // >>> NNAPGEN REPEAT
-    calGradL2Sub_<__NNAPGENS_X__>(aCnlm, rGradCnlm, tNNGrad[__NNAPGENS_X__-1]); if (LMAX==__NNAPGENS_X__) return;
+    calGradL2Sub_<__NNAPGENS_X__>(aCnlm, rGradCnlm, tNNGrad[__NNAPGENS_X__-1]);
+    if (LMAX==__NNAPGENS_X__) return;
 // <<< NNAPGEN REPEAT 1..12
 }
 template <int L3IDX, int SUBIDX>
@@ -417,7 +415,8 @@ template <int L3IDX>
 static NNAP_DEVICE void calGradL3Sub_(flt_t *aCnlm, flt_t *rGradCnlm, flt_t aSubNNGrad) noexcept {
     constexpr int tSize = L3_SIZE[L3IDX];
 // >>> NNAPGEN REPEAT
-    if (tSize==__NNAPGENS_X__) {return;} calGradL3SubSub_<L3IDX, __NNAPGENS_X__>(aCnlm, rGradCnlm, aSubNNGrad);
+    if (tSize==__NNAPGENS_X__) return;
+    calGradL3SubSub_<L3IDX, __NNAPGENS_X__>(aCnlm, rGradCnlm, aSubNNGrad);
 // <<< NNAPGEN REPEAT 0..<110
 }
 template <int L3MAX>
@@ -464,7 +463,8 @@ template <int L4IDX>
 static NNAP_DEVICE void calGradL4Sub_(flt_t *aCnlm, flt_t *rGradCnlm, flt_t aSubNNGrad) noexcept {
     constexpr int tSize = L4_SIZE[L4IDX];
 // >>> NNAPGEN REPEAT
-    if (tSize==__NNAPGENS_X__) {return;} calGradL4SubSub_<L4IDX, __NNAPGENS_X__>(aCnlm, rGradCnlm, aSubNNGrad);
+    if (tSize==__NNAPGENS_X__) return;
+    calGradL4SubSub_<L4IDX, __NNAPGENS_X__>(aCnlm, rGradCnlm, aSubNNGrad);
 // <<< NNAPGEN REPEAT 0..<100
 }
 template <int L4MAX>
