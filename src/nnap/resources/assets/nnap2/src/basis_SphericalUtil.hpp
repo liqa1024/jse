@@ -10,7 +10,7 @@
 namespace JSE_NNAP {
 
 template <int M, int L>
-static inline NNAP_DEVICE void realNormalizedLegendreInterLoopSubSub_(flt_t aX, flt_t *rDest) noexcept {
+static NNAP_DEVICE void realNormalizedLegendreInterLoopSubSub_(flt_t aX, flt_t *rDest) noexcept {
     constexpr flt_t tSHAlm = SH_Alm[L*(L+1)/2 + M];
     constexpr flt_t tSHBlm = SH_Blm[L*(L+1)/2 + M];
     const flt_t tPlm = tSHAlm * (aX*rDest[(L-1)*(L-1)+(L-1) + M] + tSHBlm*rDest[(L-2)*(L-2)+(L-2) + M]);
@@ -22,7 +22,7 @@ static inline NNAP_DEVICE void realNormalizedLegendreInterLoopSubSub_(flt_t aX, 
     }
 }
 template <int L>
-static inline NNAP_DEVICE void realNormalizedLegendreInterLoopSub_(flt_t aX, flt_t *rDest) noexcept {
+static NNAP_DEVICE void realNormalizedLegendreInterLoopSub_(flt_t aX, flt_t *rDest) noexcept {
 // >>> NNAPGEN REPEAT
     if (L-1==__NNAPGENS_X__) {return;} realNormalizedLegendreInterLoopSubSub_<__NNAPGENS_X__, L>(aX, rDest);
 // <<< NNAPGEN REPEAT 0..12
@@ -40,7 +40,7 @@ static inline NNAP_DEVICE void realNormalizedLegendreInterLoop_(flt_t aX, flt_t 
     rDest[L*L+L - L] = rPll;
 }
 template <int LMAX>
-static inline NNAP_DEVICE void realNormalizedLegendreFull(flt_t aX, flt_t aY, flt_t *rDest) noexcept {
+static NNAP_DEVICE void realNormalizedLegendreFull(flt_t aX, flt_t aY, flt_t *rDest) noexcept {
     flt_t tPll = 0.28209479177387814347403972578039; // = sqrt(1/(4*PI))
     rDest[0] = tPll;
     if (LMAX == 0) return;
@@ -60,7 +60,7 @@ static inline NNAP_DEVICE void realSphericalHarmonicsFull4InterLoopSubSub_(flt_t
     rDest[L*L+L - M] *= aSqrt2SinMPhi;
 }
 template <int M, int LMAX>
-static inline NNAP_DEVICE void realSphericalHarmonicsFull4InterLoopSub_(flt_t aSqrt2CosMPhi, flt_t aSqrt2SinMPhi, flt_t *rDest) noexcept {
+static NNAP_DEVICE void realSphericalHarmonicsFull4InterLoopSub_(flt_t aSqrt2CosMPhi, flt_t aSqrt2SinMPhi, flt_t *rDest) noexcept {
 // >>> NNAPGEN REPEAT
     realSphericalHarmonicsFull4InterLoopSubSub_<M, M+__NNAPGENS_X__>(aSqrt2CosMPhi, aSqrt2SinMPhi, rDest); if (LMAX==M+__NNAPGENS_X__) return;
 // <<< NNAPGEN REPEAT 0..12
@@ -76,7 +76,7 @@ static inline NNAP_DEVICE void realSphericalHarmonicsFull4InterLoop_(flt_t aCosP
     rSinMPhi = tSinMppPhi; rCosMPhi = tCosMppPhi;
 }
 template <int LMAX>
-static inline NNAP_DEVICE void realSphericalHarmonicsFull4_(flt_t aCosTheta, flt_t aSinTheta, flt_t aCosPhi, flt_t aSinPhi, flt_t *rDest) noexcept {
+static NNAP_DEVICE void realSphericalHarmonicsFull4_(flt_t aCosTheta, flt_t aSinTheta, flt_t aCosPhi, flt_t aSinPhi, flt_t *rDest) noexcept {
     // cal real Legendre
     realNormalizedLegendreFull<LMAX>(aCosTheta, aSinTheta, rDest);
     if (LMAX == 0) return;
@@ -91,7 +91,7 @@ static inline NNAP_DEVICE void realSphericalHarmonicsFull4_(flt_t aCosTheta, flt
 // <<< NNAPGEN REPEAT 1..12
 }
 template <int LMAX>
-static inline NNAP_DEVICE void calY(flt_t *rY, flt_t aDx, flt_t aDy, flt_t aDz, flt_t aDis) noexcept {
+static NNAP_DEVICE void calY(flt_t *rY, flt_t aDx, flt_t aDy, flt_t aDz, flt_t aDis) noexcept {
     const flt_t dxy = nnap_hypot(aDx, aDy);
     const flt_t cosTheta = aDz / aDis;
     const flt_t sinTheta = dxy / aDis;
@@ -109,7 +109,7 @@ static inline NNAP_DEVICE void calY(flt_t *rY, flt_t aDx, flt_t aDy, flt_t aDz, 
 }
 
 template <int L>
-static inline NNAP_DEVICE void calYPphi_(flt_t *rYPphi, flt_t *aY) noexcept {
+static NNAP_DEVICE void calYPphi_(flt_t *rYPphi, flt_t *aY) noexcept {
     constexpr int tStart = L*L;
     constexpr int tIdx = tStart+L;
     for (int m = -L; m <= L; ++m) {
@@ -117,7 +117,7 @@ static inline NNAP_DEVICE void calYPphi_(flt_t *rYPphi, flt_t *aY) noexcept {
     }
 }
 template <int L>
-static inline NNAP_DEVICE void calYPtheta_(flt_t *rYPtheta, flt_t *aY, flt_t aCosPhi, flt_t aSinPhi) noexcept {
+static NNAP_DEVICE void calYPtheta_(flt_t *rYPtheta, flt_t *aY, flt_t aCosPhi, flt_t aSinPhi) noexcept {
     switch(L) {
     case 0: {
         rYPtheta[0] = ZERO;
@@ -160,8 +160,8 @@ static NNAP_DEVICE void calYPthetaPphi_(flt_t *rYPtheta, flt_t *rYPphi, flt_t *a
 // <<< NNAPGEN REPEAT 0..12
 }
 template <int LMAX>
-static inline NNAP_DEVICE void calYPthetaPphi(flt_t *rYPtheta, flt_t *rYPphi, flt_t *aY, flt_t aDx, flt_t aDy, flt_t aDz, flt_t aDis,
-                                              flt_t &rThetaPx, flt_t &rThetaPy, flt_t &rThetaPz, flt_t &rPhiPx, flt_t &rPhiPy) noexcept {
+static NNAP_DEVICE void calYPthetaPphi(flt_t *rYPtheta, flt_t *rYPphi, flt_t *aY, flt_t aDx, flt_t aDy, flt_t aDz, flt_t aDis,
+                                       flt_t &rThetaPx, flt_t &rThetaPy, flt_t &rThetaPz, flt_t &rPhiPx, flt_t &rPhiPy) noexcept {
     constexpr int tLMAll = (LMAX+1)*(LMAX+1);
     const flt_t dxy = nnap_hypot(aDx, aDy);
     const flt_t cosTheta = aDz / aDis;
@@ -189,7 +189,7 @@ static inline NNAP_DEVICE void calYPthetaPphi(flt_t *rYPtheta, flt_t *rYPphi, fl
 
 
 template <int SIZE_NP, int LMAX>
-static inline NNAP_DEVICE void mplusAnlm(flt_t *rAnlm, flt_t *aY, flt_t *aRnp) noexcept {
+static NNAP_DEVICE void mplusAnlm(flt_t *rAnlm, flt_t *aY, flt_t *aRnp) noexcept {
     constexpr int tLMAll = (LMAX+1)*(LMAX+1);
     flt_t *tAnlm = rAnlm;
     for (int np = 0; np < SIZE_NP; ++np) {
@@ -198,7 +198,7 @@ static inline NNAP_DEVICE void mplusAnlm(flt_t *rAnlm, flt_t *aY, flt_t *aRnp) n
     }
 }
 template <int SIZE_NP, int LMAX>
-static inline NNAP_DEVICE void mplusAnlmWt(flt_t *rAnlm, flt_t *rAnlmWt, flt_t aWt, flt_t *aY, flt_t *aRnp) noexcept {
+static NNAP_DEVICE void mplusAnlmWt(flt_t *rAnlm, flt_t *rAnlmWt, flt_t aWt, flt_t *aY, flt_t *aRnp) noexcept {
     constexpr int tLMAll = (LMAX+1)*(LMAX+1);
     flt_t *tAnlm = rAnlm;
     flt_t *tAnlmWt = rAnlmWt;
@@ -215,32 +215,22 @@ static inline NNAP_DEVICE void mplusAnlmWt(flt_t *rAnlm, flt_t *rAnlmWt, flt_t a
 }
 
 
-template <int NMAX, int SIZE_NP, int LMAX>
-static inline NNAP_DEVICE void backwardGradAnlm(flt_t *aGradAnlm, flt_t *aY, flt_t *aRn, flt_t *rGradRFuseWeight) noexcept {
+template <int SIZE_NP, int LMAX>
+static NNAP_DEVICE void gradAnlm2Rnp(flt_t *aGradAnlm, flt_t *aY, flt_t *rGradRnp) noexcept {
     constexpr int tLMAll = (LMAX+1)*(LMAX+1);
-    flt_t *rGradWeight = rGradRFuseWeight;
     flt_t *tGradAnlm = aGradAnlm;
     for (int np = 0; np < SIZE_NP; ++np) {
-        flt_t tGradRnp = ZERO;
-        for (int k = 0; k < tLMAll; ++k) {
-            const flt_t subGradAnlm = tGradAnlm[k];
-            tGradRnp += aY[k] * subGradAnlm;
-        }
-        mplus<NMAX+1>(rGradWeight, tGradRnp, aRn);
+        rGradRnp[np] += dot<tLMAll>(aY, tGradAnlm);
         tGradAnlm += tLMAll;
-        rGradWeight += (NMAX+1);
     }
 }
 template <int SIZE_NP, int LMAX>
-static inline NNAP_DEVICE void gradAnlm2xyz(int j, flt_t *aGradAnlm, flt_t *rGradY, flt_t *aY, flt_t *aRnp,
-                                            flt_t *aRnpGrad, flt_t *aYPtheta, flt_t *aYPphi,
-                                            flt_t dx, flt_t dy, flt_t dz, flt_t thetaPx, flt_t thetaPy, flt_t thetaPz, flt_t phiPx, flt_t phiPy,
-                                            flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz) noexcept {
+static NNAP_DEVICE void gradAnlm2nlj(flt_t *aGradAnlm, flt_t *rGradY, flt_t *aY, flt_t *aRnp,
+                                     flt_t *aRnpGrad, flt_t *aYPtheta, flt_t *aYPphi,
+                                     flt_t &rGradj, flt_t &rGradThetaj, flt_t &rGradPhij) noexcept {
     constexpr int tLMAll = (LMAX+1)*(LMAX+1);
-    // clear gradY here
-    fill<tLMAll>(rGradY, ZERO);
-    flt_t rGradj = ZERO;
     flt_t *tGradAnlm = aGradAnlm;
+    flt_t tGradj = ZERO;
     for (int np = 0; np < SIZE_NP; ++np) {
         const flt_t tRnpnp = aRnp[np];
         flt_t tGradRnp = ZERO;
@@ -250,29 +240,26 @@ static inline NNAP_DEVICE void gradAnlm2xyz(int j, flt_t *aGradAnlm, flt_t *rGra
             tGradRnp += aY[k] * subGradAnlm;
         }
         tGradAnlm += tLMAll;
-        rGradj += tGradRnp*aRnpGrad[np];
+        tGradj += tGradRnp*aRnpGrad[np];
     }
-    flt_t rGradThetaj = ZERO, rGradPhij = ZERO;
+    rGradj += tGradj;
+    flt_t tGradThetaj = ZERO, tGradPhij = ZERO;
     for (int k = 0; k < tLMAll; ++k) {
         const flt_t subGradY = rGradY[k];
-        rGradThetaj += subGradY*aYPtheta[k];
-        rGradPhij += subGradY*aYPphi[k];
+        tGradThetaj += subGradY*aYPtheta[k];
+        tGradPhij += subGradY*aYPphi[k];
     }
-    rGradNlDx[j] += rGradj*dx + rGradThetaj*thetaPx + rGradPhij*phiPx;
-    rGradNlDy[j] += rGradj*dy + rGradThetaj*thetaPy + rGradPhij*phiPy;
-    rGradNlDz[j] += rGradj*dz + rGradThetaj*thetaPz;
+    rGradThetaj += tGradThetaj;
+    rGradPhij += tGradPhij;
 }
 template <int SIZE_NP, int LMAX>
-static inline NNAP_DEVICE void gradAnlm2xyzWt(int j, flt_t *aGradAnlm, flt_t *aGradAnlmWt, flt_t aWt, flt_t *rGradY, flt_t *aY, flt_t *aRnp,
-                                              flt_t *aRnpGrad, flt_t *aYPtheta, flt_t *aYPphi,
-                                              flt_t dx, flt_t dy, flt_t dz, flt_t thetaPx, flt_t thetaPy, flt_t thetaPz, flt_t phiPx, flt_t phiPy,
-                                              flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz) noexcept {
+static NNAP_DEVICE void gradAnlm2nljWt(flt_t *aGradAnlm, flt_t *aGradAnlmWt, flt_t aWt, flt_t *rGradY, flt_t *aY, flt_t *aRnp,
+                                       flt_t *aRnpGrad, flt_t *aYPtheta, flt_t *aYPphi,
+                                       flt_t &rGradj, flt_t &rGradThetaj, flt_t &rGradPhij) noexcept {
     constexpr int tLMAll = (LMAX+1)*(LMAX+1);
-    // clear gradY here
-    fill<tLMAll>(rGradY, ZERO);
-    flt_t rGradj = ZERO;
     flt_t *tGradAnlm = aGradAnlm;
     flt_t *tGradAnlmWt = aGradAnlmWt;
+    flt_t tGradj = ZERO;
     for (int np = 0; np < SIZE_NP; ++np) {
         const flt_t tRnpnp = aRnp[np];
         flt_t tGradRnp = ZERO;
@@ -283,17 +270,17 @@ static inline NNAP_DEVICE void gradAnlm2xyzWt(int j, flt_t *aGradAnlm, flt_t *aG
         }
         tGradAnlm += tLMAll;
         tGradAnlmWt += tLMAll;
-        rGradj += tGradRnp*aRnpGrad[np];
+        tGradj += tGradRnp*aRnpGrad[np];
     }
-    flt_t rGradThetaj = ZERO, rGradPhij = ZERO;
+    rGradj += tGradj;
+    flt_t tGradThetaj = ZERO, tGradPhij = ZERO;
     for (int k = 0; k < tLMAll; ++k) {
         const flt_t subGradY = rGradY[k];
-        rGradThetaj += subGradY*aYPtheta[k];
-        rGradPhij += subGradY*aYPphi[k];
+        tGradThetaj += subGradY*aYPtheta[k];
+        tGradPhij += subGradY*aYPphi[k];
     }
-    rGradNlDx[j] += rGradj*dx + rGradThetaj*thetaPx + rGradPhij*phiPx;
-    rGradNlDy[j] += rGradj*dy + rGradThetaj*thetaPy + rGradPhij*phiPy;
-    rGradNlDz[j] += rGradj*dz + rGradThetaj*thetaPz;
+    rGradThetaj += tGradThetaj;
+    rGradPhij += tGradPhij;
 }
 
 

@@ -91,10 +91,10 @@ static NNAP_DEVICE void sphForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int
 }
 
 template <int WTYPE, int NMAX, int LMAXMAX, int SIZE_NP, int GRAD_PARAM, int REQUIRE_CACHE>
-static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aGradAnlm,
-                                     flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
+static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aAGradAnlm,
+                                     flt_t *rAGradNlDx, flt_t *rAGradNlDy, flt_t *rAGradNlDz,
                                      flt_t **aForwardCache, flt_t **rBackwardCache,
-                                     flt_t aRCut, flt_t *aParams, flt_t *rGradParams) {
+                                     flt_t aRCut, flt_t *aParams, flt_t *rAGradParams) {
     if (GRAD_PARAM) {
         // no param
         if (WTYPE!=WTYPE_RFUSE && WTYPE!=WTYPE_FUSE && WTYPE!=WTYPE_EXFUSE) return;
@@ -105,11 +105,9 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
     flt_t *tNlRnp = *aForwardCache; *aForwardCache += aNeiNum*SIZE_NP;
     flt_t *tNlY  = *aForwardCache; *aForwardCache += aNeiNum*tLMAll;
     flt_t bRnGrad[REQUIRE_CACHE ? 1 : (NMAX+1)]; flt_t *rRnGrad = REQUIRE_CACHE ? NULL : bRnGrad;
-    flt_t rCheby2[NMAX+1];
     flt_t bRnpGrad[REQUIRE_CACHE ? 1 : SIZE_NP]; flt_t *rRnpGrad = REQUIRE_CACHE ? NULL : bRnpGrad;
     flt_t bYPtheta[REQUIRE_CACHE ? 1 : tLMAll]; flt_t *rYPtheta = REQUIRE_CACHE ? NULL : bYPtheta;
     flt_t bYPphi[REQUIRE_CACHE ? 1 : tLMAll]; flt_t *rYPphi = REQUIRE_CACHE ? NULL : bYPphi;
-    flt_t rGradY[tLMAll];
     flt_t *rNlRnGrad = NULL, *rNlRnpGrad = NULL, *rNlYPtheta = NULL, *rNlYPphi = NULL;
     if (REQUIRE_CACHE) {
         rNlRnGrad = *rBackwardCache; *rBackwardCache += aNeiNum*(NMAX+1);
@@ -117,6 +115,8 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
         rNlYPtheta = *rBackwardCache; *rBackwardCache += aNeiNum*tLMAll;
         rNlYPphi = *rBackwardCache; *rBackwardCache += aNeiNum*tLMAll;
     }
+    flt_t rCheby2[NMAX+1], rAGradRnp[SIZE_NP];
+    flt_t rAGradY[tLMAll];
     // loop for neighbor
     for (int j = 0; j < aNeiNum; ++j) {
         // init nl
@@ -147,57 +147,70 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
             calRnGrad<NMAX>(rRnGrad, rCheby2, dis, aRCut);
         }
         // grad anlm to gred xyz
+        flt_t rAGradj = ZERO, rAGradThetaj = ZERO, rAGradPhij = ZERO;
         if (WTYPE==WTYPE_RFUSE || WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) {
             const int tParamShift = (type-1)*(SIZE_NP*(NMAX+1));
             if (GRAD_PARAM) {
-                backwardGradAnlm<NMAX, SIZE_NP, LMAXMAX>(aGradAnlm, tY, tRn, rGradParams+tParamShift);
+                fill<SIZE_NP>(rAGradRnp, ZERO);
+                gradAnlm2Rnp<SIZE_NP, LMAXMAX>(aAGradAnlm, tY, rAGradRnp);
+                backwardRnp<NMAX, SIZE_NP>(rAGradRnp, tRn, rAGradParams+tParamShift);
             } else {
                 // get Rnp here
                 flt_t *tRnp = tNlRnp + j*SIZE_NP;
                 // cal RnpGrad here
                 if (REQUIRE_CACHE) rRnpGrad = rNlRnpGrad + j*SIZE_NP;
-                calRnpGrad<NMAX, SIZE_NP>(rRnpGrad, rRnGrad, aParams + tParamShift);
-                gradAnlm2xyz<SIZE_NP, LMAXMAX>(j,
-                    aGradAnlm, rGradY, tY, tRnp, rRnpGrad, rYPtheta, rYPphi,
-                    dx, dy, dz, thetaPx, thetaPy, thetaPz, phiPx, phiPy, rGradNlDx, rGradNlDy, rGradNlDz
+                calRnp<NMAX, SIZE_NP>(rRnpGrad, rRnGrad, aParams+tParamShift);
+                fill<tLMAll>(rAGradY, ZERO);
+                gradAnlm2nlj<SIZE_NP, LMAXMAX>(
+                    aAGradAnlm, rAGradY, tY, tRnp, rRnpGrad, rYPtheta, rYPphi,
+                    rAGradj, rAGradThetaj, rAGradPhij
                 );
             }
         } else
         if (WTYPE==WTYPE_NONE) {
-            gradAnlm2xyz<NMAX+1, LMAXMAX>(j,
-                aGradAnlm, rGradY, tY, tRn, rRnGrad, rYPtheta, rYPphi,
-                dx, dy, dz, thetaPx, thetaPy, thetaPz, phiPx, phiPy, rGradNlDx, rGradNlDy, rGradNlDz
+            fill<tLMAll>(rAGradY, ZERO);
+            gradAnlm2nlj<NMAX+1, LMAXMAX>(
+                aAGradAnlm, rAGradY, tY, tRn, rRnGrad, rYPtheta, rYPphi,
+                rAGradj, rAGradThetaj, rAGradPhij
             );
         } else
         if (WTYPE==WTYPE_FULL) {
-            flt_t *tGradAnlm = aGradAnlm + (type-1)*(NMAX+1)*tLMAll;
-            gradAnlm2xyz<NMAX+1, LMAXMAX>(j,
-                tGradAnlm, rGradY, tY, tRn, rRnGrad, rYPtheta, rYPphi,
-                dx, dy, dz, thetaPx, thetaPy, thetaPz, phiPx, phiPy, rGradNlDx, rGradNlDy, rGradNlDz
+            flt_t *tAGradAnlm = aAGradAnlm + (type-1)*(NMAX+1)*tLMAll;
+            fill<tLMAll>(rAGradY, ZERO);
+            gradAnlm2nlj<NMAX+1, LMAXMAX>(
+                tAGradAnlm, rAGradY, tY, tRn, rRnGrad, rYPtheta, rYPphi,
+                rAGradj, rAGradThetaj, rAGradPhij
             );
         } else
         if (WTYPE==WTYPE_EXFULL) {
-            flt_t *tGradAnlmWt = aGradAnlm + type*(NMAX+1)*tLMAll;
-            gradAnlm2xyzWt<NMAX+1, LMAXMAX>(j,
-                aGradAnlm, tGradAnlmWt, ONE, rGradY, tY, tRn, rRnGrad, rYPtheta, rYPphi,
-                dx, dy, dz, thetaPx, thetaPy, thetaPz, phiPx, phiPy, rGradNlDx, rGradNlDy, rGradNlDz
+            flt_t *tAGradAnlmWt = aAGradAnlm + type*(NMAX+1)*tLMAll;
+            fill<tLMAll>(rAGradY, ZERO);
+            gradAnlm2nljWt<NMAX+1, LMAXMAX>(
+                aAGradAnlm, tAGradAnlmWt, ONE, rAGradY, tY, tRn, rRnGrad, rYPtheta, rYPphi,
+                rAGradj, rAGradThetaj, rAGradPhij
             );
         } else
         if (WTYPE==WTYPE_DEFAULT) {
             double wt = ((type&1)==1) ? type : (-type);
-            flt_t *tGradAnlmWt = aGradAnlm + (NMAX+1)*tLMAll;
-            gradAnlm2xyzWt<NMAX+1, LMAXMAX>(j,
-                aGradAnlm, tGradAnlmWt, wt, rGradY, tY, tRn, rRnGrad, rYPtheta, rYPphi,
-                dx, dy, dz, thetaPx, thetaPy, thetaPz, phiPx, phiPy, rGradNlDx, rGradNlDy, rGradNlDz
+            flt_t *tAGradAnlmWt = aAGradAnlm + (NMAX+1)*tLMAll;
+            fill<tLMAll>(rAGradY, ZERO);
+            gradAnlm2nljWt<NMAX+1, LMAXMAX>(
+                aAGradAnlm, tAGradAnlmWt, wt, rAGradY, tY, tRn, rRnGrad, rYPtheta, rYPphi,
+                rAGradj, rAGradThetaj, rAGradPhij
             );
+        }
+        if (!GRAD_PARAM) {
+            rAGradNlDx[j] += rAGradj*dx + rAGradThetaj*thetaPx + rAGradPhij*phiPx;
+            rAGradNlDy[j] += rAGradj*dy + rAGradThetaj*thetaPy + rAGradPhij*phiPy;
+            rAGradNlDz[j] += rAGradj*dz + rAGradThetaj*thetaPz;
         }
     }
 }
 template <int WTYPE, int NMAX, int LMAX, int NORADIAL, int L3MAX, int L4MAX, int SIZE_NP, int GRAD_PARAM, int REQUIRE_CACHE>
-static NNAP_DEVICE void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aGradFp,
-                                    flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz,
+static NNAP_DEVICE void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aAGradFp,
+                                    flt_t *rAGradNlDx, flt_t *rAGradNlDy, flt_t *rAGradNlDz,
                                     flt_t **aForwardCache, flt_t **rBackwardCache,
-                                    flt_t aRCut, flt_t *aParams, flt_t *rGradParams) noexcept {
+                                    flt_t aRCut, flt_t *aParams, flt_t *rAGradParams) noexcept {
     // const init
     constexpr int tSizeL = (NORADIAL?LMAX:(LMAX+1)) + L3NCOLS[L3MAX] + L4NCOLS[L4MAX];
     constexpr int tLMaxMax = LMAX>L3MAX ? (LMAX>L4MAX?LMAX:L4MAX) : (L3MAX>L4MAX?L3MAX:L4MAX);
@@ -216,26 +229,26 @@ static NNAP_DEVICE void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, in
     }
     // init cache
     flt_t *tAnlm = *aForwardCache; *aForwardCache += tSizeAnlm;
-    flt_t bGradAnlm[REQUIRE_CACHE ? 1 : tSizeAnlm] = {0};
-    flt_t *rGradAnlm = NULL;
+    flt_t bAGradAnlm[REQUIRE_CACHE ? 1 : tSizeAnlm] = {0};
+    flt_t *rAGradAnlm = NULL;
     if (REQUIRE_CACHE) {
-        rGradAnlm = *rBackwardCache; *rBackwardCache += tSizeAnlm;
-        fill<tSizeAnlm>(rGradAnlm, ZERO);
+        rAGradAnlm = *rBackwardCache; *rBackwardCache += tSizeAnlm;
+        fill<tSizeAnlm>(rAGradAnlm, ZERO);
     } else {
-        rGradAnlm = bGradAnlm;
+        rAGradAnlm = bAGradAnlm;
     }
     // fp -> anlm
     constexpr int tSizeL2 = NORADIAL?LMAX:(LMAX+1);
     constexpr int tSizeL3 = L3NCOLS[L3MAX];
     for (int np=0, tShift=0, tShiftFp=0; np<SIZE_NP; ++np, tShift+=tLMAll, tShiftFp+=tSizeL) {
-        calGradSphL2<LMAX, NORADIAL>(tAnlm+tShift, rGradAnlm+tShift, aGradFp+tShiftFp);
-        calGradSphL3<L3MAX>(tAnlm+tShift, rGradAnlm+tShift, aGradFp+tShiftFp+tSizeL2);
-        calGradSphL4<L4MAX>(tAnlm+tShift, rGradAnlm+tShift, aGradFp+tShiftFp+tSizeL2+tSizeL3);
+        calGradSphL2<LMAX, NORADIAL>(tAnlm+tShift, rAGradAnlm+tShift, aAGradFp+tShiftFp);
+        calGradSphL3<L3MAX>(tAnlm+tShift, rAGradAnlm+tShift, aAGradFp+tShiftFp+tSizeL2);
+        calGradSphL4<L4MAX>(tAnlm+tShift, rAGradAnlm+tShift, aAGradFp+tShiftFp+tSizeL2+tSizeL3);
     }
     backwardAnlm<WTYPE, NMAX, tLMaxMax, SIZE_NP, GRAD_PARAM, REQUIRE_CACHE>(
-        aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rGradAnlm,
-        rGradNlDx, rGradNlDy, rGradNlDz, aForwardCache, rBackwardCache,
-        aRCut, aParams, rGradParams
+        aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rAGradAnlm,
+        rAGradNlDx, rAGradNlDy, rAGradNlDz, aForwardCache, rBackwardCache,
+        aRCut, aParams, rAGradParams
     );
 }
 

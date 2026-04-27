@@ -297,6 +297,14 @@ static inline NNAP_DEVICE void mplusRnp(flt_t *rRnp, flt_t *aRn, flt_t *aRFuseWe
         tWeight += (N+1);
     }
 }
+template <int N, int NP>
+static inline NNAP_DEVICE void backwardRnp(flt_t *aGradRnp, flt_t *aRn, flt_t *rGradRFuseWeight) noexcept {
+    flt_t *rGradWeight = rGradRFuseWeight;
+    for (int np = 0; np < NP; ++np) {
+        mplus<N+1>(rGradWeight, aGradRnp[np], aRn);
+        rGradWeight += (N+1);
+    }
+}
 
 static inline NNAP_DEVICE flt_t calFcGrad(flt_t *rFcGrad, flt_t aX, flt_t aRCut) noexcept {
     const flt_t fcMul = ONE - pow2(aX);
@@ -340,15 +348,6 @@ static inline NNAP_DEVICE void calRn2Grad(flt_t *rRnGrad, flt_t *rCheby2, flt_t 
     chebyshev2Full<N-1>(tRnX, tCheby2Mul, rCheby2);
     for (int n = 1; n <= N; ++n) {
         rRnGrad[n] += ((flt_t)n)*rCheby2[n-1];
-    }
-}
-
-template <int N, int NP>
-static inline NNAP_DEVICE void calRnpGrad(flt_t *rRnpGrad, flt_t *aRnGrad, flt_t *aRFuseWeight) noexcept {
-    flt_t *tWeight = aRFuseWeight;
-    for (int np = 0; np < NP; ++np) {
-        rRnpGrad[np] = dot<N+1>(aRnGrad, tWeight);
-        tWeight += (N+1);
     }
 }
 
