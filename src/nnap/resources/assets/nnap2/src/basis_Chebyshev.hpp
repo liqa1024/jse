@@ -44,11 +44,14 @@ static NNAP_DEVICE void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
     }
 }
 
-template <int WTYPE, int NMAX, int SIZE_NP, int GRAD_PARAM, int REQUIRE_CACHE>
+template <int WTYPE, int NMAX, int SIZE_NP, int GRAD_PARAM, int USE_BB, int REQUIRE_CACHE>
 static NNAP_DEVICE void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aAGradFp,
                                       flt_t *rAGradNlDx, flt_t *rAGradNlDy, flt_t *rAGradNlDz,
-                                      flt_t **aForwardCache, flt_t **rBackwardCache,
+                                      flt_t **aForwardCache, flt_t **rBackwardCache, flt_t **rBackwardBackwardCache,
                                       flt_t aRCut, flt_t *aParams, flt_t *rAGradParams) noexcept {
+    static_assert(!(GRAD_PARAM && REQUIRE_CACHE), "INVALID STATE");
+    static_assert(!(USE_BB && REQUIRE_CACHE), "INVALID STATE");
+    static_assert(!(!GRAD_PARAM && USE_BB), "INVALID STATE");
     if (GRAD_PARAM) {
         // no param
         if (WTYPE!=WTYPE_RFUSE && WTYPE!=WTYPE_FUSE && WTYPE!=WTYPE_EXFUSE) return;
@@ -119,8 +122,8 @@ static NNAP_DEVICE void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, 
 template <int WTYPE, int NMAX, int SIZE_NP>
 static NNAP_DEVICE void chebyBackwardBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aAGradFp, flt_t *rBGradAGradFp,
                                               flt_t *aBGradAGradNlDx, flt_t *aBGradAGradNlDy, flt_t *aBGradAGradNlDz,
-                                              flt_t **aForwardCache, flt_t **aBackwardCache,
-                                              flt_t aRCut, flt_t *aParams, flt_t *rBGradParams) noexcept {
+                                              flt_t **aForwardCache, flt_t **aBackwardCache, flt_t **rBackwardBackwardCache,
+                                              flt_t aRCut, flt_t *rBGradParams) noexcept {
     // init cache
     flt_t *tNlRnGrad = *aBackwardCache; *aBackwardCache += aNeiNum*(NMAX+1);
     flt_t *tNlRnpGrad = *aBackwardCache; *aBackwardCache += aNeiNum*SIZE_NP;
@@ -136,7 +139,7 @@ static NNAP_DEVICE void chebyBackwardBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t 
         // get RnGrad
         flt_t *tRnGrad = tNlRnGrad + j*(NMAX+1);
         // grad grad xyz to grad grad fp
-        flt_t tBGradAGradj = aBGradAGradNlDx[j]*dx + aBGradAGradNlDy[j]*dy + aBGradAGradNlDz[j]*dz;
+        const flt_t tBGradAGradj = aBGradAGradNlDx[j]*dx + aBGradAGradNlDy[j]*dy + aBGradAGradNlDz[j]*dz;
         if (WTYPE==WTYPE_RFUSE || WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) {
             const int tParamShift = (type-1)*(SIZE_NP*(NMAX+1));
             // get RnpGrad

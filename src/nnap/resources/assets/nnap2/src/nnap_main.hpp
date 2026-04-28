@@ -115,15 +115,19 @@ static NNAP_DEVICE int normedNnBackward(int cType, flt_t *aLayers, flt_t *rGradL
     return 0;
 }
 
-template <int CTYPE_GEN, int GRAD_PARAM, int REQUIRE_CACHE>
+template <int CTYPE_GEN, int GRAD_PARAM, int USE_BB, int REQUIRE_CACHE>
 static NNAP_DEVICE int fpBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, int cType, flt_t *aGradFp,
                                   flt_t *rGradNlDx, flt_t *rGradNlDy, flt_t *rGradNlDz, flt_t **aFpHyperParam,
-                                  flt_t **aFpParam, flt_t **rGradFpParam, flt_t *aFpForwardCache, flt_t *rFpBackwardCache) noexcept {
+                                  flt_t **aFpParam, flt_t **rGradFpParam, flt_t *aFpForwardCache, flt_t *rFpBackwardCache, flt_t *rFpBackwardBackwardCache) noexcept {
+    static_assert(!(GRAD_PARAM && REQUIRE_CACHE), "INVALID STATE");
+    static_assert(!(USE_BB && REQUIRE_CACHE), "INVALID STATE");
+    static_assert(!(!GRAD_PARAM && USE_BB), "INVALID STATE");
     int flag = 1;
 // >>> NNAPGEN SWITCH
     flt_t *tSubGradFp = aGradFp;
     flt_t *aSubFpForwardCache = aFpForwardCache;
     flt_t *rSubFpBackwardCache = rFpBackwardCache;
+    flt_t *rSubFpBackwardBackwardCache = rFpBackwardBackwardCache;
 // >>> NNAPGEN IF
 // --- NNAPGEN HAS: [FP SHARE __NNAPGENS_X__]
     flt_t *tSubFpHyperParam = aFpHyperParam[__NNAPGENX_FP_SHARED_TYPE__-1];
@@ -138,17 +142,17 @@ static NNAP_DEVICE int fpBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int 
 // >>> NNAPGEN PICK
 // --- NNAPGEN PICK: spherical_chebyshev
     sphBackward<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_LMAX__, __NNAPGENXX_FP_NORADIAL__, __NNAPGENXX_FP_L3MAX__, __NNAPGENXX_FP_L4MAX__,
-                __NNAPGENXX_FP_SIZE_NP__, GRAD_PARAM, REQUIRE_CACHE>(
+                __NNAPGENXX_FP_SIZE_NP__, GRAD_PARAM, USE_BB, REQUIRE_CACHE>(
         aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, tSubGradFp,
         rGradNlDx, rGradNlDy, rGradNlDz,
-        &aSubFpForwardCache, REQUIRE_CACHE?(&rSubFpBackwardCache):NULL,
+        &aSubFpForwardCache, REQUIRE_CACHE?(&rSubFpBackwardCache):NULL, USE_BB?(&rSubFpBackwardBackwardCache):NULL,
         tSubFpHyperParam[0], tSubFpParam, rSubGradFpParam
     );
 // --- NNAPGEN PICK: chebyshev
-    chebyBackward<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_SIZE_NP__, GRAD_PARAM, REQUIRE_CACHE>(
+    chebyBackward<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_SIZE_NP__, GRAD_PARAM, USE_BB, REQUIRE_CACHE>(
         aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, tSubGradFp,
         rGradNlDx, rGradNlDy, rGradNlDz,
-        &aSubFpForwardCache, REQUIRE_CACHE?(&rSubFpBackwardCache):NULL,
+        &aSubFpForwardCache, REQUIRE_CACHE?(&rSubFpBackwardCache):NULL, USE_BB?(&rSubFpBackwardBackwardCache):NULL,
         tSubFpHyperParam[0], tSubFpParam, rSubGradFpParam
     );
 // <<< NNAPGEN PICK [FP USE __NNAPGENS_X__:__NNAPGENOS_X__]

@@ -38,6 +38,7 @@ public class SharedBasis2 extends Basis2 {
     
     @Override public int forwardCacheSize(int aNumNei) {return mSharedBasis.forwardCacheSize(aNumNei);}
     @Override public int backwardCacheSize(int aNumNei) {return mSharedBasis.backwardCacheSize(aNumNei);}
+    @Override public int backwardBackwardCacheSize(int aNumNei) {return mSharedBasis.backwardBackwardCacheSize(aNumNei);}
     
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override public void save(Map rSaveTo) {

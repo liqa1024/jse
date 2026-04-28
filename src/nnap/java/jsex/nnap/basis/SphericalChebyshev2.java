@@ -106,6 +106,9 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
     @Override public int backwardCacheSize(int aNumNei) {
         return aNumNei*(mNMax+1 + mSizeNP + mLMAll*2) + (mSizeNP*mLMAll);
     }
+    @Override public int backwardBackwardCacheSize(int aNumNei) {
+        return mSizeNP*mLMAll;
+    }
     
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdxType, int aGenIdxMerge) {
         super.updateGenMap(rGenMap, aGenIdxType, aGenIdxMerge);

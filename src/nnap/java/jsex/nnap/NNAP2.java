@@ -77,7 +77,7 @@ public class NNAP2 implements IPairPotential {
     final IntCPointer[] mInNums, mOutNums;
     final AnyCPointer mFpHyperParam, mFpParam, mNnParam, mNormParam;
     private final IDoubleOrFloatCPointer[] mOutEng;
-    private final IGrowableDoubleOrFloatCPointer[] mNlDx, mNlDy, mNlDz, mGradNlDx, mGradNlDy, mGradNlDz, mFpForwardCache, mFpBackwardCache;
+    private final IGrowableDoubleOrFloatCPointer[] mNlDx, mNlDy, mNlDz, mGradNlDx, mGradNlDy, mGradNlDz, mFpForwardCache;
     private final GrowableIntCPointer[] mNlType, mNlIdx;
     
     private final DoubleList[] mNlDxBuf, mNlDyBuf, mNlDzBuf;
@@ -140,7 +140,6 @@ public class NNAP2 implements IPairPotential {
         mGradNlDz = new IGrowableDoubleOrFloatCPointer[mNumThreads];
         mOutEng = new IDoubleOrFloatCPointer[mNumThreads];
         mFpForwardCache = new IGrowableDoubleOrFloatCPointer[mNumThreads];
-        mFpBackwardCache = new IGrowableDoubleOrFloatCPointer[mNumThreads];
         mNlDxBuf = new DoubleList[mNumThreads];
         mNlDyBuf = new DoubleList[mNumThreads];
         mNlDzBuf = new DoubleList[mNumThreads];
@@ -161,7 +160,6 @@ public class NNAP2 implements IPairPotential {
             mGradNlDz[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
             mOutEng[ti] = mSingle ? FloatCPointer.malloc(1) : DoubleCPointer.malloc(1);
             mFpForwardCache[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
-            mFpBackwardCache[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
             mNlDxBuf[ti] = new DoubleList(16);
             mNlDyBuf[ti] = new DoubleList(16);
             mNlDzBuf[ti] = new DoubleList(16);
@@ -310,7 +308,7 @@ public class NNAP2 implements IPairPotential {
         }
         for (int ti = 0; ti < mNumThreads; ++ti) {
             mOutEng[ti].free();
-            mFpForwardCache[ti].free(); mFpBackwardCache[ti].free();
+            mFpForwardCache[ti].free();
             mDataOut[ti].free();
         }
         if (mJITEngine!=null) mJITEngine.close();

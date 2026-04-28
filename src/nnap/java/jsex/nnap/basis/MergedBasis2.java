@@ -170,6 +170,13 @@ public class MergedBasis2 extends Basis2 {
         }
         return rSize;
     }
+    @Override public int backwardBackwardCacheSize(int aNumNei) {
+        int rSize = 0;
+        for (MergeableBasis2 tBasis : mMergedBasis) {
+            rSize += tBasis.backwardBackwardCacheSize(aNumNei);
+        }
+        return rSize;
+    }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override public void save(Map rSaveTo) {
