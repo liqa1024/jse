@@ -695,24 +695,29 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
             List<GrowableDoubleCPointer> rCache = mCacheBuf.get(threadID);
             while (rCache.size() < tNumAtoms) rCache.add(new GrowableDoubleCPointer(1));
             
-            double rEngRaw = 0.0;
+            double rEng = 0.0;
             for (int k = 0; k < tNumAtoms; ++k) {
-                rEngRaw += mNNAP.forwardEnergyRaw(threadID,
+                final int cType = tAtomType.get(k);
+                double tSubEng = mNNAP.forwardEnergy(threadID,
                     tNlDx[k], tNlDy[k], tNlDz[k], tNlType[k],
-                    tNumNei.get(k), tAtomType.get(k), rCache.get(k)
+                    tNumNei.get(k), cType, rCache.get(k)
                 );
+                // 注意 nnap 内部获取能量会是准确值，这里需要再次归一化
+                rEng += (tSubEng - mRefEngs.get(cType-1));
             }
-            rEngRaw /= tNumAtoms;
-            // 从公式角度上应该使用 nnap 内部进行统一归一化，但是这样会导致 loss 有单位 scale 问题，
-            // 因此这里采用二次归一化处理的方案，并且为了方便处理这里统一不使用 nnap 内部的能量归一化参数
-            double tLossEng = aLossFuncEng.call(rEngRaw, (tData.mEng.get(i) - mNormMuEng)/mNormSigmaEng, rLossGradEng);
+            rEng /= tNumAtoms;
+            // 这样确保两者操作总是一致/等价的
+            double tEngPred = (rEng - mNormMuEng) / mNormSigmaEng;
+            double tEngReal = (tData.mEng.get(i) - mNormMuEng) / mNormSigmaEng;
+            double tLossEng = aLossFuncEng.call(tEngPred, tEngReal, rLossGradEng);
             rLoss.add(0, mEnergyWeight*tLossEng / tSliceSize);
             /// backward
             if (!tRequireGrad) return;
-            double tLossGradEngRaw = mEnergyWeight*rLossGradEng.value() / (tNumAtoms*tSliceSize);
+            double tLossGradEng = mEnergyWeight*rLossGradEng.value() / tSliceSize;
+            tLossGradEng /= (mNormSigmaEng * tNumAtoms);
             for (int k = 0; k < tNumAtoms; ++k) {
-                mNNAP.backwardEnergyRaw(threadID,
-                    tLossGradEngRaw, tNlDx[k], tNlDy[k], tNlDz[k], tNlType[k],
+                mNNAP.backwardEnergy(threadID,
+                    tLossGradEng, tNlDx[k], tNlDy[k], tNlDz[k], tNlType[k],
                     tNumNei.get(k), tAtomType.get(k), rCache.get(k)
                 );
             }
@@ -989,6 +994,11 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
             }
         }
         mNormSigmaEng = tEng34 - tEng14;
+        final int tNumTypes = ntypes();
+        for (int type = 1; type <= tNumTypes; ++type) {
+            mNNAP.setNormMuEng(type, mNormMuEng+mRefEngs.get(type-1));
+            mNNAP.setNormSigmaEng(type, mNormSigmaEng);
+        }
         mOptimizer.markLossFuncChanged();
     }
     

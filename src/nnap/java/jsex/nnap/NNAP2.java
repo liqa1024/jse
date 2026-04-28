@@ -266,10 +266,10 @@ public class NNAP2 implements IPairPotential {
     IJITEngine mJITEngine = null;
     private static final String NAME_CAL_FP = "jse_nnap_calFp", NAME_CAL_ENERGY = "jse_nnap_calEnergy", NAME_CAL_ENERGYFORCE = "jse_nnap_calEnergyForce";
     private static final String NAME_STAT_NEINUM_LAMMPS = "jse_nnap_statNeiNumLammps", NAME_COMPUTE_LAMMPS = "jse_nnap_computeLammps";
-    private static final String NAME_FORWARD_ENERGY = "jse_nnap_forwardEnergyRaw", NAME_BACKWARD_ENERGY = "jse_nnap_backwardEnergyRaw";
+    private static final String NAME_FORWARD_ENERGY = "jse_nnap_forwardEnergy", NAME_BACKWARD_ENERGY = "jse_nnap_backwardEnergy";
     private IJITMethod mCalFp = null, mCalEnergy = null, mCalEnergyForce = null;
     private IJITMethod mStatNeiNumLammps = null, mComputeLammps = null;
-    private IJITMethod mForwardEnergyRaw = null, mBackwardEnergyRaw = null;
+    private IJITMethod mForwardEnergy = null, mBackwardEnergy = null;
     private void compileJIT_() throws Exception {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         if (mJITEngine!=null) throw new IllegalStateException("compileJIT() has already been called");
@@ -281,8 +281,8 @@ public class NNAP2 implements IPairPotential {
         mCalEnergyForce = mJITEngine.findMethod(NAME_CAL_ENERGYFORCE);
         mStatNeiNumLammps = mJITEngine.findMethod(NAME_STAT_NEINUM_LAMMPS);
         mComputeLammps = mJITEngine.findMethod(NAME_COMPUTE_LAMMPS);
-        mForwardEnergyRaw = mJITEngine.findMethod(NAME_FORWARD_ENERGY);
-        mBackwardEnergyRaw = mJITEngine.findMethod(NAME_BACKWARD_ENERGY);
+        mForwardEnergy = mJITEngine.findMethod(NAME_FORWARD_ENERGY);
+        mBackwardEnergy = mJITEngine.findMethod(NAME_BACKWARD_ENERGY);
     }
     
     @Override public void close() throws Exception {
@@ -512,6 +512,22 @@ public class NNAP2 implements IPairPotential {
             mGradTotParam.fill(0.0);
         }
     }
+    public double normMuEng(int aType) {
+        IDoubleOrFloatCPointer tParam = mSingle ? mNormParam.getAsFloatCPointerAt(aType-1) : mNormParam.getAsDoubleCPointerAt(aType-1);
+        return tParam.getD();
+    }
+    public void setNormMuEng(int aType, double aValue) {
+        IDoubleOrFloatCPointer tParam = mSingle ? mNormParam.getAsFloatCPointerAt(aType-1) : mNormParam.getAsDoubleCPointerAt(aType-1);
+        tParam.setD(aValue);
+    }
+    public double normSigmaEng(int aType) {
+        IDoubleOrFloatCPointer tParam = mSingle ? mNormParam.getAsFloatCPointerAt(aType-1) : mNormParam.getAsDoubleCPointerAt(aType-1);
+        return tParam.getAtD(1);
+    }
+    public void setNormSigmaEng(int aType, double aValue) {
+        IDoubleOrFloatCPointer tParam = mSingle ? mNormParam.getAsFloatCPointerAt(aType-1) : mNormParam.getAsDoubleCPointerAt(aType-1);
+        tParam.putAtD(1, aValue);
+    }
     public IDoubleOrFloatCPointer normMu(int aType) {
         IDoubleOrFloatCPointer tParam = mSingle ? mNormParam.getAsFloatCPointerAt(aType-1) : mNormParam.getAsDoubleCPointerAt(aType-1);
         tParam.rightShift(2);
@@ -603,8 +619,8 @@ public class NNAP2 implements IPairPotential {
         return tOutEng.getD();
     }
     
-    public double forwardEnergyRaw(int aThreadID, IDoubleOrFloatCPointer aNlDx, IDoubleOrFloatCPointer aNlDy, IDoubleOrFloatCPointer aNlDz,
-                                   IntCPointer aNlType, int aNumNei, int aCType, IGrowableDoubleOrFloatCPointer rCaches) {
+    public double forwardEnergy(int aThreadID, IDoubleOrFloatCPointer aNlDx, IDoubleOrFloatCPointer aNlDy, IDoubleOrFloatCPointer aNlDz,
+                                IntCPointer aNlType, int aNumNei, int aCType, IGrowableDoubleOrFloatCPointer rCaches) {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         IntCPointer tInNums = mInNums[aThreadID];
         AnyCPointer tDataIn = mDataIn[aThreadID];
@@ -629,12 +645,12 @@ public class NNAP2 implements IPairPotential {
         tDataOut.putAt(1, rCaches);
         tDataOut.putAt(2, rCaches.plus(tSizeFpForwardCache));
         // 调用 jit 方法获取结果
-        int tCode = mForwardEnergyRaw.invoke(tDataIn, tDataOut);
+        int tCode = mForwardEnergy.invoke(tDataIn, tDataOut);
         if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
         return tOutEngRaw.getD();
     }
-    public void backwardEnergyRaw(int aThreadID, double aGradEngRaw, IDoubleOrFloatCPointer aNlDx, IDoubleOrFloatCPointer aNlDy, IDoubleOrFloatCPointer aNlDz,
-                                  IntCPointer aNlType, int aNumNei, int aCType, IDoubleOrFloatCPointer aCaches) {
+    public void backwardEnergy(int aThreadID, double aGradEngRaw, IDoubleOrFloatCPointer aNlDx, IDoubleOrFloatCPointer aNlDy, IDoubleOrFloatCPointer aNlDz,
+                               IntCPointer aNlType, int aNumNei, int aCType, IDoubleOrFloatCPointer aCaches) {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         if (mGradTotParam == null) throw new IllegalStateException("No grad in NNAP, invoke `requireGrad()` first.");
         IntCPointer tInNums = mInNums[aThreadID];
@@ -660,7 +676,7 @@ public class NNAP2 implements IPairPotential {
         tDataOut.putAt(1, mGradFpParam[aThreadID]);
         tDataOut.putAt(2, mGradNnParam[aThreadID]);
         // 调用 jit 方法获取结果
-        int tCode = mBackwardEnergyRaw.invoke(tDataIn, tDataOut);
+        int tCode = mBackwardEnergy.invoke(tDataIn, tDataOut);
         if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
     }
     

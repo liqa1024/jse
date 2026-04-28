@@ -53,8 +53,6 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_calEnergy(void *aDataIn, void *rDat
     
     int tNeiNum = tNums[0];
     int ctype = tNums[1];
-    JSE_NNAP::flt_t tNormMuEng = tNormParam[0];
-    JSE_NNAP::flt_t tNormSigmaEng = tNormParam[1];
     
     int code;
 // >>> NNAPGEN SWITCH
@@ -66,10 +64,8 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_calEnergy(void *aDataIn, void *rDat
     if (code!=0) return code;
     code = JSE_NNAP::normedNnForward<__NNAPGENS_ctype__, JSE_NNAP::FALSE, JSE_NNAP::FALSE>(
         ctype, rOutEng, rLayers,
-        tNormParam+2, tNnParam, NULL, NULL
+        tNormParam, tNnParam, NULL, NULL
     );
-    // denorm energy here
-    rOutEng[0] = rOutEng[0]*tNormSigmaEng + tNormMuEng;
     if (code!=0) return code;
 // <<< NNAPGEN SWITCH (ctype) [FP NN TYPE]
     return 0;
@@ -97,8 +93,6 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_calEnergyForce(void *aDataIn, void 
     
     int tNeiNum = tNums[0];
     int ctype = tNums[1];
-    JSE_NNAP::flt_t tNormMuEng = tNormParam[0];
-    JSE_NNAP::flt_t tNormSigmaEng = tNormParam[1];
     
     // manual clear required for backward in force
     for (int j = 0; j < tNeiNum; ++j) {
@@ -117,17 +111,14 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_calEnergyForce(void *aDataIn, void 
     JSE_NNAP::flt_t rNnGradCache[__NNAPGENX_NN_SIZE_HB__];
     code = JSE_NNAP::normedNnForward<__NNAPGENS_ctype__, JSE_NNAP::TRUE, JSE_NNAP::FALSE>(
         ctype, rOutEng, rLayers,
-        tNormParam+2, tNnParam, rNnGradCache, NULL
+        tNormParam, tNnParam, rNnGradCache, NULL
     );
-    // denorm energy here
-    rOutEng[0] = rOutEng[0]*tNormSigmaEng + tNormMuEng;
     if (code!=0) return code;
     // manual clear required for backward in force
     JSE_NNAP::fill<__NNAPGENX_NN_SIZE_IN__+__NNAPGENX_NN_SIZE_HB__>(rLayers, JSE_NNAP::ZERO);
     code = JSE_NNAP::normedNnBackward<__NNAPGENS_ctype__, JSE_NNAP::FALSE, JSE_NNAP::FALSE>(
-        ctype, tNormSigmaEng, // denorm energy here
-        NULL, rLayers, NULL,
-        tNormParam+2, tNnParam, NULL, rNnGradCache
+        ctype, JSE_NNAP::ONE, NULL, rLayers, NULL,
+        tNormParam, tNnParam, NULL, rNnGradCache
     );
     if (code!=0) return code;
     code = JSE_NNAP::fpBackward<__NNAPGENS_ctype__, JSE_NNAP::FALSE, JSE_NNAP::FALSE, JSE_NNAP::FALSE>(
@@ -141,7 +132,7 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_calEnergyForce(void *aDataIn, void 
 }
 
 
-JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_forwardEnergyRaw(void *aDataIn, void *rDataOut) {
+JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_forwardEnergy(void *aDataIn, void *rDataOut) {
     void **tDataIn = (void **)aDataIn;
     void **tDataOut = (void **)rDataOut;
     
@@ -173,13 +164,13 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_forwardEnergyRaw(void *aDataIn, voi
     if (code!=0) return code;
     code = JSE_NNAP::normedNnForward<__NNAPGENS_ctype__, JSE_NNAP::TRUE, JSE_NNAP::FALSE>(
         ctype, rOutEngRaw, rLayers,
-        tNormParam+2, tNnParam, rNnGradCache, NULL
+        tNormParam, tNnParam, rNnGradCache, NULL
     );
     if (code!=0) return code;
     // <<< NNAPGEN SWITCH (ctype) [FP NN TYPE]
     return 0;
 }
-JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_backwardEnergyRaw(void *aDataIn, void *rDataOut) {
+JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_backwardEnergy(void *aDataIn, void *rDataOut) {
     void **tDataIn = (void **)aDataIn;
     void **tDataOut = (void **)rDataOut;
     
@@ -209,7 +200,7 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_backwardEnergyRaw(void *aDataIn, vo
     JSE_NNAP::flt_t rGradLayers[__NNAPGENX_NN_SIZE_IN__+__NNAPGENX_NN_SIZE_HB__] = {0};
     code = JSE_NNAP::normedNnBackward<__NNAPGENS_ctype__, JSE_NNAP::TRUE, JSE_NNAP::FALSE>(
         ctype, tGradEngRaw[0], tLayers, rGradLayers, NULL,
-        tNormParam+2, tNnParam, rGradNnParam, tNnGradCache
+        tNormParam, tNnParam, rGradNnParam, tNnGradCache
     );
     if (code!=0) return code;
     code = JSE_NNAP::fpBackward<__NNAPGENS_ctype__, JSE_NNAP::TRUE, JSE_NNAP::FALSE, JSE_NNAP::FALSE>(
@@ -338,8 +329,6 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammps(void *aDataIn, void *
                 }
             }
             
-            JSE_NNAP::flt_t tNormMuEng = subNormParam[0];
-            JSE_NNAP::flt_t tNormSigmaEng = subNormParam[1];
             /// begin nnap here
             JSE_NNAP::flt_t rEng;
             // manual clear required for backward in force
@@ -359,17 +348,14 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammps(void *aDataIn, void *
             JSE_NNAP::flt_t rNnGradCache[__NNAPGENX_NN_SIZE_HB__];
             code = JSE_NNAP::normedNnForward<__NNAPGENS_typeiNNAP__, JSE_NNAP::TRUE, JSE_NNAP::FALSE>(
                 typeiNNAP, &rEng, rLayers,
-                subNormParam+2, tNnParam, rNnGradCache, NULL
+                subNormParam, tNnParam, rNnGradCache, NULL
             );
-            // denorm energy here
-            rEng = rEng*tNormSigmaEng + tNormMuEng;
             if (code!=0) return code;
             // manual clear required for backward in force
             JSE_NNAP::fill<__NNAPGENX_NN_SIZE_IN__+__NNAPGENX_NN_SIZE_HB__>(rLayers, JSE_NNAP::ZERO);
             code = JSE_NNAP::normedNnBackward<__NNAPGENS_typeiNNAP__, JSE_NNAP::FALSE, JSE_NNAP::FALSE>(
-                typeiNNAP, tNormSigmaEng, // denorm energy here,
-                NULL, rLayers, NULL,
-                subNormParam+2, tNnParam, NULL, rNnGradCache
+                typeiNNAP, JSE_NNAP::ONE, NULL, rLayers, NULL,
+                subNormParam, tNnParam, NULL, rNnGradCache
             );
             if (code!=0) return code;
             code = JSE_NNAP::fpBackward<__NNAPGENS_typeiNNAP__, JSE_NNAP::FALSE, JSE_NNAP::FALSE, JSE_NNAP::FALSE>(
