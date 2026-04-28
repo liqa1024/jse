@@ -358,20 +358,16 @@ template <int L>
 static inline NNAP_DEVICE void calL2Sub_(flt_t *aAnlm, flt_t *rFp) noexcept {
     constexpr int tLen = L+L+1;
     const flt_t rDot = dot<tLen>(aAnlm + (L*L));
-    rFp[L-1] = (PI4/(flt_t)tLen) * rDot;
+    rFp[L] = (PI4/(flt_t)tLen) * rDot;
 }
-template <int LMAX, int NORADIAL>
+template <int LMAX>
 static NNAP_DEVICE void calSphL2(flt_t *aAnlm, flt_t *rFp) noexcept {
     // l == 0
-    flt_t *tFp = rFp;
-    if (!NORADIAL) {
-        const flt_t tAn00 = aAnlm[0];
-        tFp[0] = PI4 * tAn00*tAn00;
-        ++tFp;
-    }
+    const flt_t tAn00 = aAnlm[0];
+    rFp[0] = PI4 * tAn00*tAn00;
     if (LMAX == 0) return;
 // >>> NNAPGEN REPEAT
-    calL2Sub_<__NNAPGENS_X__>(aAnlm, tFp);
+    calL2Sub_<__NNAPGENS_X__>(aAnlm, rFp);
     if (LMAX==__NNAPGENS_X__) return;
 // <<< NNAPGEN REPEAT 1..12
 }
@@ -451,25 +447,17 @@ static NNAP_DEVICE void calSphL4(flt_t *aAnlm, flt_t *rFp) noexcept {
 
 template <int L>
 static inline NNAP_DEVICE void calGradL2Sub_(flt_t *aAnlm, flt_t *rGradAnlm, flt_t aSubGradFp) noexcept {
-    constexpr int tStart = L*L;
     constexpr int tLen = L+L+1;
-    constexpr int tEnd = tStart+tLen;
     const flt_t tMul = (TWO*PI4/(flt_t)tLen) * aSubGradFp;
-    for (int i = tStart; i < tEnd; ++i) {
-        rGradAnlm[i] += tMul * aAnlm[i];
-    }
+    mplus<tLen>(rGradAnlm + (L*L), tMul, aAnlm + (L*L));
 }
-template <int LMAX, int NORADIAL>
+template <int LMAX>
 static NNAP_DEVICE void calGradSphL2(flt_t *aAnlm, flt_t *rGradAnlm, flt_t *aGradFp) noexcept {
     // l = 0
-    flt_t *tGradFp = aGradFp;
-    if (!NORADIAL) {
-        rGradAnlm[0] += (TWO*PI4) * aAnlm[0] * tGradFp[0];
-        ++tGradFp;
-    }
+    rGradAnlm[0] += (TWO*PI4) * aAnlm[0] * aGradFp[0];
     if (LMAX == 0) return;
 // >>> NNAPGEN REPEAT
-    calGradL2Sub_<__NNAPGENS_X__>(aAnlm, rGradAnlm, tGradFp[__NNAPGENS_X__-1]);
+    calGradL2Sub_<__NNAPGENS_X__>(aAnlm, rGradAnlm, aGradFp[__NNAPGENS_X__]);
     if (LMAX==__NNAPGENS_X__) return;
 // <<< NNAPGEN REPEAT 1..12
 }
@@ -561,19 +549,15 @@ template <int L>
 static inline NNAP_DEVICE void calGradGradL2Sub_(flt_t *aAnlm, flt_t *aGradGradAnlm, flt_t *rGradGradFp) noexcept {
     constexpr int tLen = L+L+1;
     const flt_t rDot = dot<tLen>(aGradGradAnlm + (L*L), aAnlm + (L*L));
-    rGradGradFp[L-1] += (TWO*PI4/(flt_t)tLen) * rDot;
+    rGradGradFp[L] += (TWO*PI4/(flt_t)tLen) * rDot;
 }
-template <int LMAX, int NORADIAL>
+template <int LMAX>
 static NNAP_DEVICE void calGradGradSphL2(flt_t *aAnlm, flt_t *aGradGradAnlm, flt_t *rGradGradFp) noexcept {
     // l = 0
-    flt_t *tGradGradFp = rGradGradFp;
-    if (!NORADIAL) {
-        tGradGradFp[0] += (TWO*PI4) * aGradGradAnlm[0] * aAnlm[0];
-        ++tGradGradFp;
-    }
+    rGradGradFp[0] += (TWO*PI4) * aGradGradAnlm[0] * aAnlm[0];
     if (LMAX == 0) return;
 // >>> NNAPGEN REPEAT
-    calGradGradL2Sub_<__NNAPGENS_X__>(aAnlm, aGradGradAnlm, tGradGradFp);
+    calGradGradL2Sub_<__NNAPGENS_X__>(aAnlm, aGradGradAnlm, rGradGradFp);
     if (LMAX==__NNAPGENS_X__) return;
 // <<< NNAPGEN REPEAT 1..12
 }
@@ -667,9 +651,9 @@ static NNAP_DEVICE void calGradGradSphL4(flt_t *aAnlm, flt_t *aGradGradAnlm, flt
 // <<< NNAPGEN REPEAT 3..8
 }
 
-template <int LMAX, int NORADIAL>
+template <int LMAX>
 static NNAP_DEVICE void calBGradSphL2(flt_t *aAnlm, flt_t *rBGradAnlm, flt_t *aBGradAGradAnlm, flt_t *aAGradFp) noexcept {
-    calGradSphL2<LMAX, NORADIAL>(aBGradAGradAnlm, rBGradAnlm, aAGradFp);
+    calGradSphL2<LMAX>(aBGradAGradAnlm, rBGradAnlm, aAGradFp);
 }
 template <int L3IDX, int SUBIDX>
 static inline NNAP_DEVICE void calBGradL3SubSub_(flt_t *aAnlm, flt_t *rBGradAnlm, flt_t *aBGradAGradAnlm, flt_t aSubAGradFp) noexcept {

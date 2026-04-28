@@ -58,11 +58,11 @@ static NNAP_DEVICE void calAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *a
     }
 }
 
-template <int WTYPE, int NMAX, int LMAX, int NORADIAL, int L3MAX, int L4MAX, int SIZE_NP, int REQUIRE_CACHE>
+template <int WTYPE, int NMAX, int LMAX, int L3MAX, int L4MAX, int SIZE_NP, int REQUIRE_CACHE>
 static NNAP_DEVICE void sphForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rFp,
                                    flt_t **rForwardCache, flt_t aRCut, flt_t *aParams) noexcept {
     // const init
-    constexpr int tSizeL = (NORADIAL?LMAX:(LMAX+1)) + L3NCOLS[L3MAX] + L4NCOLS[L4MAX];
+    constexpr int tSizeL = (LMAX+1) + L3NCOLS[L3MAX] + L4NCOLS[L4MAX];
     constexpr int tLMaxMax = LMAX>L3MAX ? (LMAX>L4MAX?LMAX:L4MAX) : (L3MAX>L4MAX?L3MAX:L4MAX);
     constexpr int tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
     constexpr int tSizeAnlm = SIZE_NP*tLMAll;
@@ -81,10 +81,10 @@ static NNAP_DEVICE void sphForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int
         rForwardCache, aRCut, aParams
     );
     // anlm -> fp
-    constexpr int tSizeL2 = NORADIAL?LMAX:(LMAX+1);
+    constexpr int tSizeL2 = LMAX+1;
     constexpr int tSizeL3 = L3NCOLS[L3MAX];
     for (int np=0, tShift=0, tShiftFp=0; np<SIZE_NP; ++np, tShift+=tLMAll, tShiftFp+=tSizeL) {
-        calSphL2<LMAX, NORADIAL>(rAnlm+tShift, rFp+tShiftFp);
+        calSphL2<LMAX >(rAnlm+tShift, rFp+tShiftFp);
         calSphL3<L3MAX>(rAnlm+tShift, rFp+tShiftFp+tSizeL2);
         calSphL4<L4MAX>(rAnlm+tShift, rFp+tShiftFp+tSizeL2+tSizeL3);
     }
@@ -207,7 +207,7 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
         }
     }
 }
-template <int WTYPE, int NMAX, int LMAX, int NORADIAL, int L3MAX, int L4MAX, int SIZE_NP, int GRAD_PARAM, int USE_BB, int REQUIRE_CACHE>
+template <int WTYPE, int NMAX, int LMAX, int L3MAX, int L4MAX, int SIZE_NP, int GRAD_PARAM, int USE_BB, int REQUIRE_CACHE>
 static NNAP_DEVICE void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aAGradFp,
                                     flt_t *rAGradNlDx, flt_t *rAGradNlDy, flt_t *rAGradNlDz,
                                     flt_t **aForwardCache, flt_t **rBackwardCache, flt_t **rBackwardBackwardCache,
@@ -216,7 +216,7 @@ static NNAP_DEVICE void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, in
     static_assert(!(USE_BB && REQUIRE_CACHE), "INVALID STATE");
     static_assert(!(!GRAD_PARAM && USE_BB), "INVALID STATE");
     // const init
-    constexpr int tSizeL = (NORADIAL?LMAX:(LMAX+1)) + L3NCOLS[L3MAX] + L4NCOLS[L4MAX];
+    constexpr int tSizeL = (LMAX+1) + L3NCOLS[L3MAX] + L4NCOLS[L4MAX];
     constexpr int tLMaxMax = LMAX>L3MAX ? (LMAX>L4MAX?LMAX:L4MAX) : (L3MAX>L4MAX?L3MAX:L4MAX);
     constexpr int tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
     constexpr int tSizeAnlm = SIZE_NP*tLMAll;
@@ -250,10 +250,10 @@ static NNAP_DEVICE void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, in
         rAGradAnlm = bAGradAnlm;
     }
     // fp -> anlm
-    constexpr int tSizeL2 = NORADIAL?LMAX:(LMAX+1);
+    constexpr int tSizeL2 = LMAX+1;
     constexpr int tSizeL3 = L3NCOLS[L3MAX];
     for (int np=0, tShift=0, tShiftFp=0; np<SIZE_NP; ++np, tShift+=tLMAll, tShiftFp+=tSizeL) {
-        calGradSphL2<LMAX, NORADIAL>(tAnlm+tShift, rAGradAnlm+tShift, aAGradFp+tShiftFp);
+        calGradSphL2<LMAX >(tAnlm+tShift, rAGradAnlm+tShift, aAGradFp+tShiftFp);
         calGradSphL3<L3MAX>(tAnlm+tShift, rAGradAnlm+tShift, aAGradFp+tShiftFp+tSizeL2);
         calGradSphL4<L4MAX>(tAnlm+tShift, rAGradAnlm+tShift, aAGradFp+tShiftFp+tSizeL2+tSizeL3);
     }
@@ -356,13 +356,13 @@ static NNAP_DEVICE void backwardBackwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *
         }
     }
 }
-template <int WTYPE, int NMAX, int LMAX, int NORADIAL, int L3MAX, int L4MAX, int SIZE_NP>
+template <int WTYPE, int NMAX, int LMAX, int L3MAX, int L4MAX, int SIZE_NP>
 static NNAP_DEVICE void sphBackwardBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aAGradFp, flt_t *rBGradAGradFp,
                                             flt_t *aBGradAGradNlDx, flt_t *aBGradAGradNlDy, flt_t *aBGradAGradNlDz,
                                             flt_t **aForwardCache, flt_t **aBackwardCache, flt_t **rBackwardBackwardCache,
                                             flt_t aRCut, flt_t *rBGradParams) noexcept {
     // const init
-    constexpr int tSizeL = (NORADIAL?LMAX:(LMAX+1)) + L3NCOLS[L3MAX] + L4NCOLS[L4MAX];
+    constexpr int tSizeL = (LMAX+1) + L3NCOLS[L3MAX] + L4NCOLS[L4MAX];
     constexpr int tLMaxMax = LMAX>L3MAX ? (LMAX>L4MAX?LMAX:L4MAX) : (L3MAX>L4MAX?L3MAX:L4MAX);
     constexpr int tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
     constexpr int tSizeAnlm = SIZE_NP*tLMAll;
@@ -378,16 +378,16 @@ static NNAP_DEVICE void sphBackwardBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *a
         aForwardCache, aBackwardCache, aRCut, rBGradParams
     );
     // anlm -> fp
-    constexpr int tSizeL2 = NORADIAL?LMAX:(LMAX+1);
+    constexpr int tSizeL2 = LMAX+1;
     constexpr int tSizeL3 = L3NCOLS[L3MAX];
     for (int np=0, tShift=0, tShiftFp=0; np<SIZE_NP; ++np, tShift+=tLMAll, tShiftFp+=tSizeL) {
-        calGradGradSphL2<LMAX, NORADIAL>(tAnlm+tShift, rBGradAGradAnlm+tShift, rBGradAGradFp+tShiftFp);
+        calGradGradSphL2<LMAX>(tAnlm+tShift, rBGradAGradAnlm+tShift, rBGradAGradFp+tShiftFp);
         calGradGradSphL3<L3MAX>(tAnlm+tShift, rBGradAGradAnlm+tShift, rBGradAGradFp+tShiftFp+tSizeL2);
         calGradGradSphL4<L4MAX>(tAnlm+tShift, rBGradAGradAnlm+tShift, rBGradAGradFp+tShiftFp+tSizeL2+tSizeL3);
     }
     // anlm -> anlm
     for (int np=0, tShift=0, tShiftFp=0; np<SIZE_NP; ++np, tShift+=tLMAll, tShiftFp+=tSizeL) {
-        calBGradSphL2<LMAX, NORADIAL>(tAnlm+tShift, rBGradAnlm+tShift, rBGradAGradAnlm+tShift, aAGradFp+tShiftFp);
+        calBGradSphL2<LMAX>(tAnlm+tShift, rBGradAnlm+tShift, rBGradAGradAnlm+tShift, aAGradFp+tShiftFp);
         calBGradSphL3<L3MAX>(tAnlm+tShift, rBGradAnlm+tShift, rBGradAGradAnlm+tShift, aAGradFp+tShiftFp+tSizeL2);
         calBGradSphL4<L4MAX>(tAnlm+tShift, rBGradAnlm+tShift, rBGradAGradAnlm+tShift, aAGradFp+tShiftFp+tSizeL2+tSizeL3);
     }

@@ -22,13 +22,11 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
     public final static double DEFAULT_RCUT = 6.0; // 现在默认值统一为 6
     
     final int mLMax, mL3Max, mL4Max;
-    final boolean mNoRadial;
-    
     final int mSizeL;
     final int mLMaxMax, mLMAll;
     final int mSize;
     
-    private SphericalChebyshev2(double aRCut, int aNumTypes, int aNMax, int aLMax, int aLMaxMax, boolean aNoRadial, int aL3Max, int aL4Max,
+    private SphericalChebyshev2(double aRCut, int aNumTypes, int aNMax, int aLMax, int aLMaxMax, int aL3Max, int aL4Max,
                                 int aWType, @Nullable Vector aFuseWeight, @Nullable Vector aPostFuseWeight, double @Nullable[] aPostFuseScale) {
         super(aRCut, aNumTypes, aNMax, aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale);
         if (aLMaxMax<0 || aLMaxMax>12) throw new IllegalArgumentException("Input lmax MUST be in [0, 12], input: "+aLMaxMax);
@@ -37,27 +35,22 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
         mLMax = aLMax;
         mL3Max = aL3Max;
         mL4Max = aL4Max;
-        mNoRadial = aNoRadial;
         
-        mSizeL = (mNoRadial?mLMax:(mLMax+1)) + L3NCOLS[mL3Max] + L4NCOLS[mL4Max];
+        mSizeL = (mLMax+1) + L3NCOLS[mL3Max] + L4NCOLS[mL4Max];
         mLMaxMax = aLMaxMax;
         if (mLMaxMax!=Math.max(Math.max(mLMax, mL3Max), mL4Max)) throw new IllegalStateException();
         mLMAll = (mLMaxMax+1)*(mLMaxMax+1);
         
         mSize = mSizeNP*mSizeL;
     }
-    SphericalChebyshev2(double aRCut, int aNumTypes, int aNMax, int aLMax, boolean aNoRadial, int aL3Max, int aL4Max, int aWType, Vector aFuseWeight, Vector aPostFuseWeight, double[] aPostFuseScale) {
-        this(aRCut, aNumTypes, aNMax, aLMax, Math.max(Math.max(aLMax, aL3Max), aL4Max), aNoRadial, aL3Max, aL4Max, aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale);
+    SphericalChebyshev2(double aRCut, int aNumTypes, int aNMax, int aLMax, int aL3Max, int aL4Max, int aWType, Vector aFuseWeight, Vector aPostFuseWeight, double[] aPostFuseScale) {
+        this(aRCut, aNumTypes, aNMax, aLMax, Math.max(Math.max(aLMax, aL3Max), aL4Max), aL3Max, aL4Max, aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale);
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override public void save(Map rSaveTo) {
         rSaveTo.put("type", "spherical_chebyshev");
         rSaveTo.put("lmax", mLMax);
-        // 目前此功能只是保留兼容，因此只在开启时专门存储
-        if (mNoRadial) {
-            rSaveTo.put("noradial", true);
-        }
         rSaveTo.put("l3max", mL3Max);
         rSaveTo.put("l4max", mL4Max);
         super.save_(rSaveTo);
@@ -69,6 +62,7 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
         int aLMax = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_LMAX, "lmax")).intValue();
         int aL3Max = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_L3MAX, "l3max")).intValue();
         int aL4Max = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_L4MAX, "l4max")).intValue();
+        if ((Boolean)UT.Code.getWithDefault(aMap, false, "noradial")) throw new IllegalArgumentException("noradial is invalid now.");
         if (!(Boolean)UT.Code.getWithDefault(aMap, true, "l3cross")) throw new IllegalArgumentException("no l3cross is invalid now.");
         if (!(Boolean)UT.Code.getWithDefault(aMap, true, "l4cross")) throw new IllegalArgumentException("no l4cross is invalid now.");
         if (!UT.Code.getWithDefault(aMap, "limited", "fuse_style").equals("limited")) throw new IllegalArgumentException("no limited fuse_style is invalid now.");
@@ -87,8 +81,7 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
         return new SphericalChebyshev2(
             ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
             aNumTypes, aNMax,
-            aLMax, (Boolean)UT.Code.getWithDefault(aMap, false, "noradial"),
-            aL3Max, aL4Max,
+            aLMax, aL3Max, aL4Max,
             aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale
         );
     }
@@ -114,13 +107,12 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
         super.updateGenMap(rGenMap, aGenIdxType, aGenIdxMerge);
         rGenMap.put("[FP USE "+aGenIdxType+":"+aGenIdxMerge+"]", "spherical_chebyshev");
         rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_LMAX", mLMax);
-        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_NORADIAL", mNoRadial?1:0);
         rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_L3MAX", mL3Max);
         rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_L4MAX", mL4Max);
     }
     @Override public boolean hasSameGenMap(MergeableBasis2 aBasis) {
         if (!(aBasis instanceof SphericalChebyshev2)) return false;
         SphericalChebyshev2 tBasis = (SphericalChebyshev2)aBasis;
-        return super.hasSameGenMap(aBasis) && mLMax==tBasis.mLMax && mNoRadial==tBasis.mNoRadial && mL3Max==tBasis.mL3Max && mL4Max==tBasis.mL4Max;
+        return super.hasSameGenMap(aBasis) && mLMax==tBasis.mLMax && mL3Max==tBasis.mL3Max && mL4Max==tBasis.mL4Max;
     }
 }
