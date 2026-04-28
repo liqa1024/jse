@@ -97,7 +97,7 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
         return aNumNei*(mNMax+1 + mSizeNP + mLMAll) + (mSizeNP*mLMAll);
     }
     @Override public int backwardCacheSize(int aNumNei) {
-        return aNumNei*(mNMax+1 + mSizeNP + mLMAll*2) + (mSizeNP*mLMAll);
+        return aNumNei*(mNMax+1 + mSizeNP*2 + mLMAll*2);
     }
     @Override public int backwardBackwardCacheSize(int aNumNei) {
         return mSizeNP*mLMAll;

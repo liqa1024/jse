@@ -19,10 +19,6 @@ static NNAP_DEVICE void gradFp2nljWt(flt_t *aGradFp, flt_t *aGradFpWt, flt_t aWt
 }
 
 template <int SIZE_NP>
-static NNAP_DEVICE void gradGradNlj2Rnp(flt_t *aGradFp, flt_t *rGradRnpGrad, flt_t aGradGradj) noexcept {
-    mplus<SIZE_NP>(rGradRnpGrad, aGradGradj, aGradFp);
-}
-template <int SIZE_NP>
 static NNAP_DEVICE void gradGradNlj2fp(flt_t *rGradGradFp, flt_t *aRnpGrad, flt_t aGradGradj) noexcept {
     mplus<SIZE_NP>(rGradGradFp, aGradGradj, aRnpGrad);
 }
