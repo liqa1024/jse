@@ -324,7 +324,7 @@ static NNAP_DEVICE void backwardBackwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *
             flt_t *tAGradRnp = tNlAGradRnp + j*SIZE_NP;
             fill<SIZE_NP>(rBGradRnpGrad, ZERO);
             mplus<SIZE_NP>(rBGradRnpGrad, tBGradAGradj, tAGradRnp);
-            backwardRnp<SIZE_NP>(rBGradRnpGrad, tRnGrad, rBGradParams+tParamShift);
+            backwardRnp<NMAX, SIZE_NP>(rBGradRnpGrad, tRnGrad, rBGradParams+tParamShift);
         } else
         if (WTYPE==WTYPE_NONE) {
             fill<tLMAll>(rBGradAGradY, ZERO);
@@ -374,6 +374,8 @@ static NNAP_DEVICE void sphBackwardBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *a
     flt_t *tAnlm = *aForwardCache; *aForwardCache += tSizeAnlm;
     flt_t *rBGradAnlm = *rBackwardBackwardCache; *rBackwardBackwardCache += tSizeAnlm;
     flt_t rBGradAGradAnlm[tSizeAnlm] = {0};
+    // clear bb cache required
+    fill<tSizeAnlm>(rBGradAnlm, ZERO);
     // xyz -> anlm
     backwardBackwardAnlm<WTYPE, NMAX, tLMaxMax, SIZE_NP>(
         aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rBGradAGradAnlm,

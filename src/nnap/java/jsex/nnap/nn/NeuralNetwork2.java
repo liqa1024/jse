@@ -105,6 +105,8 @@ public abstract class NeuralNetwork2 implements ISavable {
     
     /** @return 前向传播中需要的缓存大小 */
     public abstract int forwardCacheSize();
+    /** @return 反向传播中需要的缓存大小 */
+    public abstract int backwardCacheSize();
     
     /** 更新内部 code gen 的 map，将参数编码进 jit */
     public abstract void updateGenMap(Map<String, Object> rGenMap, int aGenIdx);

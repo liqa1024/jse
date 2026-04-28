@@ -179,7 +179,7 @@ static NNAP_DEVICE void nnBackwardBackwardLayer(flt_t *aBGradAGradX, flt_t *aAGr
         // grad grad z -> grad grad y
         rBGradAGradY[j] += tBGradAGradZ * aSiLUGrad[j];
         // grad grad z -> grad z
-        rBGradZ[j] = tBGradAGradZ * aAGradY[j] * aSiLUGradGrad[j];
+        rBGradZ[j] += tBGradAGradZ * aAGradY[j] * aSiLUGradGrad[j];
         
         tWeight += IN_SIZE;
         tBGradWeight += IN_SIZE;

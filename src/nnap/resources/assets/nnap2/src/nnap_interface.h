@@ -17,6 +17,8 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_calEnergyForce(void *, void *);
 
 JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_forwardEnergy(void *, void *);
 JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_backwardEnergy(void *, void *);
+JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_forwardEnergyForce(void *, void *);
+JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_backwardEnergyForce(void *, void *);
 
 JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_statNeiNumLammps(void *, void *);
 JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_computeLammps(void *, void *);

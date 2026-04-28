@@ -148,7 +148,7 @@ static NNAP_DEVICE void chebyBackwardBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t 
             // grad param stuffs
             fill<SIZE_NP>(rBGradRnpGrad, ZERO);
             mplus<SIZE_NP>(rBGradRnpGrad, tBGradAGradj, aAGradFp);
-            backwardRnp<SIZE_NP>(rBGradRnpGrad, tRnGrad, rBGradParams+tParamShift);
+            backwardRnp<NMAX, SIZE_NP>(rBGradRnpGrad, tRnGrad, rBGradParams+tParamShift);
         } else
         if (WTYPE==WTYPE_NONE) {
             gradGradNlj2fp<NMAX+1>(rBGradAGradFp, tRnGrad, tBGradAGradj);

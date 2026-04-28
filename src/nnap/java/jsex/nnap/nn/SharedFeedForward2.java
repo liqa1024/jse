@@ -465,6 +465,9 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
     @Override public int forwardCacheSize() {
         return mBase.forwardCacheSize();
     }
+    @Override public int backwardCacheSize() {
+        return mBase.backwardCacheSize();
+    }
     
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
         mBase.updateGenMap(rGenMap, aGenIdx);

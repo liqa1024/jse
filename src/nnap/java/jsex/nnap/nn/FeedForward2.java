@@ -325,6 +325,9 @@ public class FeedForward2 extends NeuralNetwork2 {
     @Override public int forwardCacheSize() {
         return mInputDim+mHiddenBiasesSize + mHiddenBiasesSize;
     }
+    @Override public int backwardCacheSize() {
+        return mHiddenBiasesSize + mInputDim+mHiddenBiasesSize + mHiddenBiasesSize;
+    }
     
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
         rGenMap.put("[NN USE "+aGenIdx+"]", "feed_forward");

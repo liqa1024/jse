@@ -77,7 +77,7 @@ public class NNAP2 implements IPairPotential {
     final IntCPointer[] mInNums, mOutNums;
     final AnyCPointer mFpHyperParam, mFpParam, mNnParam, mNormParam;
     private final IDoubleOrFloatCPointer[] mOutEng;
-    private final IGrowableDoubleOrFloatCPointer[] mNlDx, mNlDy, mNlDz, mGradNlDx, mGradNlDy, mGradNlDz, mFpForwardCache;
+    private final IGrowableDoubleOrFloatCPointer[] mNlDx, mNlDy, mNlDz, mGradNlDx, mGradNlDy, mGradNlDz, mFpForwardCache, mFpBackwardBackwardCache;
     private final GrowableIntCPointer[] mNlType, mNlIdx;
     
     private final DoubleList[] mNlDxBuf, mNlDyBuf, mNlDzBuf;
@@ -140,6 +140,7 @@ public class NNAP2 implements IPairPotential {
         mGradNlDz = new IGrowableDoubleOrFloatCPointer[mNumThreads];
         mOutEng = new IDoubleOrFloatCPointer[mNumThreads];
         mFpForwardCache = new IGrowableDoubleOrFloatCPointer[mNumThreads];
+        mFpBackwardBackwardCache = new IGrowableDoubleOrFloatCPointer[mNumThreads];
         mNlDxBuf = new DoubleList[mNumThreads];
         mNlDyBuf = new DoubleList[mNumThreads];
         mNlDzBuf = new DoubleList[mNumThreads];
@@ -160,6 +161,7 @@ public class NNAP2 implements IPairPotential {
             mGradNlDz[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
             mOutEng[ti] = mSingle ? FloatCPointer.malloc(1) : DoubleCPointer.malloc(1);
             mFpForwardCache[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+            mFpBackwardBackwardCache[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
             mNlDxBuf[ti] = new DoubleList(16);
             mNlDyBuf[ti] = new DoubleList(16);
             mNlDzBuf[ti] = new DoubleList(16);
@@ -267,15 +269,17 @@ public class NNAP2 implements IPairPotential {
     private static final String NAME_CAL_FP = "jse_nnap_calFp", NAME_CAL_ENERGY = "jse_nnap_calEnergy", NAME_CAL_ENERGYFORCE = "jse_nnap_calEnergyForce";
     private static final String NAME_STAT_NEINUM_LAMMPS = "jse_nnap_statNeiNumLammps", NAME_COMPUTE_LAMMPS = "jse_nnap_computeLammps";
     private static final String NAME_FORWARD_ENERGY = "jse_nnap_forwardEnergy", NAME_BACKWARD_ENERGY = "jse_nnap_backwardEnergy";
+    private static final String NAME_FORWARD_ENERGYFORCE = "jse_nnap_forwardEnergyForce", NAME_BACKWARD_ENERGYFORCE = "jse_nnap_backwardEnergyForce";
     private IJITMethod mCalFp = null, mCalEnergy = null, mCalEnergyForce = null;
     private IJITMethod mStatNeiNumLammps = null, mComputeLammps = null;
     private IJITMethod mForwardEnergy = null, mBackwardEnergy = null;
+    private IJITMethod mForwardEnergyForce = null, mBackwardEnergyForce = null;
     private void compileJIT_() throws Exception {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         if (mJITEngine!=null) throw new IllegalStateException("compileJIT() has already been called");
         // 开始 jit
         mJITEngine = mNNAPGEN.initEngine(mSingle);
-        mJITEngine.setMethodNames(NAME_CAL_FP, NAME_CAL_ENERGY, NAME_CAL_ENERGYFORCE, NAME_STAT_NEINUM_LAMMPS, NAME_COMPUTE_LAMMPS, NAME_FORWARD_ENERGY, NAME_BACKWARD_ENERGY).compile();
+        mJITEngine.setMethodNames(NAME_CAL_FP, NAME_CAL_ENERGY, NAME_CAL_ENERGYFORCE, NAME_STAT_NEINUM_LAMMPS, NAME_COMPUTE_LAMMPS, NAME_FORWARD_ENERGY, NAME_BACKWARD_ENERGY, NAME_FORWARD_ENERGYFORCE, NAME_BACKWARD_ENERGYFORCE).compile();
         mCalFp = mJITEngine.findMethod(NAME_CAL_FP);
         mCalEnergy = mJITEngine.findMethod(NAME_CAL_ENERGY);
         mCalEnergyForce = mJITEngine.findMethod(NAME_CAL_ENERGYFORCE);
@@ -283,6 +287,8 @@ public class NNAP2 implements IPairPotential {
         mComputeLammps = mJITEngine.findMethod(NAME_COMPUTE_LAMMPS);
         mForwardEnergy = mJITEngine.findMethod(NAME_FORWARD_ENERGY);
         mBackwardEnergy = mJITEngine.findMethod(NAME_BACKWARD_ENERGY);
+        mForwardEnergyForce = mJITEngine.findMethod(NAME_FORWARD_ENERGYFORCE);
+        mBackwardEnergyForce = mJITEngine.findMethod(NAME_BACKWARD_ENERGYFORCE);
     }
     
     @Override public void close() throws Exception {
@@ -309,6 +315,7 @@ public class NNAP2 implements IPairPotential {
         for (int ti = 0; ti < mNumThreads; ++ti) {
             mOutEng[ti].free();
             mFpForwardCache[ti].free();
+            mFpBackwardBackwardCache[ti].free();
             mDataOut[ti].free();
         }
         if (mJITEngine!=null) mJITEngine.close();
@@ -590,6 +597,7 @@ public class NNAP2 implements IPairPotential {
     public double calEnergyForce(int aThreadID, IDoubleOrFloatCPointer aNlDx, IDoubleOrFloatCPointer aNlDy, IDoubleOrFloatCPointer aNlDz,
                                  IntCPointer aNlType, int aNumNei, int aCType,
                                  IDoubleOrFloatCPointer rGradNlDx, IDoubleOrFloatCPointer rGradNlDy, IDoubleOrFloatCPointer rGradNlDz) {
+        if (mDead) throw new IllegalStateException("This NNAP is dead");
         IntCPointer tInNums = mInNums[aThreadID];
         AnyCPointer tDataIn = mDataIn[aThreadID];
         AnyCPointer tDataOut = mDataOut[aThreadID];
@@ -625,7 +633,7 @@ public class NNAP2 implements IPairPotential {
         IntCPointer tInNums = mInNums[aThreadID];
         AnyCPointer tDataIn = mDataIn[aThreadID];
         AnyCPointer tDataOut = mDataOut[aThreadID];
-        IDoubleOrFloatCPointer tOutEngRaw = mOutEng[aThreadID];
+        IDoubleOrFloatCPointer tOutEng = mOutEng[aThreadID];
         tInNums.putAt(0, aNumNei);
         tInNums.putAt(1, aCType);
         // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
@@ -638,7 +646,7 @@ public class NNAP2 implements IPairPotential {
         tDataIn.putAt(6, mFpParam);
         tDataIn.putAt(7, mNnParam);
         tDataIn.putAt(8, mNormParam.getAt(aCType-1));
-        tDataOut.putAt(0, tOutEngRaw);
+        tDataOut.putAt(0, tOutEng);
         int tSizeFpForwardCache = mBasis[aCType-1].forwardCacheSize(aNumNei);
         int tSizeNnForwardCache = mNN[aCType-1].forwardCacheSize();
         rCaches.ensureCapacity(tSizeFpForwardCache + tSizeNnForwardCache);
@@ -647,19 +655,19 @@ public class NNAP2 implements IPairPotential {
         // 调用 jit 方法获取结果
         int tCode = mForwardEnergy.invoke(tDataIn, tDataOut);
         if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
-        return tOutEngRaw.getD();
+        return tOutEng.getD();
     }
-    public void backwardEnergy(int aThreadID, double aGradEngRaw, IDoubleOrFloatCPointer aNlDx, IDoubleOrFloatCPointer aNlDy, IDoubleOrFloatCPointer aNlDz,
+    public void backwardEnergy(int aThreadID, double aGradEng, IDoubleOrFloatCPointer aNlDx, IDoubleOrFloatCPointer aNlDy, IDoubleOrFloatCPointer aNlDz,
                                IntCPointer aNlType, int aNumNei, int aCType, IDoubleOrFloatCPointer aCaches) {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         if (mGradTotParam == null) throw new IllegalStateException("No grad in NNAP, invoke `requireGrad()` first.");
         IntCPointer tInNums = mInNums[aThreadID];
         AnyCPointer tDataIn = mDataIn[aThreadID];
         AnyCPointer tDataOut = mDataOut[aThreadID];
-        IDoubleOrFloatCPointer tInGradEngRaw = mOutEng[aThreadID];
+        IDoubleOrFloatCPointer tGradEng = mOutEng[aThreadID];
         tInNums.putAt(0, aNumNei);
         tInNums.putAt(1, aCType);
-        tInGradEngRaw.setD(aGradEngRaw);
+        tGradEng.setD(aGradEng);
         // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
         tDataIn.putAt(0, tInNums);
         tDataIn.putAt(1, aNlDx);
@@ -672,11 +680,93 @@ public class NNAP2 implements IPairPotential {
         tDataIn.putAt(8, mNormParam.getAt(aCType-1));
         tDataIn.putAt(9, aCaches);
         tDataIn.putAt(10, aCaches.plus(mBasis[aCType-1].forwardCacheSize(aNumNei)));
-        tDataOut.putAt(0, tInGradEngRaw);
+        tDataOut.putAt(0, tGradEng);
         tDataOut.putAt(1, mGradFpParam[aThreadID]);
         tDataOut.putAt(2, mGradNnParam[aThreadID]);
         // 调用 jit 方法获取结果
         int tCode = mBackwardEnergy.invoke(tDataIn, tDataOut);
+        if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
+    }
+    
+    public double forwardEnergyForce(int aThreadID, IDoubleOrFloatCPointer aNlDx, IDoubleOrFloatCPointer aNlDy, IDoubleOrFloatCPointer aNlDz,
+                                     IntCPointer aNlType, int aNumNei, int aCType, IGrowableDoubleOrFloatCPointer rCaches,
+                                     IDoubleOrFloatCPointer rAGradNlDx, IDoubleOrFloatCPointer rAGradNlDy, IDoubleOrFloatCPointer rAGradNlDz) {
+        if (mDead) throw new IllegalStateException("This NNAP is dead");
+        IntCPointer tInNums = mInNums[aThreadID];
+        AnyCPointer tDataIn = mDataIn[aThreadID];
+        AnyCPointer tDataOut = mDataOut[aThreadID];
+        IDoubleOrFloatCPointer tOutEng = mOutEng[aThreadID];
+        tInNums.putAt(0, aNumNei);
+        tInNums.putAt(1, aCType);
+        // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
+        tDataIn.putAt(0, tInNums);
+        tDataIn.putAt(1, aNlDx);
+        tDataIn.putAt(2, aNlDy);
+        tDataIn.putAt(3, aNlDz);
+        tDataIn.putAt(4, aNlType);
+        tDataIn.putAt(5, mFpHyperParam);
+        tDataIn.putAt(6, mFpParam);
+        tDataIn.putAt(7, mNnParam);
+        tDataIn.putAt(8, mNormParam.getAt(aCType-1));
+        tDataOut.putAt(0, tOutEng);
+        tDataOut.putAt(1, rAGradNlDx);
+        tDataOut.putAt(2, rAGradNlDy);
+        tDataOut.putAt(3, rAGradNlDz);
+        int tSizeFpForwardCache = mBasis[aCType-1].forwardCacheSize(aNumNei);
+        int tSizeNnForwardCache = mNN[aCType-1].forwardCacheSize();
+        int tSizeFpBackwardCache = mBasis[aCType-1].backwardCacheSize(aNumNei);
+        int tSizeNnBackwardCache = mNN[aCType-1].backwardCacheSize();
+        rCaches.ensureCapacity(tSizeFpForwardCache+tSizeNnForwardCache+tSizeFpBackwardCache+tSizeNnBackwardCache);
+        tDataOut.putAt(4, rCaches);
+        tDataOut.putAt(5, rCaches.plus(tSizeFpForwardCache));
+        tDataOut.putAt(6, rCaches.plus(tSizeFpForwardCache+tSizeNnForwardCache));
+        tDataOut.putAt(7, rCaches.plus(tSizeFpForwardCache+tSizeNnForwardCache+tSizeFpBackwardCache));
+        // 调用 jit 方法获取结果
+        int tCode = mForwardEnergyForce.invoke(tDataIn, tDataOut);
+        if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
+        return tOutEng.getD();
+    }
+    public void backwardEnergyForce(int aThreadID, double aBGradEng, IDoubleOrFloatCPointer aNlDx, IDoubleOrFloatCPointer aNlDy, IDoubleOrFloatCPointer aNlDz,
+                                    IntCPointer aNlType, int aNumNei, int aCType, IDoubleOrFloatCPointer aCaches,
+                                    IDoubleOrFloatCPointer aBGradAGradNlDx, IDoubleOrFloatCPointer aBGradAGradNlDy, IDoubleOrFloatCPointer aBGradAGradNlDz) {
+        if (mDead) throw new IllegalStateException("This NNAP is dead");
+        if (mGradTotParam == null) throw new IllegalStateException("No grad in NNAP, invoke `requireGrad()` first.");
+        IntCPointer tInNums = mInNums[aThreadID];
+        AnyCPointer tDataIn = mDataIn[aThreadID];
+        AnyCPointer tDataOut = mDataOut[aThreadID];
+        IGrowableDoubleOrFloatCPointer tFpBackwardBackwardCache = mFpBackwardBackwardCache[aThreadID];
+        IDoubleOrFloatCPointer tBGradEng = mOutEng[aThreadID];
+        tInNums.putAt(0, aNumNei);
+        tInNums.putAt(1, aCType);
+        tBGradEng.setD(aBGradEng);
+        tFpBackwardBackwardCache.ensureCapacity(mBasis[aCType-1].backwardBackwardCacheSize(aNumNei));
+        // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
+        tDataIn.putAt(0, tInNums);
+        tDataIn.putAt(1, aNlDx);
+        tDataIn.putAt(2, aNlDy);
+        tDataIn.putAt(3, aNlDz);
+        tDataIn.putAt(4, aNlType);
+        tDataIn.putAt(5, mFpHyperParam);
+        tDataIn.putAt(6, mFpParam);
+        tDataIn.putAt(7, mNnParam);
+        tDataIn.putAt(8, mNormParam.getAt(aCType-1));
+        int tSizeFpForwardCache = mBasis[aCType-1].forwardCacheSize(aNumNei);
+        int tSizeNnForwardCache = mNN[aCType-1].forwardCacheSize();
+        int tSizeFpBackwardCache = mBasis[aCType-1].backwardCacheSize(aNumNei);
+        tDataIn.putAt(9, aCaches);
+        tDataIn.putAt(10, aCaches.plus(tSizeFpForwardCache));
+        tDataIn.putAt(11, aCaches.plus(tSizeFpForwardCache+tSizeNnForwardCache));
+        tDataIn.putAt(12, aCaches.plus(tSizeFpForwardCache+tSizeNnForwardCache+tSizeFpBackwardCache));
+        tDataOut.putAt(0, tBGradEng);
+        tDataOut.putAt(1, aBGradAGradNlDx);
+        tDataOut.putAt(2, aBGradAGradNlDy);
+        tDataOut.putAt(3, aBGradAGradNlDz);
+        tDataOut.putAt(4, mGradFpParam[aThreadID]);
+        tDataOut.putAt(5, mGradNnParam[aThreadID]);
+        tDataOut.putAt(6, tFpBackwardBackwardCache);
+        
+        // 调用 jit 方法获取结果
+        int tCode = mBackwardEnergyForce.invoke(tDataIn, tDataOut);
         if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
     }
     

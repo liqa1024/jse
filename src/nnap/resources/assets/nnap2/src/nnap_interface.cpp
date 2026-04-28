@@ -157,6 +157,7 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_forwardEnergy(void *aDataIn, void *
     // >>> NNAPGEN SWITCH
     JSE_NNAP::flt_t *rLayers = rNnForwardCache;
     JSE_NNAP::flt_t *rNnGradCache = rLayers + (__NNAPGENX_NN_SIZE_IN__+__NNAPGENX_NN_SIZE_HB__);
+    
     code = JSE_NNAP::fpForward<__NNAPGENS_ctype__, JSE_NNAP::TRUE>(
         tNlDx, tNlDy, tNlDz, tNlType, tNeiNum, ctype, rLayers,
         tFpHyperParam, tFpParam, rFpForwardCache
@@ -186,7 +187,7 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_backwardEnergy(void *aDataIn, void 
     JSE_NNAP::flt_t *tFpForwardCache = (JSE_NNAP::flt_t *)tDataIn[9];
     JSE_NNAP::flt_t *tNnForwardCache = (JSE_NNAP::flt_t *)tDataIn[10];
     
-    JSE_NNAP::flt_t *tGradEngRaw = (JSE_NNAP::flt_t *)tDataOut[0];
+    JSE_NNAP::flt_t *tGradEng = (JSE_NNAP::flt_t *)tDataOut[0];
     JSE_NNAP::flt_t **rGradFpParam = (JSE_NNAP::flt_t **)tDataOut[1];
     JSE_NNAP::flt_t **rGradNnParam = (JSE_NNAP::flt_t **)tDataOut[2];
     
@@ -198,8 +199,9 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_backwardEnergy(void *aDataIn, void 
     JSE_NNAP::flt_t *tLayers = tNnForwardCache;
     JSE_NNAP::flt_t *tNnGradCache = tLayers + (__NNAPGENX_NN_SIZE_IN__+__NNAPGENX_NN_SIZE_HB__);
     JSE_NNAP::flt_t rGradLayers[__NNAPGENX_NN_SIZE_IN__+__NNAPGENX_NN_SIZE_HB__] = {0};
+    
     code = JSE_NNAP::normedNnBackward<__NNAPGENS_ctype__, JSE_NNAP::TRUE, JSE_NNAP::FALSE>(
-        ctype, tGradEngRaw[0], tLayers, rGradLayers, NULL,
+        ctype, tGradEng[0], tLayers, rGradLayers, NULL,
         tNormParam, tNnParam, rGradNnParam, tNnGradCache
     );
     if (code!=0) return code;
@@ -210,6 +212,139 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_backwardEnergy(void *aDataIn, void 
     );
     if (code!=0) return code;
     // <<< NNAPGEN SWITCH (ctype) [FP NN TYPE]
+    return 0;
+}
+
+JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_forwardEnergyForce(void *aDataIn, void *rDataOut) {
+    void **tDataIn = (void **)aDataIn;
+    void **tDataOut = (void **)rDataOut;
+    
+    int *tNums = (int *)tDataIn[0];
+    JSE_NNAP::flt_t *tNlDx = (JSE_NNAP::flt_t *)tDataIn[1];
+    JSE_NNAP::flt_t *tNlDy = (JSE_NNAP::flt_t *)tDataIn[2];
+    JSE_NNAP::flt_t *tNlDz = (JSE_NNAP::flt_t *)tDataIn[3];
+    int *tNlType = (int *)tDataIn[4];
+    JSE_NNAP::flt_t **tFpHyperParam = (JSE_NNAP::flt_t **)tDataIn[5];
+    JSE_NNAP::flt_t **tFpParam = (JSE_NNAP::flt_t **)tDataIn[6];
+    JSE_NNAP::flt_t **tNnParam = (JSE_NNAP::flt_t **)tDataIn[7];
+    JSE_NNAP::flt_t *tNormParam = (JSE_NNAP::flt_t *)tDataIn[8];
+    
+    JSE_NNAP::flt_t *rOutEng = (JSE_NNAP::flt_t *)tDataOut[0];
+    JSE_NNAP::flt_t *rGradNlDx = (JSE_NNAP::flt_t *)tDataOut[1];
+    JSE_NNAP::flt_t *rGradNlDy = (JSE_NNAP::flt_t *)tDataOut[2];
+    JSE_NNAP::flt_t *rGradNlDz = (JSE_NNAP::flt_t *)tDataOut[3];
+    JSE_NNAP::flt_t *rFpForwardCache = (JSE_NNAP::flt_t *)tDataOut[4];
+    JSE_NNAP::flt_t *rNnForwardCache = (JSE_NNAP::flt_t *)tDataOut[5];
+    JSE_NNAP::flt_t *rFpBackwardCache = (JSE_NNAP::flt_t *)tDataOut[6];
+    JSE_NNAP::flt_t *rNnBackwardCache = (JSE_NNAP::flt_t *)tDataOut[7];
+    
+    int tNeiNum = tNums[0];
+    int ctype = tNums[1];
+    
+    // manual clear required for backward in force
+    for (int j = 0; j < tNeiNum; ++j) {
+        rGradNlDx[j] = JSE_NNAP::ZERO;
+        rGradNlDy[j] = JSE_NNAP::ZERO;
+        rGradNlDz[j] = JSE_NNAP::ZERO;
+    }
+    int code;
+// >>> NNAPGEN SWITCH
+    JSE_NNAP::flt_t *rLayers = rNnForwardCache;
+    JSE_NNAP::flt_t *rNnGradCache = rLayers + (__NNAPGENX_NN_SIZE_IN__+__NNAPGENX_NN_SIZE_HB__);
+    JSE_NNAP::flt_t *rNnGradGradCache = rNnBackwardCache;
+    JSE_NNAP::flt_t *rAGradLayers = rNnGradGradCache + __NNAPGENX_NN_SIZE_HB__;
+    JSE_NNAP::flt_t *rAGradLayersZ = rAGradLayers + (__NNAPGENX_NN_SIZE_IN__+__NNAPGENX_NN_SIZE_HB__);
+    // manual clear required for backward in force
+    JSE_NNAP::fill<__NNAPGENX_NN_SIZE_IN__+__NNAPGENX_NN_SIZE_HB__>(rAGradLayers, JSE_NNAP::ZERO);
+    JSE_NNAP::fill<__NNAPGENX_NN_SIZE_HB__>(rAGradLayersZ, JSE_NNAP::ZERO);
+    
+    code = JSE_NNAP::fpForward<__NNAPGENS_ctype__, JSE_NNAP::TRUE>(
+        tNlDx, tNlDy, tNlDz, tNlType, tNeiNum, ctype, rLayers,
+        tFpHyperParam, tFpParam, rFpForwardCache
+    );
+    if (code!=0) return code;
+    code = JSE_NNAP::normedNnForward<__NNAPGENS_ctype__, JSE_NNAP::TRUE, JSE_NNAP::TRUE>(
+        ctype, rOutEng, rLayers,
+        tNormParam, tNnParam, rNnGradCache, rNnGradGradCache
+    );
+    if (code!=0) return code;
+    code = JSE_NNAP::normedNnBackward<__NNAPGENS_ctype__, JSE_NNAP::FALSE, JSE_NNAP::TRUE>(
+        ctype, JSE_NNAP::ONE, NULL, rAGradLayers, rAGradLayersZ,
+        tNormParam, tNnParam, NULL, rNnGradCache
+    );
+    if (code!=0) return code;
+    code = JSE_NNAP::fpBackward<__NNAPGENS_ctype__, JSE_NNAP::FALSE, JSE_NNAP::FALSE, JSE_NNAP::TRUE>(
+        tNlDx, tNlDy, tNlDz, tNlType, tNeiNum, ctype, rAGradLayers,
+        rGradNlDx, rGradNlDy, rGradNlDz, tFpHyperParam,
+        tFpParam, NULL, rFpForwardCache, rFpBackwardCache, NULL
+    );
+    if (code!=0) return code;
+// <<< NNAPGEN SWITCH (ctype) [FP NN TYPE]
+    return 0;
+}
+JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_backwardEnergyForce(void *aDataIn, void *rDataOut) {
+    void **tDataIn = (void **)aDataIn;
+    void **tDataOut = (void **)rDataOut;
+    
+    int *tNums = (int *)tDataIn[0];
+    JSE_NNAP::flt_t *tNlDx = (JSE_NNAP::flt_t *)tDataIn[1];
+    JSE_NNAP::flt_t *tNlDy = (JSE_NNAP::flt_t *)tDataIn[2];
+    JSE_NNAP::flt_t *tNlDz = (JSE_NNAP::flt_t *)tDataIn[3];
+    int *tNlType = (int *)tDataIn[4];
+    JSE_NNAP::flt_t **tFpHyperParam = (JSE_NNAP::flt_t **)tDataIn[5];
+    JSE_NNAP::flt_t **tFpParam = (JSE_NNAP::flt_t **)tDataIn[6];
+    JSE_NNAP::flt_t **tNnParam = (JSE_NNAP::flt_t **)tDataIn[7];
+    JSE_NNAP::flt_t *tNormParam = (JSE_NNAP::flt_t *)tDataIn[8];
+    JSE_NNAP::flt_t *tFpForwardCache = (JSE_NNAP::flt_t *)tDataIn[9];
+    JSE_NNAP::flt_t *tNnForwardCache = (JSE_NNAP::flt_t *)tDataIn[10];
+    JSE_NNAP::flt_t *tFpBackwardCache = (JSE_NNAP::flt_t *)tDataIn[11];
+    JSE_NNAP::flt_t *tNnBackwardCache = (JSE_NNAP::flt_t *)tDataIn[12];
+    
+    JSE_NNAP::flt_t *tBGradEng = (JSE_NNAP::flt_t *)tDataOut[0];
+    JSE_NNAP::flt_t *tBGradAGradNlDx = (JSE_NNAP::flt_t *)tDataOut[1];
+    JSE_NNAP::flt_t *tBGradAGradNlDy = (JSE_NNAP::flt_t *)tDataOut[2];
+    JSE_NNAP::flt_t *tBGradAGradNlDz = (JSE_NNAP::flt_t *)tDataOut[3];
+    JSE_NNAP::flt_t **rBGradFpParam = (JSE_NNAP::flt_t **)tDataOut[4];
+    JSE_NNAP::flt_t **rBGradNnParam = (JSE_NNAP::flt_t **)tDataOut[5];
+    JSE_NNAP::flt_t *rFpBackwardBackwardCache = (JSE_NNAP::flt_t *)tDataOut[6];
+    
+    int tNeiNum = tNums[0];
+    int ctype = tNums[1];
+    
+    int code;
+// >>> NNAPGEN SWITCH
+    JSE_NNAP::flt_t *tLayers = tNnForwardCache;
+    JSE_NNAP::flt_t *tNnGradCache = tLayers + (__NNAPGENX_NN_SIZE_IN__+__NNAPGENX_NN_SIZE_HB__);
+    JSE_NNAP::flt_t *tNnGradGradCache = tNnBackwardCache;
+    JSE_NNAP::flt_t *tAGradLayers = tNnGradGradCache + __NNAPGENX_NN_SIZE_HB__;
+    JSE_NNAP::flt_t *tAGradLayersZ = tAGradLayers + (__NNAPGENX_NN_SIZE_IN__+__NNAPGENX_NN_SIZE_HB__);
+    JSE_NNAP::flt_t rBGradAGradLayers[__NNAPGENX_NN_SIZE_IN__+__NNAPGENX_NN_SIZE_HB__] = {0};
+    JSE_NNAP::flt_t rBGradLayersZ[__NNAPGENX_NN_SIZE_HB__] = {0};
+    JSE_NNAP::flt_t rBGradLayers[__NNAPGENX_NN_SIZE_IN__+__NNAPGENX_NN_SIZE_HB__] = {0};
+    
+    code = JSE_NNAP::fpBackwardBackward<__NNAPGENS_ctype__>(
+        tNlDx, tNlDy, tNlDz, tNlType, tNeiNum, ctype, tAGradLayers, rBGradAGradLayers,
+        tBGradAGradNlDx, tBGradAGradNlDy, tBGradAGradNlDz,
+        tFpHyperParam, rBGradFpParam, tFpForwardCache, tFpBackwardCache, rFpBackwardBackwardCache
+    );
+    if (code!=0) return code;
+    code = JSE_NNAP::normedNnBackwardBackward<__NNAPGENS_ctype__, JSE_NNAP::FALSE>(
+        ctype, JSE_NNAP::ONE, NULL, tAGradLayers, rBGradAGradLayers, tAGradLayersZ, rBGradLayersZ,
+        tNormParam, tNnParam, rBGradNnParam, tNnGradCache, tNnGradGradCache
+    );
+    if (code!=0) return code;
+    code = JSE_NNAP::normedNnBackward<__NNAPGENS_ctype__, JSE_NNAP::TRUE, JSE_NNAP::TRUE>(
+        ctype, tBGradEng[0], tLayers, rBGradLayers, rBGradLayersZ,
+        tNormParam, tNnParam, rBGradNnParam, tNnGradCache
+    );
+    if (code!=0) return code;
+    code = JSE_NNAP::fpBackward<__NNAPGENS_ctype__, JSE_NNAP::TRUE, JSE_NNAP::TRUE, JSE_NNAP::FALSE>(
+        tNlDx, tNlDy, tNlDz, tNlType, tNeiNum, ctype, rBGradLayers,
+        NULL, NULL, NULL, tFpHyperParam,
+        tFpParam, rBGradFpParam, tFpForwardCache, NULL, rFpBackwardBackwardCache
+    );
+    if (code!=0) return code;
+// <<< NNAPGEN SWITCH (ctype) [FP NN TYPE]
     return 0;
 }
 

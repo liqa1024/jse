@@ -224,14 +224,19 @@ static NNAP_DEVICE int fpBackwardBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNl
 
 template <int CTYPE_GEN, int GRAD_IN>
 static NNAP_DEVICE int normedNnBackwardBackward(int cType, flt_t aInAGrad, flt_t *rOutBGradAGrad, flt_t *aAGradLayers, flt_t *rBGradAGradLayers, flt_t *aAGradLayersZ, flt_t *rBGradLayersZ,
-                                                flt_t *aNormParam, flt_t **aNnParam, flt_t **rAGradNnParam, flt_t *aNnGradCache, flt_t *aNnGradGradCache) noexcept {
+                                                flt_t *aNormParam, flt_t **aNnParam, flt_t **rBGradNnParam, flt_t *aNnGradCache, flt_t *aNnGradGradCache) noexcept {
     flt_t tNormSigmaEng = aNormParam[1];
     int flag = 1;
 // >>> NNAPGEN SWITCH
+    flt_t *tNormSigma = aNormParam + (2+__NNAPGENX_NN_SIZE_IN__);
+    // denorm fp here
+    for (int i = 0; i < __NNAPGENX_NN_SIZE_IN__; ++i) {
+        rBGradAGradLayers[i] /= tNormSigma[i];
+    }
     // denorm energy here
     flt_t tInAGrad = aInAGrad*tNormSigmaEng;
     flt_t *tWeights = aNnParam[cType-1];
-    flt_t *rBGradWeights = rAGradNnParam[cType-1];
+    flt_t *rBGradWeights = rBGradNnParam[cType-1];
 // >>> NNAPGEN PICK
 // --- NNAPGEN PICK: feed_forward
     nnBackwardBackward<__NNAPGENS_CTYPE_GEN__, GRAD_IN>(
@@ -239,11 +244,6 @@ static NNAP_DEVICE int normedNnBackwardBackward(int cType, flt_t aInAGrad, flt_t
         tWeights, rBGradWeights, aNnGradCache, aNnGradGradCache
     );
 // <<< NNAPGEN PICK [NN USE __NNAPGENS_X__]
-    flt_t *tNormSigma = aNormParam + (2+__NNAPGENX_NN_SIZE_IN__);
-    // denorm fp here
-    for (int i = 0; i < __NNAPGENX_NN_SIZE_IN__; ++i) {
-        rBGradAGradLayers[i] /= tNormSigma[i];
-    }
     // denorm energy here
     if (GRAD_IN) rOutBGradAGrad[0] *= tNormSigmaEng;
     flag = 0;
