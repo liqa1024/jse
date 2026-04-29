@@ -1163,7 +1163,7 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
     }
     
     
-    protected void initDataNl() {
+    protected void initDataNl(boolean aPrintLog) {
         final int tTrainSize = mTrainData.mAtomData.size();
         final int tTestSize = mTestData.mAtomData.size();
         final int tTrainStart = mTrainData.mSize - tTrainSize;
@@ -1185,6 +1185,7 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
             mTestData.mNlDy.add(null);
             mTestData.mNlDz.add(null);
         }
+        if (aPrintLog) UT.Timer.progressBar("init nl", tTrainSize+tTestSize);
         mPool.parfor(tTrainSize+tTestSize, (ii, threadID) -> {
             DataSet rData = ii<tTrainSize ? mTrainData : mTestData;
             int ai = ii<tTrainSize ? ii : ii-tTrainSize;
@@ -1231,6 +1232,7 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
                     tNlDzPtr.fill(tNlDz); rNlDz[k] = tNlDzPtr;
                 }
             }
+            if (aPrintLog) UT.Timer.progressBar();
         });
         mTrainData.mAtomData.clear();
         mTestData.mAtomData.clear();
@@ -1489,8 +1491,7 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
         mMinLoss = Double.POSITIVE_INFINITY;
         // 数据近邻列表初始化
         if (!mTrainData.mAtomData.isEmpty() || !mTestData.mAtomData.isEmpty()) {
-            if (aPrintLog) System.out.println("Init neighbor list...");
-            initDataNl();
+            initDataNl(aPrintLog);
         }
         // 初始化归一化参数，现在只会初始化一次
         if (!mNormInit) {
