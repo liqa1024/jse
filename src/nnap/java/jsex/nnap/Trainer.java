@@ -1746,12 +1746,16 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
      * {@code addTrainData(aAtomData, aEnergy, aForces, null)}
      * @see #addTrainData(IAtomData, double, IMatrix, IVector)
      */
-    public void addTrainData(IAtomData aAtomData, double aEnergy, IMatrix aForces) {addTrainData(aAtomData, aEnergy, aForces, null);}
+    public void addTrainData(IAtomData aAtomData, double aEnergy, IMatrix aForces) {
+        addTrainData(aAtomData, aEnergy, aForces, null);
+    }
     /**
      * {@code addTrainData(aAtomData, aEnergy, null, null)}
      * @see #addTrainData(IAtomData, double, IMatrix, IVector)
      */
-    public void addTrainData(IAtomData aAtomData, double aEnergy) {addTrainData(aAtomData, aEnergy, null, null);}
+    public void addTrainData(IAtomData aAtomData, double aEnergy) {
+        addTrainData(aAtomData, aEnergy, null, null);
+    }
     /**
      * 增加一个测试集数据
      * <p>

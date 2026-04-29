@@ -8,6 +8,7 @@ import jse.code.IO;
 import jse.code.UT;
 import jse.code.collection.*;
 import jse.code.io.ISavable;
+import jse.code.timer.AccumulatedTimer;
 import jse.cptr.DoubleCPointer;
 import jse.cptr.GrowableDoubleCPointer;
 import jse.cptr.IDoubleOrFloatCPointer;
@@ -66,8 +67,15 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
         public final List<IAtomData> mAtomData = new ArrayList<>(64);
         /** 每个原子数据结构对应的每原子能量值 */
         public final DoubleList mEng = new DoubleList(64);
+        /** 这里力数据使用 List 存储，每个原子结构一组 */
+        public final List<Vector> mForceX = new ArrayList<>(64), mForceY = new ArrayList<>(64), mForceZ = new ArrayList<>(64);
+        /** 每个原子数据结构对应的压力值 */
+        public final DoubleList mStressXX = new DoubleList(64), mStressYY = new DoubleList(64), mStressZZ = new DoubleList(64),
+                                mStressXY = new DoubleList(64), mStressXZ = new DoubleList(64), mStressYZ = new DoubleList(64);
         /** 原子种类，每个原子结构一组 */
         public final List<IntVector> mAtomType = new ArrayList<>(64);
+        /** 每个原子数据结构对应的总体积值 */
+        public final DoubleList mVolume = new DoubleList(64);
         
         /** 原子近邻原子数，每个原子结构一组 */
         public final List<IntVector> mNumNei = new ArrayList<>(64);
@@ -101,6 +109,8 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
     protected final NNAP2 mNNAP;
     protected final IVector mRefEngs;
     protected double mNormMuEng = 0.0, mNormSigmaEng = 1.0;
+    protected boolean mHasForce = false;
+    protected boolean mHasStress = false;
     protected boolean mHasTest = false;
     protected final DoubleList mTrainLoss = new DoubleList(64);
     protected final DoubleList mTestLoss = new DoubleList(64);
@@ -117,6 +127,10 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
     
     /// buffer stuffs
     private final List<List<GrowableDoubleCPointer>> mCacheBuf;
+    private final GrowableDoubleCPointer[] mAGradNlDxBuf, mAGradNlDyBuf, mAGradNlDzBuf;
+    private final GrowableDoubleCPointer[] mBGradAGradNlDxBuf, mBGradAGradNlDyBuf, mBGradAGradNlDzBuf;
+    private final DoubleList[] mForceXBuf, mForceYBuf, mForceZBuf;
+    private final DoubleList[] mBGradForceXBuf, mBGradForceYBuf, mBGradForceZBuf;
     
     
     protected double mEnergyWeight = DEFAULT_ENERGY_WEIGHT;
@@ -293,11 +307,34 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
         mTestData = new DataSet();
         
         mCacheBuf = new ArrayList<>(aNumThreads);
+        mAGradNlDxBuf = new GrowableDoubleCPointer[aNumThreads];
+        mAGradNlDyBuf = new GrowableDoubleCPointer[aNumThreads];
+        mAGradNlDzBuf = new GrowableDoubleCPointer[aNumThreads];
+        mBGradAGradNlDxBuf = new GrowableDoubleCPointer[aNumThreads];
+        mBGradAGradNlDyBuf = new GrowableDoubleCPointer[aNumThreads];
+        mBGradAGradNlDzBuf = new GrowableDoubleCPointer[aNumThreads];
+        mForceXBuf = new DoubleList[aNumThreads];
+        mForceYBuf = new DoubleList[aNumThreads];
+        mForceZBuf = new DoubleList[aNumThreads];
+        mBGradForceXBuf = new DoubleList[aNumThreads];
+        mBGradForceYBuf = new DoubleList[aNumThreads];
+        mBGradForceZBuf = new DoubleList[aNumThreads];
         for (int ti = 0; ti < aNumThreads; ++ti) {
             List<GrowableDoubleCPointer> tCacheBuf = new ArrayList<>(16);
             mCacheBuf.add(tCacheBuf);
+            mAGradNlDxBuf[ti] = new GrowableDoubleCPointer(1);
+            mAGradNlDyBuf[ti] = new GrowableDoubleCPointer(1);
+            mAGradNlDzBuf[ti] = new GrowableDoubleCPointer(1);
+            mBGradAGradNlDxBuf[ti] = new GrowableDoubleCPointer(1);
+            mBGradAGradNlDyBuf[ti] = new GrowableDoubleCPointer(1);
+            mBGradAGradNlDzBuf[ti] = new GrowableDoubleCPointer(1);
+            mForceXBuf[ti] = new DoubleList();
+            mForceYBuf[ti] = new DoubleList();
+            mForceZBuf[ti] = new DoubleList();
+            mBGradForceXBuf[ti] = new DoubleList();
+            mBGradForceYBuf[ti] = new DoubleList();
+            mBGradForceZBuf[ti] = new DoubleList();
         }
-        
         initOptimizer_();
     }
     /**
@@ -315,8 +352,6 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
      *     <dd>指定 loss 函数中压力的权重</dd>
      *   <dt>l2_weight (可选，默认为 0.001):</dt>
      *     <dd>指定 loss 函数中 l2 正则化的权重</dd>
-     *   <dt>train_basis (可选，默认为 false):</dt>
-     *     <dd>执行是否训练基组中的可训练参数</dd>
      *   <dt>optimizer (可选):</dt>
      *     <dd>
      *       指定优化器的具体参数，包含：
@@ -375,8 +410,6 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
      *     <dd>指定 loss 函数中 l2 正则化的权重</dd>
      *   <dt>units (可选，默认为 'metal'):</dt>
      *     <dd>指定势函数的单位</dd>
-     *   <dt>train_basis (可选，默认为 false):</dt>
-     *     <dd>执行是否训练基组中的可训练参数</dd>
      *   <dt>basis (可选):</dt>
      *     <dd>
      *       指定基组的具体参数，包含：
@@ -648,18 +681,18 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
     }
     protected double calLoss(boolean aTest, boolean aFull, @Nullable Vector rLossDetail, @Nullable Vector rGrad) {
         return calLoss_(aTest, aTest ? mFullSliceTest : (aFull?mFullSliceTrain:mSliceTrain), rLossDetail, rGrad,
-                        mLossFuncEng);
+                        mLossFuncEng, mLossFuncForce, mLossFuncStress);
     }
     protected void calMAE(boolean aTest, Vector rMAE) {
         calLoss_(aTest, aTest?mFullSliceTest:mFullSliceTrain, rMAE, null,
-                 LOSS_ABSOLUTE);
+                 LOSS_ABSOLUTE, LOSS_ABSOLUTE, LOSS_ABSOLUTE);
         rMAE.multiply2this(mNormSigmaEng);
         rMAE.update(0, v -> v/mEnergyWeight);
         rMAE.update(1, v -> v/mForceWeight);
         rMAE.update(2, v -> v/mStressWeight);
     }
     private double calLoss_(boolean aTest, ISlice aSlice, @Nullable Vector rLossDetail, @Nullable Vector rGrad,
-                            ILossFunc aLossFuncEng) {
+                            ILossFunc aLossFuncEng, ILossFunc aLossFuncForce, ILossFunc aLossFuncStress) {
         final DataSet tData = aTest ? mTestData : mTrainData;
         final boolean tRequireGrad = rGrad!=null;
         if (aTest && tRequireGrad) throw new IllegalStateException();
@@ -670,19 +703,48 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
         }
         // 目前简单处理，在任何计算之前总是先更新一下参数
         mNNAP.updateParameters();
-        // 遍历统计总原子数
+        // 遍历统计有效数据数目
         final int tSliceSize = aSlice.size();
-        int tAtomSize = 0;
+        int tEngSize = 0, tForceSize = 0, tStressSize = 0;
         for (int si = 0; si < tSliceSize; ++si) {
             final int i = aSlice.get(si);
-            tAtomSize += tData.mAtomType.get(i).size();
+            if (!Double.isNaN(tData.mEng.get(i))) {
+                ++tEngSize;
+            }
+            if (mHasForce) {
+                Vector tFxReal = tData.mForceX.get(i);
+                if (tFxReal!=null) {
+                    tForceSize += tFxReal.size();
+                }
+            }
+            if (mHasStress) {
+                if (!Double.isNaN(tData.mStressXX.get(i))) {
+                    ++tStressSize;
+                }
+            }
         }
-        final int fAtomSize = tAtomSize;
-        List<Vector> rLossPar = VectorCache.getZeros(4, tNumThreads);
+        final int fEngSize = tEngSize, fForceSize = tForceSize, fStressSize = tStressSize;
+        List<Vector> rLossPar = VectorCache.getZeros(3, tNumThreads);
         mPool.parfor(tSliceSize, (si, threadID) -> {
             final int i = aSlice.get(si);
             Vector rLoss = rLossPar.get(threadID);
-            DoubleWrapper rLossGradEng = new DoubleWrapper(0.0);
+            
+            double tEngReal = tData.mEng.get(i);
+            final boolean tHasEng = !Double.isNaN(tEngReal);
+            
+            Vector tFxReal = null, tFyReal = null, tFzReal = null;
+            if (mHasForce) {
+                tFxReal = tData.mForceX.get(i); tFyReal = tData.mForceY.get(i); tFzReal = tData.mForceZ.get(i);
+            }
+            final boolean tHasForce = tFxReal!=null;
+            
+            double tSxxReal = Double.NaN, tSyyReal = Double.NaN, tSzzReal = Double.NaN;
+            double tSxyReal = Double.NaN, tSxzReal = Double.NaN, tSyzReal = Double.NaN;
+            if (mHasStress) {
+                tSxxReal = tData.mStressXX.get(i); tSyyReal = tData.mStressYY.get(i); tSzzReal = tData.mStressZZ.get(i);
+                tSxyReal = tData.mStressXY.get(i); tSxzReal = tData.mStressXZ.get(i); tSyzReal = tData.mStressYZ.get(i);
+            }
+            final boolean tHasStress = !Double.isNaN(tSxxReal);
             
             IntVector tAtomType = tData.mAtomType.get(i);
             IntVector tNumNei = tData.mNumNei.get(i);
@@ -692,33 +754,229 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
             DoubleCPointer[] tNlDy = tData.mNlDy.get(i);
             DoubleCPointer[] tNlDz = tData.mNlDz.get(i);
             
+            DoubleWrapper rBGradEng = new DoubleWrapper(0.0);
             List<GrowableDoubleCPointer> rCache = mCacheBuf.get(threadID);
             while (rCache.size() < tNumAtoms) rCache.add(new GrowableDoubleCPointer(1));
             
+            if (!tHasForce && !tHasStress) {
+                if (!tHasEng) return;
+                
+                double rEng = 0.0;
+                for (int k = 0; k < tNumAtoms; ++k) {
+                    final int cType = tAtomType.get(k);
+                    double tSubEng = mNNAP.forwardEnergy(threadID,
+                        tNlDx[k], tNlDy[k], tNlDz[k], tNlType[k],
+                        tNumNei.get(k), cType, rCache.get(k)
+                    );
+                    // 注意 nnap 内部获取能量会是准确值，这里需要再次归一化
+                    rEng += (tSubEng - mRefEngs.get(cType-1));
+                }
+                rEng /= tNumAtoms;
+                // 这样确保两者操作总是一致/等价的
+                rEng = (rEng - mNormMuEng) / mNormSigmaEng;
+                tEngReal = (tEngReal - mNormMuEng) / mNormSigmaEng;
+                double tLossEng = aLossFuncEng.call(rEng, tEngReal, rBGradEng);
+                rLoss.add(0, mEnergyWeight * tLossEng / fEngSize);
+                /// backward
+                if (!tRequireGrad) return;
+                double tBGradEng = mEnergyWeight * rBGradEng.value() / fEngSize;
+                tBGradEng /= (mNormSigmaEng * tNumAtoms);
+                for (int k = 0; k < tNumAtoms; ++k) {
+                    mNNAP.backwardEnergy(threadID,
+                        tBGradEng, tNlDx[k], tNlDy[k], tNlDz[k], tNlType[k],
+                        tNumNei.get(k), tAtomType.get(k), rCache.get(k)
+                    );
+                }
+                return;
+            }
+            IntCPointer[] tNl = tData.mNl.get(i);
+            double tVolume = tData.mVolume.get(i);
+            
+            DoubleWrapper rSubBGradFx = new DoubleWrapper(0.0), rSubBGradFy = new DoubleWrapper(0.0), rSubBGradFz = new DoubleWrapper(0.0);
+            DoubleWrapper rBGradSxx = new DoubleWrapper(0.0), rBGradSyy = new DoubleWrapper(0.0), rBGradSzz = new DoubleWrapper(0.0);
+            DoubleWrapper rBGradSxy = new DoubleWrapper(0.0), rBGradSxz = new DoubleWrapper(0.0), rBGradSyz = new DoubleWrapper(0.0);
+            
+            GrowableDoubleCPointer rAGradNlDx = mAGradNlDxBuf[threadID];
+            GrowableDoubleCPointer rAGradNlDy = mAGradNlDyBuf[threadID];
+            GrowableDoubleCPointer rAGradNlDz = mAGradNlDzBuf[threadID];
+            DoubleList rFx = mForceXBuf[threadID];
+            DoubleList rFy = mForceYBuf[threadID];
+            DoubleList rFz = mForceZBuf[threadID];
+            GrowableDoubleCPointer rBGradAGradNlDx = mBGradAGradNlDxBuf[threadID];
+            GrowableDoubleCPointer rBGradAGradNlDy = mBGradAGradNlDyBuf[threadID];
+            GrowableDoubleCPointer rBGradAGradNlDz = mBGradAGradNlDzBuf[threadID];
+            DoubleList rBGradFx = mBGradForceXBuf[threadID];
+            DoubleList rBGradFy = mBGradForceYBuf[threadID];
+            DoubleList rBGradFz = mBGradForceZBuf[threadID];
+            
             double rEng = 0.0;
+            if (tHasForce) {
+                rFx.clear(); rFx.addZeros(tNumAtoms);
+                rFy.clear(); rFy.addZeros(tNumAtoms);
+                rFz.clear(); rFz.addZeros(tNumAtoms);
+            }
+            double rSxx = 0.0, rSyy = 0.0, rSzz = 0.0, rSxy = 0.0, rSxz = 0.0, rSyz = 0.0;
             for (int k = 0; k < tNumAtoms; ++k) {
+                final int tNlSize = tNumNei.get(k);
                 final int cType = tAtomType.get(k);
-                double tSubEng = mNNAP.forwardEnergy(threadID,
-                    tNlDx[k], tNlDy[k], tNlDz[k], tNlType[k],
-                    tNumNei.get(k), cType, rCache.get(k)
+                IntCPointer tSubNl = tNl[k], tSubNlType = tNlType[k];
+                DoubleCPointer tSubNlDx = tNlDx[k], tSubNlDy = tNlDy[k], tSubNlDz = tNlDz[k];
+                
+                rAGradNlDx.ensureCapacity(tNlSize);
+                rAGradNlDy.ensureCapacity(tNlSize);
+                rAGradNlDz.ensureCapacity(tNlSize);
+                
+                double tSubEng = mNNAP.forwardEnergyForce(threadID,
+                    tSubNlDx, tSubNlDy, tSubNlDz, tSubNlType,
+                    tNlSize, cType, rCache.get(k),
+                    rAGradNlDx, rAGradNlDy, rAGradNlDz
                 );
                 // 注意 nnap 内部获取能量会是准确值，这里需要再次归一化
-                rEng += (tSubEng - mRefEngs.get(cType-1));
+                if (tHasEng) {
+                    rEng += (tSubEng - mRefEngs.get(cType-1));
+                }
+                // 这里累加来得到力和压力值
+                for (int j = 0; j < tNlSize; ++j) {
+                    double fx = rAGradNlDx.getAtD(j);
+                    double fy = rAGradNlDy.getAtD(j);
+                    double fz = rAGradNlDz.getAtD(j);
+                    int nlk = tSubNl.getAt(j);
+                    if (tHasForce) {
+                        rFx.set(k, rFx.get(k) - fx);
+                        rFy.set(k, rFy.get(k) - fy);
+                        rFz.set(k, rFz.get(k) - fz);
+                        rFx.set(nlk, rFx.get(nlk) + fx);
+                        rFy.set(nlk, rFy.get(nlk) + fy);
+                        rFz.set(nlk, rFz.get(nlk) + fz);
+                    }
+                    // cal stress here
+                    if (tHasStress) {
+                        double dx = tSubNlDx.getAtD(j);
+                        double dy = tSubNlDy.getAtD(j);
+                        double dz = tSubNlDz.getAtD(j);
+                        rSxx += dx*fx; rSyy += dy*fy; rSzz += dz*fz;
+                        rSxy += dx*fy; rSxz += dx*fz; rSyz += dy*fz;
+                    }
+                }
             }
-            rEng /= tNumAtoms;
-            // 这样确保两者操作总是一致/等价的
-            double tEngPred = (rEng - mNormMuEng) / mNormSigmaEng;
-            double tEngReal = (tData.mEng.get(i) - mNormMuEng) / mNormSigmaEng;
-            double tLossEng = aLossFuncEng.call(tEngPred, tEngReal, rLossGradEng);
-            rLoss.add(0, mEnergyWeight*tLossEng / tSliceSize);
+            // cal stress here
+            if (tHasStress) {
+                rSxx = -rSxx/tVolume; rSyy = -rSyy/tVolume; rSzz = -rSzz/tVolume;
+                rSxy = -rSxy/tVolume; rSxz = -rSxz/tVolume; rSyz = -rSyz/tVolume;
+            }
+            // 能量队归一化以及 loss 计算
+            if (tHasEng) {
+                rEng /= tNumAtoms;
+                rEng = (rEng - mNormMuEng) / mNormSigmaEng;
+                tEngReal = (tData.mEng.get(i) - mNormMuEng) / mNormSigmaEng;
+                double tLossEng = aLossFuncEng.call(rEng, tEngReal, rBGradEng);
+                rLoss.add(0, mEnergyWeight * tLossEng / fEngSize);
+            }
+            // 力和压力需要这样归一化
+            if (tHasForce) {
+                for (int k = 0; k < tNumAtoms; ++k) {
+                    rFx.set(k, rFx.get(k) / mNormSigmaEng);
+                    rFy.set(k, rFy.get(k) / mNormSigmaEng);
+                    rFz.set(k, rFz.get(k) / mNormSigmaEng);
+                }
+            }
+            if (tHasStress) {
+                rSxx /= mNormSigmaEng; rSyy /= mNormSigmaEng; rSzz /= mNormSigmaEng;
+                rSxy /= mNormSigmaEng; rSxz /= mNormSigmaEng; rSyz /= mNormSigmaEng;
+            }
+            // 力和压力 loss 计算
+            if (tHasForce) {
+                if (tRequireGrad) {
+                    rBGradFx.clear(); rBGradFx.addZeros(tNumAtoms);
+                    rBGradFy.clear(); rBGradFy.addZeros(tNumAtoms);
+                    rBGradFz.clear(); rBGradFz.addZeros(tNumAtoms);
+                }
+                double tLossForce = 0.0;
+                for (int k = 0; k < tNumAtoms; ++k) {
+                    tLossForce += aLossFuncForce.call(rFx.get(k), tFxReal.get(k)/mNormSigmaEng, rSubBGradFx);
+                    tLossForce += aLossFuncForce.call(rFy.get(k), tFyReal.get(k)/mNormSigmaEng, rSubBGradFy);
+                    tLossForce += aLossFuncForce.call(rFz.get(k), tFzReal.get(k)/mNormSigmaEng, rSubBGradFz);
+                    if (tRequireGrad) {
+                        rBGradFx.set(k, rSubBGradFx.value());
+                        rBGradFy.set(k, rSubBGradFy.value());
+                        rBGradFz.set(k, rSubBGradFz.value());
+                    }
+                }
+                rLoss.add(1, mForceWeight * tLossForce / (fForceSize*3));
+            }
+            if (tHasStress) {
+                double tLossStress = 0.0;
+                tLossStress += aLossFuncStress.call(rSxx, tSxxReal/mNormSigmaEng, rBGradSxx);
+                tLossStress += aLossFuncStress.call(rSyy, tSyyReal/mNormSigmaEng, rBGradSyy);
+                tLossStress += aLossFuncStress.call(rSzz, tSzzReal/mNormSigmaEng, rBGradSzz);
+                tLossStress += aLossFuncStress.call(rSxy, tSxyReal/mNormSigmaEng, rBGradSxy);
+                tLossStress += aLossFuncStress.call(rSxz, tSxzReal/mNormSigmaEng, rBGradSxz);
+                tLossStress += aLossFuncStress.call(rSyz, tSyzReal/mNormSigmaEng, rBGradSyz);
+                rLoss.add(2, mStressWeight * tLossStress / (fStressSize*6));
+            }
             /// backward
             if (!tRequireGrad) return;
-            double tLossGradEng = mEnergyWeight*rLossGradEng.value() / tSliceSize;
-            tLossGradEng /= (mNormSigmaEng * tNumAtoms);
+            double tBGradEng = 0.0;
+            if (tHasEng) {
+                tBGradEng = mEnergyWeight * rBGradEng.value() / fEngSize;
+                tBGradEng /= (mNormSigmaEng * tNumAtoms);
+            }
+            if (tHasForce) {
+                final double tMul = mForceWeight / (mNormSigmaEng * fForceSize*3);
+                for (int k = 0; k < tNumAtoms; ++k) {
+                    rBGradFx.set(k, tMul*rBGradFx.get(k));
+                    rBGradFy.set(k, tMul*rBGradFy.get(k));
+                    rBGradFz.set(k, tMul*rBGradFz.get(k));
+                }
+            }
+            double tBGradSxx = 0.0, tBGradSyy = 0.0, tBGradSzz = 0.0;
+            double tBGradSxy = 0.0, tBGradSxz = 0.0, tBGradSyz = 0.0;
+            if (tHasStress) {
+                final double tMul = -mStressWeight / (mNormSigmaEng * tVolume * fStressSize*6);
+                tBGradSxx = tMul*rBGradSxx.value(); tBGradSyy = tMul*rBGradSyy.value(); tBGradSzz = tMul*rBGradSzz.value();
+                tBGradSxy = tMul*rBGradSxy.value(); tBGradSxz = tMul*rBGradSxz.value(); tBGradSyz = tMul*rBGradSyz.value();
+            }
             for (int k = 0; k < tNumAtoms; ++k) {
-                mNNAP.backwardEnergy(threadID,
-                    tLossGradEng, tNlDx[k], tNlDy[k], tNlDz[k], tNlType[k],
-                    tNumNei.get(k), tAtomType.get(k), rCache.get(k)
+                final int tNlSize = tNumNei.get(k);
+                final int cType = tAtomType.get(k);
+                IntCPointer tSubNl = tNl[k], tSubNlType = tNlType[k];
+                DoubleCPointer tSubNlDx = tNlDx[k], tSubNlDy = tNlDy[k], tSubNlDz = tNlDz[k];
+                
+                rBGradAGradNlDx.ensureCapacity(tNlSize);
+                rBGradAGradNlDy.ensureCapacity(tNlSize);
+                rBGradAGradNlDz.ensureCapacity(tNlSize);
+                // 反向传播力和压力的构造过程
+                double tBGradFxk = 0.0, tBGradFyk = 0.0, tBGradFzk = 0.0;
+                if (tHasForce) {
+                    tBGradFxk = rBGradFx.get(k);
+                    tBGradFyk = rBGradFy.get(k);
+                    tBGradFzk = rBGradFz.get(k);
+                }
+                for (int j = 0; j < tNlSize; ++j) {
+                    int nlk = tSubNl.getAt(j);
+                    double rSubBGradAGradNlDx = 0.0, rSubBGradAGradNlDy = 0.0, rSubBGradAGradNlDz = 0.0;
+                    if (tHasForce) {
+                        rSubBGradAGradNlDx += rBGradFx.get(nlk) - tBGradFxk;
+                        rSubBGradAGradNlDy += rBGradFy.get(nlk) - tBGradFyk;
+                        rSubBGradAGradNlDz += rBGradFz.get(nlk) - tBGradFzk;
+                    }
+                    // stress loss grad here
+                    if (tHasStress) {
+                        double dx = tSubNlDx.getAtD(j);
+                        double dy = tSubNlDy.getAtD(j);
+                        double dz = tSubNlDz.getAtD(j);
+                        rSubBGradAGradNlDx += dx*tBGradSxx;
+                        rSubBGradAGradNlDy += dy*tBGradSyy + dx*tBGradSxy;
+                        rSubBGradAGradNlDz += dz*tBGradSzz + dx*tBGradSxz + dy*tBGradSyz;
+                    }
+                    rBGradAGradNlDx.putAtD(j, rSubBGradAGradNlDx);
+                    rBGradAGradNlDy.putAtD(j, rSubBGradAGradNlDy);
+                    rBGradAGradNlDz.putAtD(j, rSubBGradAGradNlDz);
+                }
+                mNNAP.backwardEnergyForce(threadID,
+                    tBGradEng, tSubNlDx, tSubNlDy, tSubNlDz, tSubNlType,
+                    tNlSize, cType, rCache.get(k),
+                    rBGradAGradNlDx, rBGradAGradNlDy, rBGradAGradNlDz
                 );
             }
         });
@@ -739,8 +997,9 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
     }
     
     
-    protected void addData_(IAtomData aAtomData, double aEnergy, DataSet rData) {
+    private void addData_(IAtomData aAtomData, double aEnergy, @Nullable IMatrix aForces, @Nullable IVector aStress, DataSet rData) {
         rData.mAtomData.add(aAtomData);
+        final boolean tHasEng = !Double.isNaN(aEnergy);
         // 简单处理（不需要近邻列表）的数据添加在这里实现
         IntUnaryOperator tTypeMap = typeMap(aAtomData);
         final int tNumAtoms = aAtomData.natoms();
@@ -749,22 +1008,125 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
             int tType = tTypeMap.applyAsInt(aAtomData.atom(i).type());
             rAtomType.add(tType);
             // 计算相对能量值
-            aEnergy -= mRefEngs.get(tType-1);
+            if (tHasEng) {
+                aEnergy -= mRefEngs.get(tType-1);
+            }
         }
         rData.mAtomType.add(rAtomType.asVec());
-        rData.mEng.append(aEnergy/tNumAtoms);
+        rData.mVolume.append(aAtomData.volume());
+        rData.mEng.append(tHasEng ? (aEnergy/tNumAtoms) : Double.NaN);
+        // 添加力
+        if (mHasForce) {
+            if (aForces==null) {
+                rData.mForceX.add(null);
+                rData.mForceY.add(null);
+                rData.mForceZ.add(null);
+            } else {
+                DoubleList rForceX = new DoubleList(tNumAtoms);
+                DoubleList rForceY = new DoubleList(tNumAtoms);
+                DoubleList rForceZ = new DoubleList(tNumAtoms);
+                for (int i = 0; i < tNumAtoms; ++i) {
+                    rForceX.add(aForces.get(i, 0));
+                    rForceY.add(aForces.get(i, 1));
+                    rForceZ.add(aForces.get(i, 2));
+                }
+                rData.mForceX.add(rForceX.asVec());
+                rData.mForceY.add(rForceY.asVec());
+                rData.mForceZ.add(rForceZ.asVec());
+            }
+        }
+        // 应力
+        if (mHasStress) {
+            if (aStress==null) {
+                rData.mStressXX.add(Double.NaN);
+                rData.mStressYY.add(Double.NaN);
+                rData.mStressZZ.add(Double.NaN);
+                rData.mStressXY.add(Double.NaN);
+                rData.mStressXZ.add(Double.NaN);
+                rData.mStressYZ.add(Double.NaN);
+            } else {
+                rData.mStressXX.add(aStress.get(0));
+                rData.mStressYY.add(aStress.get(1));
+                rData.mStressZZ.add(aStress.get(2));
+                rData.mStressXY.add(aStress.get(3));
+                rData.mStressXZ.add(aStress.get(4));
+                rData.mStressYZ.add(aStress.get(5));
+            }
+        }
         ++rData.mSize;
+    }
+    private void validForceData_() {
+        if (mHasForce) return;
+        for (int i = 0; i < mTrainData.mSize; ++i) {
+            mTrainData.mForceX.add(null);
+            mTrainData.mForceY.add(null);
+            mTrainData.mForceZ.add(null);
+        }
+        if (mHasTest) {
+            for (int i = 0; i < mTestData.mSize; ++i) {
+                mTestData.mForceX.add(null);
+                mTestData.mForceY.add(null);
+                mTestData.mForceZ.add(null);
+            }
+        }
+        mHasForce = true;
+    }
+    private void validStressData_() {
+        if (mHasStress) return;
+        for (int i = 0; i < mTrainData.mSize; ++i) {
+            mTrainData.mStressXX.add(Double.NaN);
+            mTrainData.mStressYY.add(Double.NaN);
+            mTrainData.mStressZZ.add(Double.NaN);
+            mTrainData.mStressXY.add(Double.NaN);
+            mTrainData.mStressXZ.add(Double.NaN);
+            mTrainData.mStressYZ.add(Double.NaN);
+        }
+        if (mHasTest) {
+            for (int i = 0; i < mTestData.mSize; ++i) {
+                mTestData.mStressXX.add(Double.NaN);
+                mTestData.mStressYY.add(Double.NaN);
+                mTestData.mStressZZ.add(Double.NaN);
+                mTestData.mStressXY.add(Double.NaN);
+                mTestData.mStressXZ.add(Double.NaN);
+                mTestData.mStressYZ.add(Double.NaN);
+            }
+        }
+        mHasStress = true;
     }
     /**
      * 增加一个训练集数据
      * @param aAtomData 原子结构数据
      * @param aEnergy 此原子结构数据的总能量
+     * @param aForces 可选的每个原子的力，按行排列，每列对应 x,y,z 方向的力
+     * @param aStress 可选的原子结构数据的应力值，按照 {@code [xx, yy, zz, xy, xz, yz]} 顺序排列
      * @see IAtomData
      * @see IMatrix
      */
-    public void addTrainData(IAtomData aAtomData, double aEnergy) {
+    public void addTrainData(IAtomData aAtomData, double aEnergy, @Nullable IMatrix aForces, @Nullable IVector aStress) {
+        if (!mHasForce && aForces!=null) {
+            // 现在支持部分数据缺省，因此这里需要补全缺省的数据占位
+            validForceData_();
+        }
+        if (!mHasStress && aStress!=null) {
+            // 现在支持部分数据缺省，因此这里需要补全缺省的数据占位
+            validStressData_();
+        }
         // 添加数据
-        addData_(aAtomData, aEnergy, mTrainData);
+        addData_(aAtomData, aEnergy, aForces, aStress, mTrainData);
+    }
+    /**
+     * {@code addTrainData(aAtomData, aEnergy, aForces, null)}
+     * @see #addTrainData(IAtomData, double, IMatrix, IVector)
+     */
+    public void addTrainData(IAtomData aAtomData, double aEnergy, IMatrix aForces) {
+        addTrainData(aAtomData, aEnergy, aForces, null);
+    }
+    /**
+     * {@code addTrainData(aAtomData, aEnergy, null, null)}
+     * @see #addTrainData(IAtomData, double, IMatrix, IVector)
+     */
+    public void addTrainData(IAtomData aAtomData, double aEnergy) {
+        addTrainData(aAtomData, aEnergy, null, null);
     }
     /**
      * 增加一个测试集数据
@@ -773,11 +1135,33 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
      * @see IAtomData
      * @see IMatrix
      */
-    public void addTestData(IAtomData aAtomData, double aEnergy) {
-        // 添加数据
-        addData_(aAtomData, aEnergy, mTestData);
+    public void addTestData(IAtomData aAtomData, double aEnergy, @Nullable IMatrix aForces, @Nullable IVector aStress) {
+        if (!mHasForce && aForces!=null) {
+            // 现在支持部分数据缺省，因此这里需要补全缺省的数据占位
+            validForceData_();
+        }
+        if (!mHasStress && aStress!=null) {
+            // 现在支持部分数据缺省，因此这里需要补全缺省的数据占位
+            validStressData_();
+        }
+        addData_(aAtomData, aEnergy, aForces, aStress, mTestData);
         if (!mHasTest) mHasTest = true;
     }
+    /**
+     * {@code addTestData(aAtomData, aEnergy, aForces, null)}
+     * @see #addTestData(IAtomData, double, IMatrix, IVector)
+     */
+    public void addTestData(IAtomData aAtomData, double aEnergy, IMatrix aForces) {
+        addTestData(aAtomData, aEnergy, aForces, null);
+    }
+    /**
+     * {@code addTestData(aAtomData, aEnergy, null, null)}
+     * @see #addTestData(IAtomData, double, IMatrix, IVector)
+     */
+    public void addTestData(IAtomData aAtomData, double aEnergy) {
+        addTestData(aAtomData, aEnergy, null, null);
+    }
+    
     
     protected void initDataNl() {
         final int tTrainSize = mTrainData.mAtomData.size();
@@ -964,7 +1348,16 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
     }
     protected void initNormEng() {
         // 这里采用中位数和上下四分位数来归一化能量
-        Vector tSortedEng = mTrainData.mEng.copy2vec();
+        // 手动遍历拷贝来去除掉 nan
+        final Vector.Builder rBuilder = Vector.builder();
+        mTrainData.mEng.forEach(v -> {
+            if (!Double.isNaN(v)) rBuilder.add(v);
+        });
+        Vector tSortedEng = rBuilder.build();
+        if (tSortedEng.size() < 10) {
+            UT.Code.warning("too less input energy ("+tSortedEng.size()+"), check your input or dataset.");
+            return;
+        }
         tSortedEng.sort();
         int tSize = tSortedEng.size();
         int tSize2 = tSize/2;
@@ -1019,6 +1412,69 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
             }
         }
         LogicalVectorCache.returnVec(tHasData);
+    }
+    
+    
+    /**
+     * 统计势函数的计算力的速度，会强制串行来保证结果有效性
+     * <p>
+     * 一般需要二次调用确保预热来得到正确的测量结果
+     *
+     * @param aTest 是否使用测试集进行速度统计，默认在有测试集时总是使用测试集
+     * @param aMaxTimeSecond 统计的最长时间，单位为秒
+     * @return 统计得到的平均每毫秒（ms）调用的原子力的次数
+     */
+    public double statSpeed(boolean aTest, double aMaxTimeSecond) {
+        DataSet tData = aTest ? mTestData : mTrainData;
+        final int tDataSize = tData.mSize;
+        IntVector tSlice = Vectors.range(tDataSize);
+        tSlice.shuffle();
+        
+        GrowableDoubleCPointer rAGradNlDx = mAGradNlDxBuf[0];
+        GrowableDoubleCPointer rAGradNlDy = mAGradNlDyBuf[0];
+        GrowableDoubleCPointer rAGradNlDz = mAGradNlDzBuf[0];
+        
+        AccumulatedTimer tTimer = new AccumulatedTimer();
+        long tSteps = 0;
+        while (tTimer.get() < aMaxTimeSecond) for (int si = 0; si < tDataSize; ++si) {
+            final int i = tSlice.get(si);
+            IntVector tNumNei = tData.mNumNei.get(i);
+            IntVector tAtomType = tData.mAtomType.get(i);
+            final int tNumAtoms = tAtomType.size();
+            IntCPointer[] tNlType = tData.mNlType.get(i);
+            DoubleCPointer[] tNlDx = tData.mNlDx.get(i);
+            DoubleCPointer[] tNlDy = tData.mNlDy.get(i);
+            DoubleCPointer[] tNlDz = tData.mNlDz.get(i);
+            
+            tTimer.from();
+            for (int k = 0; k < tNumAtoms; ++k) {
+                int tNlSize = tNumNei.get(k);
+                rAGradNlDx.ensureCapacity(tNlSize);
+                rAGradNlDy.ensureCapacity(tNlSize);
+                rAGradNlDz.ensureCapacity(tNlSize);
+                
+                mNNAP.calEnergyForce(
+                    0, tNlDx[k], tNlDy[k], tNlDz[k], tNlType[k],
+                    tNlSize, tAtomType.get(k),
+                    rAGradNlDx, rAGradNlDy, rAGradNlDz
+                );
+            }
+            tTimer.to();
+            tSteps += tNumAtoms;
+            if (tTimer.get() >= aMaxTimeSecond) break;
+        }
+        return tSteps / (tTimer.get()*1000);
+    }
+    /**
+     * 统计势函数的计算力的速度，会强制串行来保证结果有效性
+     * <p>
+     * 一般需要二次调用确保预热来得到正确的测量结果
+     *
+     * @param aMaxTimeSecond 统计的最长时间，单位为秒
+     * @return 统计得到的平均每毫秒（ms）调用的原子力的次数
+     */
+    public double statSpeed(double aMaxTimeSecond) {
+        return statSpeed(mHasTest, aMaxTimeSecond);
     }
     
     
@@ -1096,15 +1552,16 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
         }
         // 打印训练结果信息
         if (!aPrintLog) return;
-        Vector tLossDetail = VectorCache.getVec(4);
+        Vector tLossDetail = VectorCache.getVec(3);
         double tLossTot = calLossDetail(false, tLossDetail);
         double tLossE = tLossDetail.get(0);
         double tLossF = tLossDetail.get(1);
         double tLossS = tLossDetail.get(2);
-        double tLossL2 = tLossDetail.get(3);
         VectorCache.returnVec(tLossDetail);
         System.out.printf("Loss-E : %.4g (%s)\n", tLossE, IO.Text.percent(tLossE/tLossTot));
-        Vector tMAE = VectorCache.getVec(4);
+        if (mHasForce) System.out.printf("Loss-F : %.4g (%s)\n", tLossF, IO.Text.percent(tLossF/tLossTot));
+        if (mHasStress) System.out.printf("Loss-S : %.4g (%s)\n", tLossS, IO.Text.percent(tLossS/tLossTot));
+        Vector tMAE = VectorCache.getVec(3);
         calMAE(false, tMAE);
         double tMAE_E = tMAE.get(0);
         double tMAE_F = tMAE.get(1);
@@ -1116,18 +1573,24 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
             switch(tUnits) {
             case "metal": {
                 System.out.printf("MAE-E: %.4g meV\n", tMAE_E*1000);
+                if (mHasForce) System.out.printf("MAE-F: %.4g meV/A\n", tMAE_F*1000);
+                if (mHasStress) System.out.printf("MAE-S: %.4g meV/A^3\n", tMAE_S*1000);
                 break;
             }
             case "real":{
                 System.out.printf("MAE-E: %.4g kcal/mol\n", tMAE_E);
+                if (mHasForce) System.out.printf("MAE-F: %.4g kcal/mol/A\n", tMAE_F);
+                if (mHasStress) System.out.printf("MAE-S: %.4g kcal/mol/A^3\n", tMAE_S);
                 break;
             }
             default: {
                 System.out.printf("MAE-E: %.4g\n", tMAE_E);
+                if (mHasForce) System.out.printf("MAE-F: %.4g\n", tMAE_F);
+                if (mHasStress) System.out.printf("MAE-S: %.4g\n", tMAE_S);
                 break;
             }}
         } else {
-            Vector tTestMAE = VectorCache.getVec(4);
+            Vector tTestMAE = VectorCache.getVec(3);
             calMAE(true, tTestMAE);
             double tTestMAE_E = tTestMAE.get(0);
             double tTestMAE_F = tTestMAE.get(1);
@@ -1136,22 +1599,36 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
             switch(tUnits) {
             case "metal": {
                 System.out.printf("MAE-E: %.4g meV | %.4g meV\n", tMAE_E*1000, tTestMAE_E*1000);
+                if (mHasForce) System.out.printf("MAE-F: %.4g meV/A | %.4g meV/A\n", tMAE_F*1000, tTestMAE_F*1000);
+                if (mHasStress) System.out.printf("MAE-S: %.4g meV/A^3 | %.4g meV/A^3\n", tMAE_S*1000, tTestMAE_S*1000);
                 break;
             }
             case "real":{
                 System.out.printf("MAE-E: %.4g kcal/mol | %.4g kcal/mol\n", tMAE_E, tTestMAE_E);
+                if (mHasForce) System.out.printf("MAE-F: %.4g kcal/mol/A | %.4g kcal/mol/A\n", tMAE_F, tTestMAE_F);
+                if (mHasStress) System.out.printf("MAE-S: %.4g kcal/mol/A^3 | %.4g kcal/mol/A^3\n", tMAE_S, tTestMAE_S);
                 break;
             }
             default: {
                 System.out.printf("MAE-E: %.4g | %.4g\n", tMAE_E, tTestMAE_E);
+                if (mHasForce) System.out.printf("MAE-F: %.4g | %.4g\n", tMAE_F, tTestMAE_F);
+                if (mHasStress) System.out.printf("MAE-S: %.4g | %.4g\n", tMAE_S, tTestMAE_S);
                 break;
             }}
         }
         // 打印参数数目信息
         System.out.printf("N-Paras: %,d\n", mNNAP.parameters().size());
+        // 测试速度并打印速度信息
+        statSpeed(1.0); // 预热 1 s
+        double tSpeed = statSpeed(2.0);
+        System.out.printf("Speed: %.4g atom-steps/ms\n", tSpeed);
     }
-    public void train(int aEpochs, boolean aEarlyStop) {train(aEpochs, aEarlyStop, true);}
-    public void train(int aEpochs) {train(aEpochs, true);}
+    public void train(int aEpochs, boolean aEarlyStop) {
+        train(aEpochs, aEarlyStop, true);
+    }
+    public void train(int aEpochs) {
+        train(aEpochs, true);
+    }
     
     
     /** 保存训练的势函数 */
