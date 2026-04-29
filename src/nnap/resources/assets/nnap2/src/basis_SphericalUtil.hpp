@@ -240,8 +240,8 @@ static NNAP_DEVICE void gradAnlm2Rnp(flt_t *aGradAnlm, flt_t *aY, flt_t *rGradRn
     }
 }
 template <int SIZE_NP, int LMAX, int REQUIRE_CACHE>
-static NNAP_DEVICE void gradAnlm2nlj(flt_t *aGradAnlm, flt_t *rGradY, flt_t *aY, flt_t *rGradRnp, flt_t *aRnp,
-                                     flt_t *aRnpGrad, flt_t *aYPtheta, flt_t *aYPphi,
+static NNAP_DEVICE void gradAnlm2nlj(flt_t *aGradAnlm, flt_t *aY, flt_t *rGradY,
+                                     flt_t *aRnp, flt_t *rGradRnp, flt_t *aRnpGrad, flt_t *aYPtheta, flt_t *aYPphi,
                                      flt_t &rGradj, flt_t &rGradThetaj, flt_t &rGradPhij) noexcept {
     constexpr int tLMAll = (LMAX+1)*(LMAX+1);
     flt_t *tGradAnlm = aGradAnlm;
@@ -271,8 +271,17 @@ static NNAP_DEVICE void gradAnlm2nlj(flt_t *aGradAnlm, flt_t *rGradY, flt_t *aY,
     rGradPhij += tGradPhij;
 }
 template <int SIZE_NP, int LMAX>
-static NNAP_DEVICE void gradAnlm2nljWt(flt_t *aGradAnlm, flt_t *aGradAnlmWt, flt_t aWt, flt_t *rGradY, flt_t *aY, flt_t *aRnp,
-                                       flt_t *aRnpGrad, flt_t *aYPtheta, flt_t *aYPphi,
+static inline NNAP_DEVICE void gradAnlm2nlj(flt_t *aGradAnlm, flt_t *aY, flt_t *rGradY,
+                                     flt_t *aRnp, flt_t *aRnpGrad, flt_t *aYPtheta, flt_t *aYPphi,
+                                     flt_t &rGradj, flt_t &rGradThetaj, flt_t &rGradPhij) noexcept {
+    gradAnlm2nlj<SIZE_NP, LMAX, FALSE>(
+        aGradAnlm, aY, rGradY, aRnp, NULL, aRnpGrad, aYPtheta, aYPphi,
+        rGradj, rGradThetaj, rGradPhij
+    );
+}
+template <int SIZE_NP, int LMAX>
+static NNAP_DEVICE void gradAnlm2nljWt(flt_t *aGradAnlm, flt_t *aGradAnlmWt, flt_t aWt, flt_t *aY, flt_t *rGradY,
+                                       flt_t *aRnp, flt_t *aRnpGrad, flt_t *aYPtheta, flt_t *aYPphi,
                                        flt_t &rGradj, flt_t &rGradThetaj, flt_t &rGradPhij) noexcept {
     constexpr int tLMAll = (LMAX+1)*(LMAX+1);
     flt_t *tGradAnlm = aGradAnlm;
@@ -301,44 +310,63 @@ static NNAP_DEVICE void gradAnlm2nljWt(flt_t *aGradAnlm, flt_t *aGradAnlmWt, flt
     rGradPhij += tGradPhij;
 }
 
-template <int SIZE_NP, int LMAX>
-static NNAP_DEVICE void gradGradNlj2Anlm(flt_t *rGradGradAnlm, flt_t *rGradGradY, flt_t *aY, flt_t *aRnp,
-                                         flt_t *aRnpGrad, flt_t *aYPtheta, flt_t *aYPphi,
-                                         flt_t aGradGradj, flt_t aGradGradThetaj, flt_t aGradGradPhij) noexcept {
+template <int SIZE_NP, int LMAX, int GRAD_RNP>
+static NNAP_DEVICE void gradGradNlj2Anlm(flt_t *aAGradAnlm, flt_t *rBGradAGradAnlm, flt_t *aY, flt_t *rBGradAGradY,
+                                         flt_t *aRnp, flt_t *rBGradRnp, flt_t *aRnpGrad, flt_t *aYPtheta, flt_t *aYPphi,
+                                         flt_t aBGradAGradj, flt_t aBGradAGradThetaj, flt_t aBGradAGradPhij) noexcept {
     constexpr int tLMAll = (LMAX+1)*(LMAX+1);
     for (int k = 0; k < tLMAll; ++k) {
-        rGradGradY[k] += aGradGradThetaj*aYPtheta[k] + aGradGradPhij*aYPphi[k];
+        rBGradAGradY[k] += aBGradAGradThetaj*aYPtheta[k] + aBGradAGradPhij*aYPphi[k];
     }
-    flt_t *tGradGradAnlm = rGradGradAnlm;
+    flt_t *tAGradAnlm = aAGradAnlm;
+    flt_t *tBGradAGradAnlm = rBGradAGradAnlm;
     for (int np = 0; np < SIZE_NP; ++np) {
-        const flt_t tGradGradRnp = aGradGradj*aRnpGrad[np];
+        const flt_t tBGradAGradRnp = aBGradAGradj*aRnpGrad[np];
         const flt_t tRnpnp = aRnp[np];
+        flt_t tBGradRnp = ZERO;
         for (int k = 0; k < tLMAll; ++k) {
-            tGradGradAnlm[k] += rGradGradY[k]*tRnpnp + tGradGradRnp*aY[k];
+            const flt_t subBGradAGradY = rBGradAGradY[k];
+            tBGradAGradAnlm[k] += subBGradAGradY*tRnpnp + tBGradAGradRnp*aY[k];
+            if (GRAD_RNP) {
+                tBGradRnp += subBGradAGradY*tAGradAnlm[k];
+            }
         }
-        tGradGradAnlm += tLMAll;
+        if (GRAD_RNP) {
+            rBGradRnp[np] += tBGradRnp;
+            tAGradAnlm += tLMAll;
+        }
+        tBGradAGradAnlm += tLMAll;
     }
 }
 template <int SIZE_NP, int LMAX>
-static NNAP_DEVICE void gradGradNlj2AnlmWt(flt_t *rGradGradAnlm, flt_t *rGradGradAnlmWt, flt_t aWt, flt_t *rGradGradY, flt_t *aY, flt_t *aRnp,
-                                           flt_t *aRnpGrad, flt_t *aYPtheta, flt_t *aYPphi,
-                                           flt_t aGradGradj, flt_t aGradGradThetaj, flt_t aGradGradPhij) noexcept {
+static NNAP_DEVICE void gradGradNlj2Anlm(flt_t *rBGradAGradAnlm, flt_t *aY, flt_t *rBGradAGradY,
+                                         flt_t *aRnp, flt_t *aRnpGrad, flt_t *aYPtheta, flt_t *aYPphi,
+                                         flt_t aBGradAGradj, flt_t aBGradAGradThetaj, flt_t aBGradAGradPhij) noexcept {
+gradGradNlj2Anlm<SIZE_NP, LMAX, FALSE>(
+    NULL, rBGradAGradAnlm, aY, rBGradAGradY, aRnp, NULL, aRnpGrad, aYPtheta, aYPphi,
+    aBGradAGradj, aBGradAGradThetaj, aBGradAGradPhij
+);
+}
+template <int SIZE_NP, int LMAX>
+static NNAP_DEVICE void gradGradNlj2AnlmWt(flt_t *rBGradAGradAnlm, flt_t *rBGradAGradAnlmWt, flt_t aWt, flt_t *aY, flt_t *rBGradAGradY,
+                                           flt_t *aRnp, flt_t *aRnpGrad, flt_t *aYPtheta, flt_t *aYPphi,
+                                           flt_t aBGradAGradj, flt_t aBGradAGradThetaj, flt_t aBGradAGradPhij) noexcept {
     constexpr int tLMAll = (LMAX+1)*(LMAX+1);
     for (int k = 0; k < tLMAll; ++k) {
-        rGradGradY[k] += aGradGradThetaj*aYPtheta[k] + aGradGradPhij*aYPphi[k];
+        rBGradAGradY[k] += aBGradAGradThetaj*aYPtheta[k] + aBGradAGradPhij*aYPphi[k];
     }
-    flt_t *tGradGradAnlm = rGradGradAnlm;
-    flt_t *tGradGradAnlmWt = rGradGradAnlmWt;
+    flt_t *tBGradAGradAnlm = rBGradAGradAnlm;
+    flt_t *tBGradAGradAnlmWt = rBGradAGradAnlmWt;
     for (int np = 0; np < SIZE_NP; ++np) {
-        const flt_t tGradGradRnp = aGradGradj*aRnpGrad[np];
+        const flt_t tBGradAGradRnp = aBGradAGradj*aRnpGrad[np];
         const flt_t tRnpnp = aRnp[np];
         for (int k = 0; k < tLMAll; ++k) {
-            const flt_t tRHS = rGradGradY[k]*tRnpnp + tGradGradRnp*aY[k];
-            tGradGradAnlm[k] += tRHS;
-            tGradGradAnlmWt[k] += aWt*tRHS;
+            const flt_t tRHS = rBGradAGradY[k]*tRnpnp + tBGradAGradRnp*aY[k];
+            tBGradAGradAnlm[k] += tRHS;
+            tBGradAGradAnlmWt[k] += aWt*tRHS;
         }
-        tGradGradAnlm += tLMAll;
-        tGradGradAnlmWt += tLMAll;
+        tBGradAGradAnlm += tLMAll;
+        tBGradAGradAnlmWt += tLMAll;
     }
 }
 

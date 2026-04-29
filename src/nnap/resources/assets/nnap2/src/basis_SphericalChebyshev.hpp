@@ -90,12 +90,14 @@ static NNAP_DEVICE void sphForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int
     }
 }
 
-template <int WTYPE, int NMAX, int LMAXMAX, int SIZE_NP, int GRAD_PARAM, int REQUIRE_CACHE>
+template <int WTYPE, int NMAX, int LMAXMAX, int SIZE_NP, int GRAD_PARAM, int USE_BB, int REQUIRE_CACHE>
 static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aAGradAnlm,
                                      flt_t *rAGradNlDx, flt_t *rAGradNlDy, flt_t *rAGradNlDz,
-                                     flt_t **aForwardCache, flt_t **rBackwardCache,
+                                     flt_t **aForwardCache, flt_t **rBackwardCache, flt_t **rBackwardBackwardCache,
                                      flt_t aRCut, flt_t *aParams, flt_t *rAGradParams) {
     static_assert(!(GRAD_PARAM && REQUIRE_CACHE), "INVALID STATE");
+    static_assert(!(USE_BB && REQUIRE_CACHE), "INVALID STATE");
+    static_assert(!(!GRAD_PARAM && USE_BB), "INVALID STATE");
     if (GRAD_PARAM) {
         // no param
         if (WTYPE!=WTYPE_RFUSE && WTYPE!=WTYPE_FUSE && WTYPE!=WTYPE_EXFUSE) return;
@@ -117,8 +119,12 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
         rNlAGradRnp = *rBackwardCache; *rBackwardCache += aNeiNum*SIZE_NP;
         rNlYPtheta = *rBackwardCache; *rBackwardCache += aNeiNum*tLMAll;
         rNlYPphi = *rBackwardCache; *rBackwardCache += aNeiNum*tLMAll;
+    } else
+    if (USE_BB) {
+        rNlAGradRnp = *rBackwardBackwardCache; *rBackwardBackwardCache += aNeiNum*SIZE_NP;
     }
-    flt_t bAGradRnp[GRAD_PARAM ? SIZE_NP : 1]; flt_t *rAGradRnp = GRAD_PARAM ? bAGradRnp : NULL;
+    flt_t bAGradRnp[(GRAD_PARAM && !USE_BB) ? SIZE_NP : 1];
+    flt_t *rAGradRnp = (GRAD_PARAM && !USE_BB) ? bAGradRnp : NULL;
     flt_t rCheby2[NMAX+1];
     flt_t rAGradY[tLMAll];
     // loop for neighbor
@@ -158,7 +164,11 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
             const int tParamShift = (type-1)*(SIZE_NP*(NMAX+1));
             if (GRAD_PARAM) {
                 // init grad Rnp here
-                fill<SIZE_NP>(rAGradRnp, ZERO);
+                if (USE_BB) {
+                    rAGradRnp = rNlAGradRnp + j*SIZE_NP;
+                } else {
+                    fill<SIZE_NP>(rAGradRnp, ZERO);
+                }
                 gradAnlm2Rnp<SIZE_NP, LMAXMAX>(aAGradAnlm, tY, rAGradRnp);
                 backwardRnp<NMAX, SIZE_NP>(rAGradRnp, tRn, rAGradParams+tParamShift);
             } else {
@@ -173,28 +183,28 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
                 if (REQUIRE_CACHE) rRnpGrad = rNlRnpGrad + j*SIZE_NP;
                 calRnp<NMAX, SIZE_NP>(rRnpGrad, rRnGrad, aParams+tParamShift);
                 gradAnlm2nlj<SIZE_NP, LMAXMAX, REQUIRE_CACHE>(
-                    aAGradAnlm, rAGradY, tY, rAGradRnp, tRnp, rRnpGrad, rYPtheta, rYPphi,
+                    aAGradAnlm, tY, rAGradY, tRnp, rAGradRnp, rRnpGrad, rYPtheta, rYPphi,
                     rAGradj, rAGradThetaj, rAGradPhij
                 );
             }
         } else
         if (WTYPE==WTYPE_NONE) {
-            gradAnlm2nlj<NMAX+1, LMAXMAX, FALSE>(
-                aAGradAnlm, rAGradY, tY, NULL, tRn, rRnGrad, rYPtheta, rYPphi,
+            gradAnlm2nlj<NMAX+1, LMAXMAX>(
+                aAGradAnlm, tY, rAGradY, tRn, rRnGrad, rYPtheta, rYPphi,
                 rAGradj, rAGradThetaj, rAGradPhij
             );
         } else
         if (WTYPE==WTYPE_FULL) {
             flt_t *tAGradAnlm = aAGradAnlm + (type-1)*(NMAX+1)*tLMAll;
-            gradAnlm2nlj<NMAX+1, LMAXMAX, FALSE>(
-                tAGradAnlm, rAGradY, tY, NULL, tRn, rRnGrad, rYPtheta, rYPphi,
+            gradAnlm2nlj<NMAX+1, LMAXMAX>(
+                tAGradAnlm, tY, rAGradY, tRn, rRnGrad, rYPtheta, rYPphi,
                 rAGradj, rAGradThetaj, rAGradPhij
             );
         } else
         if (WTYPE==WTYPE_EXFULL) {
             flt_t *tAGradAnlmWt = aAGradAnlm + type*(NMAX+1)*tLMAll;
             gradAnlm2nljWt<NMAX+1, LMAXMAX>(
-                aAGradAnlm, tAGradAnlmWt, ONE, rAGradY, tY, tRn, rRnGrad, rYPtheta, rYPphi,
+                aAGradAnlm, tAGradAnlmWt, ONE, tY, rAGradY, tRn, rRnGrad, rYPtheta, rYPphi,
                 rAGradj, rAGradThetaj, rAGradPhij
             );
         } else
@@ -202,7 +212,7 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
             double wt = ((type&1)==1) ? type : (-type);
             flt_t *tAGradAnlmWt = aAGradAnlm + (NMAX+1)*tLMAll;
             gradAnlm2nljWt<NMAX+1, LMAXMAX>(
-                aAGradAnlm, tAGradAnlmWt, wt, rAGradY, tY, tRn, rRnGrad, rYPtheta, rYPphi,
+                aAGradAnlm, tAGradAnlmWt, wt, tY, rAGradY, tRn, rRnGrad, rYPtheta, rYPphi,
                 rAGradj, rAGradThetaj, rAGradPhij
             );
         }
@@ -237,14 +247,20 @@ static NNAP_DEVICE void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, in
             if (USE_BB) {
                 // rBackwardBackwardCache shift required
                 *rBackwardBackwardCache += tSizeAnlm;
+                *rBackwardBackwardCache += aNeiNum*SIZE_NP;
             }
             return;
         }
     }
     // init cache
     flt_t *tAnlm = *aForwardCache; *aForwardCache += tSizeAnlm;
-    flt_t bAGradAnlm[USE_BB ? 1 : tSizeAnlm] = {0};
+    flt_t bAGradAnlm[(USE_BB || REQUIRE_CACHE) ? 1 : tSizeAnlm] = {0};
     flt_t *rAGradAnlm = NULL;
+    if (REQUIRE_CACHE) {
+        // use cache
+        rAGradAnlm = *rBackwardCache; *rBackwardCache += tSizeAnlm;
+        fill<tSizeAnlm>(rAGradAnlm, ZERO);
+    } else
     if (USE_BB) {
         // use bb values
         rAGradAnlm = *rBackwardBackwardCache; *rBackwardBackwardCache += tSizeAnlm;
@@ -259,17 +275,18 @@ static NNAP_DEVICE void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, in
         calGradSphL3<L3MAX>(tAnlm+tShift, rAGradAnlm+tShift, aAGradFp+tShiftFp+tSizeL2);
         calGradSphL4<L4MAX>(tAnlm+tShift, rAGradAnlm+tShift, aAGradFp+tShiftFp+tSizeL2+tSizeL3);
     }
-    backwardAnlm<WTYPE, NMAX, tLMaxMax, SIZE_NP, GRAD_PARAM, REQUIRE_CACHE>(
+    backwardAnlm<WTYPE, NMAX, tLMaxMax, SIZE_NP, GRAD_PARAM, USE_BB, REQUIRE_CACHE>(
         aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rAGradAnlm,
-        rAGradNlDx, rAGradNlDy, rAGradNlDz, aForwardCache, rBackwardCache,
+        rAGradNlDx, rAGradNlDy, rAGradNlDz,
+        aForwardCache, rBackwardCache, rBackwardBackwardCache,
         aRCut, aParams, rAGradParams
     );
 }
 
 template <int WTYPE, int NMAX, int LMAXMAX, int SIZE_NP>
-static NNAP_DEVICE void backwardBackwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rBGradAGradAnlm,
+static NNAP_DEVICE void backwardBackwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aAGradAnlm, flt_t *rBGradAGradAnlm,
                                              flt_t *aBGradAGradNlDx, flt_t *aBGradAGradNlDy, flt_t *aBGradAGradNlDz,
-                                             flt_t **aForwardCache, flt_t **aBackwardCache,
+                                             flt_t **aForwardCache, flt_t **aBackwardCache, flt_t **rBackwardBackwardCache,
                                              flt_t aRCut, flt_t *rBGradParams) {
     constexpr int tLMAll = (LMAXMAX+1)*(LMAXMAX+1);
     // init cache
@@ -281,6 +298,7 @@ static NNAP_DEVICE void backwardBackwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *
     flt_t *tNlAGradRnp = *aBackwardCache; *aBackwardCache += aNeiNum*SIZE_NP;
     flt_t *tNlYPtheta = *aBackwardCache; *aBackwardCache += aNeiNum*tLMAll;
     flt_t *tNlYPphi = *aBackwardCache; *aBackwardCache += aNeiNum*tLMAll;
+    flt_t *tNlBGradRnp = *rBackwardBackwardCache; *rBackwardBackwardCache += aNeiNum*SIZE_NP;
     flt_t rBGradRnpGrad[SIZE_NP];
     flt_t rBGradAGradY[tLMAll];
     // loop for neighbor
@@ -312,24 +330,26 @@ static NNAP_DEVICE void backwardBackwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *
         const flt_t tBGradAGradPhij = tBGradAGradDx*phiPx + tBGradAGradDy*phiPy;
         if (WTYPE==WTYPE_RFUSE || WTYPE==WTYPE_FUSE || WTYPE==WTYPE_EXFUSE) {
             const int tParamShift = (type-1)*(SIZE_NP*(NMAX+1));
-            // get Rnp RnpGrad
+            // get Rnp RnpGrad gradRnp
             flt_t *tRnp = tNlRnp + j*SIZE_NP;
             flt_t *tRnpGrad = tNlRnpGrad + j*SIZE_NP;
+            flt_t *tBGradRnp = tNlBGradRnp + j*SIZE_NP;
+            flt_t *tAGradRnp = tNlAGradRnp + j*SIZE_NP;
+            fill<SIZE_NP>(tBGradRnp, ZERO);
+            fill<SIZE_NP>(rBGradRnpGrad, ZERO);
             fill<tLMAll>(rBGradAGradY, ZERO);
-            gradGradNlj2Anlm<SIZE_NP, LMAXMAX>(
-                rBGradAGradAnlm, rBGradAGradY, tY, tRnp, tRnpGrad, tYPtheta, tYPphi,
+            gradGradNlj2Anlm<SIZE_NP, LMAXMAX, TRUE>(
+                aAGradAnlm, rBGradAGradAnlm, tY, rBGradAGradY, tRnp, tBGradRnp, tRnpGrad, tYPtheta, tYPphi,
                 tBGradAGradj, tBGradAGradThetaj, tBGradAGradPhij
             );
             // grad param stuffs
-            flt_t *tAGradRnp = tNlAGradRnp + j*SIZE_NP;
-            fill<SIZE_NP>(rBGradRnpGrad, ZERO);
             mplus<SIZE_NP>(rBGradRnpGrad, tBGradAGradj, tAGradRnp);
             backwardRnp<NMAX, SIZE_NP>(rBGradRnpGrad, tRnGrad, rBGradParams+tParamShift);
         } else
         if (WTYPE==WTYPE_NONE) {
             fill<tLMAll>(rBGradAGradY, ZERO);
             gradGradNlj2Anlm<NMAX+1, LMAXMAX>(
-                rBGradAGradAnlm, rBGradAGradY, tY, tRn, tRnGrad, tYPtheta, tYPphi,
+                rBGradAGradAnlm, tY, rBGradAGradY, tRn, tRnGrad, tYPtheta, tYPphi,
                 tBGradAGradj, tBGradAGradThetaj, tBGradAGradPhij
             );
         } else
@@ -337,24 +357,24 @@ static NNAP_DEVICE void backwardBackwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *
             flt_t *tBGradAGradAnlm = rBGradAGradAnlm + (type-1)*(NMAX+1)*tLMAll;
             fill<tLMAll>(rBGradAGradY, ZERO);
             gradGradNlj2Anlm<NMAX+1, LMAXMAX>(
-                tBGradAGradAnlm, rBGradAGradY, tY, tRn, tRnGrad, tYPtheta, tYPphi,
+                tBGradAGradAnlm, tY, rBGradAGradY, tRn, tRnGrad, tYPtheta, tYPphi,
                 tBGradAGradj, tBGradAGradThetaj, tBGradAGradPhij
             );
         } else
         if (WTYPE==WTYPE_EXFULL) {
-            flt_t *tBGradAGradAnlmWt = rBGradAGradAnlm + type*(NMAX+1)*tLMAll;
+            flt_t *rBGradAGradAnlmWt = rBGradAGradAnlm + type*(NMAX+1)*tLMAll;
             fill<tLMAll>(rBGradAGradY, ZERO);
             gradGradNlj2AnlmWt<NMAX+1, LMAXMAX>(
-                rBGradAGradAnlm, tBGradAGradAnlmWt, ONE, rBGradAGradY, tY, tRn, tRnGrad, tYPtheta, tYPphi,
+                rBGradAGradAnlm, rBGradAGradAnlmWt, ONE, tY, rBGradAGradY, tRn, tRnGrad, tYPtheta, tYPphi,
                 tBGradAGradj, tBGradAGradThetaj, tBGradAGradPhij
             );
         } else
         if (WTYPE==WTYPE_DEFAULT) {
             double wt = ((type&1)==1) ? type : (-type);
-            flt_t *tBGradAGradAnlmWt = rBGradAGradAnlm + (NMAX+1)*tLMAll;
+            flt_t *rBGradAGradAnlmWt = rBGradAGradAnlm + (NMAX+1)*tLMAll;
             fill<tLMAll>(rBGradAGradY, ZERO);
             gradGradNlj2AnlmWt<NMAX+1, LMAXMAX>(
-                rBGradAGradAnlm, tBGradAGradAnlmWt, wt, rBGradAGradY, tY, tRn, tRnGrad, tYPtheta, tYPphi,
+                rBGradAGradAnlm, rBGradAGradAnlmWt, wt, tY, rBGradAGradY, tRn, tRnGrad, tYPtheta, tYPphi,
                 tBGradAGradj, tBGradAGradThetaj, tBGradAGradPhij
             );
         }
@@ -372,15 +392,17 @@ static NNAP_DEVICE void sphBackwardBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *a
     constexpr int tSizeAnlm = SIZE_NP*tLMAll;
     // init cache
     flt_t *tAnlm = *aForwardCache; *aForwardCache += tSizeAnlm;
+    flt_t *tAGradAnlm = *aBackwardCache; *aBackwardCache += tSizeAnlm;
     flt_t *rBGradAnlm = *rBackwardBackwardCache; *rBackwardBackwardCache += tSizeAnlm;
     flt_t rBGradAGradAnlm[tSizeAnlm] = {0};
     // clear bb cache required
     fill<tSizeAnlm>(rBGradAnlm, ZERO);
     // xyz -> anlm
     backwardBackwardAnlm<WTYPE, NMAX, tLMaxMax, SIZE_NP>(
-        aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, rBGradAGradAnlm,
+        aNlDx, aNlDy, aNlDz, aNlType, aNeiNum, tAGradAnlm, rBGradAGradAnlm,
         aBGradAGradNlDx, aBGradAGradNlDy, aBGradAGradNlDz,
-        aForwardCache, aBackwardCache, aRCut, rBGradParams
+        aForwardCache, aBackwardCache, rBackwardBackwardCache,
+        aRCut, rBGradParams
     );
     // anlm -> fp
     constexpr int tSizeL2 = LMAX+1;
