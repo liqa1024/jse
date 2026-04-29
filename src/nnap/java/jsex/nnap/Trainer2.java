@@ -40,6 +40,8 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
     protected final static double DEFAULT_STRESS_WEIGHT = 1.0;
     protected final static int DEFAULT_NTHREADS = 4;
     protected final static double DEFAULT_BASIS_MAX = 5.0;
+    protected final static int DEFAULT_POST_FUSE_SIZE = 6;
+    protected final static String DEFAULT_WTYPE = "exfull";
     
     public final static ILossFunc LOSS_SQUARE = (pred, real, grad) -> {
         double tErr = pred - real;
@@ -373,8 +375,6 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
      *     <dd>指定 loss 函数中力的权重</dd>
      *   <dt>stress_weight (可选，默认为 1.0):</dt>
      *     <dd>指定 loss 函数中压力的权重</dd>
-     *   <dt>l2_weight (可选，默认为 0.001):</dt>
-     *     <dd>指定 loss 函数中 l2 正则化的权重</dd>
      *   <dt>optimizer (可选):</dt>
      *     <dd>
      *       指定优化器的具体参数，包含：
@@ -429,8 +429,6 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
      *     <dd>指定 loss 函数中力的权重</dd>
      *   <dt>stress_weight (可选，默认为 1.0):</dt>
      *     <dd>指定 loss 函数中压力的权重</dd>
-     *   <dt>l2_weight (可选，默认为 0.001):</dt>
-     *     <dd>指定 loss 函数中 l2 正则化的权重</dd>
      *   <dt>units (可选，默认为 'metal'):</dt>
      *     <dd>指定势函数的单位</dd>
      *   <dt>basis (可选):</dt>
@@ -445,6 +443,10 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
      *          <dd>指定基组径向序使用的最大 n</dd>
      *       <dt>rcut (可选，默认为 6.0):</dt>
      *          <dd>指定基组的截断半径</dd>
+     *       <dt>post_fuse_size (可选，默认为 6):</dt>
+     *          <dd>指定基组针对等变量的线性混合后的维度</dd>
+     *       <dt>wtype (可选，默认为 "exfull"):</dt>
+     *          <dd>指定基组的化学编码方式</dd>
      *       </dl>
      *       输入列表形式则为每个种类单独设置不同的基组参数
      *     </dd>
@@ -454,6 +456,8 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
      *       <dl>
      *       <dt>hidden_dims (可选，默认为 [32, 32]):</dt>
      *          <dd>指定神经网络每个隐藏层的神经元数目</dd>
+     *       <dt>shared_hidden_dims (可选，默认不开启):</dt>
+     *          <dd>指定神经网络每个隐藏层共享的神经元数目</dd>
      *       </dl>
      *       输入列表形式则为每个种类单独设置不同的神经网络参数
      *     </dd>
@@ -493,50 +497,83 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
             throw new IllegalArgumentException("invalid type of symbols: " + tSymbols.getClass().getName());
         }
         /// basis
+        // 为了输入参数安全，这里统一采用创建新值的方式避免修改
+        List<Map> aBasisSetting = new ArrayList<>(aSymbols.length);
         @Nullable Object tBasisSetting = UT.Code.get(aArgs, "basis");
         if (tBasisSetting == null) {
             tBasisSetting = Maps.of("type", "spherical_chebyshev");
         }
+        // 遍历读取塞入 aBasisSetting
         if (tBasisSetting instanceof Map) {
             // 现在这种情况其余的种类采用 share 基组
-            Map<?, ?> tSubBasis = (Map<?, ?>) tBasisSetting;
-            tBasisSetting = new ArrayList(aSymbols.length);
-            ((List) tBasisSetting).add(tSubBasis);
+            Map<?, ?> tSubBasis = (Map<?, ?>)tBasisSetting;
+            aBasisSetting.add(new HashMap(tSubBasis));
             for (int i = 1; i < aSymbols.length; ++i) {
-                ((List) tBasisSetting).add(Maps.of("type", "share", "share", 1));
+                aBasisSetting.add(Maps.of("type", "share", "share", 1));
+            }
+        } else {
+            for (Object tObj : (List<?>)tBasisSetting) {
+                aBasisSetting.add(new HashMap((Map<?, ?>)tObj));
             }
         }
-        List<?> aBasisSetting = (List<?>) tBasisSetting;
         if (aSymbols.length != aBasisSetting.size()) throw new IllegalArgumentException("Symbols length does not match reference basis length.");
+        // 现在默认塞入 post_fuse 和 exfull，这里现在就可以简单实现不用考虑引用问题
+        for (Object tObj : aBasisSetting) {
+            Map tSubBasis = (Map)tObj;
+            // 只塞 spherical_chebyshev 和 chebyshev
+            Object tBasisType = tSubBasis.get("type");
+            if (tBasisType == null) {
+                tBasisType = "spherical_chebyshev";
+            }
+            switch(tBasisType.toString()) {
+            case "chebyshev": case "cheby":
+            case "spherical_chebyshev": case "sph_cheby": {
+                // 在不存在这些参数时塞入默认 post_fuse
+                if (!tSubBasis.containsKey("post_fuse") && !tSubBasis.containsKey("post_fuse_size") && !tSubBasis.containsKey("post_fuse_weight")) {
+                    tSubBasis.put("post_fuse", true);
+                    tSubBasis.put("post_fuse_size", DEFAULT_POST_FUSE_SIZE);
+                }
+                // 在不存在 wtype 时塞入 exfull
+                if (!tSubBasis.containsKey("wtype")) {
+                    tSubBasis.put("wtype", DEFAULT_WTYPE);
+                }
+                break;
+            }}
+        }
         /// nn
+        // 为了输入参数安全，这里统一采用创建新值的方式避免修改
+        List<Map> aNNSetting = new ArrayList<>(aSymbols.length);
         @Nullable Object tNNSetting = UT.Code.get(aArgs, "nn");
         if (tNNSetting == null) {
-            tNNSetting = new LinkedHashMap<>();
+            tNNSetting = new HashMap<>();
         }
+        // 遍历读取塞入 aNNSetting
         if (tNNSetting instanceof Map) {
-            Map tSubNNSetting = (Map)tNNSetting;
-            tNNSetting = new ArrayList(aSymbols.length);
+            Map tSubNNSetting = new HashMap<>((Map<?, ?>)tNNSetting);
             // 单 map 输入下特殊处理，只需要单个 shared_hidden_dims 即可
             @Nullable Object tSharedHiddenDims = tSubNNSetting.remove("shared_hidden_dims");
             if (tSharedHiddenDims == null) {
                 tSharedHiddenDims = tSubNNSetting.remove("shared_nnarch");
             }
             tSubNNSetting.put("type", "feed_forward");
-            ((List)tNNSetting).add(tSubNNSetting);
+            aNNSetting.add(tSubNNSetting);
             if (tSharedHiddenDims != null) {
                 tSubNNSetting = Maps.of("type", "shared_feed_forward", "share", 1, "shared_hidden_dims", tSharedHiddenDims);
             }
             for (int i = 1; i < aSymbols.length; ++i) {
-                ((List)tNNSetting).add(tSubNNSetting);
+                aNNSetting.add(tSubNNSetting);
+            }
+        } else {
+            for (Object tObj : (List<?>)tNNSetting) {
+                aNNSetting.add(new HashMap((Map<?, ?>)tObj));
             }
         }
-        List<?> aNNSetting = (List<?>)tNNSetting;
         if (aSymbols.length != aNNSetting.size()) throw new IllegalArgumentException("Symbols length does not match neural network length.");
         /// nnap input
         Map rModelInfos = new HashMap<>();
         List rModels = new ArrayList();
         for (int i = 0; i < aSymbols.length; ++i) {
-            Map rModel = new LinkedHashMap();
+            Map rModel = new HashMap();
             rModel.put("symbol", aSymbols[i]);
             rModel.put("basis", aBasisSetting.get(i));
             rModel.put("nn", aNNSetting.get(i));

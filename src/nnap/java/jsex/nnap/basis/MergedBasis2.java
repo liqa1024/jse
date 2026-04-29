@@ -200,11 +200,11 @@ public class MergedBasis2 extends Basis2 {
                 tType = "spherical_chebyshev";
             }
             switch(tType.toString()) {
-            case "spherical_chebyshev": {
+            case "spherical_chebyshev": case "sph_cheby": {
                 tMergeBasis[i] = SphericalChebyshev2.load(aTypeNum, tMap);
                 break;
             }
-            case "chebyshev": {
+            case "chebyshev": case "cheby": {
                 tMergeBasis[i] = Chebyshev2.load(aTypeNum, tMap);
                 break;
             }

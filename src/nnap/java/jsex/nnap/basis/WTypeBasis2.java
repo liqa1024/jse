@@ -515,7 +515,7 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
     @SuppressWarnings({"rawtypes", "unchecked"})
     static @Nullable Vector getPostFuseWeight_(Map aMap, int aSizeN) {
         Object tFlag = aMap.get("post_fuse");
-        if (tFlag==null || (!(Boolean)tFlag)) return null;
+        if (tFlag!=null && (!(Boolean)tFlag)) return null;
         Object tPostFuseSize = aMap.get("post_fuse_size");
         Object tPostFuseWeight = aMap.get("post_fuse_weight");
         if (tPostFuseWeight!=null) {
