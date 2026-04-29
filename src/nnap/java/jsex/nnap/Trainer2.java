@@ -25,6 +25,7 @@ import org.jetbrains.annotations.Range;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
 
 /**
@@ -518,24 +519,44 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
         }
         if (aSymbols.length != aBasisSetting.size()) throw new IllegalArgumentException("Symbols length does not match reference basis length.");
         // 现在默认塞入 post_fuse 和 exfull，这里现在就可以简单实现不用考虑引用问题
+        Consumer<Map> tBasisValider = subBasis -> {
+            // 在不存在这些参数时塞入默认 post_fuse
+            if (!subBasis.containsKey("post_fuse") && !subBasis.containsKey("post_fuse_size") && !subBasis.containsKey("post_fuse_weight")) {
+                subBasis.put("post_fuse", true);
+                subBasis.put("post_fuse_size", DEFAULT_POST_FUSE_SIZE);
+            }
+            // 在不存在 wtype 时塞入 exfull
+            if (!subBasis.containsKey("wtype")) {
+                subBasis.put("wtype", DEFAULT_WTYPE);
+            }
+        };
         for (Object tObj : aBasisSetting) {
             Map tSubBasis = (Map)tObj;
             // 只塞 spherical_chebyshev 和 chebyshev
             Object tBasisType = tSubBasis.get("type");
-            if (tBasisType == null) {
-                tBasisType = "spherical_chebyshev";
-            }
+            if (tBasisType==null) tBasisType = "spherical_chebyshev";
             switch(tBasisType.toString()) {
             case "chebyshev": case "cheby":
             case "spherical_chebyshev": case "sph_cheby": {
-                // 在不存在这些参数时塞入默认 post_fuse
-                if (!tSubBasis.containsKey("post_fuse") && !tSubBasis.containsKey("post_fuse_size") && !tSubBasis.containsKey("post_fuse_weight")) {
-                    tSubBasis.put("post_fuse", true);
-                    tSubBasis.put("post_fuse_size", DEFAULT_POST_FUSE_SIZE);
-                }
-                // 在不存在 wtype 时塞入 exfull
-                if (!tSubBasis.containsKey("wtype")) {
-                    tSubBasis.put("wtype", DEFAULT_WTYPE);
+                tBasisValider.accept(tSubBasis);
+                break;
+            }
+            case "merge": {
+                List<?> tMergedBasis = (List<?>)tSubBasis.get("basis");
+                List<Map> aMergedBasis = new ArrayList<>(tMergedBasis.size());
+                tSubBasis.put("basis", aMergedBasis);
+                for (Object tObj2 : tMergedBasis) {
+                    Map tSubBasis2 = new HashMap((Map<?, ?>)tObj2); // 注意这里属于深度拷贝，因此需要重新手动拷贝
+                    aMergedBasis.add(tSubBasis2);
+                    // 只塞 spherical_chebyshev 和 chebyshev
+                    Object tBasisType2 = tSubBasis2.get("type");
+                    if (tBasisType2==null) tBasisType2 = "spherical_chebyshev";
+                    switch(tBasisType2.toString()) {
+                    case "chebyshev": case "cheby":
+                    case "spherical_chebyshev": case "sph_cheby": {
+                        tBasisValider.accept(tSubBasis2);
+                        break;
+                    }}
                 }
                 break;
             }}
@@ -1298,6 +1319,7 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
                     });
                     int tNlSize = tNlBuf.size();
                     rNumNei.set(k, tNlSize);
+                    if (tNlSize==0) tNlSize = 1; // for malloc
                     IntCPointer tNlPtr = IntCPointer.malloc(tNlSize);
                     IntCPointer tNlTypePtr = IntCPointer.malloc(tNlSize);
                     IDoubleOrFloatCPointer tNlDxPtr = mSingle ? FloatCPointer.malloc(tNlSize) : DoubleCPointer.malloc(tNlSize);

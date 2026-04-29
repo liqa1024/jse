@@ -518,6 +518,7 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
         if (tFlag!=null && (!(Boolean)tFlag)) return null;
         Object tPostFuseSize = aMap.get("post_fuse_size");
         Object tPostFuseWeight = aMap.get("post_fuse_weight");
+        if (tFlag==null && tPostFuseSize==null && tPostFuseWeight==null) return null;
         if (tPostFuseWeight!=null) {
             Vector tVec = Vectors.from((List)tPostFuseWeight);
             if (tPostFuseSize!=null) {
@@ -525,7 +526,10 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
             }
             return tVec;
         }
-        if (tPostFuseSize==null) throw new IllegalArgumentException("Key `post_fuse_weight` or `post_fuse_size` required for post_fuse");
+        if (tPostFuseSize==null) {
+//            if (tFlag==null || !(Boolean)tFlag) return null; // 总是成立
+            throw new IllegalArgumentException("Key `post_fuse_weight` or `post_fuse_size` required for post_fuse");
+        }
         int tSize = ((Number)tPostFuseSize).intValue()*aSizeN;
         return Vector.zeros(tSize);
     }
