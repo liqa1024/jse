@@ -34,8 +34,8 @@ import static jse.code.SP.GROOVY_LIB_DIR;
 import static jse.code.SP.JAR_LIB_DIR;
 
 /**
+ * 直接运行 jse 时的主要类，根据输入参数来决定具体操作
  * @author liqa
- * <p> 直接运行 jse 时的主要类，根据输入参数来决定具体操作 </p>
  */
 public class Main {
     /** 记录 jse 是通过何种方式运行的，null 表示通过将 jar 添加到 class-path 运行 */
@@ -237,42 +237,63 @@ public class Main {
                 return 0;
             }
             case "-jniclean": case "--jniclean": {
+                // 获取可选参数
+                String tCleanKey = (aArgs.length<3) ? "cache" : aArgs[2];
+                boolean tCleanAll;
+                if (tCleanKey.equalsIgnoreCase("cache")) {
+                    tCleanAll = false;
+                } else
+                if (tCleanKey.equalsIgnoreCase("all")) {
+                    tCleanAll = true;
+                } else {
+                    System.err.println("Invalid jniclean key: "+tCleanKey+", available values: cache/all");
+                    return 1;
+                }
                 String[] tList = IO.list(JAR_DIR);
                 List<String> tNamesToClean = new ArrayList<>();
                 for (String tName : tList) {
                     if (tName.contains("@")) {
                         tNamesToClean.add(tName);
                     } else
-                    if (tName.equals("cmake")) {
+                    if (tCleanAll && tName.equals("cmake")) {
                         tNamesToClean.add(tName);
                     } else
-                    if (tName.equals("ninja")) {
+                    if (tCleanAll && tName.equals("ninja")) {
                         tNamesToClean.add(tName);
                     } else
-                    if (tName.equals("cpointer")) {
+                    if (tCleanAll && tName.equals("cpointer")) {
                         tNamesToClean.add(tName);
                     } else
-                    if (tName.equals("dlfcn")) {
+                    if (tCleanAll && tName.equals("dlfcn")) {
                         tNamesToClean.add(tName);
                     } else
-                    if (tName.equals("jep")) {
+                    if (tCleanAll && tName.equals("gpu")) {
                         tNamesToClean.add(tName);
                     } else
-                    if (tName.equals("jniutil")) {
+                    if (tCleanAll && tName.equals("jep")) {
                         tNamesToClean.add(tName);
                     } else
-                    if (tName.equals("lmp")) {
+                    if (tCleanAll && tName.equals("jit")) {
                         tNamesToClean.add(tName);
                     } else
-                    if (tName.equals("mimalloc")) {
+                    if (tCleanAll && tName.equals("jniutil")) {
                         tNamesToClean.add(tName);
                     } else
-                    if (tName.equals("mpi")) {
+                    if (tCleanAll && tName.equals("lmp")) {
                         tNamesToClean.add(tName);
                     } else
-                    if (tName.equals("nnap")) {
+                    if (tCleanAll && tName.equals("mimalloc")) {
+                        tNamesToClean.add(tName);
+                    } else
+                    if (tCleanAll && tName.equals("mpi")) {
+                        tNamesToClean.add(tName);
+                    } else
+                    if (tCleanAll && tName.equals("nnap")) {
                         tNamesToClean.add(tName);
                     }
+                }
+                if (!tCleanAll && IO.exists(JAR_DIR + "jit/cache")) {
+                    tNamesToClean.add("jit/cache");
                 }
                 if (tNamesToClean.isEmpty()) {
                     System.out.println("There is no jni library to clean");
