@@ -18,6 +18,7 @@ import jse.optim.Adam;
 import jse.optim.IOptimizer;
 import jse.optim.LBFGS;
 import jse.parallel.ParforThreadPool;
+import jsex.nnap.basis.MirrorBasis2;
 import jsex.nnap.basis.SharedBasis2;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.Nullable;
@@ -321,6 +322,17 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
         final int tNumTypes = mNNAP.ntypes();
         mSelectParas = mNNAP.parameters().copy();
         
+        // 简单遍历 basis 验证 mirror 的情况
+        for (int i = 0; i < tNumTypes; ++i) if (mNNAP.mBasis[i] instanceof MirrorBasis2) {
+            MirrorBasis2 tBasis = (MirrorBasis2)mNNAP.mBasis[i];
+            int tMirrorType = tBasis.mirrorType();
+            double oRefEng = mRefEngs.get(i);
+            double tRefEng = mRefEngs.get(tMirrorType-1);
+            if (!Double.isNaN(oRefEng) && !MathEX.Code.numericEqual(oRefEng, tRefEng)) {
+                UT.Code.warning("RefEng of mirror mismatch for type: "+(i+1)+", overwrite with mirror values automatically");
+            }
+            mRefEngs.set(i, tRefEng);
+        }
         // 简单遍历识别 shared 基组情况
         for (int i = 1; i < tNumTypes; ++i) {
             if (!(mNNAP.mBasis[i] instanceof SharedBasis2)) {
@@ -530,12 +542,18 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
                 subBasis.put("wtype", DEFAULT_WTYPE);
             }
         };
-        for (Object tObj : aBasisSetting) {
-            Map tSubBasis = (Map)tObj;
+        // 顺便统计 mirror 来方便后续处理
+        LogicalVector tIsMirror = LogicalVector.zeros(aSymbols.length);
+        for (int i = 1; i < aSymbols.length; ++i) {
+            Map tSubBasis = (Map)aBasisSetting.get(i);
             // 只塞 spherical_chebyshev 和 chebyshev
             Object tBasisType = tSubBasis.get("type");
             if (tBasisType==null) tBasisType = "spherical_chebyshev";
             switch(tBasisType.toString()) {
+            case "mirror": case "mirror_basis": {
+                tIsMirror.set(i, true);
+                break;
+            }
             case "chebyshev": case "cheby":
             case "spherical_chebyshev": case "sph_cheby": {
                 tBasisValider.accept(tSubBasis);
@@ -577,12 +595,13 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
                 tSharedHiddenDims = tSubNNSetting.remove("shared_nnarch");
             }
             tSubNNSetting.put("type", "feed_forward");
-            aNNSetting.add(tSubNNSetting);
+            aNNSetting.add(tIsMirror.get(0) ? null : tSubNNSetting);
             if (tSharedHiddenDims != null) {
+                if (tIsMirror.get(0)) throw new IllegalArgumentException("shared nn CAN NOT share the mirror type (1)");
                 tSubNNSetting = Maps.of("type", "shared_feed_forward", "share", 1, "shared_hidden_dims", tSharedHiddenDims);
             }
             for (int i = 1; i < aSymbols.length; ++i) {
-                aNNSetting.add(tSubNNSetting);
+                aNNSetting.add(tIsMirror.get(i) ? null : tSubNNSetting);
             }
         } else {
             for (Object tObj : (List<?>)tNNSetting) {
@@ -639,7 +658,13 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
         IVector tRefEngs = Vectors.zeros(tNumTypes);
         for (int i = 0; i < tNumTypes; ++i) {
             Number tRefEng = (Number)aModelInfos.get(i).get("ref_eng");
-            tRefEngs.set(i, tRefEng==null?0.0:tRefEng.doubleValue());
+            if (aNNAP.mBasis[i] instanceof MirrorBasis2) {
+                // mirror 会强制这些额外值缺省
+                if (tRefEng != null) throw new IllegalArgumentException("ref_eng in mirror_basis MUST be empty");
+                tRefEngs.set(i, Double.NaN);
+            } else {
+                tRefEngs.set(i, tRefEng==null?0.0:tRefEng.doubleValue());
+            }
         }
         return tRefEngs;
     }
@@ -1389,8 +1414,13 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
                 );
                 Vector tSubFp = tFp[tType-1];
                 rFpPtr.parse2destD(tSubFp);
+                // 归一化系数统计的位置，这里是这样的优先级
+                int tNormIdx = tType-1;
+                if (mNNAP.mBasis[tType-1] instanceof MirrorBasis2) {
+                    tNormIdx = ((MirrorBasis2)mNNAP.mBasis[tType-1]).mirrorType() - 1;
+                }
+                if (tShareNorm) tNormIdx = 0;
                 // 统计归一化系数
-                int tNormIdx = tShareNorm ? 0 : (tType-1);
                 tNormMu[tNormIdx].plus2this(tSubFp);
                 tNormSigma[tNormIdx].operation().operate2this(tSubFp, (lhs, rhs) -> lhs + rhs * rhs);
                 tMax[tNormIdx].operation().operate2this(tSubFp, Math::max);
@@ -1407,7 +1437,7 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
             }
             tDivPar[0].plus2this(tDivPar[ti]);
         }
-        for (int i = 0; i < tNumTypes; ++i) if (!tShareNorm || i==0) {
+        for (int i = 0; i < tNumTypes; ++i) if ((tShareNorm && i==0) || (!tShareNorm && !(mNNAP.mBasis[i] instanceof MirrorBasis2))) {
             int tDivI = tDivPar[0].get(i);
             if (tDivI == 0) {
                 tMuPar[0][i].fill(0.0);
@@ -1426,9 +1456,10 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
                 });
             }
         }
-        for (int i = 0; i < tNumTypes; ++i) if (tShareNorm && i!=0) {
-            tMuPar[0][i].fill(tMuPar[0][0]);
-            tSigmaPar[0][i].fill(tSigmaPar[0][0]);
+        for (int i = 0; i < tNumTypes; ++i) if ((tShareNorm && i!=0) || (!tShareNorm && (mNNAP.mBasis[i] instanceof MirrorBasis2))) {
+            int tNormIdx = tShareNorm ? 0 : (((MirrorBasis2)mNNAP.mBasis[i]).mirrorType()-1);
+            tMuPar[0][i].fill(tMuPar[0][tNormIdx]);
+            tSigmaPar[0][i].fill(tSigmaPar[0][tNormIdx]);
         }
         // put to nnap
         for (int i = 0; i < tNumTypes; ++i) {
@@ -1747,10 +1778,10 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
                 rModel.put("norm_mu_eng", mNormMuEng);
                 rModel.put("norm_sigma_eng", mNormSigmaEng);
             }
-//            if (mBasis[0][i] instanceof MirrorBasis) {
-//                rModels.add(rModel);
-//                continue;
-//            }
+            if (mNNAP.mBasis[i] instanceof MirrorBasis2) {
+                rModels.add(rModel);
+                continue;
+            }
             Map rNN = new LinkedHashMap();
             mNNAP.mNN[i].save(rNN);
             rModel.put("ref_eng", mRefEngs.get(i));
