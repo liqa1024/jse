@@ -24,7 +24,7 @@ import static jse.math.MathEX.SQRT2_INV;
  * Efficient and accurate simulation of vitrification in multi-component metallic liquids with neural-network potentials </a>
  * @author Su Rui, liqa
  */
-public class SimpleSphericalChebyshev extends Basis {
+public class SimpleSphericalChebyshev extends SimpleBasis {
     final int mTypeNum;
     final int mNMax;
     final int mSizeN, mSizeWt;
@@ -119,15 +119,6 @@ public class SimpleSphericalChebyshev extends Basis {
      */
     public SimpleSphericalChebyshev(int aTypeNum, int aNMax, int aLMax, double aRCut) {
         this(null, aTypeNum, aNMax, aLMax, SphericalChebyshev.DEFAULT_L3MAX, aRCut, false, 0.0, null, null, null, null, null);
-    }
-    
-    @Override public SimpleSphericalChebyshev threadSafeRef() {
-        return new SimpleSphericalChebyshev(mSymbols, mTypeNum, mNMax, mLMax, mL3Max, mRCut, mFCutS, mRCutS, mRFuncScale, mRFuncShift, mSystemScale, mPolyScale, mSphScale);
-    }
-    
-    @SuppressWarnings("rawtypes")
-    @Override public void save(Map rSaveTo) {
-        throw new UnsupportedOperationException();
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -609,22 +600,5 @@ public class SimpleSphericalChebyshev extends Basis {
         WIGNER_134_123 = MathEX.Func.wigner3j(1, 3, 4, 1, 2,-3);
         WIGNER_134_132 = MathEX.Func.wigner3j(1, 3, 4, 1,-3, 2);
         WIGNER_134_134 = MathEX.Func.wigner3j(1, 3, 4, 1, 3,-4);
-    }
-    
-    @Override
-    public void backward(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aGradFp, DoubleArrayVector rGradPara, DoubleList aForwardCache, DoubleList rBackwardCache, boolean aKeepCache) {
-        if (isClosed()) throw new IllegalStateException("This Basis is dead");
-        throw new UnsupportedOperationException();
-    }
-    @Override
-    public void forwardForce(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList rFx, DoubleList rFy, DoubleList rFz, DoubleList aForwardCache, DoubleList rForwardForceCache, boolean aFullCache) {
-        if (isClosed()) throw new IllegalStateException("This Basis is dead");
-        throw new UnsupportedOperationException();
-    }
-    @Override
-    public void backwardForce(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList aGradFx, DoubleList aGradFy, DoubleList aGradFz, DoubleArrayVector rGradNNGrad, @Nullable DoubleArrayVector rGradPara,
-                              DoubleList aForwardCache, DoubleList aForwardForceCache, DoubleList rBackwardCache, DoubleList rBackwardForceCache, boolean aKeepCache, boolean aFixBasis) {
-        if (isClosed()) throw new IllegalStateException("This Basis is dead");
-        throw new UnsupportedOperationException();
     }
 }

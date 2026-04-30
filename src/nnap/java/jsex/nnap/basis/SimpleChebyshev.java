@@ -21,7 +21,7 @@ import java.util.Map;
  * 为了中间变量缓存利用效率，此类相同实例线程不安全，而不同实例之间线程安全
  * @author liqa
  */
-public class SimpleChebyshev extends Basis {
+public class SimpleChebyshev extends SimpleBasis {
     final int mTypeNum;
     final int mNMax;
     final int mSizeN, mSizeWt;
@@ -86,15 +86,6 @@ public class SimpleChebyshev extends Basis {
      */
     public SimpleChebyshev(int aTypeNum, int aNMax, double aRCut) {
         this(null, aTypeNum, aNMax, aRCut, false, 0.0, null, null, null);
-    }
-    
-    @Override public SimpleChebyshev threadSafeRef() {
-        return new SimpleChebyshev(mSymbols, mTypeNum, mNMax, mRCut, mFCutS, mRCutS, mRFuncScale, mRFuncShift, mSystemScale);
-    }
-    
-    @SuppressWarnings("rawtypes")
-    @Override public void save(Map rSaveTo) {
-        throw new UnsupportedOperationException();
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
