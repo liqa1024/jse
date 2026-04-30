@@ -352,6 +352,13 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
         }
         return new SharedFeedForward2(aInputDim, tBase, tSharedType, aSharedHiddenDims, aNoSharedHiddenWeights, aNoSharedHiddenBiases, aNoSharedOutputWeight, aNoSharedOutputBias);
     }
+    public static SharedFeedForward2 full(NeuralNetwork2[] aNN, int aSharedType) {
+        FeedForward2 tBase = (FeedForward2)aNN[aSharedType-1];
+        int[] aSharedHiddenDims = new int[tBase.mNumLayers+1];
+        System.arraycopy(tBase.mHiddenDims, 0, aSharedHiddenDims, 0, tBase.mNumLayers);
+        aSharedHiddenDims[tBase.mNumLayers] = 1;
+        return new SharedFeedForward2(tBase.mInputDim, tBase, aSharedType, aSharedHiddenDims, null, null, null, null);
+    }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override public void save(Map rSaveTo) {

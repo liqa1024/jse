@@ -26,9 +26,12 @@ public class SharedBasis2 extends Basis2 {
     
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
         rGenMap.put("[FP SHARE "+aGenIdx+"]", true); // 标记此分支为 share
+        updateGenMapInternal(rGenMap, aGenIdx);
+    }
+    @Override void updateGenMapInternal(Map<String, Object> rGenMap, int aGenIdx) {
         rGenMap.put(aGenIdx+":NNAPGEN_FP_SHARED_TYPE", mSharedType);
-        // 依旧需要补充 share 的参数
-        mSharedBasis.updateGenMap(rGenMap, aGenIdx);
+        // 补充 share 基组的内部参数
+        mSharedBasis.updateGenMapInternal(rGenMap, aGenIdx);
     }
     @Override public boolean hasSameGenMap(Basis2 aBasis) {
         if (!(aBasis instanceof SharedBasis2)) return false;
@@ -36,9 +39,15 @@ public class SharedBasis2 extends Basis2 {
         return mSharedType==tBasis.mSharedType && mSharedBasis.hasSameGenMap(tBasis.mSharedBasis);
     }
     
-    @Override public int forwardCacheSize(int aNumNei) {return mSharedBasis.forwardCacheSize(aNumNei);}
-    @Override public int backwardCacheSize(int aNumNei) {return mSharedBasis.backwardCacheSize(aNumNei);}
-    @Override public int backwardBackwardCacheSize(int aNumNei) {return mSharedBasis.backwardBackwardCacheSize(aNumNei);}
+    @Override public int forwardCacheSize(int aNumNei) {
+        return mSharedBasis.forwardCacheSize(aNumNei);
+    }
+    @Override public int backwardCacheSize(int aNumNei) {
+        return mSharedBasis.backwardCacheSize(aNumNei);
+    }
+    @Override public int backwardBackwardCacheSize(int aNumNei) {
+        return mSharedBasis.backwardBackwardCacheSize(aNumNei);
+    }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override public void save(Map rSaveTo) {

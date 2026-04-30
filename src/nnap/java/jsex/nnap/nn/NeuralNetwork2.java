@@ -4,6 +4,7 @@ import jse.code.io.ISavable;
 import jse.cptr.IDoubleOrFloatCPointer;
 import jse.math.vector.Vector;
 import jsex.nnap.basis.Basis2;
+import jsex.nnap.basis.MirrorBasis2;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.util.List;
@@ -26,8 +27,8 @@ public abstract class NeuralNetwork2 implements ISavable {
         NeuralNetwork2[] rNN = new NeuralNetwork2[tNumTypes];
         for (int i = 0; i < tNumTypes; ++i) {
             Basis2 tBasis = aBasis[i];
-//            // mirror 情况延迟初始化
-//            if (tBasis instanceof MirrorBasis) continue;
+            // mirror 情况延迟初始化
+            if (tBasis instanceof MirrorBasis2) continue;
             Map tModelMap = (Map)aData.get(i);
             Object tModelType = tModelMap.get("type");
             if (tModelType == null) {
@@ -49,12 +50,12 @@ public abstract class NeuralNetwork2 implements ISavable {
         for (int i = 0; i < tNumTypes; ++i) {
             Basis2 tBasis = aBasis[i];
             Map tModelMap = (Map)aData.get(i);
-//            // mirror 情况不得有 nn
-//            if (tBasis instanceof MirrorBasis) {
-//                if (tModelMap != null) throw new IllegalArgumentException("nn data in mirror ModelInfo MUST be empty");
-//                rNN[i] = rNN[((MirrorBasis)tBasis).mirrorType()-1];
-//                continue;
-//            }
+            // mirror 情况不得有 nn 属性，这里直接套用 SharedFeedForward2
+            if (tBasis instanceof MirrorBasis2) {
+                if (tModelMap != null) throw new IllegalArgumentException("nn data in mirror ModelInfo MUST be empty");
+                rNN[i] = SharedFeedForward2.full(rNN, ((MirrorBasis2)tBasis).mirrorType());
+                continue;
+            }
             Object tModelType = tModelMap.get("type");
             if (tModelType.equals("shared_feed_forward")) {
                 rNN[i] = SharedFeedForward2.load(tBasis.size(), rNN, tModelMap);

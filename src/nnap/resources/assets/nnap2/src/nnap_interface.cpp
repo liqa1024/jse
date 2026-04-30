@@ -154,7 +154,7 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_forwardEnergy(void *aDataIn, void *
     int ctype = tNums[1];
     
     int code;
-    // >>> NNAPGEN SWITCH
+// >>> NNAPGEN SWITCH
     JSE_NNAP::flt_t *rLayers = rNnForwardCache;
     JSE_NNAP::flt_t *rNnGradCache = rLayers + (__NNAPGENX_NN_SIZE_IN__+__NNAPGENX_NN_SIZE_HB__);
     
@@ -168,7 +168,7 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_forwardEnergy(void *aDataIn, void *
         tNormParam, tNnParam, rNnGradCache, NULL
     );
     if (code!=0) return code;
-    // <<< NNAPGEN SWITCH (ctype) [FP NN TYPE]
+// <<< NNAPGEN SWITCH (ctype) [FP NN TYPE]
     return 0;
 }
 JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_backwardEnergy(void *aDataIn, void *rDataOut) {
@@ -195,7 +195,7 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_backwardEnergy(void *aDataIn, void 
     int ctype = tNums[1];
     
     int code;
-    // >>> NNAPGEN SWITCH
+// >>> NNAPGEN SWITCH
     JSE_NNAP::flt_t *tLayers = tNnForwardCache;
     JSE_NNAP::flt_t *tNnGradCache = tLayers + (__NNAPGENX_NN_SIZE_IN__+__NNAPGENX_NN_SIZE_HB__);
     JSE_NNAP::flt_t rGradLayers[__NNAPGENX_NN_SIZE_IN__+__NNAPGENX_NN_SIZE_HB__] = {0};
@@ -211,7 +211,7 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_backwardEnergy(void *aDataIn, void 
         tFpParam, rGradFpParam, tFpForwardCache, NULL, NULL
     );
     if (code!=0) return code;
-    // <<< NNAPGEN SWITCH (ctype) [FP NN TYPE]
+// <<< NNAPGEN SWITCH (ctype) [FP NN TYPE]
     return 0;
 }
 

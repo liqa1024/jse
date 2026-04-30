@@ -14,6 +14,7 @@ import jse.math.vector.IVector;
 import jse.math.vector.Vector;
 import jse.math.vector.Vectors;
 import jsex.nnap.basis.Basis2;
+import jsex.nnap.basis.MirrorBasis2;
 import jsex.nnap.nn.NeuralNetwork2;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.*;
@@ -122,9 +123,9 @@ public class NNAP2 implements IPairPotential {
             return tBasisInfo!=null ? tBasisInfo : Maps.of("type", "spherical_chebyshev");
         }));
         mNN = NeuralNetwork2.load(mBasis, NewCollections.map(tModels, info -> {
-            Object tNNInfo = info.get("nn");
-            if (tNNInfo ==null) throw new IllegalArgumentException("No nn in model, torch model is invalid now.");
-            return tNNInfo;
+            Object tNNInfo = info.get("torch");
+            if (tNNInfo != null) throw new IllegalArgumentException("torch model is invalid now.");
+            return info.get("nn");
         }));
         mNNAPGEN = new NNAPGEN(aLibDir, aProjectName, mBasis, mNN);
         // 初始化数组
@@ -223,10 +224,20 @@ public class NNAP2 implements IPairPotential {
         double aNormSigmaEng = tNormSigmaEng==null ? 1.0 : tNormSigmaEng.doubleValue();
         double aNormMuEng = tNormMuEng==null ? 0.0 : tNormMuEng.doubleValue();
         for (int i = 0; i < tModelSize; ++i) {
-            Number tRefEng = (Number)tModels.get(i).get("ref_eng");
+            Map<String, ?> tModel = tModels.get(i);
+            if (mBasis[i] instanceof MirrorBasis2) {
+                // mirror 会强制这些额外值缺省
+                Number tRefEng = (Number)tModel.get("ref_eng");
+                if (tRefEng != null) throw new IllegalArgumentException("ref_eng in mirror_basis MUST be empty");
+                Object tNormObj = UT.Code.get(tModel, "norm_vec", "norm_sigma", "norm_mu");
+                if (tNormObj != null) throw new IllegalArgumentException("norm_vec/norm_sigma/norm_mu in mirror_basis MUST be empty");
+                // 读取 mirror 的属性
+                tModel = tModels.get(((MirrorBasis2)mBasis[i]).mirrorType()-1);
+            }
+            Number tRefEng = (Number)tModel.get("ref_eng");
             double aRefEng = tRefEng==null ? 0.0 : tRefEng.doubleValue();
-            List<? extends Number> tNormSigma = (List<? extends Number>)UT.Code.get(tModels.get(i), "norm_sigma", "norm_vec");
-            List<? extends Number> tNormMu = (List<? extends Number>)tModels.get(i).get("norm_mu");
+            List<? extends Number> tNormSigma = (List<? extends Number>)UT.Code.get(tModel, "norm_sigma", "norm_vec");
+            List<? extends Number> tNormMu = (List<? extends Number>)tModel.get("norm_mu");
             
             mNormParam.putAt(i, tParam);
             tParam.setD(aNormMuEng+aRefEng); tParam.next();

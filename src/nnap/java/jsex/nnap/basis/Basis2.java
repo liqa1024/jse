@@ -29,8 +29,8 @@ public abstract class Basis2 implements ISavable {
                 tBasisType = "spherical_chebyshev";
             }
             switch(tBasisType.toString()) {
-            case "share": case "shared_basis": {
-                break; // share 情况延迟初始化
+            case "mirror": case "mirror_basis": case "share": case "shared_basis": {
+                break; // mirror/share 情况延迟初始化
             }
             case "spherical_chebyshev": case "sph_cheby": {
                 rBasis[i] = new MergedBasis2(SphericalChebyshev2.load(tTypeNum, tBasisMap));
@@ -40,7 +40,7 @@ public abstract class Basis2 implements ISavable {
                 rBasis[i] = new MergedBasis2(Chebyshev2.load(tTypeNum, tBasisMap));
                 break;
             }
-            case "merge": {
+            case "merge": case "merged_basis": {
                 rBasis[i] = MergedBasis2.load(tTypeNum, tBasisMap);
                 break;
             }
@@ -52,6 +52,10 @@ public abstract class Basis2 implements ISavable {
             Map tBasisMap = (Map)aData.get(i);
             Object tBasisType = tBasisMap.get("type");
             switch(tBasisType.toString()) {
+            case "mirror": case "mirror_basis": {
+                rBasis[i] = MirrorBasis2.load(rBasis, tBasisMap);
+                break;
+            }
             case "share": case "shared_basis": {
                 rBasis[i] = SharedBasis2.load(rBasis, tBasisMap);
                 break;
@@ -121,6 +125,8 @@ public abstract class Basis2 implements ISavable {
     
     /** 更新内部 code gen 的 map，将参数编码进 jit */
     public abstract void updateGenMap(Map<String, Object> rGenMap, int aGenIdx);
+    /** 内部参数（不包含种类标识头）更新到 gen map */
+    abstract void updateGenMapInternal(Map<String, Object> rGenMap, int aGenIdx);
     /** 本基组是否和输入的基组有着相同的 code gen map，相同时则会简单合并简化最终的 jit 代码 */
     public abstract boolean hasSameGenMap(Basis2 aBasis);
     

@@ -17,6 +17,7 @@
 #define __NNAPGENXX_FP_SIZE_HPARAM__ 2
 #define __NNAPGENXX_FP_SIZE_PARAM__ 0
 #define __NNAPGENX_FP_SHARED_TYPE__ 1
+#define __NNAPGENX_FP_MIRROR_TYPE__ 1
 #define __NNAPGENS_CTYPE_GEN__ 1
 #define __NNAPGENS_ctype__ 1
 // <<< NNAPGEN REMOVE
@@ -35,6 +36,15 @@ static NNAP_DEVICE int fpForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *
 // --- NNAPGEN HAS: [FP SHARE __NNAPGENS_X__]
     flt_t *tSubFpHyperParam = aFpHyperParam[__NNAPGENX_FP_SHARED_TYPE__-1];
     flt_t *tSubFpParam = aFpParam[__NNAPGENX_FP_SHARED_TYPE__-1];
+// --- NNAPGEN HAS: [FP MIRROR __NNAPGENS_X__]
+    flt_t *tSubFpHyperParam = aFpHyperParam[__NNAPGENX_FP_MIRROR_TYPE__-1];
+    flt_t *tSubFpParam = aFpParam[__NNAPGENX_FP_MIRROR_TYPE__-1];
+    // mirror types
+    for (int j = 0; j < aNeiNum; ++j) {
+        int typej = aNlType[j];
+        if (typej==__NNAPGENX_FP_MIRROR_TYPE__) aNlType[j] = cType;
+        else if (typej==cType) aNlType[j] = __NNAPGENX_FP_MIRROR_TYPE__;
+    }
 // --- NNAPGEN ELSE:
     flt_t *tSubFpHyperParam = aFpHyperParam[cType-1];
     flt_t *tSubFpParam = aFpParam[cType-1];
@@ -56,7 +66,16 @@ static NNAP_DEVICE int fpForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *
     rSubFp += __NNAPGENXX_FP_SIZE__;
     tSubFpHyperParam += __NNAPGENXX_FP_SIZE_HPARAM__;
     tSubFpParam += __NNAPGENXX_FP_SIZE_PARAM__;
-// <<< NNAPGEN REPEAT 0..<[FP MERGE __NNAPGENS_X__]
+// <<< NNAPGEN REPEAT 0..<[FP MERGE SIZE __NNAPGENS_X__]
+// >>> NNAPGEN IF
+// --- NNAPGEN HAS: [FP MIRROR __NNAPGENS_X__]
+    // mirror types
+    for (int j = 0; j < aNeiNum; ++j) {
+        int typej = aNlType[j];
+        if (typej==__NNAPGENX_FP_MIRROR_TYPE__) aNlType[j] = cType;
+        else if (typej==cType) aNlType[j] = __NNAPGENX_FP_MIRROR_TYPE__;
+    }
+// <<< NNAPGEN IF
     flag = 0;
 // <<< NNAPGEN SWITCH (CTYPE_GEN) [FP TYPE]
     if (flag) return 1;
@@ -139,6 +158,16 @@ static NNAP_DEVICE int fpBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int 
     flt_t *tSubFpHyperParam = aFpHyperParam[__NNAPGENX_FP_SHARED_TYPE__-1];
     flt_t *tSubFpParam = aFpParam[__NNAPGENX_FP_SHARED_TYPE__-1];
     flt_t *rSubAGradFpParam = GRAD_PARAM ? rAGradFpParam[__NNAPGENX_FP_SHARED_TYPE__-1] : NULL;
+// --- NNAPGEN HAS: [FP MIRROR __NNAPGENS_X__]
+    flt_t *tSubFpHyperParam = aFpHyperParam[__NNAPGENX_FP_MIRROR_TYPE__-1];
+    flt_t *tSubFpParam = aFpParam[__NNAPGENX_FP_MIRROR_TYPE__-1];
+    flt_t *rSubAGradFpParam = GRAD_PARAM ? rAGradFpParam[__NNAPGENX_FP_MIRROR_TYPE__-1] : NULL;
+    // mirror types
+    for (int j = 0; j < aNeiNum; ++j) {
+        int typej = aNlType[j];
+        if (typej==__NNAPGENX_FP_MIRROR_TYPE__) aNlType[j] = cType;
+        else if (typej==cType) aNlType[j] = __NNAPGENX_FP_MIRROR_TYPE__;
+    }
 // --- NNAPGEN ELSE:
     flt_t *tSubFpHyperParam = aFpHyperParam[cType-1];
     flt_t *tSubFpParam = aFpParam[cType-1];
@@ -168,7 +197,16 @@ static NNAP_DEVICE int fpBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int 
     if (GRAD_PARAM) {
         rSubAGradFpParam += __NNAPGENXX_FP_SIZE_PARAM__;
     }
-// <<< NNAPGEN REPEAT 0..<[FP MERGE __NNAPGENS_X__]
+// <<< NNAPGEN REPEAT 0..<[FP MERGE SIZE __NNAPGENS_X__]
+// >>> NNAPGEN IF
+// --- NNAPGEN HAS: [FP MIRROR __NNAPGENS_X__]
+    // mirror types
+    for (int j = 0; j < aNeiNum; ++j) {
+        int typej = aNlType[j];
+        if (typej==__NNAPGENX_FP_MIRROR_TYPE__) aNlType[j] = cType;
+        else if (typej==cType) aNlType[j] = __NNAPGENX_FP_MIRROR_TYPE__;
+    }
+// <<< NNAPGEN IF
     flag = 0;
 // <<< NNAPGEN SWITCH (CTYPE_GEN) [FP TYPE]
     if (flag) return 1;
@@ -190,6 +228,15 @@ static NNAP_DEVICE int fpBackwardBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNl
 // --- NNAPGEN HAS: [FP SHARE __NNAPGENS_X__]
     flt_t *tSubFpHyperParam = aFpHyperParam[__NNAPGENX_FP_SHARED_TYPE__-1];
     flt_t *rSubBGradFpParam = rBGradFpParam[__NNAPGENX_FP_SHARED_TYPE__-1];
+// --- NNAPGEN HAS: [FP MIRROR __NNAPGENS_X__]
+    flt_t *tSubFpHyperParam = aFpHyperParam[__NNAPGENX_FP_MIRROR_TYPE__-1];
+    flt_t *rSubBGradFpParam = rBGradFpParam[__NNAPGENX_FP_MIRROR_TYPE__-1];
+    // mirror types
+    for (int j = 0; j < aNeiNum; ++j) {
+        int typej = aNlType[j];
+        if (typej==__NNAPGENX_FP_MIRROR_TYPE__) aNlType[j] = cType;
+        else if (typej==cType) aNlType[j] = __NNAPGENX_FP_MIRROR_TYPE__;
+    }
 // --- NNAPGEN ELSE:
     flt_t *tSubFpHyperParam = aFpHyperParam[cType-1];
     flt_t *rSubBGradFpParam = rBGradFpParam[cType-1];
@@ -215,7 +262,16 @@ static NNAP_DEVICE int fpBackwardBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNl
     rSubBGradAGradFp += __NNAPGENXX_FP_SIZE__;
     tSubFpHyperParam += __NNAPGENXX_FP_SIZE_HPARAM__;
     rSubBGradFpParam += __NNAPGENXX_FP_SIZE_PARAM__;
-// <<< NNAPGEN REPEAT 0..<[FP MERGE __NNAPGENS_X__]
+// <<< NNAPGEN REPEAT 0..<[FP MERGE SIZE __NNAPGENS_X__]
+// >>> NNAPGEN IF
+// --- NNAPGEN HAS: [FP MIRROR __NNAPGENS_X__]
+    // mirror types
+    for (int j = 0; j < aNeiNum; ++j) {
+        int typej = aNlType[j];
+        if (typej==__NNAPGENX_FP_MIRROR_TYPE__) aNlType[j] = cType;
+        else if (typej==cType) aNlType[j] = __NNAPGENX_FP_MIRROR_TYPE__;
+    }
+// <<< NNAPGEN IF
     flag = 0;
 // <<< NNAPGEN SWITCH (CTYPE_GEN) [FP TYPE]
     if (flag) return 1;

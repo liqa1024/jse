@@ -139,7 +139,12 @@ public class MergedBasis2 extends Basis2 {
     @Override public int size() {return mSize;}
     
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
-        rGenMap.put("[FP MERGE "+aGenIdx+"]", mMergedBasis.length);
+        rGenMap.put("[FP MERGE "+aGenIdx+"]", true); // 标记此分支为 merge
+        updateGenMapInternal(rGenMap, aGenIdx);
+    }
+    @Override void updateGenMapInternal(Map<String, Object> rGenMap, int aGenIdx) {
+        // 单独独立出来为告知 merge 大小，实现语义分离
+        rGenMap.put("[FP MERGE SIZE "+aGenIdx+"]", mMergedBasis.length);
         rGenMap.put(aGenIdx+":NNAPGEN_FP_SIZE", size());
         for (int i = 0; i < mMergedBasis.length; ++i) {
             mMergedBasis[i].updateGenMap(rGenMap, aGenIdx, i);
