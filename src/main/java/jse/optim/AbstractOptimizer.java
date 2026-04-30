@@ -25,6 +25,8 @@ public abstract class AbstractOptimizer implements IOptimizer {
     private ILogPrinter mLogPrinter = null;
     private IBreakChecker mBreakChecker = null;
     
+    private Runnable mParameterUpdater = null;
+    
     protected double mC1 = Double.NaN, mC2 = Double.NaN;
     protected int mMaxIter = -1;
     protected boolean mLineSearch = false;
@@ -85,7 +87,7 @@ public abstract class AbstractOptimizer implements IOptimizer {
     }
     /**
      * 清空当前缓存的 loss 值，会顺便清空梯度值，表明此时已经不合法；
-     * 之后需要loss 或梯度时则会自动重新计算
+     * 之后需要 loss 或梯度时则会自动重新计算
      */
     protected void invalidLoss() {
         mGradValid = false;
@@ -186,6 +188,15 @@ public abstract class AbstractOptimizer implements IOptimizer {
         mBreakChecker = aBreakChecker;
         return this;
     }
+    /**
+     * {@inheritDoc}
+     * @param aUpdater {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override public AbstractOptimizer setParameterUpdater(Runnable aUpdater) {
+        mParameterUpdater = aUpdater;
+        return this;
+    }
     
     /**
      * {@inheritDoc}
@@ -255,8 +266,10 @@ public abstract class AbstractOptimizer implements IOptimizer {
         if (lineSearchAlways()) {
             // 这步由于总是会被抛弃，因此只计算能量
             rParameter.plus2this(rParameterStep);
+            updateParameter();
             double tLoss = eval();
             rParameter.minus2this(rParameterStep);
+            updateParameter();
             invalidLoss();
             // 二次样条拟合
             double tA = (tLoss - aLoss - tGradA0*tAlpha) / (tAlpha*tAlpha);
@@ -269,6 +282,7 @@ public abstract class AbstractOptimizer implements IOptimizer {
         while (true) {
             // 先简单判断中间分点是否满足 Armijo + strong Wolfe
             rParameter.operation().mplus2this(rParameterStep, tAlpha);
+            updateParameter();
             double tLoss = eval(true);
             double tGradA = tGrad.operation().dot(rParameterStep);
             final boolean tArmijoOK = tLoss <= aLoss + mC1*tGradA0*tAlpha;
@@ -318,6 +332,7 @@ public abstract class AbstractOptimizer implements IOptimizer {
      */
     protected void applyStep(int aStep) {
         mParameter.plus2this(mParameterStep);
+        updateParameter();
         invalidGrad();
     }
     /**
@@ -362,5 +377,20 @@ public abstract class AbstractOptimizer implements IOptimizer {
         }
         if (aStep==0 || Double.isNaN(aLastLoss)) return false;
         return Math.abs(aLastLoss-aLoss) < Math.abs(aLastLoss)*DBL_EPSILON;
+    }
+    
+    /**
+     * 参数经过优化器任何修改后调用，从而调用内部钩子实现更新同步
+     * <p>
+     * 这里在有任何修改后，以及需要马上再次调用 loss 函数来计算前都需要进行调用，
+     * 从而保证钩子的对应依赖函数可以输出正确的结果
+     * <p>
+     * 一般来说和这里的 {@link #invalidLoss()}
+     * 有重合功能，根据具体需求调用对应接口来实现功能拆分
+     */
+    protected void updateParameter() {
+        if (mParameterUpdater != null) {
+            mParameterUpdater.run();
+        }
     }
 }

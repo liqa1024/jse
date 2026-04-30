@@ -690,6 +690,7 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
         final int[] tLossDiv = {0};
         final double[] tLossTot = {0.0};
         mOptimizer.setParameter(mNNAP.parameters())
+        .setParameterUpdater(mNNAP::updateParameters)
         .setLossFunc(() -> calLoss(false))
         .setLossFuncGrad(grad -> calLoss(false, grad))
         .setLogPrinter((step, lineSearchStep, loss, printLog) -> {
@@ -807,8 +808,6 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
             mNNAP.requireGrad();
             mNNAP.zeroGrad();
         }
-        // 目前简单处理，在任何计算之前总是先更新一下参数
-        mNNAP.updateParameters();
         // 遍历统计有效数据数目
         final int tSliceSize = aSlice.size();
         int tEngSize = 0, tForceSize = 0, tStressSize = 0;
@@ -1666,7 +1665,6 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
             }
         }
         mOptimizer.run(aNEpochs*mStepsPerEpoch, aPrintLog);
-        mNNAP.updateParameters();
         if (aPrintLog) {
             // 只会在不分 batch 时需要补全进度条
             if (mBatchSize <= 0) for (int i = mEpoch + 1; i < aNEpochs; ++i) {

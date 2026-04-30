@@ -60,6 +60,14 @@ public interface IOptimizer {
      * @return 自身方便链式调用
      */
     IOptimizer setBreakChecker(IBreakChecker aBreakChecker);
+    /**
+     * 设置参数更新器，会在优化器设置参数时调用
+     * <p>
+     * 可以用于及时调用更新一些和参数相关的外部缓存值，例如近邻列表等
+     * @param aUpdater 自定义的更新器 {@link Runnable}
+     * @return 自身方便链式调用
+     */
+    IOptimizer setParameterUpdater(Runnable aUpdater);
     
     /**
      * 设置学习率
