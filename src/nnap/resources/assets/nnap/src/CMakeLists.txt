@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(nnap2 LANGUAGES CXX CUDA)
+project(nnap LANGUAGES CXX CUDA)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CUDA_STANDARD 11)
@@ -14,13 +14,13 @@ set(SOURCE_FILES
     nnap_interface.cpp
 #    nnap_interface_cuda.cu
 )
-add_library(nnap2 SHARED ${SOURCE_FILES})
+add_library(nnap SHARED ${SOURCE_FILES})
 
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     set(BUILD_SHARED_LIBS ON)
 endif()
 
-set_target_properties(nnap2 PROPERTIES
+set_target_properties(nnap PROPERTIES
     C_VISIBILITY_PRESET hidden
     CXX_VISIBILITY_PRESET hidden
     VISIBILITY_INLINES_HIDDEN YES

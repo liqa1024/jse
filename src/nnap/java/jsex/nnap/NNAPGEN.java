@@ -127,10 +127,10 @@ class NNAPGEN {
             .setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID)
             .setSrcDirIniter((wd, engine) -> {
                 for (String tName : SRC_NAME) {
-                    codeGen_(IO.getResource("nnap2/src/"+tName), wd+tName, rGenMap);
+                    codeGen_(IO.getResource("nnap/src/"+tName), wd+tName, rGenMap);
                 }
-                codeGen_(IO.getResource("nnap2/src/"+INTERFACE_NAME), wd+INTERFACE_NAME, rGenMap);
-                codeGen_(IO.getResource("nnap2/src/"+INTERFACE_HEAD_NAME), wd+INTERFACE_HEAD_NAME, rGenMap);
+                codeGen_(IO.getResource("nnap/src/"+INTERFACE_NAME), wd+INTERFACE_NAME, rGenMap);
+                codeGen_(IO.getResource("nnap/src/"+INTERFACE_HEAD_NAME), wd+INTERFACE_HEAD_NAME, rGenMap);
                 // 注意这里需要使用 jit 中的通用 CMakeLists，确保 project name 同步
                 engine.writeCmakeFile(wd, INTERFACE_NAME);
                 return wd;
@@ -151,10 +151,10 @@ class NNAPGEN {
             .setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID)
             .setSrcDirIniter((wd, engine) -> {
                 for (String tName : SRC_NAME) {
-                    codeGen_(IO.getResource("nnap2/src/"+tName), wd+tName, rGenMap);
+                    codeGen_(IO.getResource("nnap/src/"+tName), wd+tName, rGenMap);
                 }
-                codeGen_(IO.getResource("nnap2/src/nnap_interface_cuda.cu"), wd+"nnap_interface_cuda.cu", rGenMap);
-                codeGen_(IO.getResource("nnap2/src/nnap_interface_cuda.h"), wd+"nnap_interface_cuda.h", rGenMap);
+                codeGen_(IO.getResource("nnap/src/nnap_interface_cuda.cu"), wd+"nnap_interface_cuda.cu", rGenMap);
+                codeGen_(IO.getResource("nnap/src/nnap_interface_cuda.h"), wd+"nnap_interface_cuda.h", rGenMap);
                 // 注意这里需要使用 jit 中的通用 CMakeLists，确保 project name 同步
                 engine.writeCmakeFile(wd, "nnap_interface_cuda.cu");
                 return wd;

@@ -11,7 +11,7 @@ import jse.lmp.LmpPlugin;
  * {@link LmpPlugin.Pair} 的 NNAP 版本，在 lammps
  * in 文件中添加：
  * <pre> {@code
- * pair_style   jse jsex.nnap.PairNNAP2
+ * pair_style   jse jsex.nnap.PairNNAP
  * pair_coeff   * * path/to/nnpot.json Cu Zr
  * } </pre>
  * 来使用
