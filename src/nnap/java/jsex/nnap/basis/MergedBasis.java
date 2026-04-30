@@ -13,18 +13,18 @@ import java.util.Map;
  * 使用多个基组的合并基组，用于实现自定义的高效基组
  * @author liqa
  */
-public class MergedBasis2 extends Basis2 {
-    private final MergeableBasis2[] mMergedBasis;
+public class MergedBasis extends Basis {
+    private final MergeableBasis[] mMergedBasis;
     private final double mRCut;
     private final int mSize, mTotCParaSize, mTotCHyperParaSize, mTotParaSize;
     private final int[] mCParaSizes, mCHyperParaSizes, mParaSizes;
     
-    public MergedBasis2(MergeableBasis2... aMergedBasis) {
+    public MergedBasis(MergeableBasis... aMergedBasis) {
         if (aMergedBasis ==null || aMergedBasis.length==0) throw new IllegalArgumentException("Merge basis can not be null or empty");
         double tRCut = Double.NEGATIVE_INFINITY;
         int tSize = 0;
-        for (MergeableBasis2 tBasis : aMergedBasis) {
-            if (!(tBasis instanceof SphericalChebyshev2) && !(tBasis instanceof Chebyshev2)) {
+        for (MergeableBasis tBasis : aMergedBasis) {
+            if (!(tBasis instanceof SphericalChebyshev) && !(tBasis instanceof Chebyshev)) {
                 throw new IllegalArgumentException("MergeBasis should be SphericalChebyshev or Chebyshev");
             }
             tRCut = Math.max(tBasis.rcut(), tRCut);
@@ -87,7 +87,7 @@ public class MergedBasis2 extends Basis2 {
     }
     
     @Override public void initParameters() {
-        for (MergeableBasis2 tBasis : mMergedBasis) tBasis.initParameters();
+        for (MergeableBasis tBasis : mMergedBasis) tBasis.initParameters();
     }
     @Override public void mountParameter(Vector aVec) {
         if (Conf.OPERATION_CHECK) {
@@ -120,17 +120,17 @@ public class MergedBasis2 extends Basis2 {
     }
     
     @Override public void requireGrad(int aNumThreads) {
-        for (MergeableBasis2 tMergedBasis : mMergedBasis) {
+        for (MergeableBasis tMergedBasis : mMergedBasis) {
             tMergedBasis.requireGrad(aNumThreads);
         }
     }
     @Override public void updateParameters() {
-        for (MergeableBasis2 tMergedBasis : mMergedBasis) {
+        for (MergeableBasis tMergedBasis : mMergedBasis) {
             tMergedBasis.updateParameters();
         }
     }
     @Override public void backwardParameter() {
-        for (MergeableBasis2 tMergedBasis : mMergedBasis) {
+        for (MergeableBasis tMergedBasis : mMergedBasis) {
             tMergedBasis.backwardParameter();
         }
     }
@@ -150,9 +150,9 @@ public class MergedBasis2 extends Basis2 {
             mMergedBasis[i].updateGenMap(rGenMap, aGenIdx, i);
         }
     }
-    @Override public boolean hasSameGenMap(Basis2 aBasis) {
-        if (!(aBasis instanceof MergedBasis2)) return false;
-        MergedBasis2 tBasis = (MergedBasis2)aBasis;
+    @Override public boolean hasSameGenMap(Basis aBasis) {
+        if (!(aBasis instanceof MergedBasis)) return false;
+        MergedBasis tBasis = (MergedBasis)aBasis;
         if (size()!=tBasis.size()) return false;
         if (mMergedBasis.length != tBasis.mMergedBasis.length) return false;
         for (int i = 0; i < mMergedBasis.length; ++i) {
@@ -163,21 +163,21 @@ public class MergedBasis2 extends Basis2 {
     
     @Override public int forwardCacheSize(int aNumNei) {
         int rSize = 0;
-        for (MergeableBasis2 tBasis : mMergedBasis) {
+        for (MergeableBasis tBasis : mMergedBasis) {
             rSize += tBasis.forwardCacheSize(aNumNei);
         }
         return rSize;
     }
     @Override public int backwardCacheSize(int aNumNei) {
         int rSize = 0;
-        for (MergeableBasis2 tBasis : mMergedBasis) {
+        for (MergeableBasis tBasis : mMergedBasis) {
             rSize += tBasis.backwardCacheSize(aNumNei);
         }
         return rSize;
     }
     @Override public int backwardBackwardCacheSize(int aNumNei) {
         int rSize = 0;
-        for (MergeableBasis2 tBasis : mMergedBasis) {
+        for (MergeableBasis tBasis : mMergedBasis) {
             rSize += tBasis.backwardBackwardCacheSize(aNumNei);
         }
         return rSize;
@@ -193,11 +193,11 @@ public class MergedBasis2 extends Basis2 {
         rSaveTo.put("basis", tMergeBasis);
     }
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public static MergedBasis2 load(int aTypeNum, Map aMap) {
+    public static MergedBasis load(int aTypeNum, Map aMap) {
         Object tObj = aMap.get("basis");
         if (tObj == null) throw new IllegalArgumentException("Key `basis` required for merge load");
         List<Map> tList = (List<Map>)tObj;
-        MergeableBasis2[] tMergeBasis = new MergeableBasis2[tList.size()];
+        MergeableBasis[] tMergeBasis = new MergeableBasis[tList.size()];
         for (int i = 0; i < tMergeBasis.length; ++i) {
             Map tMap = tList.get(i);
             Object tType = tMap.get("type");
@@ -206,17 +206,17 @@ public class MergedBasis2 extends Basis2 {
             }
             switch(tType.toString()) {
             case "spherical_chebyshev": case "sph_cheby": {
-                tMergeBasis[i] = SphericalChebyshev2.load(aTypeNum, tMap);
+                tMergeBasis[i] = SphericalChebyshev.load(aTypeNum, tMap);
                 break;
             }
             case "chebyshev": case "cheby": {
-                tMergeBasis[i] = Chebyshev2.load(aTypeNum, tMap);
+                tMergeBasis[i] = Chebyshev.load(aTypeNum, tMap);
                 break;
             }
             default: {
                 throw new IllegalArgumentException("Unsupported basis type: " + tType);
             }}
         }
-        return new MergedBasis2(tMergeBasis);
+        return new MergedBasis(tMergeBasis);
     }
 }

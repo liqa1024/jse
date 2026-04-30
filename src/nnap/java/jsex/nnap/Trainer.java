@@ -18,8 +18,8 @@ import jse.optim.Adam;
 import jse.optim.IOptimizer;
 import jse.optim.LBFGS;
 import jse.parallel.ParforThreadPool;
-import jsex.nnap.basis.MirrorBasis2;
-import jsex.nnap.basis.SharedBasis2;
+import jsex.nnap.basis.MirrorBasis;
+import jsex.nnap.basis.SharedBasis;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
@@ -35,7 +35,7 @@ import java.util.function.IntUnaryOperator;
  * 新结构大幅简化了训练器的实现
  * @author liqa
  */
-public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
+public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
     protected final static String DEFAULT_UNITS = "metal";
     protected final static double DEFAULT_ENERGY_WEIGHT = 1.0;
     protected final static double DEFAULT_FORCE_WEIGHT = 0.1;
@@ -124,7 +124,7 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
     @Override public int ntypes() {return mNNAP.ntypes();}
     @Override public boolean hasSymbol() {return true;}
     @Override public String symbol(int aType) {return mNNAP.symbol(aType);}
-    public NNAP2 model() {return mNNAP;}
+    public NNAP model() {return mNNAP;}
     public String units() {return mNNAP.units();}
     public String precision() {return mNNAP.precision();}
     
@@ -132,7 +132,7 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
     protected final boolean mSingle;
     protected final DataSet mTrainData, mTestData;
     protected final boolean mIsRetrain;
-    protected final NNAP2 mNNAP;
+    protected final NNAP mNNAP;
     protected final IVector mRefEngs;
     protected double mNormMuEng = 0.0, mNormSigmaEng = 1.0;
     protected boolean mHasForce = false;
@@ -160,63 +160,63 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
     
     
     protected double mEnergyWeight = DEFAULT_ENERGY_WEIGHT;
-    public Trainer2 setEnergyWeight(double aWeight) {
+    public Trainer setEnergyWeight(double aWeight) {
         mEnergyWeight = aWeight;
         mOptimizer.markLossFuncChanged();
         return this;
     }
     protected double mForceWeight = DEFAULT_FORCE_WEIGHT;
-    public Trainer2 setForceWeight(double aWeight) {
+    public Trainer setForceWeight(double aWeight) {
         mForceWeight = aWeight;
         mOptimizer.markLossFuncChanged();
         return this;
     }
     protected double mStressWeight = DEFAULT_STRESS_WEIGHT;
-    public Trainer2 setStressWeight(double aWeight) {
+    public Trainer setStressWeight(double aWeight) {
         mStressWeight = aWeight;
         mOptimizer.markLossFuncChanged();
         return this;
     }
     
     protected ILossFunc mLossFuncEng = LOSS_SMOOTHL1;
-    public Trainer2 setLossFuncEnergy(ILossFunc aLossFunc) {
+    public Trainer setLossFuncEnergy(ILossFunc aLossFunc) {
         mLossFuncEng = aLossFunc;
         mOptimizer.markLossFuncChanged();
         return this;
     }
     protected ILossFunc mLossFuncForce = LOSS_SMOOTHL1;
-    public Trainer2 setLossFuncForce(ILossFunc aLossFunc) {
+    public Trainer setLossFuncForce(ILossFunc aLossFunc) {
         mLossFuncForce = aLossFunc;
         mOptimizer.markLossFuncChanged();
         return this;
     }
     protected ILossFunc mLossFuncStress = LOSS_SMOOTHL1;
-    public Trainer2 setLossFuncStress(ILossFunc aLossFunc) {
+    public Trainer setLossFuncStress(ILossFunc aLossFunc) {
         mLossFuncStress = aLossFunc;
         mOptimizer.markLossFuncChanged();
         return this;
     }
-    public Trainer2 setLossFunc(ILossFunc aLossFunc) {
+    public Trainer setLossFunc(ILossFunc aLossFunc) {
         mLossFuncEng = aLossFunc;
         mLossFuncForce = aLossFunc;
         mLossFuncStress = aLossFunc;
         mOptimizer.markLossFuncChanged();
         return this;
     }
-    public Trainer2 reset() {
+    public Trainer reset() {
         mOptimizer.reset();
         return this;
     }
     
     protected boolean mAutoBreak = true;
-    public Trainer2 setAutoBreak(boolean aFlag) {
+    public Trainer setAutoBreak(boolean aFlag) {
         mAutoBreak = aFlag;
         return this;
     }
     
     protected IOptimizer mOptimizer = new LBFGS(100).setLineSearch();
     protected int mBatchSize = -1;
-    public Trainer2 setOptimizer(Map<String, ?> aOptArgs) {
+    public Trainer setOptimizer(Map<String, ?> aOptArgs) {
         if (aOptArgs == null) {
             aOptArgs = Maps.of("type", "lbfgs");
         }
@@ -249,11 +249,11 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
         initOptimizer_();
         return this;
     }
-    public Trainer2 setLearningRate(double aLearningRate) {
+    public Trainer setLearningRate(double aLearningRate) {
         mOptimizer.setLearningRate(aLearningRate);
         return this;
     }
-    public Trainer2 setBatchSize(int aBatchSize) {
+    public Trainer setBatchSize(int aBatchSize) {
         mBatchSize = aBatchSize;
         if (mOptimizer instanceof LBFGS) {
             if (mBatchSize > 0) mOptimizer.setNoLineSearch(); // batch 情况下不能线搜索，因为线搜索会使用上一步的梯度
@@ -267,7 +267,7 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
      * @param aValue 设置值
      * @return 自身方便链式调用
      */
-    public Trainer2 setBasisMax(double aValue) {
+    public Trainer setBasisMax(double aValue) {
         mBasisMax = aValue;
         return this;
     }
@@ -275,12 +275,12 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
     /**
      * 设置所有种类共享相同的归一化系数，只在初始化归一化系数之前设置才能影响初始化
      * <p>
-     * 现在默认不会进行基组归一化，因此直接采用 {@link SharedBasis2}
+     * 现在默认不会进行基组归一化，因此直接采用 {@link SharedBasis}
      * 的写法即可自动实现这个效果
      * @param aFlag 设置值
      * @return 自身方便链式调用
      */
-    public Trainer2 setShareNorm(boolean aFlag) {
+    public Trainer setShareNorm(boolean aFlag) {
         if (mShareNorm!=null &&  mShareNorm==aFlag) return this;
         if (aFlag) {
             // 检测基组长度是否相等
@@ -297,12 +297,12 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
     protected boolean mSharedBasis = true;
     
     @SuppressWarnings("unchecked")
-    Trainer2(@Range(from=1, to=Integer.MAX_VALUE) int aNumThreads, Map<String, ?> aArgs, @Nullable Map<String, ?> aModelInfo) throws Exception {
+    Trainer(@Range(from=1, to=Integer.MAX_VALUE) int aNumThreads, Map<String, ?> aArgs, @Nullable Map<String, ?> aModelInfo) throws Exception {
         mPool = new ParforThreadPool(aNumThreads);
         if (aModelInfo != null) {
             mIsRetrain = true;
             argsCheckRetrain_(aArgs);
-            mNNAP = new NNAP2(aModelInfo, aNumThreads);
+            mNNAP = new NNAP(aModelInfo, aNumThreads);
             // 重新实现部分读取来降低不必要的代码耦合
             List<? extends Map<String, ?>> tModelInfos = (List<? extends Map<String, ?>>)aModelInfo.get("models");
             if (tModelInfos == null) throw new IllegalArgumentException("No models in ModelInfo");
@@ -323,8 +323,8 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
         mSelectParas = mNNAP.parameters().copy();
         
         // 简单遍历 basis 验证 mirror 的情况
-        for (int i = 0; i < tNumTypes; ++i) if (mNNAP.mBasis[i] instanceof MirrorBasis2) {
-            MirrorBasis2 tBasis = (MirrorBasis2)mNNAP.mBasis[i];
+        for (int i = 0; i < tNumTypes; ++i) if (mNNAP.mBasis[i] instanceof MirrorBasis) {
+            MirrorBasis tBasis = (MirrorBasis)mNNAP.mBasis[i];
             int tMirrorType = tBasis.mirrorType();
             double oRefEng = mRefEngs.get(i);
             double tRefEng = mRefEngs.get(tMirrorType-1);
@@ -335,7 +335,7 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
         }
         // 简单遍历识别 shared 基组情况
         for (int i = 1; i < tNumTypes; ++i) {
-            if (!(mNNAP.mBasis[i] instanceof SharedBasis2)) {
+            if (!(mNNAP.mBasis[i] instanceof SharedBasis)) {
                 mSharedBasis = false;
                 break;
             }
@@ -403,7 +403,7 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
      * </dl>
      */
     @SuppressWarnings("unchecked")
-    public Trainer2(Map<String, ?> aArgs, @Nullable Map<String, ?> aModelInfo) throws Exception {
+    public Trainer(Map<String, ?> aArgs, @Nullable Map<String, ?> aModelInfo) throws Exception {
         this(nthreadsFromArgs_(aArgs), aArgs, aModelInfo);
         @Nullable Map<String, ?> tOptim = (Map<String, ?>)UT.Code.get(aArgs, "optimizer", "optim", "opt");
         if (tOptim != null) {
@@ -488,7 +488,7 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
      *     </dd>
      * </dl>
      */
-    public Trainer2(Map<String, ?> aArgs) throws Exception {
+    public Trainer(Map<String, ?> aArgs) throws Exception {
         this(aArgs, null);
     }
     
@@ -496,7 +496,7 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
         return ((Number)UT.Code.getWithDefault(aArgs, DEFAULT_NTHREADS, "number_of_threads", "nthreads")).intValue();
     }
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private static NNAP2 nnapFromArgs_(Map<String, ?> aArgs, int aNumThreads) throws Exception {
+    private static NNAP nnapFromArgs_(Map<String, ?> aArgs, int aNumThreads) throws Exception {
         /// symbols
         String[] aSymbols;
         @Nullable Object tSymbols = UT.Code.get(aArgs, "symbols", "elems", "species");
@@ -619,13 +619,13 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
             rModel.put("nn", aNNSetting.get(i));
             rModels.add(rModel);
         }
-        rModelInfos.put("version", NNAP2.VERSION);
+        rModelInfos.put("version", NNAP.VERSION);
         rModelInfos.put("units", UT.Code.getWithDefault(aArgs, DEFAULT_UNITS, "units").toString());
         rModelInfos.put("models", rModels);
-        return new NNAP2(rModelInfos, aNumThreads);
+        return new NNAP(rModelInfos, aNumThreads);
     }
     @SuppressWarnings("unchecked")
-    private static IVector refEngsFromArgs_(NNAP2 aNNAP, Map<String, ?> aArgs) {
+    private static IVector refEngsFromArgs_(NNAP aNNAP, Map<String, ?> aArgs) {
         @Nullable Object refEngs = UT.Code.get(aArgs, "ref_engs", "reference_energies", "erefs");
         if (refEngs == null) return Vectors.zeros(aNNAP.ntypes());
         if (refEngs instanceof Collection) {
@@ -653,12 +653,12 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
         tObj = UT.Code.get(aArgs, "units");
         if (tObj != null) throw new IllegalArgumentException("args of trainer can NOT contain `units` for retraining");
     }
-    private static IVector refEngsFromModelInfo_(NNAP2 aNNAP, List<? extends Map<String, ?>> aModelInfos) {
+    private static IVector refEngsFromModelInfo_(NNAP aNNAP, List<? extends Map<String, ?>> aModelInfos) {
         final int tNumTypes = aNNAP.ntypes();
         IVector tRefEngs = Vectors.zeros(tNumTypes);
         for (int i = 0; i < tNumTypes; ++i) {
             Number tRefEng = (Number)aModelInfos.get(i).get("ref_eng");
-            if (aNNAP.mBasis[i] instanceof MirrorBasis2) {
+            if (aNNAP.mBasis[i] instanceof MirrorBasis) {
                 // mirror 会强制这些额外值缺省
                 if (tRefEng != null) throw new IllegalArgumentException("ref_eng in mirror_basis MUST be empty");
                 tRefEngs.set(i, Double.NaN);
@@ -668,7 +668,7 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
         }
         return tRefEngs;
     }
-    private void initNormFromModelInfo_(NNAP2 aNNAP, List<? extends Map<String, ?>> aModelInfos) {
+    private void initNormFromModelInfo_(NNAP aNNAP, List<? extends Map<String, ?>> aModelInfos) {
         final int tNumTypes = aNNAP.ntypes();
         Number tNormSigmaEng = null, tNormMuEng = null;
         for (int i = 0; i < tNumTypes; ++i) {
@@ -1415,8 +1415,8 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
                 rFpPtr.parse2destD(tSubFp);
                 // 归一化系数统计的位置，这里是这样的优先级
                 int tNormIdx = tType-1;
-                if (mNNAP.mBasis[tType-1] instanceof MirrorBasis2) {
-                    tNormIdx = ((MirrorBasis2)mNNAP.mBasis[tType-1]).mirrorType() - 1;
+                if (mNNAP.mBasis[tType-1] instanceof MirrorBasis) {
+                    tNormIdx = ((MirrorBasis)mNNAP.mBasis[tType-1]).mirrorType() - 1;
                 }
                 if (tShareNorm) tNormIdx = 0;
                 // 统计归一化系数
@@ -1436,7 +1436,7 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
             }
             tDivPar[0].plus2this(tDivPar[ti]);
         }
-        for (int i = 0; i < tNumTypes; ++i) if ((tShareNorm && i==0) || (!tShareNorm && !(mNNAP.mBasis[i] instanceof MirrorBasis2))) {
+        for (int i = 0; i < tNumTypes; ++i) if ((tShareNorm && i==0) || (!tShareNorm && !(mNNAP.mBasis[i] instanceof MirrorBasis))) {
             int tDivI = tDivPar[0].get(i);
             if (tDivI == 0) {
                 tMuPar[0][i].fill(0.0);
@@ -1455,8 +1455,8 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
                 });
             }
         }
-        for (int i = 0; i < tNumTypes; ++i) if ((tShareNorm && i!=0) || (!tShareNorm && (mNNAP.mBasis[i] instanceof MirrorBasis2))) {
-            int tNormIdx = tShareNorm ? 0 : (((MirrorBasis2)mNNAP.mBasis[i]).mirrorType()-1);
+        for (int i = 0; i < tNumTypes; ++i) if ((tShareNorm && i!=0) || (!tShareNorm && (mNNAP.mBasis[i] instanceof MirrorBasis))) {
+            int tNormIdx = tShareNorm ? 0 : (((MirrorBasis)mNNAP.mBasis[i]).mirrorType()-1);
             tMuPar[0][i].fill(tMuPar[0][tNormIdx]);
             tSigmaPar[0][i].fill(tSigmaPar[0][tNormIdx]);
         }
@@ -1776,7 +1776,7 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
                 rModel.put("norm_mu_eng", mNormMuEng);
                 rModel.put("norm_sigma_eng", mNormSigmaEng);
             }
-            if (mNNAP.mBasis[i] instanceof MirrorBasis2) {
+            if (mNNAP.mBasis[i] instanceof MirrorBasis) {
                 rModels.add(rModel);
                 continue;
             }
@@ -1788,7 +1788,7 @@ public class Trainer2 implements IHasSymbol, ISavable, AutoCloseable {
             rModel.put("nn", rNN);
             rModels.add(rModel);
         }
-        rSaveTo.put("version", NNAP2.VERSION);
+        rSaveTo.put("version", NNAP.VERSION);
         String tUnits = units();
         if (tUnits != null) {
             rSaveTo.put("units", tUnits);

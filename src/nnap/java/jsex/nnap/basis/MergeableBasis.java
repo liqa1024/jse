@@ -6,7 +6,7 @@ import jse.math.vector.Vector;
 
 import java.util.Map;
 
-public abstract class MergeableBasis2 implements ISavable {
+public abstract class MergeableBasis implements ISavable {
     /**
      * 挂载内部的参量到一个指针，从而自动同步修改
      * <p>
@@ -69,7 +69,7 @@ public abstract class MergeableBasis2 implements ISavable {
     public abstract void updateGenMap(Map<String, Object> rGenMap, int aGenIdxType, int aGenIdxMerge);
     /** 本基组是否和输入的基组有着相同的 code gen map，相同时则会简单合并简化最终的 jit 代码 */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    public abstract boolean hasSameGenMap(MergeableBasis2 aBasis);
+    public abstract boolean hasSameGenMap(MergeableBasis aBasis);
     
     /** @return 前向传播中需要的缓存大小 */
     public abstract int forwardCacheSize(int aNumNei);

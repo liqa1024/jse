@@ -11,7 +11,7 @@ import java.util.Map;
  * 主要用于作为机器学习的输入向量；这是 NNAP 中默认使用的原子基组。
  * @author liqa
  */
-public class SphericalChebyshev2 extends WTypeBasis2 {
+public class SphericalChebyshev extends WTypeBasis {
     final static int[] L3NCOLS = {0, 0, 2, 4, 9, 14, 23};
     final static int[] L4NCOLS = {0, 1, 3, 9};
     
@@ -26,8 +26,8 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
     final int mLMaxMax, mLMAll;
     final int mSize;
     
-    private SphericalChebyshev2(double aRCut, int aNumTypes, int aNMax, int aLMax, int aLMaxMax, int aL3Max, int aL4Max,
-                                int aWType, @Nullable Vector aFuseWeight, @Nullable Vector aPostFuseWeight, double @Nullable[] aPostFuseScale) {
+    private SphericalChebyshev(double aRCut, int aNumTypes, int aNMax, int aLMax, int aLMaxMax, int aL3Max, int aL4Max,
+                               int aWType, @Nullable Vector aFuseWeight, @Nullable Vector aPostFuseWeight, double @Nullable[] aPostFuseScale) {
         super(aRCut, aNumTypes, aNMax, aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale);
         if (aLMaxMax<0 || aLMaxMax>12) throw new IllegalArgumentException("Input lmax MUST be in [0, 12], input: "+aLMaxMax);
         if (aL3Max<0 || aL3Max>6) throw new IllegalArgumentException("Input l3max MUST be in [0, 6], input: "+aL3Max);
@@ -43,7 +43,7 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
         
         mSize = mSizeNP*mSizeL;
     }
-    SphericalChebyshev2(double aRCut, int aNumTypes, int aNMax, int aLMax, int aL3Max, int aL4Max, int aWType, Vector aFuseWeight, Vector aPostFuseWeight, double[] aPostFuseScale) {
+    SphericalChebyshev(double aRCut, int aNumTypes, int aNMax, int aLMax, int aL3Max, int aL4Max, int aWType, Vector aFuseWeight, Vector aPostFuseWeight, double[] aPostFuseScale) {
         this(aRCut, aNumTypes, aNMax, aLMax, Math.max(Math.max(aLMax, aL3Max), aL4Max), aL3Max, aL4Max, aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale);
     }
     
@@ -57,7 +57,7 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
     }
     
     @SuppressWarnings({"rawtypes"})
-    public static SphericalChebyshev2 load(int aNumTypes, Map aMap) {
+    public static SphericalChebyshev load(int aNumTypes, Map aMap) {
         int aNMax = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue();
         int aLMax = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_LMAX, "lmax")).intValue();
         int aL3Max = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_L3MAX, "l3max")).intValue();
@@ -78,7 +78,7 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
             Object tPostFuseScale = aMap.get("post_fuse_scale");
             aPostFuseScale[0] = tPostFuseScale==null ? 1.0 : ((Number)tPostFuseScale).doubleValue();
         }
-        return new SphericalChebyshev2(
+        return new SphericalChebyshev(
             ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
             aNumTypes, aNMax,
             aLMax, aL3Max, aL4Max,
@@ -110,9 +110,9 @@ public class SphericalChebyshev2 extends WTypeBasis2 {
         rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_L3MAX", mL3Max);
         rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_L4MAX", mL4Max);
     }
-    @Override public boolean hasSameGenMap(MergeableBasis2 aBasis) {
-        if (!(aBasis instanceof SphericalChebyshev2)) return false;
-        SphericalChebyshev2 tBasis = (SphericalChebyshev2)aBasis;
+    @Override public boolean hasSameGenMap(MergeableBasis aBasis) {
+        if (!(aBasis instanceof SphericalChebyshev)) return false;
+        SphericalChebyshev tBasis = (SphericalChebyshev)aBasis;
         return super.hasSameGenMap(aBasis) && mLMax==tBasis.mLMax && mL3Max==tBasis.mL3Max && mL4Max==tBasis.mL4Max;
     }
 }

@@ -16,7 +16,7 @@ import jse.lmp.LmpPlugin;
  * } </pre>
  * 来使用
  */
-public class PairNNAP2 extends LmpPlugin.Pair {
+public class PairNNAP extends LmpPlugin.Pair {
     /** 用于判断是否进行了静态初始化以及方便的手动初始化 */
     public final static class InitHelper {
         private static volatile boolean INITIALIZED = false;
@@ -35,7 +35,7 @@ public class PairNNAP2 extends LmpPlugin.Pair {
         _INIT_FLAG = false;
     }
     
-    protected PairNNAP2(long aPairPtr) {
+    protected PairNNAP(long aPairPtr) {
         super(aPairPtr);
     }
     
@@ -104,11 +104,11 @@ public class PairNNAP2 extends LmpPlugin.Pair {
             mTypeIlistBuf[type] = new GrowableIntCPointer(128);
         }
     }
-    protected NNAP2 initNNAP(String aPath) throws Exception {
-        return new NNAP2(aPath, 1);
+    protected NNAP initNNAP(String aPath) throws Exception {
+        return new NNAP(aPath, 1);
     }
     
-    NNAP2 mNNAP = null;
+    NNAP mNNAP = null;
     IntCPointer mLmpType2NNAPType = null;
     double[] mCutoff = null;
     DoubleCPointer mCutsq = null;

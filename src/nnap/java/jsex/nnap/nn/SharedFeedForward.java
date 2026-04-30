@@ -27,10 +27,10 @@ import static jse.code.CS.ZL_VEC;
  *
  * @author liqa
  */
-public class SharedFeedForward2 extends NeuralNetwork2 {
-    private final FeedForward2 mBase;
+public class SharedFeedForward extends NeuralNetwork {
+    private final FeedForward mBase;
     private final int mSharedType;
-    public FeedForward2 sharedNeuralNetwork() {return mBase;}
+    public FeedForward sharedNeuralNetwork() {return mBase;}
     public int sharedType() {return mSharedType;}
     
     private final int mInputDim;
@@ -49,7 +49,7 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
     private IDoubleOrFloatCPointer[] mInternalGradHiddenWeights = null, mInternalGradHiddenBiases = null;
     private IDoubleOrFloatCPointer[] mInternalGradOutputWeight = null, mInternalGradOutputBias = null;
     
-    SharedFeedForward2(int aInputDim, FeedForward2 aBase, int aSharedType, int[] aSharedHiddenDims, Vector aNoSharedHiddenWeights, Vector aNoSharedHiddenBiases, Vector aNoSharedOutputWeight, Vector aNoSharedOutputBias) {
+    SharedFeedForward(int aInputDim, FeedForward aBase, int aSharedType, int[] aSharedHiddenDims, Vector aNoSharedHiddenWeights, Vector aNoSharedHiddenBiases, Vector aNoSharedOutputWeight, Vector aNoSharedOutputBias) {
         mInputDim = aInputDim;
         mBase = aBase;
         mSharedType = aSharedType;
@@ -232,13 +232,13 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public static SharedFeedForward2 load(int aInputDim, NeuralNetwork2[] aNN, Map aMap) {
+    public static SharedFeedForward load(int aInputDim, NeuralNetwork[] aNN, Map aMap) {
         @Nullable Object tShare = aMap.get("share");
         if (tShare==null) {
             throw new IllegalArgumentException("Key `share` required for shared_feed_forward");
         }
         int tSharedType = ((Number)tShare).intValue();
-        FeedForward2 tBase = (FeedForward2)aNN[tSharedType-1];
+        FeedForward tBase = (FeedForward)aNN[tSharedType-1];
         // 旧版分层 share 情况现在不再支持
         if (aMap.get("shared_flags") != null) {
             throw new IllegalArgumentException("shared in layer nn is invalid now");
@@ -350,14 +350,14 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
                 aNoSharedOutputBias.set(0, ((Number)tNoSharedOutputBias).doubleValue());
             }
         }
-        return new SharedFeedForward2(aInputDim, tBase, tSharedType, aSharedHiddenDims, aNoSharedHiddenWeights, aNoSharedHiddenBiases, aNoSharedOutputWeight, aNoSharedOutputBias);
+        return new SharedFeedForward(aInputDim, tBase, tSharedType, aSharedHiddenDims, aNoSharedHiddenWeights, aNoSharedHiddenBiases, aNoSharedOutputWeight, aNoSharedOutputBias);
     }
-    public static SharedFeedForward2 full(NeuralNetwork2[] aNN, int aSharedType) {
-        FeedForward2 tBase = (FeedForward2)aNN[aSharedType-1];
+    public static SharedFeedForward full(NeuralNetwork[] aNN, int aSharedType) {
+        FeedForward tBase = (FeedForward)aNN[aSharedType-1];
         int[] aSharedHiddenDims = new int[tBase.mNumLayers+1];
         System.arraycopy(tBase.mHiddenDims, 0, aSharedHiddenDims, 0, tBase.mNumLayers);
         aSharedHiddenDims[tBase.mNumLayers] = 1;
-        return new SharedFeedForward2(tBase.mInputDim, tBase, aSharedType, aSharedHiddenDims, null, null, null, null);
+        return new SharedFeedForward(tBase.mInputDim, tBase, aSharedType, aSharedHiddenDims, null, null, null, null);
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -479,7 +479,7 @@ public class SharedFeedForward2 extends NeuralNetwork2 {
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
         mBase.updateGenMap(rGenMap, aGenIdx);
     }
-    @Override public boolean hasSameGenMap(NeuralNetwork2 aNN) {
+    @Override public boolean hasSameGenMap(NeuralNetwork aNN) {
         return mBase.hasSameGenMap(aNN);
     }
 }

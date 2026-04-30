@@ -16,8 +16,8 @@ import static jse.cptr.CPointer.NULL;
  * jse 实现的 nnap gpu 版本
  * @author liqa
  */
-@ApiStatus.Experimental
-class NNAP_cuda extends NNAP2 {
+@ApiStatus.Experimental @ApiStatus.Obsolete
+class NNAP_cuda extends NNAP {
     public final static class Conf {
         public static boolean DEV = false;
         /**
@@ -30,20 +30,20 @@ class NNAP_cuda extends NNAP2 {
          * 自定义构建 nnap 的 cmake 参数设置，
          * 会在构建时使用 -D ${key}=${value} 传入
          */
-        public final static Map<String, String> CMAKE_SETTING = OS.envMap("JSE_CMAKE_SETTING_NNAP_CUDA", NNAP2.Conf.CMAKE_SETTING);
+        public final static Map<String, String> CMAKE_SETTING = OS.envMap("JSE_CMAKE_SETTING_NNAP_CUDA", NNAP.Conf.CMAKE_SETTING);
         /**
          * 自定义构建 nnap 时使用的编译器，
          * cmake 有时不能自动检测到希望使用的编译器
          */
-        public static @Nullable String CMAKE_CXX_COMPILER  = OS.env("JSE_CMAKE_CXX_COMPILER_NNAP_CUDA", NNAP2.Conf.CMAKE_CXX_COMPILER);
-        public static @Nullable String CMAKE_CXX_FLAGS     = OS.env("JSE_CMAKE_CXX_FLAGS_NNAP_CUDA"   , NNAP2.Conf.CMAKE_CXX_FLAGS);
+        public static @Nullable String CMAKE_CXX_COMPILER  = OS.env("JSE_CMAKE_CXX_COMPILER_NNAP_CUDA", NNAP.Conf.CMAKE_CXX_COMPILER);
+        public static @Nullable String CMAKE_CXX_FLAGS     = OS.env("JSE_CMAKE_CXX_FLAGS_NNAP_CUDA"   , NNAP.Conf.CMAKE_CXX_FLAGS);
         public static @Nullable String CMAKE_CUDA_COMPILER = OS.env("JSE_CMAKE_CUDA_COMPILER_NNAP");
         public static @Nullable String CMAKE_CUDA_FLAGS    = OS.env("JSE_CMAKE_CUDA_FLAGS_NNAP");
         /**
          * 自定义构建 nnap 时的优化等级，
          * 默认会使用 BASE 优化
          */
-        public static int OPTIM_LEVEL = OS.envI("JSE_NNAP_OPTIM_LEVEL_CUDA", NNAP2.Conf.OPTIM_LEVEL);
+        public static int OPTIM_LEVEL = OS.envI("JSE_NNAP_OPTIM_LEVEL_CUDA", NNAP.Conf.OPTIM_LEVEL);
     }
     
     private int mNeighnumMax = -1;
@@ -211,7 +211,7 @@ class NNAP_cuda extends NNAP2 {
     }
     
     private boolean mCudaParaInited = false;
-    private void initLmpParamCuda_(PairNNAP2 aPair) throws CudaException {
+    private void initLmpParamCuda_(PairNNAP aPair) throws CudaException {
         if (mCudaParaInited) return;
         mCudaParaInited = true;
         mCudaLmpType2NNAPType = IntCudaPointer.malloc(aPair.mTypeNum+1);
@@ -219,7 +219,7 @@ class NNAP_cuda extends NNAP2 {
         mCudaCutsq = FloatCudaPointer.malloc(aPair.mTypeNum+1);
         mCudaCutsq.fillD(aPair.mCutsq, aPair.mTypeNum+1);
     }
-    @Override void computeLammps(PairNNAP2 aPair) throws CudaException {
+    @Override void computeLammps(PairNNAP aPair) throws CudaException {
         initLmpParamCuda_(aPair);
         // 常规缓存向量长度规范
         final boolean nlflag = mNeighnumMax<0 || aPair.neighborAgo()==0;

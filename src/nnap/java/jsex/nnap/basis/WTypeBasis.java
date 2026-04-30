@@ -16,7 +16,7 @@ import java.util.Map;
 
 import static jse.code.CS.RANDOM;
 
-abstract class WTypeBasis2 extends MergeableBasis2 {
+abstract class WTypeBasis extends MergeableBasis {
     public final static int WTYPE_DEFAULT = 0, WTYPE_NONE = -1, WTYPE_FULL = 2, WTYPE_EXFULL = 3, WTYPE_FUSE = 4, WTYPE_RFUSE = 5, WTYPE_EXFUSE = 6;
     final static BiMap<String, Integer> ALL_WTYPE = ImmutableBiMap.<String, Integer>builder()
         .put("default", WTYPE_DEFAULT)
@@ -47,7 +47,7 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
     IDoubleOrFloatCPointer mRFuseWeight = null;
     IDoubleOrFloatCPointer[] mGradRFuseWeight = null;
     
-    WTypeBasis2(double aRCut, int aNumTypes, int aNMax, int aWType, @Nullable Vector aFuseWeight, @Nullable Vector aPostFuseWeight, double @Nullable[] aPostFuseScale) {
+    WTypeBasis(double aRCut, int aNumTypes, int aNMax, int aWType, @Nullable Vector aFuseWeight, @Nullable Vector aPostFuseWeight, double @Nullable[] aPostFuseScale) {
         if (aNumTypes <= 0) throw new IllegalArgumentException("Inpute ntypes MUST be Positive, input: "+ aNumTypes);
         if (aNMax<0 || aNMax>20) throw new IllegalArgumentException("Input nmax MUST be in [0, 20], input: "+aNMax);
         if (!ALL_WTYPE.containsValue(aWType)) throw new IllegalArgumentException("Input wtype MUST be in {-1, 0, 2, 3, 4, 6}, input: "+ aWType);
@@ -651,9 +651,9 @@ abstract class WTypeBasis2 extends MergeableBasis2 {
         rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_NMAX", mNMax);
         rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_SIZE_NP", mSizeNP);
     }
-    @Override public boolean hasSameGenMap(MergeableBasis2 aBasis) {
-        if (!(aBasis instanceof WTypeBasis2)) return false;
-        WTypeBasis2 tBasis = (WTypeBasis2)aBasis;
+    @Override public boolean hasSameGenMap(MergeableBasis aBasis) {
+        if (!(aBasis instanceof WTypeBasis)) return false;
+        WTypeBasis tBasis = (WTypeBasis)aBasis;
         return size()==tBasis.size() && cptrHyperParameterSize()==tBasis.cptrHyperParameterSize() && cptrParameterSize()==tBasis.cptrParameterSize() &&
             mNumTypes==tBasis.mNumTypes && (mPostFuseWeight!=null)==(tBasis.mPostFuseWeight!=null) && mWType==tBasis.mWType && mNMax==tBasis.mNMax && mSizeNP==tBasis.mSizeNP;
     }

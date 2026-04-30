@@ -13,9 +13,9 @@ import jse.cptr.*;
 import jse.math.vector.IVector;
 import jse.math.vector.Vector;
 import jse.math.vector.Vectors;
-import jsex.nnap.basis.Basis2;
-import jsex.nnap.basis.MirrorBasis2;
-import jsex.nnap.nn.NeuralNetwork2;
+import jsex.nnap.basis.Basis;
+import jsex.nnap.basis.MirrorBasis;
+import jsex.nnap.nn.NeuralNetwork;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.*;
 
@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
  * @author liqa
  */
 @ApiStatus.Experimental
-public class NNAP2 implements IPairPotential {
+public class NNAP implements IPairPotential {
     public final static class Conf {
         /**
          * 自定义构建 nnap 的 cmake 参数设置，
@@ -66,8 +66,8 @@ public class NNAP2 implements IPairPotential {
     final boolean mSingle;
     boolean mDead = false;
     final int mNumThreads;
-    final Basis2[] mBasis;
-    final NeuralNetwork2[] mNN;
+    final Basis[] mBasis;
+    final NeuralNetwork[] mNN;
     @Override public int ntypes() {return mSymbols.length;}
     @Override public boolean hasSymbol() {return true;}
     @Override public String symbol(int aType) {return mSymbols[aType-1];}
@@ -92,7 +92,7 @@ public class NNAP2 implements IPairPotential {
     Vector mGradTotParam = null;
     
     @SuppressWarnings("unchecked")
-    NNAP2(@Nullable String aLibDir, @Nullable String aProjectName, Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aNumThreads, @Nullable String aPrecision) throws Exception {
+    NNAP(@Nullable String aLibDir, @Nullable String aProjectName, Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aNumThreads, @Nullable String aPrecision) throws Exception {
         mNumThreads = aNumThreads;
         Number tVersion = (Number)aModelInfo.get("version");
         if (tVersion != null) {
@@ -118,11 +118,11 @@ public class NNAP2 implements IPairPotential {
             if (tSymbol == null) throw new IllegalArgumentException("No symbol in model");
             mSymbols[i] = tSymbol.toString();
         }
-        mBasis = Basis2.load(NewCollections.map(tModels, info -> {
+        mBasis = Basis.load(NewCollections.map(tModels, info -> {
             Object tBasisInfo = info.get("basis");
             return tBasisInfo!=null ? tBasisInfo : Maps.of("type", "spherical_chebyshev");
         }));
-        mNN = NeuralNetwork2.load(mBasis, NewCollections.map(tModels, info -> {
+        mNN = NeuralNetwork.load(mBasis, NewCollections.map(tModels, info -> {
             Object tNNInfo = info.get("torch");
             if (tNNInfo != null) throw new IllegalArgumentException("torch model is invalid now.");
             return info.get("nn");
@@ -225,14 +225,14 @@ public class NNAP2 implements IPairPotential {
         double aNormMuEng = tNormMuEng==null ? 0.0 : tNormMuEng.doubleValue();
         for (int i = 0; i < tModelSize; ++i) {
             Map<String, ?> tModel = tModels.get(i);
-            if (mBasis[i] instanceof MirrorBasis2) {
+            if (mBasis[i] instanceof MirrorBasis) {
                 // mirror 会强制这些额外值缺省
                 Number tRefEng = (Number)tModel.get("ref_eng");
                 if (tRefEng != null) throw new IllegalArgumentException("ref_eng in mirror_basis MUST be empty");
                 Object tNormObj = UT.Code.get(tModel, "norm_vec", "norm_sigma", "norm_mu");
                 if (tNormObj != null) throw new IllegalArgumentException("norm_vec/norm_sigma/norm_mu in mirror_basis MUST be empty");
                 // 读取 mirror 的属性
-                tModel = tModels.get(((MirrorBasis2)mBasis[i]).mirrorType()-1);
+                tModel = tModels.get(((MirrorBasis)mBasis[i]).mirrorType()-1);
             }
             Number tRefEng = (Number)tModel.get("ref_eng");
             double aRefEng = tRefEng==null ? 0.0 : tRefEng.doubleValue();
@@ -253,19 +253,19 @@ public class NNAP2 implements IPairPotential {
             tParam.rightShift(tBasisSize);
         }
     }
-    public NNAP2(Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aNumThreads) throws Exception {
+    public NNAP(Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aNumThreads) throws Exception {
         this(null, null, aModelInfo, aNumThreads, null);
         // 直接开始 jit 编译
         compileJIT_();
     }
-    public NNAP2(String aModelPath, @Range(from=1, to=Integer.MAX_VALUE) int aNumThreads) throws Exception {
+    public NNAP(String aModelPath, @Range(from=1, to=Integer.MAX_VALUE) int aNumThreads) throws Exception {
         this(IO.toParentPath(aModelPath), toValidProjectName(IO.toFileName(aModelPath)),
              aModelPath.endsWith(".yaml") || aModelPath.endsWith(".yml") ? IO.yaml2map(aModelPath) : IO.json2map(aModelPath), aNumThreads, null);
         // 直接开始 jit 编译
         compileJIT_();
     }
-    public NNAP2(Map<?, ?> aModelInfo) throws Exception {this(aModelInfo, 1);}
-    public NNAP2(String aModelPath) throws Exception {this(aModelPath, 1);}
+    public NNAP(Map<?, ?> aModelInfo) throws Exception {this(aModelInfo, 1);}
+    public NNAP(String aModelPath) throws Exception {this(aModelPath, 1);}
     
     private final static Pattern PROJECT_INVALID_NAME = Pattern.compile("[^a-zA-Z0-9_\\-]");
     static String toValidProjectName(String aProjectName) {
@@ -336,7 +336,7 @@ public class NNAP2 implements IPairPotential {
     @Override public int nthreads() {return mNumThreads;}
     @Override public double rcutMax() {
         double tRCut = 0.0;
-        for (Basis2 tBasis : mBasis) {
+        for (Basis tBasis : mBasis) {
             tRCut = Math.max(tRCut, tBasis.rcut());
         }
         return tRCut;
@@ -797,7 +797,7 @@ public class NNAP2 implements IPairPotential {
             tFpForwardCache.ensureCapacity(mBasis[i].forwardCacheSize(aNeiNum));
         }
     }
-    void computeLammps(PairNNAP2 aPair) throws Exception {
+    void computeLammps(PairNNAP aPair) throws Exception {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
         // 种类的缓存优化
         int inum = aPair.listInum();

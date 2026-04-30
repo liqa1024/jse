@@ -24,7 +24,7 @@ import static jse.code.CS.RANDOM;
  *
  * @author liqa
  */
-public class FeedForward2 extends NeuralNetwork2 {
+public class FeedForward extends NeuralNetwork {
     protected final static int[] DEFAULT_HIDDEN_DIMS = {32, 32}; // 现在统一默认为 32, 32
     
     final int mInputDim;
@@ -40,7 +40,7 @@ public class FeedForward2 extends NeuralNetwork2 {
     private IDoubleOrFloatCPointer[] mInternalGradHiddenWeights = null, mInternalGradHiddenBiases = null;
     private IDoubleOrFloatCPointer[] mInternalGradOutputWeight = null, mInternalGradOutputBias = null;
     
-    FeedForward2(int aInputDim, int[] aHiddenDims, Vector aHiddenWeights, Vector aHiddenBiases, Vector aOutputWeight, Vector aOutputBias) {
+    FeedForward(int aInputDim, int[] aHiddenDims, Vector aHiddenWeights, Vector aHiddenBiases, Vector aOutputWeight, Vector aOutputBias) {
         mInputDim = aInputDim;
         mHiddenDims = aHiddenDims;
         mNumLayers = aHiddenDims.length;
@@ -128,7 +128,7 @@ public class FeedForward2 extends NeuralNetwork2 {
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public static FeedForward2 load(int aInputDim, Map aMap) {
+    public static FeedForward load(int aInputDim, Map aMap) {
         @Nullable Number tInputDim = (Number)UT.Code.get(aMap, "input_dim");
         if (tInputDim!=null && tInputDim.intValue()!=aInputDim) {
             throw new IllegalArgumentException("Input dimension mismatch: "+tInputDim.intValue()+" vs "+aInputDim);
@@ -217,7 +217,7 @@ public class FeedForward2 extends NeuralNetwork2 {
             aOutputBias = Vectors.zeros(1);
             aOutputBias.set(0, ((Number)tOutputBias).doubleValue());
         }
-        return new FeedForward2(aInputDim, aHiddenDims, aHiddenWeights, aHiddenBiases, aOutputWeight, aOutputBias);
+        return new FeedForward(aInputDim, aHiddenDims, aHiddenWeights, aHiddenBiases, aOutputWeight, aOutputBias);
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -346,10 +346,10 @@ public class FeedForward2 extends NeuralNetwork2 {
         }
     }
     
-    @Override public boolean hasSameGenMap(NeuralNetwork2 aNN) {
-        if (aNN instanceof SharedFeedForward2) return hasSameGenMap(((SharedFeedForward2)aNN).sharedNeuralNetwork());
-        if (!(aNN instanceof FeedForward2)) return false;
-        FeedForward2 tNN = (FeedForward2)aNN;
+    @Override public boolean hasSameGenMap(NeuralNetwork aNN) {
+        if (aNN instanceof SharedFeedForward) return hasSameGenMap(((SharedFeedForward)aNN).sharedNeuralNetwork());
+        if (!(aNN instanceof FeedForward)) return false;
+        FeedForward tNN = (FeedForward)aNN;
         if (mNumLayers !=tNN.mNumLayers || mInputDim!=tNN.mInputDim) return false;
         for (int i = 0; i < mNumLayers; ++i) {
             if (mHiddenDims[i]!=tNN.mHiddenDims[i]) return false;

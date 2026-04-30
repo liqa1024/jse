@@ -3,8 +3,8 @@ package jsex.nnap.nn;
 import jse.code.io.ISavable;
 import jse.cptr.IDoubleOrFloatCPointer;
 import jse.math.vector.Vector;
-import jsex.nnap.basis.Basis2;
-import jsex.nnap.basis.MirrorBasis2;
+import jsex.nnap.basis.Basis;
+import jsex.nnap.basis.MirrorBasis;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.util.List;
@@ -18,17 +18,17 @@ import java.util.Map;
  * @author liqa
  */
 @ApiStatus.Experimental @ApiStatus.Internal
-public abstract class NeuralNetwork2 implements ISavable {
+public abstract class NeuralNetwork implements ISavable {
     /** 提供直接加载完整神经网络的通用接口 */
     @SuppressWarnings("rawtypes")
-    public static NeuralNetwork2[] load(Basis2[] aBasis, List aData) {
+    public static NeuralNetwork[] load(Basis[] aBasis, List aData) {
         final int tNumTypes = aData.size();
         if (aBasis.length!=tNumTypes) throw new IllegalArgumentException("Input size of basis and nn mismatch");
-        NeuralNetwork2[] rNN = new NeuralNetwork2[tNumTypes];
+        NeuralNetwork[] rNN = new NeuralNetwork[tNumTypes];
         for (int i = 0; i < tNumTypes; ++i) {
-            Basis2 tBasis = aBasis[i];
+            Basis tBasis = aBasis[i];
             // mirror 情况延迟初始化
-            if (tBasis instanceof MirrorBasis2) continue;
+            if (tBasis instanceof MirrorBasis) continue;
             Map tModelMap = (Map)aData.get(i);
             Object tModelType = tModelMap.get("type");
             if (tModelType == null) {
@@ -40,7 +40,7 @@ public abstract class NeuralNetwork2 implements ISavable {
                 break;
             }
             case "feed_forward": {
-                rNN[i] = FeedForward2.load(tBasis.size(), tModelMap);
+                rNN[i] = FeedForward.load(tBasis.size(), tModelMap);
                 break;
             }
             default: {
@@ -48,17 +48,17 @@ public abstract class NeuralNetwork2 implements ISavable {
             }}
         }
         for (int i = 0; i < tNumTypes; ++i) {
-            Basis2 tBasis = aBasis[i];
+            Basis tBasis = aBasis[i];
             Map tModelMap = (Map)aData.get(i);
             // mirror 情况不得有 nn 属性，这里直接套用 SharedFeedForward2
-            if (tBasis instanceof MirrorBasis2) {
+            if (tBasis instanceof MirrorBasis) {
                 if (tModelMap != null) throw new IllegalArgumentException("nn data in mirror ModelInfo MUST be empty");
-                rNN[i] = SharedFeedForward2.full(rNN, ((MirrorBasis2)tBasis).mirrorType());
+                rNN[i] = SharedFeedForward.full(rNN, ((MirrorBasis)tBasis).mirrorType());
                 continue;
             }
             Object tModelType = tModelMap.get("type");
             if (tModelType.equals("shared_feed_forward")) {
-                rNN[i] = SharedFeedForward2.load(tBasis.size(), rNN, tModelMap);
+                rNN[i] = SharedFeedForward.load(tBasis.size(), rNN, tModelMap);
             }
         }
         return rNN;
@@ -112,5 +112,5 @@ public abstract class NeuralNetwork2 implements ISavable {
     /** 更新内部 code gen 的 map，将参数编码进 jit */
     public abstract void updateGenMap(Map<String, Object> rGenMap, int aGenIdx);
     /** 本基组是否和输入的基组有着相同的 code gen map，相同时则会简单合并简化最终的 jit 代码 */
-    public abstract boolean hasSameGenMap(NeuralNetwork2 aBasis);
+    public abstract boolean hasSameGenMap(NeuralNetwork aBasis);
 }

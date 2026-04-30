@@ -8,17 +8,17 @@ import java.util.Map;
  * 目前主要用于实现 ising 模型
  * @author liqa
  */
-public class MirrorBasis2 extends Basis2 {
+public class MirrorBasis extends Basis {
     
-    private final Basis2 mMirrorBasis;
+    private final Basis mMirrorBasis;
     private final int mMirrorType;
-    public MirrorBasis2(Basis2 aMirrorBasis, int aMirrorType) {
+    public MirrorBasis(Basis aMirrorBasis, int aMirrorType) {
         if (aMirrorBasis == null) throw new NullPointerException();
-        if (aMirrorBasis instanceof MirrorBasis2) throw new IllegalArgumentException("MirrorBasis MUST NOT be Mirror");
+        if (aMirrorBasis instanceof MirrorBasis) throw new IllegalArgumentException("MirrorBasis MUST NOT be Mirror");
         mMirrorBasis = aMirrorBasis;
         mMirrorType = aMirrorType;
     }
-    public Basis2 mirrorBasis() {return mMirrorBasis;}
+    public Basis mirrorBasis() {return mMirrorBasis;}
     public int mirrorType() {return mMirrorType;}
     
     @Override public double rcut() {return mMirrorBasis.rcut();}
@@ -33,9 +33,9 @@ public class MirrorBasis2 extends Basis2 {
         // 补充 mirror 基组的内部参数
         mMirrorBasis.updateGenMapInternal(rGenMap, aGenIdx);
     }
-    @Override public boolean hasSameGenMap(Basis2 aBasis) {
-        if (!(aBasis instanceof MirrorBasis2)) return false;
-        MirrorBasis2 tBasis = (MirrorBasis2)aBasis;
+    @Override public boolean hasSameGenMap(Basis aBasis) {
+        if (!(aBasis instanceof MirrorBasis)) return false;
+        MirrorBasis tBasis = (MirrorBasis)aBasis;
         return mMirrorType==tBasis.mMirrorType && mMirrorBasis.hasSameGenMap(tBasis.mMirrorBasis);
     }
     
@@ -55,10 +55,10 @@ public class MirrorBasis2 extends Basis2 {
         rSaveTo.put("mirror", mMirrorType);
     }
     @SuppressWarnings({"rawtypes"})
-    public static MirrorBasis2 load(Basis2[] aBasis, Map aMap) {
+    public static MirrorBasis load(Basis[] aBasis, Map aMap) {
         Object tMirror = aMap.get("mirror");
         if (tMirror==null) throw new IllegalArgumentException("Key `mirror` required for mirror_basis");
         int tMirrorType = ((Number)tMirror).intValue();
-        return new MirrorBasis2(aBasis[tMirrorType-1], tMirrorType);
+        return new MirrorBasis(aBasis[tMirrorType-1], tMirrorType);
     }
 }

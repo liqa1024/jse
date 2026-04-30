@@ -16,12 +16,12 @@ import java.util.Map;
  * @author liqa
  */
 @ApiStatus.Experimental @ApiStatus.Internal
-public abstract class Basis2 implements ISavable {
+public abstract class Basis implements ISavable {
     /** 提供直接加载完整基组的通用接口 */
     @SuppressWarnings("rawtypes")
-    public static Basis2[] load(List aData) {
+    public static Basis[] load(List aData) {
         final int tTypeNum = aData.size();
-        Basis2[] rBasis = new Basis2[tTypeNum];
+        Basis[] rBasis = new Basis[tTypeNum];
         for (int i = 0; i < tTypeNum; ++i) {
             Map tBasisMap = (Map)aData.get(i);
             Object tBasisType = tBasisMap.get("type");
@@ -33,15 +33,15 @@ public abstract class Basis2 implements ISavable {
                 break; // mirror/share 情况延迟初始化
             }
             case "spherical_chebyshev": case "sph_cheby": {
-                rBasis[i] = new MergedBasis2(SphericalChebyshev2.load(tTypeNum, tBasisMap));
+                rBasis[i] = new MergedBasis(SphericalChebyshev.load(tTypeNum, tBasisMap));
                 break;
             }
             case "chebyshev": case "cheby": {
-                rBasis[i] = new MergedBasis2(Chebyshev2.load(tTypeNum, tBasisMap));
+                rBasis[i] = new MergedBasis(Chebyshev.load(tTypeNum, tBasisMap));
                 break;
             }
             case "merge": case "merged_basis": {
-                rBasis[i] = MergedBasis2.load(tTypeNum, tBasisMap);
+                rBasis[i] = MergedBasis.load(tTypeNum, tBasisMap);
                 break;
             }
             default: {
@@ -53,11 +53,11 @@ public abstract class Basis2 implements ISavable {
             Object tBasisType = tBasisMap.get("type");
             switch(tBasisType.toString()) {
             case "mirror": case "mirror_basis": {
-                rBasis[i] = MirrorBasis2.load(rBasis, tBasisMap);
+                rBasis[i] = MirrorBasis.load(rBasis, tBasisMap);
                 break;
             }
             case "share": case "shared_basis": {
-                rBasis[i] = SharedBasis2.load(rBasis, tBasisMap);
+                rBasis[i] = SharedBasis.load(rBasis, tBasisMap);
                 break;
             }
             default: {
@@ -128,7 +128,7 @@ public abstract class Basis2 implements ISavable {
     /** 内部参数（不包含种类标识头）更新到 gen map */
     abstract void updateGenMapInternal(Map<String, Object> rGenMap, int aGenIdx);
     /** 本基组是否和输入的基组有着相同的 code gen map，相同时则会简单合并简化最终的 jit 代码 */
-    public abstract boolean hasSameGenMap(Basis2 aBasis);
+    public abstract boolean hasSameGenMap(Basis aBasis);
     
     /** @return 前向传播中需要的缓存大小 */
     public abstract int forwardCacheSize(int aNumNei);

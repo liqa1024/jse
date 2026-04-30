@@ -220,22 +220,4 @@ public class SimpleChebyshev extends SimpleBasis {
             rRn.set(n, MathEX.Func.chebyshev(n, tRnX));
         }
     }
-    
-    
-    @Override
-    public void backward(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aGradFp, DoubleArrayVector rGradPara, DoubleList aForwardCache, DoubleList rBackwardCache, boolean aKeepCache) {
-        if (isClosed()) throw new IllegalStateException("This Basis is dead");
-        throw new UnsupportedOperationException();
-    }
-    @Override
-    public void forwardForce(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList rFx, DoubleList rFy, DoubleList rFz, DoubleList aForwardCache, DoubleList rForwardForceCache, boolean aFullCache) {
-        if (isClosed()) throw new IllegalStateException("This Basis is dead");
-        throw new UnsupportedOperationException();
-    }
-    @Override
-    public void backwardForce(DoubleList aNlDx, DoubleList aNlDy, DoubleList aNlDz, IntList aNlType, DoubleArrayVector aNNGrad, DoubleList aGradFx, DoubleList aGradFy, DoubleList aGradFz, DoubleArrayVector rGradNNGrad, @Nullable DoubleArrayVector rGradPara,
-                              DoubleList aForwardCache, DoubleList aForwardForceCache, DoubleList rBackwardCache, DoubleList rBackwardForceCache, boolean aKeepCache, boolean aFixBasis) {
-        if (isClosed()) throw new IllegalStateException("This Basis is dead");
-        throw new UnsupportedOperationException();
-    }
 }

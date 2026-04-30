@@ -9,8 +9,8 @@ import jse.code.functional.IUnaryFullOperator;
 import jse.gpu.CudaJIT;
 import jse.jit.IJITEngine;
 import jse.jit.SimpleJIT;
-import jsex.nnap.basis.Basis2;
-import jsex.nnap.nn.NeuralNetwork2;
+import jsex.nnap.basis.Basis;
+import jsex.nnap.nn.NeuralNetwork;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
 
@@ -75,11 +75,11 @@ class NNAPGEN {
         , "basis_SphericalUtil0.hpp"
     };
     
-    private final Basis2[] mBasis;
-    private final NeuralNetwork2[] mNN;
+    private final Basis[] mBasis;
+    private final NeuralNetwork[] mNN;
     private final String mLibDir, mProjectName;
     
-    NNAPGEN(@Nullable String aLibDir, @Nullable String aProjectName, Basis2[] aBasis, NeuralNetwork2[] aNN) {
+    NNAPGEN(@Nullable String aLibDir, @Nullable String aProjectName, Basis[] aBasis, NeuralNetwork[] aNN) {
         mLibDir = aLibDir!=null ? aLibDir : OS.WORKING_DIR;
         mProjectName = aProjectName!=null ? aProjectName : JIT_NAME;
         mBasis = aBasis;
@@ -119,11 +119,11 @@ class NNAPGEN {
         Map<String, Object> rGenMap = initGenMap_();
         rGenMap.put("[PRECISION]", aSinglePrecision ? "single" : "double");
         rGenMap.put("[ARCH]", "cpu");
-        String tUniqueID = UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, NNAP2.VERSION,
-                                            rGenMap, NNAP2.Conf.OPTIM_LEVEL, NNAP2.Conf.CMAKE_CXX_COMPILER, NNAP2.Conf.CMAKE_CXX_FLAGS, NNAP2.Conf.CMAKE_SETTING);
+        String tUniqueID = UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, NNAP.VERSION,
+                                            rGenMap, NNAP.Conf.OPTIM_LEVEL, NNAP.Conf.CMAKE_CXX_COMPILER, NNAP.Conf.CMAKE_CXX_FLAGS, NNAP.Conf.CMAKE_SETTING);
         return SimpleJIT.engine()
-            .setCmakeCxxCompiler(NNAP2.Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(NNAP2.Conf.CMAKE_CXX_FLAGS)
-            .setCmakeSettings(NNAP2.Conf.CMAKE_SETTING).setOptimLevel(NNAP2.Conf.OPTIM_LEVEL)
+            .setCmakeCxxCompiler(NNAP.Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(NNAP.Conf.CMAKE_CXX_FLAGS)
+            .setCmakeSettings(NNAP.Conf.CMAKE_SETTING).setOptimLevel(NNAP.Conf.OPTIM_LEVEL)
             .setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID)
             .setSrcDirIniter((wd, engine) -> {
                 for (String tName : SRC_NAME) {
@@ -142,7 +142,7 @@ class NNAPGEN {
         rGenMap.put("NNAPGEN_CUDA_BLOCKSIZE", NNAP_cuda.Conf.CUDA_BLOCKSIZE);
         rGenMap.put("[PRECISION]", "single");
         rGenMap.put("[ARCH]", "cuda");
-        String tUniqueID = UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, NNAP2.VERSION,
+        String tUniqueID = UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, NNAP.VERSION,
                                             rGenMap, NNAP_cuda.Conf.OPTIM_LEVEL, NNAP_cuda.Conf.CMAKE_CXX_COMPILER, NNAP_cuda.Conf.CMAKE_CXX_FLAGS, NNAP_cuda.Conf.CMAKE_CUDA_COMPILER, NNAP_cuda.Conf.CMAKE_CUDA_FLAGS, NNAP_cuda.Conf.CMAKE_SETTING);
         return CudaJIT.engine()
             .setCmakeCudaCompiler(NNAP_cuda.Conf.CMAKE_CUDA_COMPILER).setCmakeCudaFlags(NNAP_cuda.Conf.CMAKE_CUDA_FLAGS)

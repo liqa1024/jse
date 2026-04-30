@@ -8,17 +8,17 @@ import java.util.Map;
  * 现在是常用的其他种类默认基组
  * @author liqa
  */
-public class SharedBasis2 extends Basis2 {
+public class SharedBasis extends Basis {
     
-    private final Basis2 mSharedBasis;
+    private final Basis mSharedBasis;
     private final int mSharedType;
-    public SharedBasis2(Basis2 aSharedBasis, int aSharedType) {
+    public SharedBasis(Basis aSharedBasis, int aSharedType) {
         if (aSharedBasis == null) throw new NullPointerException();
-        if (aSharedBasis instanceof SharedBasis2) throw new IllegalArgumentException("SharedBasis MUST NOT be Shared");
+        if (aSharedBasis instanceof SharedBasis) throw new IllegalArgumentException("SharedBasis MUST NOT be Shared");
         mSharedBasis = aSharedBasis;
         mSharedType = aSharedType;
     }
-    public Basis2 sharedBasis() {return mSharedBasis;}
+    public Basis sharedBasis() {return mSharedBasis;}
     public int sharedType() {return mSharedType;}
     
     @Override public double rcut() {return mSharedBasis.rcut();}
@@ -33,9 +33,9 @@ public class SharedBasis2 extends Basis2 {
         // 补充 share 基组的内部参数
         mSharedBasis.updateGenMapInternal(rGenMap, aGenIdx);
     }
-    @Override public boolean hasSameGenMap(Basis2 aBasis) {
-        if (!(aBasis instanceof SharedBasis2)) return false;
-        SharedBasis2 tBasis = (SharedBasis2)aBasis;
+    @Override public boolean hasSameGenMap(Basis aBasis) {
+        if (!(aBasis instanceof SharedBasis)) return false;
+        SharedBasis tBasis = (SharedBasis)aBasis;
         return mSharedType==tBasis.mSharedType && mSharedBasis.hasSameGenMap(tBasis.mSharedBasis);
     }
     
@@ -55,10 +55,10 @@ public class SharedBasis2 extends Basis2 {
         rSaveTo.put("share", mSharedType);
     }
     @SuppressWarnings({"rawtypes"})
-    public static SharedBasis2 load(Basis2[] aBasis, Map aMap) {
+    public static SharedBasis load(Basis[] aBasis, Map aMap) {
         Object tShare = aMap.get("share");
         if (tShare==null) throw new IllegalArgumentException("Key `share` required for shared_basis");
         int tSharedType = ((Number)tShare).intValue();
-        return new SharedBasis2(aBasis[tSharedType-1], tSharedType);
+        return new SharedBasis(aBasis[tSharedType-1], tSharedType);
     }
 }
