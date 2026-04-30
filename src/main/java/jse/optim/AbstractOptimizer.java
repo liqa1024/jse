@@ -79,13 +79,6 @@ public abstract class AbstractOptimizer implements IOptimizer {
         return mLoss;
     }
     /**
-     * 清空当前缓存的梯度值，表明此时已经不合法；
-     * 之后需要梯度时则会自动重新计算
-     */
-    protected void invalidGrad() {
-        mGradValid = false;
-    }
-    /**
      * 清空当前缓存的 loss 值，会顺便清空梯度值，表明此时已经不合法；
      * 之后需要 loss 或梯度时则会自动重新计算
      */
@@ -274,7 +267,10 @@ public abstract class AbstractOptimizer implements IOptimizer {
             // 二次样条拟合
             double tA = (tLoss - aLoss - tGradA0*tAlpha) / (tAlpha*tAlpha);
             // 若拟合得到 tA < 0，则说明此区域不是正定的，这里会直接中断
-            if (tA <= 0) return tStep;
+            if (tA <= 0) {
+                rParameterStep.fill(0.0);
+                return tStep;
+            }
             // 获取适合的 tAlpha
             tAlpha = Math.min(-tGradA0 / (2*tA), 2.0*tAlpha);
             ++tStep;
@@ -333,7 +329,7 @@ public abstract class AbstractOptimizer implements IOptimizer {
     protected void applyStep(int aStep) {
         mParameter.plus2this(mParameterStep);
         updateParameter();
-        invalidGrad();
+        invalidLoss();
     }
     /**
      * 打印输出，重写实现自定义的打印需求
