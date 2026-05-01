@@ -6,7 +6,6 @@ import jse.atom.IHasSymbol;
 import jse.cache.VectorCache;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
-import jse.code.io.ISavable;
 import jse.math.vector.*;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;

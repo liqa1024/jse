@@ -1,6 +1,9 @@
 package jsex.nnap;
 
+import jse.atom.AtomicParameterCalculator;
+import jse.atom.IAtomData;
 import jse.atom.IPairPotential;
+import jse.cache.VectorCache;
 import jse.code.IO;
 import jse.code.OS;
 import jse.code.UT;
@@ -20,6 +23,7 @@ import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
+import java.util.function.IntUnaryOperator;
 import java.util.regex.Pattern;
 
 /**
@@ -77,8 +81,9 @@ public class NNAP implements IPairPotential {
     final AnyCPointer[] mDataIn, mDataOut;
     final IntCPointer[] mInNums, mOutNums;
     final AnyCPointer mFpHyperParam, mFpParam, mNnParam, mNormParam;
+    final IGrowableDoubleOrFloatCPointer[] mCache;
     private final IDoubleOrFloatCPointer[] mOutEng;
-    private final IGrowableDoubleOrFloatCPointer[] mNlDx, mNlDy, mNlDz, mGradNlDx, mGradNlDy, mGradNlDz, mFpForwardCache, mFpBackwardBackwardCache;
+    private final IGrowableDoubleOrFloatCPointer[] mNlDx, mNlDy, mNlDz, mGradNlDx, mGradNlDy, mGradNlDz;
     private final GrowableIntCPointer[] mNlType, mNlIdx;
     
     private final DoubleList[] mNlDxBuf, mNlDyBuf, mNlDzBuf;
@@ -140,8 +145,7 @@ public class NNAP implements IPairPotential {
         mGradNlDy = new IGrowableDoubleOrFloatCPointer[mNumThreads];
         mGradNlDz = new IGrowableDoubleOrFloatCPointer[mNumThreads];
         mOutEng = new IDoubleOrFloatCPointer[mNumThreads];
-        mFpForwardCache = new IGrowableDoubleOrFloatCPointer[mNumThreads];
-        mFpBackwardBackwardCache = new IGrowableDoubleOrFloatCPointer[mNumThreads];
+        mCache = new IGrowableDoubleOrFloatCPointer[mNumThreads];
         mNlDxBuf = new DoubleList[mNumThreads];
         mNlDyBuf = new DoubleList[mNumThreads];
         mNlDzBuf = new DoubleList[mNumThreads];
@@ -161,8 +165,7 @@ public class NNAP implements IPairPotential {
             mGradNlDy[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
             mGradNlDz[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
             mOutEng[ti] = mSingle ? FloatCPointer.malloc(1) : DoubleCPointer.malloc(1);
-            mFpForwardCache[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
-            mFpBackwardBackwardCache[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+            mCache[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
             mNlDxBuf[ti] = new DoubleList(16);
             mNlDyBuf[ti] = new DoubleList(16);
             mNlDzBuf[ti] = new DoubleList(16);
@@ -325,8 +328,7 @@ public class NNAP implements IPairPotential {
         }
         for (int ti = 0; ti < mNumThreads; ++ti) {
             mOutEng[ti].free();
-            mFpForwardCache[ti].free();
-            mFpBackwardBackwardCache[ti].free();
+            mCache[ti].free();
             mDataOut[ti].free();
         }
         if (mJITEngine!=null) mJITEngine.close();
@@ -444,6 +446,43 @@ public class NNAP implements IPairPotential {
                 }
             }
         });
+    }
+    
+    /**
+     * 简单遍历计算给定原子数据所有基组的实现，此实现适合对相同基组计算大量的原子结构；
+     * 由于基组存储了元素排序，因此可以自动修正多个原子结构中元素排序不一致的问题
+     * @param aAtomData 原子结构数据
+     * @return 原子描述符向量组成的列表
+     */
+    public final List<Vector> calFp(IAtomData aAtomData) {
+        if (mDead) throw new IllegalStateException("This NNAP is dead");
+        IntUnaryOperator tTypeMap = typeMap(aAtomData);
+        int tNumAtoms = aAtomData.natoms();
+        List<Vector> rFps = new ArrayList<>(tNumAtoms);
+        for (int i = 0; i < tNumAtoms; ++i) {
+            int cType = tTypeMap.applyAsInt(aAtomData.atom(i).type());
+            rFps.add(VectorCache.getVec(mBasis[cType-1].size()));
+        }
+        try (AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(aAtomData, nthreads())) {
+            tAPC.pool_().parfor(tNumAtoms, (i, threadID) -> {
+                final int cType = tTypeMap.applyAsInt(tAPC.types().get(i));
+                int tNeiNum = buildNL_(threadID, (rmax, dxyzTypeDo) -> {
+                    tAPC.nl_().forEachNeighbor(i, rmax, (dx, dy, dz, idx) -> {
+                        int tType = tTypeMap.applyAsInt(tAPC.types().get(idx));
+                        dxyzTypeDo.run(dx, dy, dz, tType, idx);
+                    });
+                }, mBasis[cType-1].rcut(), false);
+                int tFpSize = mBasis[cType-1].size();
+                IGrowableDoubleOrFloatCPointer rFpPtr = mCache[threadID];
+                rFpPtr.ensureCapacity(tFpSize);
+                calFp(threadID,
+                    mNlDx[threadID], mNlDy[threadID], mNlDz[threadID],
+                    mNlType[threadID], tNeiNum, cType, rFpPtr
+                );
+                rFpPtr.parse2destD(rFps.get(i));
+            });
+        }
+        return rFps;
     }
     
     public IVector parameters() {
@@ -612,11 +651,11 @@ public class NNAP implements IPairPotential {
         IntCPointer tInNums = mInNums[aThreadID];
         AnyCPointer tDataIn = mDataIn[aThreadID];
         AnyCPointer tDataOut = mDataOut[aThreadID];
-        IGrowableDoubleOrFloatCPointer tFpForwardCache = mFpForwardCache[aThreadID];
         IDoubleOrFloatCPointer tOutEng = mOutEng[aThreadID];
+        IGrowableDoubleOrFloatCPointer tFpForwardCache = mCache[aThreadID];
+        tFpForwardCache.ensureCapacity(mBasis[aCType-1].forwardCacheSize(aNumNei));
         tInNums.putAt(0, aNumNei);
         tInNums.putAt(1, aCType);
-        tFpForwardCache.ensureCapacity(mBasis[aCType-1].forwardCacheSize(aNumNei));
         // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
         tDataIn.putAt(0, tInNums);
         tDataIn.putAt(1, aNlDx);
@@ -745,12 +784,12 @@ public class NNAP implements IPairPotential {
         IntCPointer tInNums = mInNums[aThreadID];
         AnyCPointer tDataIn = mDataIn[aThreadID];
         AnyCPointer tDataOut = mDataOut[aThreadID];
-        IGrowableDoubleOrFloatCPointer tFpBackwardBackwardCache = mFpBackwardBackwardCache[aThreadID];
         IDoubleOrFloatCPointer tBGradEng = mOutEng[aThreadID];
+        IGrowableDoubleOrFloatCPointer tFpBackwardBackwardCache = mCache[aThreadID];
+        tFpBackwardBackwardCache.ensureCapacity(mBasis[aCType-1].backwardBackwardCacheSize(aNumNei));
         tInNums.putAt(0, aNumNei);
         tInNums.putAt(1, aCType);
         tBGradEng.setD(aBGradEng);
-        tFpBackwardBackwardCache.ensureCapacity(mBasis[aCType-1].backwardBackwardCacheSize(aNumNei));
         // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
         tDataIn.putAt(0, tInNums);
         tDataIn.putAt(1, aNlDx);
@@ -792,7 +831,7 @@ public class NNAP implements IPairPotential {
         mGradNlDx[0].ensureCapacity(aNeiNum);
         mGradNlDy[0].ensureCapacity(aNeiNum);
         mGradNlDz[0].ensureCapacity(aNeiNum);
-        IGrowableDoubleOrFloatCPointer tFpForwardCache = mFpForwardCache[0];
+        IGrowableDoubleOrFloatCPointer tFpForwardCache = mCache[0];
         for (int i = 0; i < mSymbols.length; ++i) {
             tFpForwardCache.ensureCapacity(mBasis[i].forwardCacheSize(aNeiNum));
         }
@@ -854,7 +893,7 @@ public class NNAP implements IPairPotential {
         tDataOut.putAt(1, mGradNlDx[0]);
         tDataOut.putAt(2, mGradNlDy[0]);
         tDataOut.putAt(3, mGradNlDz[0]);
-        tDataOut.putAt(4, mFpForwardCache[0]);
+        tDataOut.putAt(4, mCache[0]);
         tDataOut.putAt(5, aPair.engVdwl());
         tDataOut.putAt(6, aPair.eatom());
         tDataOut.putAt(7, aPair.virial());

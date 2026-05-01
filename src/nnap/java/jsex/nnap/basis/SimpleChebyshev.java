@@ -1,5 +1,7 @@
 package jsex.nnap.basis;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.ImmutableBiMap;
 import jse.code.UT;
 import jse.code.collection.DoubleList;
 import jse.code.collection.IntList;
@@ -7,11 +9,9 @@ import jse.math.MathEX;
 import jse.math.vector.DoubleArrayVector;
 import jse.math.vector.IVector;
 import jse.math.vector.Vector;
-import jse.math.vector.Vectors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -22,54 +22,33 @@ import java.util.Map;
  * @author liqa
  */
 public class SimpleChebyshev extends SimpleBasis {
-    final int mTypeNum;
+    final static BiMap<String, Integer> VALID_WTYPE = ImmutableBiMap.<String, Integer>builder()
+        .put("default", WTypeBasis.WTYPE_DEFAULT)
+        .put("exfull", WTypeBasis.WTYPE_EXFULL)
+        .build();
+    
+    final int mNumTypes;
+    final int mWType;
     final int mNMax;
-    final int mSizeN, mSizeWt;
+    final int mSizeN;
     
     final String @Nullable[] mSymbols;
-    final double mRCut, mRCutS;
-    final boolean mFCutS;
+    final double mRCut;
     
     final int mSize;
     
-    final Vector mRFuncScale, mRFuncShift;
-    final Vector mSystemScale;
-    public SimpleChebyshev setRFuncScale(double... aRFuncScale) {
-        mRFuncScale.fill(aRFuncScale);
-        return this;
-    }
-    public SimpleChebyshev setRFuncShift(double... aRFuncShift) {
-        mRFuncShift.fill(aRFuncShift);
-        return this;
-    }
-    public SimpleChebyshev setSystemScale(double... aSystemScale) {
-        mSystemScale.fill(aSystemScale);
-        return this;
-    }
-    
-    SimpleChebyshev(String @Nullable[] aSymbols, int aTypeNum, int aNMax, double aRCut, boolean aFCutS, double aRCutS,
-                    @Nullable Vector aRFuncScale, @Nullable Vector aRFuncShift, @Nullable Vector aSystemScale) {
-        mTypeNum = aTypeNum;
+    SimpleChebyshev(String @Nullable[] aSymbols, int aNumTypes, int aWType, int aNMax, double aRCut) {
+        if (!VALID_WTYPE.containsValue(aWType)) throw new IllegalArgumentException("Input wtype MUST be in {0, 3}, input: "+ aWType);
+        
+        mNumTypes = aNumTypes;
+        mWType = aWType;
         mNMax = aNMax;
-        int tSizeN = aTypeNum>1 ? (aNMax+aNMax+2) : (aNMax+1);
-        mSizeN = aFCutS ? (tSizeN+tSizeN) : tSizeN;
-        mSizeWt = aTypeNum>1 ? 1 : 0;
+        mSizeN = getSizeN_(aWType, aNumTypes, aNMax);
         
         mSymbols = aSymbols;
         mRCut = aRCut;
-        mFCutS = aFCutS;
-        mRCutS = aRCutS;
-        if (mRCutS > mRCut) throw new IllegalArgumentException("rcut_s cannot be greater than rcut");
         
         mSize = mSizeN;
-        
-        mRFuncScale = aRFuncScale==null ? Vector.ones(mNMax+1) : aRFuncScale;
-        mRFuncShift = aRFuncShift==null ? Vector.zeros(mNMax+1) : aRFuncShift;
-        mSystemScale = aSystemScale==null ? Vector.ones(mSize) : aSystemScale;
-        
-        if (mRFuncScale.size()!=mNMax+1) throw new IllegalArgumentException("Size of rfunc scale mismatch");
-        if (mRFuncShift.size()!=mNMax+1) throw new IllegalArgumentException("Size of rfunc shift mismatch");
-        if (mSystemScale.size()!=mSize) throw new IllegalArgumentException("Size of system scale mismatch");
     }
     /**
      * @param aSymbols 基组需要的元素排序
@@ -77,75 +56,89 @@ public class SimpleChebyshev extends SimpleBasis {
      * @param aRCut 截断半径
      */
     public SimpleChebyshev(String @NotNull[] aSymbols, int aNMax, double aRCut) {
-        this(aSymbols, aSymbols.length, aNMax, aRCut, false, 0.0, null, null, null);
+        this(aSymbols, aSymbols.length, WTypeBasis.WTYPE_DEFAULT, aNMax, aRCut);
     }
     /**
-     * @param aTypeNum 原子种类数目
+     * @param aNumTypes 原子种类数目
      * @param aNMax Chebyshev 多项式选取的最大阶数
      * @param aRCut 截断半径
      */
-    public SimpleChebyshev(int aTypeNum, int aNMax, double aRCut) {
-        this(null, aTypeNum, aNMax, aRCut, false, 0.0, null, null, null);
+    public SimpleChebyshev(int aNumTypes, int aNMax, double aRCut) {
+        this(null, aNumTypes, WTypeBasis.WTYPE_DEFAULT, aNMax, aRCut);
     }
     
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    static int getSizeN_(int aWType, int aNumTypes, int aNMax) {
+        switch(aWType) {
+        case WTypeBasis.WTYPE_EXFULL: {
+            return aNumTypes>1 ? (aNumTypes+1)*(aNMax+1) : (aNMax+1);
+        }
+        case WTypeBasis.WTYPE_DEFAULT: {
+            return aNumTypes>1 ? (aNMax+aNMax+2) : (aNMax+1);
+        }
+        default: {
+            throw new IllegalStateException();
+        }}
+    }
+    @SuppressWarnings("rawtypes")
+    static int getWType_(Map aMap) {
+        @Nullable Object tType = UT.Code.get(aMap, "wtype");
+        if (tType == null) return WTypeBasis.WTYPE_DEFAULT;
+        if (tType instanceof Number) return ((Number)tType).intValue();
+        @Nullable Integer tOut = VALID_WTYPE.get(tType.toString());
+        if (tOut == null) throw new IllegalArgumentException("Input wtype MUST be in {default, exfull}, input: "+tType);
+        return tOut;
+    }
+    
+    
+    @SuppressWarnings({"rawtypes"})
     public static SimpleChebyshev load(String @NotNull[] aSymbols, Map aMap) {
-        int aTypeNum = aSymbols.length;
-        List<? extends Number> tRFuncScale = (List<? extends Number>)UT.Code.get(aMap, "rfunc_scales", "rfunc_sigma");
-        Vector aRFuncScales = tRFuncScale ==null ? null : Vectors.from(tRFuncScale);
-        List<? extends Number> tRFuncShift = (List<? extends Number>)UT.Code.get(aMap, "rfunc_shifts", "rfunc_mu");
-        Vector aRFuncShift = tRFuncShift==null ? null : Vectors.from(tRFuncShift);
-        List<? extends Number> tSystemScale = (List<? extends Number>)UT.Code.get(aMap, "system_scales");
-        Vector aSystemScale = tSystemScale==null ? null : Vectors.from(tSystemScale);
         return new SimpleChebyshev(
-            aSymbols, aTypeNum,
+            aSymbols, aSymbols.length, getWType_(aMap),
             ((Number)UT.Code.getWithDefault(aMap, Chebyshev.DEFAULT_NMAX, "nmax")).intValue(),
-            ((Number)UT.Code.getWithDefault(aMap, Chebyshev.DEFAULT_RCUT, "rcut")).doubleValue(),
-            ((Boolean)UT.Code.getWithDefault(aMap, false, "fcut_s")),
-            ((Number)UT.Code.getWithDefault(aMap, 0.0, "rcut_s")).doubleValue(),
-            aRFuncScales, aRFuncShift, aSystemScale
+            ((Number)UT.Code.getWithDefault(aMap, Chebyshev.DEFAULT_RCUT, "rcut")).doubleValue()
         );
     }
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public static SimpleChebyshev load(int aTypeNum, Map aMap) {
-        List<? extends Number> tRFuncScale = (List<? extends Number>)UT.Code.get(aMap, "rfunc_scales", "rfunc_sigma");
-        Vector aRFuncScales = tRFuncScale ==null ? null : Vectors.from(tRFuncScale);
-        List<? extends Number> tRFuncShift = (List<? extends Number>)UT.Code.get(aMap, "rfunc_shifts", "rfunc_mu");
-        Vector aRFuncShift = tRFuncShift==null ? null : Vectors.from(tRFuncShift);
-        List<? extends Number> tSystemScale = (List<? extends Number>)UT.Code.get(aMap, "system_scales");
-        Vector aSystemScale = tSystemScale==null ? null : Vectors.from(tSystemScale);
+    @SuppressWarnings({"rawtypes"})
+    public static SimpleChebyshev load(int aNumTypes, Map aMap) {
         return new SimpleChebyshev(
-            null, aTypeNum,
+            null, aNumTypes, getWType_(aMap),
             ((Number)UT.Code.getWithDefault(aMap, Chebyshev.DEFAULT_NMAX, "nmax")).intValue(),
-            ((Number)UT.Code.getWithDefault(aMap, Chebyshev.DEFAULT_RCUT, "rcut")).doubleValue(),
-            ((Boolean)UT.Code.getWithDefault(aMap, false, "fcut_s")),
-            ((Number)UT.Code.getWithDefault(aMap, 0.0, "rcut_s")).doubleValue(),
-            aRFuncScales, aRFuncShift, aSystemScale
+            ((Number)UT.Code.getWithDefault(aMap, Chebyshev.DEFAULT_RCUT, "rcut")).doubleValue()
         );
     }
     
     
     /** @return {@inheritDoc} */
-    @Override public double rcut() {return mRCut;}
+    @Override public double rcut() {
+        return mRCut;
+    }
     /**
      * @return {@inheritDoc}；如果只有一个种类则为
      * {@code (nmax+1)(lmax+1)}，如果超过一个种类则为
      * {@code 2(nmax+1)(lmax+1)}
      */
-    @Override public int size() {return mSize;}
+    @Override public int size() {
+        return mSize;
+    }
     /** @return {@inheritDoc} */
-    @Override public int ntypes() {return mTypeNum;}
+    @Override public int ntypes() {
+        return mNumTypes;
+    }
     /**
      * {@inheritDoc}
      * @return {@inheritDoc}
      */
-    @Override public boolean hasSymbol() {return mSymbols!=null;}
+    @Override public boolean hasSymbol() {
+        return mSymbols!=null;
+    }
     /**
      * {@inheritDoc}
      * @param aType
      * @return {@inheritDoc}
      */
-    @Override public @Nullable String symbol(int aType) {return mSymbols==null ? null : mSymbols[aType-1];}
+    @Override public @Nullable String symbol(int aType) {
+        return mSymbols==null ? null : mSymbols[aType-1];
+    }
     
     
     @Override
@@ -156,7 +149,6 @@ public class SimpleChebyshev extends SimpleBasis {
         if (aFullCache) throw new UnsupportedOperationException("full cache in simple basis");
         validCache_(rForwardCache, mNMax+1);
         Vector rRn = new Vector(mNMax+1, rForwardCache.internalData());
-        final int tShiftS = mTypeNum==1 ? (mNMax+1) : (mNMax+mNMax+2);
         // clear fp first
         rFp.fill(0.0);
         // loop for neighbor
@@ -167,39 +159,35 @@ public class SimpleChebyshev extends SimpleBasis {
             double dis = MathEX.Fast.hypot(dx, dy, dz);
             // check rcut for merge
             if (dis >= mRCut) continue;
-            boolean tFCutS = mFCutS && dis<mRCutS;
             // cal fc
             double fc = calFc(dis, mRCut);
-            double fcS = tFCutS ? calFc(dis, mRCutS) : 0.0;
             // cal Rn
             calRn(rRn, mNMax, dis, mRCut);
-            // scale rfunc here
-            rRn.minus2this(mRFuncShift);
-            rRn.multiply2this(mRFuncScale);
-            // cal fp, with rfunc scale
-            if (mTypeNum==1) {
+            // cal fp
+            if (mNumTypes ==1) {
                 for (int n = 0; n <= mNMax; ++n) {
                     rFp.add(n, fc*rRn.get(n));
                 }
-                if (tFCutS) for (int n = 0; n <= mNMax; ++n) {
-                    rFp.add(n+tShiftS, fcS*rRn.get(n));
-                }
-            } else {
+            } else
+            if (mWType==WTypeBasis.WTYPE_DEFAULT) {
                 double wt = ((type&1)==1) ? type : -type;
                 for (int n = 0, nwt = mNMax+1; n <= mNMax; ++n, ++nwt) {
                     double tRHS = fc*rRn.get(n);
                     rFp.add(n, tRHS);
                     rFp.add(nwt, wt*tRHS);
                 }
-                if (tFCutS) for (int n = 0, nwt = mNMax+1; n <= mNMax; ++n, ++nwt) {
-                    double tRHS = fcS*rRn.get(n);
-                    rFp.add(n+tShiftS, tRHS);
-                    rFp.add(nwt+tShiftS, wt*tRHS);
+            } else
+            if (mWType==WTypeBasis.WTYPE_EXFULL) {
+                int tShiftFp = type*(mNMax+1);
+                for (int n = 0; n <= mNMax; ++n) {
+                    double tRHS = fc*rRn.get(n);
+                    rFp.add(n, tRHS);
+                    rFp.add(n+tShiftFp, tRHS);
                 }
+            } else {
+                throw new IllegalStateException();
             }
         }
-        // system scale here
-        rFp.multiply2this(mSystemScale);
     }
     static double pow2(double value) {
         return value * value;

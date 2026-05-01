@@ -1365,15 +1365,14 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
     protected void initNormBasis() {
         final boolean tShareNorm = mShareNorm==null ? mSharedBasis : mShareNorm;
         final int tNumTypes = ntypes();
-        final int tThreadNum = mPool.nthreads();
-        Vector[][] tMuPar = new Vector[tThreadNum][tNumTypes];
-        Vector[][] tSigmaPar = new Vector[tThreadNum][tNumTypes];
-        Vector[][] tMaxPar = new Vector[tThreadNum][tNumTypes];
-        Vector[][] tMinPar = new Vector[tThreadNum][tNumTypes];
-        Vector[][] tFpPar = new Vector[tThreadNum][tNumTypes];
-        IntVector[] tDivPar = new IntVector[tThreadNum];
-        IGrowableDoubleOrFloatCPointer[] tFpPtrPar = new IGrowableDoubleOrFloatCPointer[tThreadNum];
-        for (int ti = 0; ti < tThreadNum; ++ti) {
+        final int tNumThreads = mPool.nthreads();
+        Vector[][] tMuPar = new Vector[tNumThreads][tNumTypes];
+        Vector[][] tSigmaPar = new Vector[tNumThreads][tNumTypes];
+        Vector[][] tMaxPar = new Vector[tNumThreads][tNumTypes];
+        Vector[][] tMinPar = new Vector[tNumThreads][tNumTypes];
+        Vector[][] tFpPar = new Vector[tNumThreads][tNumTypes];
+        IntVector[] tDivPar = new IntVector[tNumThreads];
+        for (int ti = 0; ti < tNumThreads; ++ti) {
             for (int i = 0; i < tNumTypes; ++i) {
                 int tBasisSize = mNNAP.mBasis[i].size();
                 tMuPar[ti][i] = VectorCache.getZeros(tBasisSize);
@@ -1383,7 +1382,6 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
                 tFpPar[ti][i] = VectorCache.getVec(tBasisSize);
             }
             tDivPar[ti] = IntVectorCache.getZeros(tNumTypes);
-            tFpPtrPar[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
         }
         mPool.parfor(mTrainData.mSize, (i, threadID) -> {
             IntVector tNumNei = mTrainData.mNumNei.get(i);
@@ -1395,7 +1393,8 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
             IDoubleOrFloatCPointer[] tNlDy = mTrainData.mNlDy.get(i);
             IDoubleOrFloatCPointer[] tNlDz = mTrainData.mNlDz.get(i);
             
-            IGrowableDoubleOrFloatCPointer rFpPtr = tFpPtrPar[threadID];
+            // 直接使用 nnap 内部的 cache 即可
+            IGrowableDoubleOrFloatCPointer rFpPtr = mNNAP.mCache[threadID];
             Vector[] tFp = tFpPar[threadID];
             Vector[] tNormMu = tMuPar[threadID];
             Vector[] tNormSigma = tSigmaPar[threadID];
@@ -1427,7 +1426,7 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
                 tDiv.increment(tNormIdx);
             }
         });
-        for (int ti = 1; ti < tThreadNum; ++ti) {
+        for (int ti = 1; ti < tNumThreads; ++ti) {
             for (int i = 0; i < tNumTypes; ++i) {
                 tMuPar[0][i].plus2this(tMuPar[ti][i]);
                 tSigmaPar[0][i].plus2this(tSigmaPar[ti][i]);
@@ -1466,7 +1465,7 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
             mNNAP.normSigma(i+1).fillD(tSigmaPar[0][i]);
         }
         // return caches
-        for (int ti = 0; ti < tThreadNum; ++ti) {
+        for (int ti = 0; ti < tNumThreads; ++ti) {
             for (int i = 0; i < tNumTypes; ++i) {
                 VectorCache.returnVec(tFpPar[ti][i]);
                 VectorCache.returnVec(tMaxPar[ti][i]);
@@ -1475,7 +1474,6 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
                 VectorCache.returnVec(tSigmaPar[ti][i]);
             }
             IntVectorCache.returnVec(tDivPar[ti]);
-            tFpPtrPar[ti].free();
         }
     }
     protected void initNormEng() {

@@ -483,7 +483,7 @@ abstract class WTypeBasis extends MergeableBasis {
         if (tType == null) return WTYPE_DEFAULT;
         if (tType instanceof Number) return ((Number)tType).intValue();
         @Nullable Integer tOut = ALL_WTYPE.get(tType.toString());
-        if (tOut == null) throw new IllegalArgumentException("Input fuse_style MUST be in {default, none, full, exfull, fuse, exfuse}, input: "+tType);
+        if (tOut == null) throw new IllegalArgumentException("Input wtype MUST be in {default, none, full, exfull, fuse, exfuse}, input: "+tType);
         return tOut;
     }
     @SuppressWarnings({"rawtypes", "unchecked"})
