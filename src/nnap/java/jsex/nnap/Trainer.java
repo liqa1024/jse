@@ -39,7 +39,7 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
     protected final static String DEFAULT_UNITS = "metal";
     protected final static double DEFAULT_ENERGY_WEIGHT = 1.0;
     protected final static double DEFAULT_FORCE_WEIGHT = 0.1;
-    protected final static double DEFAULT_STRESS_WEIGHT = 1.0;
+    protected final static double DEFAULT_STRESS_WEIGHT = 0.1;
     protected final static int DEFAULT_NTHREADS = 4;
     protected final static double DEFAULT_BASIS_MAX = 5.0;
     protected final static int DEFAULT_POST_FUSE_SIZE = 6;
@@ -135,6 +135,7 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
     protected final NNAP mNNAP;
     protected final IVector mRefEngs;
     protected double mNormMuEng = 0.0, mNormSigmaEng = 1.0;
+    protected double mUnitLen = 1.0;
     protected boolean mHasForce = false;
     protected boolean mHasStress = false;
     protected boolean mHasTest = false;
@@ -386,7 +387,7 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
      *     <dd>指定 loss 函数中能量的权重</dd>
      *   <dt>force_weight (可选，默认为 0.1):</dt>
      *     <dd>指定 loss 函数中力的权重</dd>
-     *   <dt>stress_weight (可选，默认为 1.0):</dt>
+     *   <dt>stress_weight (可选，默认为 0.1):</dt>
      *     <dd>指定 loss 函数中压力的权重</dd>
      *   <dt>optimizer (可选):</dt>
      *     <dd>
@@ -440,7 +441,7 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
      *     <dd>指定 loss 函数中能量的权重</dd>
      *   <dt>force_weight (可选，默认为 0.1):</dt>
      *     <dd>指定 loss 函数中力的权重</dd>
-     *   <dt>stress_weight (可选，默认为 1.0):</dt>
+     *   <dt>stress_weight (可选，默认为 0.1):</dt>
      *     <dd>指定 loss 函数中压力的权重</dd>
      *   <dt>units (可选，默认为 'metal'):</dt>
      *     <dd>指定势函数的单位</dd>
@@ -795,8 +796,8 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
                  LOSS_ABSOLUTE, LOSS_ABSOLUTE, LOSS_ABSOLUTE);
         rMAE.multiply2this(mNormSigmaEng);
         rMAE.update(0, v -> v/mEnergyWeight);
-        rMAE.update(1, v -> v/mForceWeight);
-        rMAE.update(2, v -> v/mStressWeight);
+        rMAE.update(1, v -> v/(mForceWeight*mUnitLen));
+        rMAE.update(2, v -> v/(mStressWeight*MathEX.Fast.pow3(mUnitLen)));
     }
     private double calLoss_(boolean aTest, ISlice aSlice, @Nullable Vector rLossDetail, @Nullable Vector rGrad,
                             ILossFunc aLossFuncEng, ILossFunc aLossFuncForce, ILossFunc aLossFuncStress) {
@@ -977,18 +978,6 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
                 double tLossEng = aLossFuncEng.call(rEng, tEngReal, rBGradEng);
                 rLoss.add(0, mEnergyWeight * tLossEng / fEngSize);
             }
-            // 力和压力需要这样归一化
-            if (tHasForce) {
-                for (int k = 0; k < tNumAtoms; ++k) {
-                    rFx.set(k, rFx.get(k) / mNormSigmaEng);
-                    rFy.set(k, rFy.get(k) / mNormSigmaEng);
-                    rFz.set(k, rFz.get(k) / mNormSigmaEng);
-                }
-            }
-            if (tHasStress) {
-                rSxx /= mNormSigmaEng; rSyy /= mNormSigmaEng; rSzz /= mNormSigmaEng;
-                rSxy /= mNormSigmaEng; rSxz /= mNormSigmaEng; rSyz /= mNormSigmaEng;
-            }
             // 力和压力 loss 计算
             if (tHasForce) {
                 if (tRequireGrad) {
@@ -997,10 +986,11 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
                     rBGradFz.clear(); rBGradFz.addZeros(tNumAtoms);
                 }
                 double tLossForce = 0.0;
+                final double tMul = mUnitLen / mNormSigmaEng;
                 for (int k = 0; k < tNumAtoms; ++k) {
-                    tLossForce += aLossFuncForce.call(rFx.get(k), tFxReal.get(k)/mNormSigmaEng, rSubBGradFx);
-                    tLossForce += aLossFuncForce.call(rFy.get(k), tFyReal.get(k)/mNormSigmaEng, rSubBGradFy);
-                    tLossForce += aLossFuncForce.call(rFz.get(k), tFzReal.get(k)/mNormSigmaEng, rSubBGradFz);
+                    tLossForce += aLossFuncForce.call(rFx.get(k)*tMul, tFxReal.get(k)*tMul, rSubBGradFx);
+                    tLossForce += aLossFuncForce.call(rFy.get(k)*tMul, tFyReal.get(k)*tMul, rSubBGradFy);
+                    tLossForce += aLossFuncForce.call(rFz.get(k)*tMul, tFzReal.get(k)*tMul, rSubBGradFz);
                     if (tRequireGrad) {
                         rBGradFx.set(k, rSubBGradFx.value());
                         rBGradFy.set(k, rSubBGradFy.value());
@@ -1011,12 +1001,13 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
             }
             if (tHasStress) {
                 double tLossStress = 0.0;
-                tLossStress += aLossFuncStress.call(rSxx, tSxxReal/mNormSigmaEng, rBGradSxx);
-                tLossStress += aLossFuncStress.call(rSyy, tSyyReal/mNormSigmaEng, rBGradSyy);
-                tLossStress += aLossFuncStress.call(rSzz, tSzzReal/mNormSigmaEng, rBGradSzz);
-                tLossStress += aLossFuncStress.call(rSxy, tSxyReal/mNormSigmaEng, rBGradSxy);
-                tLossStress += aLossFuncStress.call(rSxz, tSxzReal/mNormSigmaEng, rBGradSxz);
-                tLossStress += aLossFuncStress.call(rSyz, tSyzReal/mNormSigmaEng, rBGradSyz);
+                final double tMul = MathEX.Fast.pow3(mUnitLen) / mNormSigmaEng;
+                tLossStress += aLossFuncStress.call(rSxx*tMul, tSxxReal*tMul, rBGradSxx);
+                tLossStress += aLossFuncStress.call(rSyy*tMul, tSyyReal*tMul, rBGradSyy);
+                tLossStress += aLossFuncStress.call(rSzz*tMul, tSzzReal*tMul, rBGradSzz);
+                tLossStress += aLossFuncStress.call(rSxy*tMul, tSxyReal*tMul, rBGradSxy);
+                tLossStress += aLossFuncStress.call(rSxz*tMul, tSxzReal*tMul, rBGradSxz);
+                tLossStress += aLossFuncStress.call(rSyz*tMul, tSyzReal*tMul, rBGradSyz);
                 rLoss.add(2, mStressWeight * tLossStress / (fStressSize*6));
             }
             /// backward
@@ -1027,7 +1018,7 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
                 tBGradEng /= (mNormSigmaEng * tNumAtoms);
             }
             if (tHasForce) {
-                final double tMul = mForceWeight / (mNormSigmaEng * fForceSize*3);
+                final double tMul = mForceWeight * mUnitLen / (mNormSigmaEng * fForceSize*3);
                 for (int k = 0; k < tNumAtoms; ++k) {
                     rBGradFx.set(k, tMul*rBGradFx.get(k));
                     rBGradFy.set(k, tMul*rBGradFy.get(k));
@@ -1037,7 +1028,7 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
             double tBGradSxx = 0.0, tBGradSyy = 0.0, tBGradSzz = 0.0;
             double tBGradSxy = 0.0, tBGradSxz = 0.0, tBGradSyz = 0.0;
             if (tHasStress) {
-                final double tMul = -mStressWeight / (mNormSigmaEng * tVolume * fStressSize*6);
+                final double tMul = - mStressWeight * MathEX.Fast.pow3(mUnitLen) / (mNormSigmaEng * tVolume * fStressSize*6);
                 tBGradSxx = tMul*rBGradSxx.value(); tBGradSyy = tMul*rBGradSyy.value(); tBGradSzz = tMul*rBGradSzz.value();
                 tBGradSxy = tMul*rBGradSxy.value(); tBGradSxz = tMul*rBGradSxz.value(); tBGradSyz = tMul*rBGradSyz.value();
             }
@@ -1361,6 +1352,23 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
         mTrainData.mAtomData.clear();
         mTestData.mAtomData.clear();
     }
+    protected void initUnitLen() {
+        // 通过近邻列表估计单位长度，这个值可以用来为力和应力无量纲化
+        double rUnitLen = 0.0;
+        int rNumTot = 0;
+        for (int i = 0; i < mTrainData.mSize; ++i) {
+            IntVector tNumNei = mTrainData.mNumNei.get(i);
+            IntVector tAtomType = mTrainData.mAtomType.get(i);
+            int tNumAtoms = tAtomType.size();
+            for (int k = 0; k < tNumAtoms; ++k) {
+                int tType = tAtomType.get(k);
+                double tRCut = mNNAP.mBasis[tType-1].rcut();
+                rUnitLen += MathEX.Fast.cbrt((4.0/3.0*MathEX.PI) * MathEX.Fast.pow3(tRCut) / (tNumNei.get(k)+1));
+            }
+            rNumTot += tNumAtoms;
+        }
+        mUnitLen = rUnitLen / (double)rNumTot;
+    }
     
     protected void initNormBasis() {
         final boolean tShareNorm = mShareNorm==null ? mSharedBasis : mShareNorm;
@@ -1618,8 +1626,14 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
         // 清空旧的早停存储
         mMinLoss = Double.POSITIVE_INFINITY;
         // 数据近邻列表初始化
-        if (!mTrainData.mAtomData.isEmpty() || !mTestData.mAtomData.isEmpty()) {
+        final boolean tNewTrainData = !mTrainData.mAtomData.isEmpty();
+        final boolean tNewTestData = !mTestData.mAtomData.isEmpty();
+        if (tNewTrainData || tNewTestData) {
             initDataNl(aPrintLog);
+            if (tNewTrainData) {
+                initUnitLen();
+                mOptimizer.markLossFuncChanged();
+            }
         }
         // 初始化归一化参数，现在只会初始化一次
         if (!mNormInit) {

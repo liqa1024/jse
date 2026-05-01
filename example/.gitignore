@@ -8,4 +8,7 @@ log.lammps
 # idea project file
 example.iml
 
+# nnapjit cache
+nnapjit*
+
 !/.gitignore
