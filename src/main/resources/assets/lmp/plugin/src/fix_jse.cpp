@@ -199,6 +199,7 @@ jdouble FixJSE::computeVariable(jint ivar) {
     return input->variable->compute_equal(ivar);
 }
 void FixJSE::citemeAdd(jstring cite) {
+    if (lmp->citeme == NULL) return;
     const char *cite_c = mEnv->GetStringUTFChars(cite, NULL);
     if (cite_c==NULL) return; // OOM
     lmp->citeme->add(cite_c);
@@ -259,8 +260,8 @@ void FixJSE::setSizeArrayRows(jint size) {
 void FixJSE::setSizeArrayCols(jint size) {
     size_array_cols = (int)size;
 }
-void FixJSE::setGlobalFreq(jint size) {
-    global_freq = (int)size;
+void FixJSE::setGlobalFreq(jint freq) {
+    global_freq = (int)freq;
 }
 void FixJSE::setExtscalar(jboolean flag) {
     extscalar = flag ? 1 : 0;
@@ -270,6 +271,21 @@ void FixJSE::setExtvector(jboolean flag) {
 }
 void FixJSE::setExtarray(jboolean flag) {
     extarray = flag ? 1 : 0;
+}
+void FixJSE::setPeratomFlag(jboolean flag) {
+    peratom_flag = flag ? 1 : 0;
+}
+void FixJSE::setSizePeratomCols(jint size) {
+    size_peratom_cols = (int)size;
+}
+void FixJSE::setPeratomFreq(jint freq) {
+    peratom_freq = (int)freq;
+}
+void FixJSE::setVectorAtom(jlong ptr) {
+    vector_atom = (double *)(intptr_t)ptr;
+}
+void FixJSE::setArrayAtom(jlong ptr) {
+    array_atom = (double **)(intptr_t)ptr;
 }
 void FixJSE::setCommForward(jint size) {
     comm_forward = (int)size;

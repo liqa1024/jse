@@ -1,7 +1,10 @@
 package jse.lmp;
 
 import jse.clib.*;
-import jse.code.*;
+import jse.code.IO;
+import jse.code.OS;
+import jse.code.SP;
+import jse.code.UT;
 import jse.parallel.MPI;
 import jse.parallel.MPIException;
 import jse.cptr.*;
@@ -657,11 +660,11 @@ public class LmpPlugin {
         public final void setSizeVector(int aSize) {setSizeVector0(mFixPtr, aSize);}
         private native static void setSizeVector0(long aFixPtr, int aSize);
         
-        public final void setSizeArrayRows(int aRowNum) {setSizeArrayRows0(mFixPtr, aRowNum);}
-        private native static void setSizeArrayRows0(long aFixPtr, int aRowNum);
+        public final void setSizeArrayRows(int aRows) {setSizeArrayRows0(mFixPtr, aRows);}
+        private native static void setSizeArrayRows0(long aFixPtr, int aRows);
         
-        public final void setSizeArrayCols(int aColNum) {setSizeArrayCols0(mFixPtr, aColNum);}
-        private native static void setSizeArrayCols0(long aFixPtr, int aColNum);
+        public final void setSizeArrayCols(int aCols) {setSizeArrayCols0(mFixPtr, aCols);}
+        private native static void setSizeArrayCols0(long aFixPtr, int aCols);
         
         public final void setGlobalFreq(int aFreq) {setGlobalFreq0(mFixPtr, aFreq);}
         private native static void setGlobalFreq0(long aFixPtr, int aFreq);
@@ -674,6 +677,21 @@ public class LmpPlugin {
         
         public final void setExtarray(boolean aFlag) {setExtarray0(mFixPtr, aFlag);}
         private native static void setExtarray0(long aFixPtr, boolean aFlag);
+        
+        public final void setPeratomFlag(boolean aFlag) {setPeratomFlag0(mFixPtr, aFlag);}
+        private native static void setPeratomFlag0(long aFixPtr, boolean aFlag);
+        
+        public final void setSizePeratomCols(int aCols) {setSizePeratomCols0(mFixPtr, aCols);}
+        private native static void setSizePeratomCols0(long aFixPtr, int aCols);
+        
+        public final void setPeratomFreq(int aFreq) {setPeratomFreq0(mFixPtr, aFreq);}
+        private native static void setPeratomFreq0(long aFixPtr, int aFreq);
+        
+        public final void setVectorAtom(DoubleCPointer aPtr) {setVectorAtom0(mFixPtr, aPtr.ptr_());}
+        private native static void setVectorAtom0(long aFixPtr, long aPtr);
+        
+        public final void setArrayAtom(NestedDoubleCPointer aPtr) {setArrayAtom0(mFixPtr, aPtr.ptr_());}
+        private native static void setArrayAtom0(long aFixPtr, long aPtr);
         
         public final void setCommForward(int aSize) {setCommForward0(mFixPtr, aSize);}
         private native static void setCommForward0(long aFixPtr, int aSize);

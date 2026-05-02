@@ -55,11 +55,11 @@ JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setArrayFlag0(JNIEnv *aEn
 JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setSizeVector0(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jint aSize) {
     ((FixJSE *)(intptr_t)aFixPtr)->setSizeVector(aSize);
 }
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setSizeArrayRows0(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jint aRowNum) {
-    ((FixJSE *)(intptr_t)aFixPtr)->setSizeArrayRows(aRowNum);
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setSizeArrayRows0(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jint aRos) {
+    ((FixJSE *)(intptr_t)aFixPtr)->setSizeArrayRows(aRos);
 }
-JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setSizeArrayCols0(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jint aColNum) {
-    ((FixJSE *)(intptr_t)aFixPtr)->setSizeArrayCols(aColNum);
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setSizeArrayCols0(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jint aCols) {
+    ((FixJSE *)(intptr_t)aFixPtr)->setSizeArrayCols(aCols);
 }
 JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setGlobalFreq0(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jint aFreq) {
     ((FixJSE *)(intptr_t)aFixPtr)->setGlobalFreq(aFreq);
@@ -72,6 +72,21 @@ JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setExtvector0(JNIEnv *aEn
 }
 JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setExtarray0(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jboolean aFlag) {
     ((FixJSE *)(intptr_t)aFixPtr)->setExtarray(aFlag);
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setPeratomFlag0(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jboolean aFlag) {
+    ((FixJSE *)(intptr_t)aFixPtr)->setPeratomFlag(aFlag);
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setSizePeratomCols0(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jint aCols) {
+    ((FixJSE *)(intptr_t)aFixPtr)->setSizePeratomCols(aCols);
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setPeratomFreq0(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jint aFreq) {
+    ((FixJSE *)(intptr_t)aFixPtr)->setPeratomFreq(aFreq);
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setVectorAtom0(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jlong aPtr) {
+    ((FixJSE *)(intptr_t)aFixPtr)->setVectorAtom(aPtr);
+}
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setArrayAtom0(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jlong aPtr) {
+    ((FixJSE *)(intptr_t)aFixPtr)->setArrayAtom(aPtr);
 }
 JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setCommForward0(JNIEnv *aEnv, jclass aClazz, jlong aFixPtr, jint aSize) {
     ((FixJSE *)(intptr_t)aFixPtr)->setCommForward(aSize);

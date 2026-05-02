@@ -1740,13 +1740,13 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
             VectorCache.returnVec(tTestMAE);
             switch(tUnits) {
             case "metal": {
-                System.out.printf("MAE-E: %.4g meV | %.4g meV\n", tMAE_E*1000, tTestMAE_E*1000);
+                System.out.printf("MAE-E: %.4g meV/atom | %.4g meV/atom\n", tMAE_E*1000, tTestMAE_E*1000);
                 if (mHasForce) System.out.printf("MAE-F: %.4g meV/A | %.4g meV/A\n", tMAE_F*1000, tTestMAE_F*1000);
                 if (mHasStress) System.out.printf("MAE-S: %.4g meV/A^3 | %.4g meV/A^3\n", tMAE_S*1000, tTestMAE_S*1000);
                 break;
             }
             case "real":{
-                System.out.printf("MAE-E: %.4g kcal/mol | %.4g kcal/mol\n", tMAE_E, tTestMAE_E);
+                System.out.printf("MAE-E: %.4g kcal/mol/atom | %.4g kcal/mol/atom\n", tMAE_E, tTestMAE_E);
                 if (mHasForce) System.out.printf("MAE-F: %.4g kcal/mol/A | %.4g kcal/mol/A\n", tMAE_F, tTestMAE_F);
                 if (mHasStress) System.out.printf("MAE-S: %.4g kcal/mol/A^3 | %.4g kcal/mol/A^3\n", tMAE_S, tTestMAE_S);
                 break;

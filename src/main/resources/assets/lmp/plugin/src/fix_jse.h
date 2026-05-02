@@ -77,6 +77,11 @@ public:
     void setExtscalar(jboolean);
     void setExtvector(jboolean);
     void setExtarray(jboolean);
+    void setPeratomFlag(jboolean);
+    void setSizePeratomCols(jint);
+    void setPeratomFreq(jint);
+    void setVectorAtom(jlong);
+    void setArrayAtom(jlong);
     void setCommForward(jint);
     void setCommReverse(jint);
     

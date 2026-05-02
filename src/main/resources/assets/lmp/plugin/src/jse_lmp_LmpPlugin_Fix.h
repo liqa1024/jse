@@ -241,6 +241,46 @@ JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setExtarray0
 
 /*
  * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    setPeratomFlag0
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setPeratomFlag0
+  (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    setSizePeratomCols0
+ * Signature: (JI)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setSizePeratomCols0
+  (JNIEnv *, jclass, jlong, jint);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    setPeratomFreq0
+ * Signature: (JI)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setPeratomFreq0
+  (JNIEnv *, jclass, jlong, jint);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    setVectorAtom0
+ * Signature: (JJ)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setVectorAtom0
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
+ * Method:    setArrayAtom0
+ * Signature: (JJ)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_LmpPlugin_00024Fix_setArrayAtom0
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     jse_lmp_LmpPlugin_Fix
  * Method:    setCommForward0
  * Signature: (JI)V
  */

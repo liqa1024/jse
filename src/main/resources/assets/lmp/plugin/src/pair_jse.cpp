@@ -140,6 +140,7 @@ jdouble PairJSE::computeVariable(jint ivar) {
     return input->variable->compute_equal(ivar);
 }
 void PairJSE::citemeAdd(jstring cite) {
+    if (lmp->citeme == NULL) return;
     const char *cite_c = mEnv->GetStringUTFChars(cite, NULL);
     if (cite_c==NULL) return; // OOM
     lmp->citeme->add(cite_c);
