@@ -10,7 +10,7 @@ param (
 )
 
 & {
-    $LastRelease = "3.13.7"
+    $LastRelease = "4.0.1"
     $ErrorActionPreference = 'Stop'
     
     $WorkingDir = Join-Path ([System.IO.Path]::GetTempPath()) ("jse-getter-" + [guid]::NewGuid().ToString())
