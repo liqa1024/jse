@@ -13,7 +13,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URI;
+import java.net.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -121,8 +121,77 @@ public class OS {
             }
         }
     }
+    
+    @SuppressWarnings("HttpUrlsUsage")
+    private static @Nullable Proxy parseEnvProxy_(String aEnvKey) {
+        // 注意不走下面的 OS 方法避免复杂逻辑调整导致的循环初始化
+        String tEnv = null;
+        try {tEnv = System.getenv(aEnvKey);}
+        catch (Exception ignored) {}
+        if (tEnv==null || tEnv.isEmpty()) return null;
+        try {
+            // 支持 http://host:port 或 host:port，不带的情况需要默认当作 http
+            URI tURI = tEnv.contains("://") ? URI.create(tEnv) : URI.create("http://" + tEnv);
+            String tHost = tURI.getHost();
+            int tPort = tURI.getPort();
+            if (tHost!=null && tPort>0) {
+                return new Proxy(Proxy.Type.HTTP, new InetSocketAddress(tHost, tPort));
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+    
     static {
         InitHelper.INITIALIZED = true;
+        
+        // 从环境变量获取系统代理，许多环境走这个因此需要提供兼容
+        final Proxy fEnvHttpsProxy, fEnvHttpProxy;
+        if (Conf.ENV_PROXY) {
+            // 优先小写
+            Proxy tEnvHttpsProxy = parseEnvProxy_("https_proxy");
+            if (tEnvHttpsProxy==null) tEnvHttpsProxy = parseEnvProxy_("HTTPS_PROXY");
+            Proxy tEnvHttpProxy = parseEnvProxy_("http_proxy");
+            if (tEnvHttpProxy==null) tEnvHttpProxy = parseEnvProxy_("HTTP_PROXY");
+            fEnvHttpsProxy = tEnvHttpsProxy;
+            fEnvHttpProxy = tEnvHttpProxy;
+        } else {
+            fEnvHttpsProxy = null;
+            fEnvHttpProxy = null;
+        }
+        // 这里通过比较规范的重写 ProxySelector 实现
+        final @Nullable ProxySelector fDefault = ProxySelector.getDefault();
+        ProxySelector.setDefault(new ProxySelector() {
+            @Override
+            public List<Proxy> select(URI uri) {
+                // 根据 scheme 来选择代理
+                String tScheme = uri.getScheme();
+                Proxy tEnvProxy = null;
+                if ("https".equalsIgnoreCase(tScheme)) {
+                    tEnvProxy = fEnvHttpsProxy;
+                } else
+                if ("http".equalsIgnoreCase(tScheme)) {
+                    tEnvProxy = fEnvHttpProxy;
+                }
+                List<Proxy> rProxies = new ArrayList<>();
+                // 将环境代理放在最前面
+                if (tEnvProxy != null) {
+                    rProxies.add(tEnvProxy);
+                }
+                // 使用 jdk 默认获取到的代理
+                if (fDefault != null) {
+                    rProxies.addAll(fDefault.select(uri));
+                } else {
+                    rProxies.add(Proxy.NO_PROXY);
+                }
+                return rProxies;
+            }
+            @Override public void connectFailed(URI uri, SocketAddress sa, IOException ioe) {
+                if (fDefault != null) {
+                    fDefault.connectFailed(uri, sa, ioe);
+                }
+            }
+        });
+        
         // 获取 java.home
         JAVA_HOME = System.getProperty("java.home"); // 这里统一认为 java.home 就是绝对路径
         JAVA_HOME_DIR = IO.toInternalValidDir(JAVA_HOME);

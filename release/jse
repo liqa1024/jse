@@ -41,6 +41,9 @@ fi
 # Eliminate the every 30s prefs warning
 JAVA_OPTS="$JAVA_OPTS -Djava.util.prefs.syncInterval=1000000"
 
+# Try use system proxies default
+JAVA_OPTS="$JAVA_OPTS -Djava.net.useSystemProxies=true"
+
 # Restrict memory size when the SLURM_PROCID environment variable exists and is not 0
 if [ -n "$SLURM_PROCID" ] && [ "$SLURM_PROCID" -ne 0 ]; then
     JAVA_OPTS="$JAVA_OPTS -Xmx1g"

@@ -29,6 +29,9 @@ set JAVA_OPTS=%JAVA_OPTS% -Djava.util.prefs.syncInterval=1000000
 @REM GROOVY-6453: groovysh in Windows 7/8/10 doesn't support arrow keys and Del
 set JAVA_OPTS=%JAVA_OPTS% -Djline.terminal=none
 
+@REM Try use system proxies default
+set JAVA_OPTS=%JAVA_OPTS% -Djava.net.useSystemProxies=true
+
 @REM Set headless when JSE_HEADLESS
 if defined JSE_HEADLESS (
     if not "%JSE_HEADLESS%"=="0" (

@@ -53,6 +53,15 @@ public class Conf {
      */
     public static boolean OPERATION_CHECK = OS.envZ("JSE_OPERATION_CHECK", true);
     /**
+     * jse 是否会优先采用环境变量（HTTPS_PROXY）的代理设置，这个会调整默认情况下
+     * jdk 的代理处理方法，在很多 linux 环境下非常有用。而又是会存在兼容性问题，可以通过此关闭
+     * <p>
+     * 默认为 {@code true}
+     * <p>
+     * 也可使用环境变量 {@code JSE_ENV_PROXY} 来设置
+     */
+    public static boolean ENV_PROXY = OS.envZ("JSE_ENV_PROXY", true);
+    /**
      * IO 读取是否使用严格模式，在遇到任何格式错误时会抛出错误而不是返回 {@code null}，在
      * {@code jse 4.0.0} 之后会默认开启来避免不必要的排查问题
      * <p>
