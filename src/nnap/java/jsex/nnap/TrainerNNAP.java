@@ -35,7 +35,7 @@ import java.util.function.IntUnaryOperator;
  * 新结构大幅简化了训练器的实现
  * @author liqa
  */
-public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
+public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
     protected final static String DEFAULT_UNITS = "metal";
     protected final static double DEFAULT_ENERGY_WEIGHT = 1.0;
     protected final static double DEFAULT_FORCE_WEIGHT = 0.1;
@@ -161,63 +161,63 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
     
     
     protected double mEnergyWeight = DEFAULT_ENERGY_WEIGHT;
-    public Trainer setEnergyWeight(double aWeight) {
+    public TrainerNNAP setEnergyWeight(double aWeight) {
         mEnergyWeight = aWeight;
         mOptimizer.markLossFuncChanged();
         return this;
     }
     protected double mForceWeight = DEFAULT_FORCE_WEIGHT;
-    public Trainer setForceWeight(double aWeight) {
+    public TrainerNNAP setForceWeight(double aWeight) {
         mForceWeight = aWeight;
         mOptimizer.markLossFuncChanged();
         return this;
     }
     protected double mStressWeight = DEFAULT_STRESS_WEIGHT;
-    public Trainer setStressWeight(double aWeight) {
+    public TrainerNNAP setStressWeight(double aWeight) {
         mStressWeight = aWeight;
         mOptimizer.markLossFuncChanged();
         return this;
     }
     
     protected ILossFunc mLossFuncEng = LOSS_SMOOTHL1;
-    public Trainer setLossFuncEnergy(ILossFunc aLossFunc) {
+    public TrainerNNAP setLossFuncEnergy(ILossFunc aLossFunc) {
         mLossFuncEng = aLossFunc;
         mOptimizer.markLossFuncChanged();
         return this;
     }
     protected ILossFunc mLossFuncForce = LOSS_SMOOTHL1;
-    public Trainer setLossFuncForce(ILossFunc aLossFunc) {
+    public TrainerNNAP setLossFuncForce(ILossFunc aLossFunc) {
         mLossFuncForce = aLossFunc;
         mOptimizer.markLossFuncChanged();
         return this;
     }
     protected ILossFunc mLossFuncStress = LOSS_SMOOTHL1;
-    public Trainer setLossFuncStress(ILossFunc aLossFunc) {
+    public TrainerNNAP setLossFuncStress(ILossFunc aLossFunc) {
         mLossFuncStress = aLossFunc;
         mOptimizer.markLossFuncChanged();
         return this;
     }
-    public Trainer setLossFunc(ILossFunc aLossFunc) {
+    public TrainerNNAP setLossFunc(ILossFunc aLossFunc) {
         mLossFuncEng = aLossFunc;
         mLossFuncForce = aLossFunc;
         mLossFuncStress = aLossFunc;
         mOptimizer.markLossFuncChanged();
         return this;
     }
-    public Trainer reset() {
+    public TrainerNNAP reset() {
         mOptimizer.reset();
         return this;
     }
     
     protected boolean mAutoBreak = true;
-    public Trainer setAutoBreak(boolean aFlag) {
+    public TrainerNNAP setAutoBreak(boolean aFlag) {
         mAutoBreak = aFlag;
         return this;
     }
     
     protected IOptimizer mOptimizer = new LBFGS(100).setLineSearch();
     protected int mBatchSize = -1;
-    public Trainer setOptimizer(Map<String, ?> aOptArgs) {
+    public TrainerNNAP setOptimizer(Map<String, ?> aOptArgs) {
         if (aOptArgs == null) {
             aOptArgs = Maps.of("type", "lbfgs");
         }
@@ -250,11 +250,11 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
         initOptimizer_();
         return this;
     }
-    public Trainer setLearningRate(double aLearningRate) {
+    public TrainerNNAP setLearningRate(double aLearningRate) {
         mOptimizer.setLearningRate(aLearningRate);
         return this;
     }
-    public Trainer setBatchSize(int aBatchSize) {
+    public TrainerNNAP setBatchSize(int aBatchSize) {
         mBatchSize = aBatchSize;
         if (mOptimizer instanceof LBFGS) {
             if (mBatchSize > 0) mOptimizer.setNoLineSearch(); // batch 情况下不能线搜索，因为线搜索会使用上一步的梯度
@@ -268,7 +268,7 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
      * @param aValue 设置值
      * @return 自身方便链式调用
      */
-    public Trainer setBasisMax(double aValue) {
+    public TrainerNNAP setBasisMax(double aValue) {
         mBasisMax = aValue;
         return this;
     }
@@ -281,7 +281,7 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
      * @param aFlag 设置值
      * @return 自身方便链式调用
      */
-    public Trainer setShareNorm(boolean aFlag) {
+    public TrainerNNAP setShareNorm(boolean aFlag) {
         if (mShareNorm!=null &&  mShareNorm==aFlag) return this;
         if (aFlag) {
             // 检测基组长度是否相等
@@ -298,7 +298,7 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
     protected boolean mSharedBasis = true;
     
     @SuppressWarnings("unchecked")
-    Trainer(@Range(from=1, to=Integer.MAX_VALUE) int aNumThreads, Map<String, ?> aArgs, @Nullable Map<String, ?> aModelInfo) throws Exception {
+    TrainerNNAP(@Range(from=1, to=Integer.MAX_VALUE) int aNumThreads, Map<String, ?> aArgs, @Nullable Map<String, ?> aModelInfo) throws Exception {
         mPool = new ParforThreadPool(aNumThreads);
         if (aModelInfo != null) {
             mIsRetrain = true;
@@ -404,7 +404,7 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
      * </dl>
      */
     @SuppressWarnings("unchecked")
-    public Trainer(Map<String, ?> aArgs, @Nullable Map<String, ?> aModelInfo) throws Exception {
+    public TrainerNNAP(Map<String, ?> aArgs, @Nullable Map<String, ?> aModelInfo) throws Exception {
         this(nthreadsFromArgs_(aArgs), aArgs, aModelInfo);
         @Nullable Map<String, ?> tOptim = (Map<String, ?>)UT.Code.get(aArgs, "optimizer", "optim", "opt");
         if (tOptim != null) {
@@ -489,7 +489,7 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
      *     </dd>
      * </dl>
      */
-    public Trainer(Map<String, ?> aArgs) throws Exception {
+    public TrainerNNAP(Map<String, ?> aArgs) throws Exception {
         this(aArgs, null);
     }
     
