@@ -17,8 +17,8 @@ public class Chebyshev extends WTypeBasis {
     
     final int mSize;
     
-    Chebyshev(double aRCut, int aNumTypes, int aNMax, int aWType, @Nullable Vector aFuseWeight, @Nullable Vector aPostFuseWeight, double @Nullable[] aPostFuseScale) {
-        super(aRCut, aNumTypes, aNMax, aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale);
+    Chebyshev(double aRCut, int aNumTypes, int aNMax, int aWType, @Nullable Vector aFuseWeight, @Nullable Vector aRFuseWeight, double @Nullable[] aRFuseScale) {
+        super(aRCut, aNumTypes, aNMax, aWType, aFuseWeight, aRFuseWeight, aRFuseScale);
         mSize = mSizeNP;
     }
     
@@ -38,16 +38,31 @@ public class Chebyshev extends WTypeBasis {
         Vector aFuseWeight = getFuseWeight_(aMap, aWType, aNumTypes);
         int tFuseSize = getFuseSize(aWType, aNumTypes, aFuseWeight);
         int tSizeN = getSizeN_(aWType, aNumTypes, aNMax, tFuseSize);
-        Vector aPostFuseWeight = getPostFuseWeight_(aMap, tSizeN);
-        double[] aPostFuseScale = aPostFuseWeight==null ? null : new double[1];
-        if (aPostFuseWeight!=null) {
-            Object tPostFuseScale = aMap.get("post_fuse_scale");
-            aPostFuseScale[0] = tPostFuseScale==null ? 1.0 : ((Number)tPostFuseScale).doubleValue();
+        // 先尝试获取 rfuse
+        Vector aRFuseWeight = getRFuseWeight_(aMap, aWType, tSizeN);
+        double[] aRFuseScale = aRFuseWeight==null ? null : new double[1];
+        if (aRFuseWeight != null) {
+            Object tRFuseScale = aMap.get("rfuse_scale");
+            aRFuseScale[0] = tRFuseScale==null ? 1.0 : ((Number)tRFuseScale).doubleValue();
+        }
+        // 没有 rfuse 的情况下尝试获取 post_fuse 兼容
+        if (aRFuseWeight == null) {
+            Vector tPostFuseWeight = getPostFuseWeight_(aMap, tSizeN);
+            if (tPostFuseWeight != null) {
+                // 简单覆盖
+                aRFuseScale = new double[1];
+                Object tPostFuseScale = aMap.get("post_fuse_scale");
+                aRFuseScale[0] = tPostFuseScale==null ? 1.0 : ((Number)tPostFuseScale).doubleValue();
+                // 转换
+                aRFuseWeight = postFuse2RFuse_(tPostFuseWeight, aWType, aNumTypes, aNMax, tSizeN, aFuseWeight, tFuseSize);
+                aWType = WTYPE_RFUSE;
+                aFuseWeight = null;
+            }
         }
         return new Chebyshev(
             ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
             aNumTypes, aNMax,
-            aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale
+            aWType, aFuseWeight, aRFuseWeight, aRFuseScale
         );
     }
     

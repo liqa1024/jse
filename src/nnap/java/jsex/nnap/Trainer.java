@@ -42,8 +42,8 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
     protected final static double DEFAULT_STRESS_WEIGHT = 0.1;
     protected final static int DEFAULT_NTHREADS = 4;
     protected final static double DEFAULT_BASIS_MAX = 5.0;
-    protected final static int DEFAULT_POST_FUSE_SIZE = 6;
-    protected final static String DEFAULT_WTYPE = "exfull";
+    protected final static int DEFAULT_RFUSE_SIZE = 6;
+    protected final static String DEFAULT_WTYPE = "rfuse";
     
     public final static ILossFunc LOSS_SQUARE = (pred, real, grad) -> {
         double tErr = pred - real;
@@ -531,16 +531,14 @@ public class Trainer implements IHasSymbol, ISavable, AutoCloseable {
             }
         }
         if (aSymbols.length != aBasisSetting.size()) throw new IllegalArgumentException("Symbols length does not match reference basis length.");
-        // 现在默认塞入 post_fuse 和 exfull，这里现在就可以简单实现不用考虑引用问题
+        // 现在默认塞入 rfull，这里现在就可以简单实现不用考虑引用问题
         Consumer<Map> tBasisValider = subBasis -> {
-            // 在不存在这些参数时塞入默认 post_fuse
-            if (!subBasis.containsKey("post_fuse") && !subBasis.containsKey("post_fuse_size") && !subBasis.containsKey("post_fuse_weight")) {
-                subBasis.put("post_fuse", true);
-                subBasis.put("post_fuse_size", DEFAULT_POST_FUSE_SIZE);
-            }
-            // 在不存在 wtype 时塞入 exfull
-            if (!subBasis.containsKey("wtype")) {
-                subBasis.put("wtype", DEFAULT_WTYPE);
+            // 在不存在 wtype 时塞入 rfull
+            subBasis.putIfAbsent("wtype", DEFAULT_WTYPE);
+            subBasis.putIfAbsent("rfuse_size", DEFAULT_RFUSE_SIZE);
+            // 不再支持 post_fuse 训练
+            if ((Boolean)UT.Code.getWithDefault(subBasis, "post_fuse", false) || subBasis.containsKey("post_fuse_size") || subBasis.containsKey("post_fuse_weight")) {
+                throw new IllegalArgumentException("Training with post_fuse is invalid now, use wtype='rfuse'");
             }
         };
         // 顺便统计 mirror 来方便后续处理

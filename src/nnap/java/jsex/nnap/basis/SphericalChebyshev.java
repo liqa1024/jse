@@ -27,8 +27,8 @@ public class SphericalChebyshev extends WTypeBasis {
     final int mSize;
     
     private SphericalChebyshev(double aRCut, int aNumTypes, int aNMax, int aLMax, int aLMaxMax, int aL3Max, int aL4Max,
-                               int aWType, @Nullable Vector aFuseWeight, @Nullable Vector aPostFuseWeight, double @Nullable[] aPostFuseScale) {
-        super(aRCut, aNumTypes, aNMax, aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale);
+                               int aWType, @Nullable Vector aFuseWeight, @Nullable Vector aRFuseWeight, double @Nullable[] aRFuseScale) {
+        super(aRCut, aNumTypes, aNMax, aWType, aFuseWeight, aRFuseWeight, aRFuseScale);
         if (aLMaxMax<0 || aLMaxMax>12) throw new IllegalArgumentException("Input lmax MUST be in [0, 12], input: "+aLMaxMax);
         if (aL3Max<0 || aL3Max>6) throw new IllegalArgumentException("Input l3max MUST be in [0, 6], input: "+aL3Max);
         if (aL4Max<0 || aL4Max>3) throw new IllegalArgumentException("Input l4max MUST be in [0, 3], input: "+aL3Max);
@@ -43,8 +43,8 @@ public class SphericalChebyshev extends WTypeBasis {
         
         mSize = mSizeNP*mSizeL;
     }
-    SphericalChebyshev(double aRCut, int aNumTypes, int aNMax, int aLMax, int aL3Max, int aL4Max, int aWType, Vector aFuseWeight, Vector aPostFuseWeight, double[] aPostFuseScale) {
-        this(aRCut, aNumTypes, aNMax, aLMax, Math.max(Math.max(aLMax, aL3Max), aL4Max), aL3Max, aL4Max, aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale);
+    SphericalChebyshev(double aRCut, int aNumTypes, int aNMax, int aLMax, int aL3Max, int aL4Max, int aWType, Vector aFuseWeight, Vector aRFuseWeight, double[] aRFuseScale) {
+        this(aRCut, aNumTypes, aNMax, aLMax, Math.max(Math.max(aLMax, aL3Max), aL4Max), aL3Max, aL4Max, aWType, aFuseWeight, aRFuseWeight, aRFuseScale);
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -72,17 +72,32 @@ public class SphericalChebyshev extends WTypeBasis {
         Vector aFuseWeight = getFuseWeight_(aMap, aWType, aNumTypes);
         int tFuseSize = getFuseSize(aWType, aNumTypes, aFuseWeight);
         int tSizeN = getSizeN_(aWType, aNumTypes, aNMax, tFuseSize);
-        Vector aPostFuseWeight = getPostFuseWeight_(aMap, tSizeN);
-        double[] aPostFuseScale = aPostFuseWeight==null ? null : new double[1];
-        if (aPostFuseWeight!=null) {
-            Object tPostFuseScale = aMap.get("post_fuse_scale");
-            aPostFuseScale[0] = tPostFuseScale==null ? 1.0 : ((Number)tPostFuseScale).doubleValue();
+        // 先尝试获取 rfuse
+        Vector aRFuseWeight = getRFuseWeight_(aMap, aWType, tSizeN);
+        double[] aRFuseScale = aRFuseWeight==null ? null : new double[1];
+        if (aRFuseWeight != null) {
+            Object tRFuseScale = aMap.get("rfuse_scale");
+            aRFuseScale[0] = tRFuseScale==null ? 1.0 : ((Number)tRFuseScale).doubleValue();
+        }
+        // 没有 rfuse 的情况下尝试获取 post_fuse 兼容
+        if (aRFuseWeight == null) {
+            Vector tPostFuseWeight = getPostFuseWeight_(aMap, tSizeN);
+            if (tPostFuseWeight != null) {
+                // 简单覆盖
+                aRFuseScale = new double[1];
+                Object tPostFuseScale = aMap.get("post_fuse_scale");
+                aRFuseScale[0] = tPostFuseScale==null ? 1.0 : ((Number)tPostFuseScale).doubleValue();
+                // 转换
+                aRFuseWeight = postFuse2RFuse_(tPostFuseWeight, aWType, aNumTypes, aNMax, tSizeN, aFuseWeight, tFuseSize);
+                aWType = WTYPE_RFUSE;
+                aFuseWeight = null;
+            }
         }
         return new SphericalChebyshev(
             ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
             aNumTypes, aNMax,
             aLMax, aL3Max, aL4Max,
-            aWType, aFuseWeight, aPostFuseWeight, aPostFuseScale
+            aWType, aFuseWeight, aRFuseWeight, aRFuseScale
         );
     }
     
