@@ -64,7 +64,7 @@ public class Main {
         }
     }
     
-    @SuppressWarnings({"ThrowablePrintedToSystemOut", "ExtractMethodRecommender"})
+    @SuppressWarnings({"ThrowablePrintedToSystemOut"})
     private static int main_(String[] aArgs) {
         try {
             // 完全没有输入时（双击运行）直接结束
@@ -296,19 +296,39 @@ public class Main {
                     tNamesToClean.add("jit/cache");
                 }
                 if (tNamesToClean.isEmpty()) {
-                    System.out.println("There is no jni library to clean");
+                    if (tCleanAll) {
+                        System.out.println("There is no jni library to clean");
+                    } else {
+                        System.out.println("There is no jni cache to clean");
+                    }
                     return 0;
                 }
                 System.out.printf("The following directories in %s will be removed:\n", JAR_DIR);
                 System.out.println(String.join("\n", tNamesToClean));
-                System.out.println(IO.Text.yellow("Confirm? (y/N)"));
+                if (tCleanAll) {
+                    System.out.println(IO.Text.yellow("Confirm? (y/N)"));
+                } else {
+                    System.out.println(IO.Text.yellow("Confirm? (Y/n)"));
+                }
                 BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
                 String tLine = tReader.readLine();
-                while (!tLine.equalsIgnoreCase("y")) {
-                    if (tLine.isEmpty() || tLine.equalsIgnoreCase("n")) {
-                        return 0;
+                if (tCleanAll) {
+                    while (!tLine.equalsIgnoreCase("y")) {
+                        if (tLine.isEmpty() || tLine.equalsIgnoreCase("n")) {
+                            return 0;
+                        }
+                        System.out.println(IO.Text.yellow("Confirm? (y/N)"));
                     }
-                    System.out.println(IO.Text.yellow("Confirm? (y/N)"));
+                } else {
+                    while (true) {
+                        if (tLine.equalsIgnoreCase("n")) {
+                            return 0;
+                        }
+                        if (tLine.isEmpty() || tLine.equalsIgnoreCase("y")) {
+                            break;
+                        }
+                        System.out.println(IO.Text.yellow("Confirm? (Y/n)"));
+                    }
                 }
                 for (String tName : tNamesToClean) {
                     System.out.printf("Removing: %s\n", tName);

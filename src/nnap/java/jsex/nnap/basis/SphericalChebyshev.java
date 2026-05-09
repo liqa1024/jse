@@ -4,6 +4,7 @@ import jse.code.UT;
 import jse.math.vector.*;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -27,8 +28,9 @@ public class SphericalChebyshev extends WTypeBasis {
     final int mSize;
     
     private SphericalChebyshev(double aRCut, int aNumTypes, int aNMax, int aLMax, int aLMaxMax, int aL3Max, int aL4Max,
-                               int aWType, @Nullable Vector aFuseWeight, @Nullable Vector aRFuseWeight, double @Nullable[] aRFuseScale) {
-        super(aRCut, aNumTypes, aNMax, aWType, aFuseWeight, aRFuseWeight, aRFuseScale);
+                               int aWType, @Nullable Vector aFuseWeight, @Nullable Vector aRFuseWeight, double @Nullable[] aRFuseScale,
+                               boolean aLayerNorm, @Nullable Vector aLayerNormBeta, @Nullable Vector aLayerNormGamma) {
+        super(aRCut, aNumTypes, aNMax, aWType, aFuseWeight, aRFuseWeight, aRFuseScale, aLayerNorm, aLayerNormBeta, aLayerNormGamma);
         if (aLMaxMax<0 || aLMaxMax>12) throw new IllegalArgumentException("Input lmax MUST be in [0, 12], input: "+aLMaxMax);
         if (aL3Max<0 || aL3Max>6) throw new IllegalArgumentException("Input l3max MUST be in [0, 6], input: "+aL3Max);
         if (aL4Max<0 || aL4Max>3) throw new IllegalArgumentException("Input l4max MUST be in [0, 3], input: "+aL3Max);
@@ -43,8 +45,8 @@ public class SphericalChebyshev extends WTypeBasis {
         
         mSize = mSizeNP*mSizeL;
     }
-    SphericalChebyshev(double aRCut, int aNumTypes, int aNMax, int aLMax, int aL3Max, int aL4Max, int aWType, Vector aFuseWeight, Vector aRFuseWeight, double[] aRFuseScale) {
-        this(aRCut, aNumTypes, aNMax, aLMax, Math.max(Math.max(aLMax, aL3Max), aL4Max), aL3Max, aL4Max, aWType, aFuseWeight, aRFuseWeight, aRFuseScale);
+    SphericalChebyshev(double aRCut, int aNumTypes, int aNMax, int aLMax, int aL3Max, int aL4Max, int aWType, Vector aFuseWeight, Vector aRFuseWeight, double[] aRFuseScale, boolean aLayerNorm, @Nullable Vector aLayerNormBeta, @Nullable Vector aLayerNormGamma) {
+        this(aRCut, aNumTypes, aNMax, aLMax, Math.max(Math.max(aLMax, aL3Max), aL4Max), aL3Max, aL4Max, aWType, aFuseWeight, aRFuseWeight, aRFuseScale, aLayerNorm, aLayerNormBeta, aLayerNormGamma);
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -56,7 +58,7 @@ public class SphericalChebyshev extends WTypeBasis {
         super.save_(rSaveTo);
     }
     
-    @SuppressWarnings({"rawtypes"})
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public static SphericalChebyshev load(int aNumTypes, Map aMap) {
         int aNMax = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_NMAX, "nmax")).intValue();
         int aLMax = ((Number)UT.Code.getWithDefault(aMap, DEFAULT_LMAX, "lmax")).intValue();
@@ -93,11 +95,19 @@ public class SphericalChebyshev extends WTypeBasis {
                 aFuseWeight = null;
             }
         }
+        // 读取 layer norm 系数
+        boolean aLayerNorm = (Boolean)UT.Code.getWithDefault(aMap, false, "layer_norm", "ln");
+        Vector aLayerNormBeta = null, aLayerNormGamma = null;
+        if (aLayerNorm) {
+            aLayerNormBeta = getLNBeta_(aMap);
+            aLayerNormGamma = getLNGamma_(aMap);
+        }
         return new SphericalChebyshev(
             ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
             aNumTypes, aNMax,
             aLMax, aL3Max, aL4Max,
-            aWType, aFuseWeight, aRFuseWeight, aRFuseScale
+            aWType, aFuseWeight, aRFuseWeight, aRFuseScale,
+            aLayerNorm, aLayerNormBeta, aLayerNormGamma
         );
     }
     
@@ -109,13 +119,25 @@ public class SphericalChebyshev extends WTypeBasis {
     @Override public int size() {return mSize;}
     
     @Override public int forwardCacheSize(int aNumNei) {
-        return aNumNei*(mNMax+1 + mSizeNP + mLMAll) + (mSizeNP*mLMAll);
+        int tSize = aNumNei*(1 + mNMax+1 + mSizeNP + mLMAll) + (mSizeNP*mLMAll);
+        if (mInternalLayerNorm) {
+            tSize += aNumNei*(mSizeNP + 1 + 1);
+        }
+        return tSize;
     }
     @Override public int backwardCacheSize(int aNumNei) {
-        return aNumNei*(mNMax+1 + mSizeNP*2 + mLMAll*2) + (mSizeNP*mLMAll);
+        int tSize = aNumNei*(1 + mNMax+1 + mSizeNP + mLMAll*2) + (mSizeNP*mLMAll);
+        if (mInternalLayerNorm) {
+            tSize += aNumNei*(mSizeNP + 1);
+        }
+        return tSize;
     }
     @Override public int backwardBackwardCacheSize(int aNumNei) {
-        return aNumNei*(mSizeNP) + mSizeNP*mLMAll;
+        int tSize = aNumNei*mSizeNP + mSizeNP*mLMAll;
+        if (mInternalLayerNorm) {
+            tSize += aNumNei*mSizeNP;
+        }
+        return tSize;
     }
     
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdxType, int aGenIdxMerge) {

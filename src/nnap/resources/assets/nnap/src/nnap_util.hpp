@@ -70,6 +70,7 @@ static constexpr flt_t SQRT3 = 1.7320508075688772;
 static constexpr flt_t SQRT3DIV2 = 1.224744871391589;
 static constexpr flt_t PI4 = 12.566370614359172;
 static constexpr flt_t SQRT_PI4 = 3.5449077018110318;
+static constexpr flt_t LN_EPSILON = 1.0e-5;
 
 
 static inline NNAP_DEVICE double nnap_abs(double value) noexcept {
@@ -201,21 +202,6 @@ static inline NNAP_DEVICE flt_t dot(flt_t *aArrayL, flt_t *aArrayR) noexcept {
 }
 
 template <int N>
-static inline NNAP_DEVICE void plus(flt_t *rArrayL, flt_t *aArrayR) noexcept {
-    for (int i = 0; i < N; ++i) {
-        rArrayL[i] += aArrayR[i];
-    }
-}
-template <int N>
-static inline NNAP_DEVICE void plusWt(flt_t *rArrayL, flt_t *rArrayLWt, flt_t aWt, flt_t *aArrayR) noexcept {
-    for (int i = 0; i < N; ++i) {
-        const flt_t tRHS = aArrayR[i];
-        rArrayL[i] += tRHS;
-        rArrayLWt[i] += aWt*tRHS;
-    }
-}
-
-template <int N>
 static inline NNAP_DEVICE void mplus(flt_t *rArrayL, flt_t aMul, flt_t *aArrayR) noexcept {
     for (int i = 0; i < N; ++i) {
         rArrayL[i] += aMul*aArrayR[i];
@@ -258,28 +244,31 @@ static inline NNAP_DEVICE void chebyshev2Full(flt_t aX, flt_t aMul, flt_t *rDest
     }
 }
 
-static inline NNAP_DEVICE flt_t calFc(flt_t aX) noexcept {
-    return pow4(ONE - pow2(aX));
+static inline NNAP_DEVICE flt_t calFc(flt_t aDis, flt_t aRCut) noexcept {
+    return pow4(ONE - pow2(aDis/aRCut));
 }
-static inline NNAP_DEVICE flt_t calFc2(flt_t aX) noexcept {
-    return pow4(ONE - pow2(aX+aX - ONE));
+static inline NNAP_DEVICE flt_t calFcGrad(flt_t aDis, flt_t aRCut) noexcept {
+    const flt_t fcMul3 = pow3(ONE - pow2(aDis/aRCut));
+    return ((flt_t)8.0) * fcMul3 / (aRCut*aRCut);
 }
 
 template <int N>
 static inline NNAP_DEVICE void calRn(flt_t *rRn, flt_t aDis, flt_t aRCut) noexcept {
     const flt_t tX = aDis/aRCut;
-    const flt_t fc = calFc(tX);
     const flt_t tRnX = ONE - (tX+tX);
-    chebyshevFull<N>(tRnX, fc, rRn);
+    chebyshevFull<N>(tRnX, ONE, rRn);
 }
 template <int N>
-static inline NNAP_DEVICE void calRn2(flt_t *rRn, flt_t aDis, flt_t aRCutL, flt_t aRCutR) noexcept {
-    const flt_t tX = (aDis-aRCutL)/(aRCutR-aRCutL);
-    const flt_t fc = calFc2(tX);
+static inline NNAP_DEVICE void calRnGrad(flt_t *rRnGrad, flt_t *rCheby2, flt_t aDis, flt_t aRCut) noexcept {
+    const flt_t tX = aDis/aRCut;
+    const flt_t tCheby2Mul = TWO / (aDis*aRCut);
     const flt_t tRnX = ONE - (tX+tX);
-    chebyshevFull<N>(tRnX, fc, rRn);
+    chebyshev2Full<N-1>(tRnX, tCheby2Mul, rCheby2);
+    rRnGrad[0] = ZERO;
+    for (int n = 1; n <= N; ++n) {
+        rRnGrad[n] = ((flt_t)n)*rCheby2[n-1];
+    }
 }
-
 
 template <int N, int NP>
 static inline NNAP_DEVICE void calRnp(flt_t *rRnp, flt_t *aRn, flt_t *aRFuseWeight) noexcept {
@@ -289,65 +278,124 @@ static inline NNAP_DEVICE void calRnp(flt_t *rRnp, flt_t *aRn, flt_t *aRFuseWeig
         tWeight += (N+1);
     }
 }
-template <int N, int NP>
-static inline NNAP_DEVICE void mplusRnp(flt_t *rRnp, flt_t *aRn, flt_t *aRFuseWeight) noexcept {
+template <int N, int NP, int GRAD_W, int GRAD_R>
+static inline NNAP_DEVICE void backwardRnp(flt_t *aAGradRnp, flt_t *aRn, flt_t *rAGradRn, flt_t *aRFuseWeight, flt_t *rAGradRFuseWeight) noexcept {
     flt_t *tWeight = aRFuseWeight;
+    flt_t *rAGradWeight = rAGradRFuseWeight;
     for (int np = 0; np < NP; ++np) {
-        rRnp[np] += dot<N+1>(aRn, tWeight);
-        tWeight += (N+1);
+        const flt_t subAGradRnp = aAGradRnp[np];
+        if (GRAD_W) {
+            mplus<N+1>(rAGradWeight, subAGradRnp, aRn);
+            rAGradWeight += (N+1);
+        }
+        if (GRAD_R) {
+            mplus<N+1>(rAGradRn, subAGradRnp, tWeight);
+            tWeight += (N+1);
+        }
     }
 }
 template <int N, int NP>
-static inline NNAP_DEVICE void backwardRnp(flt_t *aGradRnp, flt_t *aRn, flt_t *rGradRFuseWeight) noexcept {
-    flt_t *rGradWeight = rGradRFuseWeight;
+static inline NNAP_DEVICE void backwardBackwardRnp(flt_t *aAGradRnp, flt_t *rBGradAGradRnp, flt_t *aBGradAGradRn, flt_t *aRFuseWeight, flt_t *rBGradRFuseWeight) noexcept {
+    flt_t *tWeight = aRFuseWeight;
+    flt_t *rBGradWeight = rBGradRFuseWeight;
     for (int np = 0; np < NP; ++np) {
-        mplus<N+1>(rGradWeight, aGradRnp[np], aRn);
-        rGradWeight += (N+1);
+        const flt_t subAGradRnp = aAGradRnp[np];
+        flt_t subBGradAGradRnp = ZERO;
+        for (int n = 0; n <= N; ++n) {
+            const flt_t subBGradAGradRn = aBGradAGradRn[n];
+            subBGradAGradRnp += subBGradAGradRn * tWeight[n];
+            rBGradWeight[n] += subAGradRnp * subBGradAGradRn;
+        }
+        rBGradAGradRnp[np] += subBGradAGradRnp;
+        tWeight += (N+1);
+        rBGradWeight += (N+1);
     }
 }
 
-static inline NNAP_DEVICE flt_t calFcGrad(flt_t *rFcGrad, flt_t aX, flt_t aRCut) noexcept {
-    const flt_t fcMul = ONE - pow2(aX);
-    const flt_t fcMul3 = pow3(fcMul);
-    *rFcGrad = ((flt_t)8.0) * fcMul3 / (aRCut*aRCut);
-    return fcMul*fcMul3;
-}
-static inline NNAP_DEVICE flt_t calFc2Grad(flt_t *rFcGrad, flt_t aDis, flt_t aRCutL, flt_t aRCutR) noexcept {
-    const flt_t tRCutRL = aRCutR-aRCutL;
-    const flt_t tX = (aDis-aRCutL)/tRCutRL;
-    const flt_t fcMul = ONE - pow2(tX+tX - ONE);
-    const flt_t fcMul3 = pow3(fcMul);
-    *rFcGrad = ((flt_t)16.0) * fcMul3 * (TWO - (aRCutL+aRCutR)/aDis) / (tRCutRL*tRCutRL);
-    return fcMul*fcMul3;
-}
-
 template <int N>
-static inline NNAP_DEVICE void calRnGrad(flt_t *rRnGrad, flt_t *rCheby2, flt_t aDis, flt_t aRCut) noexcept {
-    const flt_t tX = aDis/aRCut;
-    flt_t fcGrad;
-    flt_t tCheby2Mul = calFcGrad(&fcGrad, tX, aRCut);
-    tCheby2Mul *= TWO / (aDis*aRCut);
-    
-    const flt_t tRnX = ONE - (tX+tX);
-    chebyshevFull<N>(tRnX, fcGrad, rRnGrad);
-    chebyshev2Full<N-1>(tRnX, tCheby2Mul, rCheby2);
-    for (int n = 1; n <= N; ++n) {
-        rRnGrad[n] += ((flt_t)n)*rCheby2[n-1];
+static inline NNAP_DEVICE void layerNorm(flt_t *aX, flt_t *rY, flt_t &rMu, flt_t &rSigma, flt_t *aLNBeta, flt_t *aLNGamma) noexcept {
+    // cal mu sigma
+    flt_t tSumX = ZERO, tSumX2 = ZERO;
+    for (int i = 0; i < N; ++i) {
+        const flt_t tX = aX[i];
+        tSumX += tX;
+        tSumX2 += tX*tX;
     }
+    const flt_t tMu = tSumX/N;
+    const flt_t tSigma = sqrt(tSumX2/N - tMu*tMu + LN_EPSILON);
+    // norm to rX
+    for (int i = 0; i < N; ++i) {
+        rY[i] = aLNGamma[i]*(aX[i]-tMu)/tSigma + aLNBeta[i];
+    }
+    rMu = tMu;
+    rSigma = tSigma;
+}
+template <int N, int GRAD_W>
+static inline NNAP_DEVICE void backwardLayerNorm(flt_t *aX, flt_t *rAGradX, flt_t *aAGradY, flt_t aMu, flt_t aSigma, flt_t &rAGradSigma, flt_t *aLNGamma, flt_t *rAGradLNBeta, flt_t *rAGradLNGamma) noexcept {
+    // i do not want to cache everything...
+    flt_t tAGradMu = ZERO, tAGradSigma = ZERO;
+    for (int i = 0; i < N; ++i) {
+        const flt_t subX = aX[i];
+        const flt_t subAGradY = aAGradY[i];
+        if (GRAD_W) {
+            rAGradLNBeta[i] += subAGradY;
+            rAGradLNGamma[i] += subAGradY*(subX-aMu)/aSigma;
+        }
+        const flt_t subAGradNormX = subAGradY*aLNGamma[i];
+        tAGradSigma -= subAGradNormX*(subX-aMu)/pow2(aSigma);
+        tAGradMu -= subAGradNormX/aSigma;
+        rAGradX[i] += subAGradNormX/aSigma;
+    }
+    const flt_t tAGradSigma2 = ((flt_t)0.5)*tAGradSigma/aSigma;
+    tAGradMu += (-TWO)*tAGradSigma2*aMu;
+    const flt_t tAGradSumX2 = tAGradSigma2/N;
+    const flt_t tAGradSumX = tAGradMu/N;
+    for (int i = 0; i < N; ++i) {
+        rAGradX[i] += tAGradSumX + TWO*tAGradSumX2*aX[i];
+    }
+    rAGradSigma = tAGradSigma;
 }
 template <int N>
-static inline NNAP_DEVICE void calRn2Grad(flt_t *rRnGrad, flt_t *rCheby2, flt_t aDis, flt_t aRCutL, flt_t aRCutR) noexcept {
-    const flt_t tRCutRL = aRCutR-aRCutL;
-    const flt_t tX = (aDis-aRCutL)/tRCutRL;
-    flt_t fcGrad;
-    flt_t tCheby2Mul = calFc2Grad(&fcGrad, aDis, aRCutL, aRCutR);
-    tCheby2Mul *= TWO / (aDis*tRCutRL);
+static inline NNAP_DEVICE void backwardBackwardLayerNorm(flt_t *aX, flt_t *rBGradX, flt_t *aBGradAGradX, flt_t *aAGradY, flt_t *rBGradAGradY, flt_t aMu, flt_t aSigma, flt_t aAGradSigma, flt_t *aLNGamma, flt_t *rBGradLNGamma) noexcept {
+    // i do not want to cache everything...
+    const flt_t tAGradSigma2 = ((flt_t)0.5)*aAGradSigma/aSigma;
+    const flt_t tAGradSumX2 = tAGradSigma2/N;
+    flt_t tBGradMu = ZERO, tBGradSigma= ZERO;
+    flt_t tBGradAGradSumX = ZERO, tBGradAGradSumX2 = ZERO;
+    for (int i = 0; i < N; ++i) {
+        const flt_t subBGradAGradX = aBGradAGradX[i];
+        tBGradAGradSumX += subBGradAGradX;
+        tBGradAGradSumX2 += TWO*subBGradAGradX*aX[i];
+        rBGradX[i] += TWO*subBGradAGradX*tAGradSumX2;
+    }
+    const flt_t tBGradAGradMu = tBGradAGradSumX/N;
+    const flt_t tBGradAGradSigma2 = tBGradAGradSumX2/N + (-TWO)*tBGradAGradMu*aMu;
+    const flt_t tBGradAGradSigma = ((flt_t)0.5)*tBGradAGradSigma2/aSigma;
     
-    const flt_t tRnX = ONE - (tX+tX);
-    chebyshevFull<N>(tRnX, fcGrad, rRnGrad);
-    chebyshev2Full<N-1>(tRnX, tCheby2Mul, rCheby2);
-    for (int n = 1; n <= N; ++n) {
-        rRnGrad[n] += ((flt_t)n)*rCheby2[n-1];
+    tBGradMu += (-TWO)*tBGradAGradMu*tAGradSigma2;
+    tBGradSigma += (-(flt_t)0.5)*tBGradAGradSigma2*aAGradSigma/pow2(aSigma);
+    
+    for (int i = 0; i < N; ++i) {
+        const flt_t subGamma = aLNGamma[i];
+        const flt_t subX = aX[i];
+        const flt_t subBGradAGradX = aBGradAGradX[i];
+        const flt_t subAGradY = aAGradY[i];
+        const flt_t subBGradAGradNormX = (subBGradAGradX - tBGradAGradMu)/aSigma - tBGradAGradSigma*(subX-aMu)/pow2(aSigma);
+        rBGradAGradY[i] += subBGradAGradNormX*subGamma;
+        rBGradLNGamma[i] += subBGradAGradNormX*subAGradY;
+        
+        const flt_t subAGradNormX = subAGradY*subGamma;
+        tBGradSigma -= (subBGradAGradX - tBGradAGradMu)*subAGradNormX/pow2(aSigma) - TWO*tBGradAGradSigma*subAGradNormX*(subX-aMu)/pow3(aSigma);
+        tBGradMu += tBGradAGradSigma*subAGradNormX/pow2(aSigma);
+        rBGradX[i] -= tBGradAGradSigma*subAGradNormX/pow2(aSigma);
+    }
+    // grad sigma & mu -> grad x
+    const flt_t tBGradSigma2 = ((flt_t)0.5)*tBGradSigma/aSigma;
+    tBGradMu += (-TWO)*tBGradSigma2*aMu;
+    const flt_t tBGradSumX2 = tBGradSigma2/N;
+    const flt_t tBGradSumX = tBGradMu/N;
+    for (int i = 0; i < N; ++i) {
+        rBGradX[i] += tBGradSumX + TWO*tBGradSumX2*aX[i];
     }
 }
 

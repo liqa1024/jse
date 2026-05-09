@@ -325,7 +325,7 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nnap_backwardEnergyForce(void *aDataIn, 
     code = JSE_NNAP::fpBackwardBackward<__NNAPGENS_ctype__>(
         tNlDx, tNlDy, tNlDz, tNlType, tNeiNum, ctype, tAGradLayers, rBGradAGradLayers,
         tBGradAGradNlDx, tBGradAGradNlDy, tBGradAGradNlDz,
-        tFpHyperParam, rBGradFpParam, tFpForwardCache, tFpBackwardCache, rFpBackwardBackwardCache
+        tFpHyperParam, tFpParam, rBGradFpParam, tFpForwardCache, tFpBackwardCache, rFpBackwardBackwardCache
     );
     if (code!=0) return code;
     code = JSE_NNAP::normedNnBackwardBackward<__NNAPGENS_ctype__, JSE_NNAP::FALSE>(
