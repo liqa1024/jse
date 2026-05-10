@@ -537,13 +537,13 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
             subBasis.putIfAbsent("wtype", DEFAULT_WTYPE);
             subBasis.putIfAbsent("rfuse_size", DEFAULT_RFUSE_SIZE);
             // 不再支持 post_fuse 训练
-            if ((Boolean)UT.Code.getWithDefault(subBasis, "post_fuse", false) || subBasis.containsKey("post_fuse_size") || subBasis.containsKey("post_fuse_weight")) {
+            if ((Boolean)UT.Code.getWithDefault(subBasis, false, "post_fuse") || subBasis.containsKey("post_fuse_size") || subBasis.containsKey("post_fuse_weight")) {
                 throw new IllegalArgumentException("Training with post_fuse is invalid now, use wtype='rfuse'");
             }
         };
         // 顺便统计 mirror 来方便后续处理
         LogicalVector tIsMirror = LogicalVector.zeros(aSymbols.length);
-        for (int i = 1; i < aSymbols.length; ++i) {
+        for (int i = 0; i < aSymbols.length; ++i) {
             Map tSubBasis = (Map)aBasisSetting.get(i);
             // 只塞 spherical_chebyshev 和 chebyshev
             Object tBasisType = tSubBasis.get("type");
