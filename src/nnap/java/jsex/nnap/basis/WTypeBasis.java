@@ -17,6 +17,7 @@ import java.util.Map;
 import static jse.code.CS.RANDOM;
 
 abstract class WTypeBasis extends MergeableBasis {
+    public final static double WS_EPS = 1e-5;
     public final static int WTYPE_DEFAULT = 0, WTYPE_NONE = -1, WTYPE_FULL = 2, WTYPE_EXFULL = 3, WTYPE_FUSE = 4, WTYPE_RFUSE = 5, WTYPE_EXFUSE = 6;
     final static BiMap<String, Integer> ALL_WTYPE = ImmutableBiMap.<String, Integer>builder()
         .put("default", WTYPE_DEFAULT)
@@ -33,6 +34,8 @@ abstract class WTypeBasis extends MergeableBasis {
     final int mNMax;
     final int mWType, mInternalWType;
     final int mTypedWType;
+    final boolean mWeightStandardization;
+    private @Nullable Vector mCacheGradRFuseWeight = null;
     
     @Nullable Vector mFuseWeight;
     @Nullable Vector mGradFuseWeight = null;
@@ -48,7 +51,7 @@ abstract class WTypeBasis extends MergeableBasis {
     IDoubleOrFloatCPointer mInternalRFuseWeight = null;
     IDoubleOrFloatCPointer[] mInternalGradRFuseWeight = null;
     
-    WTypeBasis(double aRCut, int aNumTypes, int aNMax, int aWType, @Nullable Vector aFuseWeight, @Nullable Vector aRFuseWeight, double @Nullable[] aRFuseScale) {
+    WTypeBasis(double aRCut, int aNumTypes, int aNMax, int aWType, boolean aWeightStandardization, @Nullable Vector aFuseWeight, @Nullable Vector aRFuseWeight, double @Nullable[] aRFuseScale) {
         if (aNumTypes <= 0) throw new IllegalArgumentException("Inpute ntypes MUST be Positive, input: "+ aNumTypes);
         if (aNMax<0 || aNMax>20) throw new IllegalArgumentException("Input nmax MUST be in [0, 20], input: "+aNMax);
         if (!ALL_WTYPE.containsValue(aWType)) throw new IllegalArgumentException("Input wtype MUST be in {-1, 0, 2, 3, 4, 6}, input: "+ aWType);
@@ -61,6 +64,8 @@ abstract class WTypeBasis extends MergeableBasis {
         mNumTypes = aNumTypes;
         mNMax = aNMax;
         mWType = aWType;
+        mWeightStandardization = aWeightStandardization;
+        
         mFuseWeight = aFuseWeight;
         mFuseSize = getFuseSize(mWType, mNumTypes, mFuseWeight);
         if (mFuseWeight!=null) {
@@ -99,6 +104,9 @@ abstract class WTypeBasis extends MergeableBasis {
         } else {
             mInternalWType = WTYPE_RFUSE;
         }
+        if (mWeightStandardization && mTypedWType==WTYPE_RFUSE) {
+            mCacheGradRFuseWeight = Vectors.zeros((mSizeNP*mNumTypes)*(mNMax+1));
+        }
     }
     @Override public void requireGrad(int aNumThreads) {
         if (mInternalGradRFuseWeight !=null) return;
@@ -118,8 +126,43 @@ abstract class WTypeBasis extends MergeableBasis {
             case WTYPE_RFUSE: {
                 assert mGradRFuseWeight != null;
                 final int tSize = mSizeN*mSizeNP;
-                for (int i = 0; i < tSize; ++i) {
-                    mGradRFuseWeight.add(i, tScale * tInternalGradRFuseWeight.getAtD(i));
+                if (!mWeightStandardization) {
+                    for (int i = 0; i < tSize; ++i) {
+                        mGradRFuseWeight.add(i, tScale * tInternalGradRFuseWeight.getAtD(i));
+                    }
+                } else {
+                    assert mCacheGradRFuseWeight != null;
+                    for (int i = 0; i < tSize; ++i) {
+                        mCacheGradRFuseWeight.set(i, tScale * tInternalGradRFuseWeight.getAtD(i));
+                    }
+                    for (int np = 0; np < mSizeNP; ++np) {
+                        double tNorm = WS_EPS;
+                        for (int type = 1; type <= mNumTypes; ++type) {
+                            int tShift = ((type-1)*mSizeNP + np)*(mNMax+1);
+                            for (int n = 0; n <= mNMax; ++n) {
+                                tNorm += Math.abs(mRFuseWeight.get(tShift+n));
+                            }
+                        }
+                        tNorm /= mSizeN;
+                        double tGradNorm = 0.0;
+                        for (int type = 1; type <= mNumTypes; ++type) {
+                            int tShift = ((type-1)*mSizeNP + np)*(mNMax+1);
+                            for (int n = 0; n <= mNMax; ++n) {
+                                double tSubW = mRFuseWeight.get(tShift+n);
+                                double tSubGradW = mCacheGradRFuseWeight.get(tShift+n);
+                                mGradRFuseWeight.add(tShift+n, tSubGradW/tNorm);
+                                tGradNorm -= tSubGradW*tSubW/(tNorm*tNorm);
+                            }
+                        }
+                        tGradNorm /= mSizeN;
+                        for (int type = 1; type <= mNumTypes; ++type) {
+                            int tShift = ((type-1)*mSizeNP + np)*(mNMax+1);
+                            for (int n = 0; n <= mNMax; ++n) {
+                                double tSubW = mRFuseWeight.get(tShift+n);
+                                mGradRFuseWeight.add(tShift+n, (tSubW<0)?(-tGradNorm):tGradNorm);
+                            }
+                        }
+                    }
                 }
                 break;
             }
@@ -165,8 +208,28 @@ abstract class WTypeBasis extends MergeableBasis {
         switch(mTypedWType) {
         case WTYPE_RFUSE: {
             assert mRFuseWeight!=null;
-            mInternalRFuseWeight.fillD(mRFuseWeight);
-            int tSize = (mSizeNP*mNumTypes)*(mNMax+1);
+            if (!mWeightStandardization) {
+                mInternalRFuseWeight.fillD(mRFuseWeight);
+            } else {
+                // 采用带上种类维度的归一化，经验设定下效果最好
+                for (int np = 0; np < mSizeNP; ++np) {
+                    double tNorm = WS_EPS;
+                    for (int type = 1; type <= mNumTypes; ++type) {
+                        int tShift = ((type-1)*mSizeNP + np)*(mNMax+1);
+                        for (int n = 0; n <= mNMax; ++n) {
+                            tNorm += Math.abs(mRFuseWeight.get(tShift+n));
+                        }
+                    }
+                    tNorm /= mSizeN;
+                    for (int type = 1; type <= mNumTypes; ++type) {
+                        int tShift = ((type-1)*mSizeNP + np)*(mNMax+1);
+                        for (int n = 0; n <= mNMax; ++n) {
+                            mInternalRFuseWeight.putAtD(tShift+n, mRFuseWeight.get(tShift+n)/tNorm);
+                        }
+                    }
+                }
+            }
+            final int tSize = (mSizeNP*mNumTypes)*(mNMax+1);
             double tScale = mRFuseScale[0];
             for (int i = 0; i < tSize; ++i) {
                 mInternalRFuseWeight.putAtD(i, tScale*mInternalRFuseWeight.getAtD(i));
@@ -245,6 +308,9 @@ abstract class WTypeBasis extends MergeableBasis {
         rSaveTo.put("nmax", mNMax);
         rSaveTo.put("rcut", mRCut);
         rSaveTo.put("wtype", ALL_WTYPE.inverse().get(mWType));
+        if (mWeightStandardization) {
+            rSaveTo.put("weight_standardization", true);
+        }
         if (mFuseWeight!=null) {
             rSaveTo.put("fuse_size", mFuseSize);
             rSaveTo.put("fuse_weight", mFuseWeight.asList());

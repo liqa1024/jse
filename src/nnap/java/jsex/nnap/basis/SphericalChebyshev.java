@@ -26,9 +26,9 @@ public class SphericalChebyshev extends WTypeBasis {
     final int mLMaxMax, mLMAll;
     final int mSize;
     
-    private SphericalChebyshev(double aRCut, int aNumTypes, int aNMax, int aLMax, int aLMaxMax, int aL3Max, int aL4Max,
-                               int aWType, @Nullable Vector aFuseWeight, @Nullable Vector aRFuseWeight, double @Nullable[] aRFuseScale) {
-        super(aRCut, aNumTypes, aNMax, aWType, aFuseWeight, aRFuseWeight, aRFuseScale);
+    private SphericalChebyshev(double aRCut, int aNumTypes, int aNMax, int aLMax, int aLMaxMax, int aL3Max, int aL4Max, int aWType, boolean aWeightStandardization,
+                               @Nullable Vector aFuseWeight, @Nullable Vector aRFuseWeight, double @Nullable[] aRFuseScale) {
+        super(aRCut, aNumTypes, aNMax, aWType, aWeightStandardization, aFuseWeight, aRFuseWeight, aRFuseScale);
         if (aLMaxMax<0 || aLMaxMax>12) throw new IllegalArgumentException("Input lmax MUST be in [0, 12], input: "+aLMaxMax);
         if (aL3Max<0 || aL3Max>6) throw new IllegalArgumentException("Input l3max MUST be in [0, 6], input: "+aL3Max);
         if (aL4Max<0 || aL4Max>3) throw new IllegalArgumentException("Input l4max MUST be in [0, 3], input: "+aL3Max);
@@ -43,8 +43,8 @@ public class SphericalChebyshev extends WTypeBasis {
         
         mSize = mSizeNP*mSizeL;
     }
-    SphericalChebyshev(double aRCut, int aNumTypes, int aNMax, int aLMax, int aL3Max, int aL4Max, int aWType, Vector aFuseWeight, Vector aRFuseWeight, double[] aRFuseScale) {
-        this(aRCut, aNumTypes, aNMax, aLMax, Math.max(Math.max(aLMax, aL3Max), aL4Max), aL3Max, aL4Max, aWType, aFuseWeight, aRFuseWeight, aRFuseScale);
+    SphericalChebyshev(double aRCut, int aNumTypes, int aNMax, int aLMax, int aL3Max, int aL4Max, int aWType, boolean aWeightStandardization, Vector aFuseWeight, Vector aRFuseWeight, double[] aRFuseScale) {
+        this(aRCut, aNumTypes, aNMax, aLMax, Math.max(Math.max(aLMax, aL3Max), aL4Max), aL3Max, aL4Max, aWType, aWeightStandardization, aFuseWeight, aRFuseWeight, aRFuseScale);
     }
     
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -97,7 +97,8 @@ public class SphericalChebyshev extends WTypeBasis {
             ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
             aNumTypes, aNMax,
             aLMax, aL3Max, aL4Max,
-            aWType, aFuseWeight, aRFuseWeight, aRFuseScale
+            aWType, (Boolean)UT.Code.getWithDefault(aMap, false, "weight_standardization", "ws"),
+            aFuseWeight, aRFuseWeight, aRFuseScale
         );
     }
     

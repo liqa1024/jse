@@ -17,9 +17,9 @@ public class Chebyshev extends WTypeBasis {
     
     final int mSize;
     
-    Chebyshev(double aRCut, int aNumTypes, int aNMax,
-              int aWType, @Nullable Vector aFuseWeight, @Nullable Vector aRFuseWeight, double @Nullable[] aRFuseScale) {
-        super(aRCut, aNumTypes, aNMax, aWType, aFuseWeight, aRFuseWeight, aRFuseScale);
+    Chebyshev(double aRCut, int aNumTypes, int aNMax, int aWType, boolean aWeightStandardization,
+              @Nullable Vector aFuseWeight, @Nullable Vector aRFuseWeight, double @Nullable[] aRFuseScale) {
+        super(aRCut, aNumTypes, aNMax, aWType, aWeightStandardization, aFuseWeight, aRFuseWeight, aRFuseScale);
         mSize = mSizeNP;
     }
     
@@ -63,7 +63,8 @@ public class Chebyshev extends WTypeBasis {
         return new Chebyshev(
             ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
             aNumTypes, aNMax,
-            aWType, aFuseWeight, aRFuseWeight, aRFuseScale
+            aWType, (Boolean)UT.Code.getWithDefault(aMap, false, "weight_standardization", "ws"),
+            aFuseWeight, aRFuseWeight, aRFuseScale
         );
     }
     
