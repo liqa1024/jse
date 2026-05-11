@@ -241,7 +241,8 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
             double tBeta1 = ((Number)UT.Code.getWithDefault(aOptArgs, 0.9, "beta1")).doubleValue();
             double tBeta2 = ((Number)UT.Code.getWithDefault(aOptArgs, 0.999, "beta2")).doubleValue();
             double tEps = ((Number)UT.Code.getWithDefault(aOptArgs, 1e-8, "epsilon", "eps")).doubleValue();
-            mOptimizer = new Adam(tEta, tBeta1, tBeta2, tEps);
+            boolean tAMSGrad = (Boolean)UT.Code.getWithDefault(aOptArgs, false, "amsgrad");
+            mOptimizer = new Adam(tEta, tBeta1, tBeta2, tEps, tAMSGrad);
             break;
         }
         default: {
