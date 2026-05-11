@@ -2,10 +2,8 @@ package jsex.nnap.basis;
 
 import jse.code.UT;
 import jse.math.vector.Vector;
-import jse.math.vector.Vectors;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -20,9 +18,8 @@ public class Chebyshev extends WTypeBasis {
     final int mSize;
     
     Chebyshev(double aRCut, int aNumTypes, int aNMax,
-              int aWType, @Nullable Vector aFuseWeight, @Nullable Vector aRFuseWeight, double @Nullable[] aRFuseScale,
-              boolean aLayerNorm, @Nullable Vector aLayerNormBeta, @Nullable Vector aLayerNormGamma) {
-        super(aRCut, aNumTypes, aNMax, aWType, aFuseWeight, aRFuseWeight, aRFuseScale, aLayerNorm, aLayerNormBeta, aLayerNormGamma);
+              int aWType, @Nullable Vector aFuseWeight, @Nullable Vector aRFuseWeight, double @Nullable[] aRFuseScale) {
+        super(aRCut, aNumTypes, aNMax, aWType, aFuseWeight, aRFuseWeight, aRFuseScale);
         mSize = mSizeNP;
     }
     
@@ -63,18 +60,10 @@ public class Chebyshev extends WTypeBasis {
                 aFuseWeight = null;
             }
         }
-        // 读取 layer norm 系数
-        boolean aLayerNorm = (Boolean)UT.Code.getWithDefault(aMap, false, "layer_norm", "ln");
-        Vector aLayerNormBeta = null, aLayerNormGamma = null;
-        if (aLayerNorm) {
-            aLayerNormBeta = getLNBeta_(aMap);
-            aLayerNormGamma = getLNGamma_(aMap);
-        }
         return new Chebyshev(
             ((Number)UT.Code.getWithDefault(aMap, DEFAULT_RCUT, "rcut")).doubleValue(),
             aNumTypes, aNMax,
-            aWType, aFuseWeight, aRFuseWeight, aRFuseScale,
-            aLayerNorm, aLayerNormBeta, aLayerNormGamma
+            aWType, aFuseWeight, aRFuseWeight, aRFuseScale
         );
     }
     
@@ -86,25 +75,13 @@ public class Chebyshev extends WTypeBasis {
     @Override public int size() {return mSize;}
     
     @Override public int forwardCacheSize(int aNumNei) {
-        int tSize = aNumNei*(1 + mNMax+1 + mSizeNP);
-        if (mInternalLayerNorm) {
-            tSize += aNumNei*(mSizeNP + 1 + 1);
-        }
-        return tSize;
+        return aNumNei*(1 + mNMax+1 + mSizeNP);
     }
     @Override public int backwardCacheSize(int aNumNei) {
-        int tSize = aNumNei*(1 + mNMax+1 + mSizeNP);
-        if (mInternalLayerNorm) {
-            tSize += aNumNei*(mSizeNP + 1);
-        }
-        return tSize;
+        return aNumNei*(1 + mNMax+1 + mSizeNP);
     }
     @Override public int backwardBackwardCacheSize(int aNumNei) {
-        int tSize = aNumNei*mSizeNP;
-        if (mInternalLayerNorm) {
-            tSize += aNumNei*mSizeNP;
-        }
-        return tSize;
+        return aNumNei*mSizeNP;
     }
     
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdxType, int aGenIdxMerge) {

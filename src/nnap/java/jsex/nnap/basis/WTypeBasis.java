@@ -45,17 +45,10 @@ abstract class WTypeBasis extends MergeableBasis {
     final int mRFuseSize;
     final double[] mRFuseScale;
     
-    final boolean mLayerNorm, mInternalLayerNorm;
-    @Nullable Vector mLayerNormBeta, mLayerNormGamma;
-    @Nullable Vector mGradLayerNormBeta = null, mGradLayerNormGamma = null;
-    
     IDoubleOrFloatCPointer mInternalRFuseWeight = null;
     IDoubleOrFloatCPointer[] mInternalGradRFuseWeight = null;
-    IDoubleOrFloatCPointer mInternalLayerNormBeta = null, mInternalLayerNormGamma = null;
-    IDoubleOrFloatCPointer[] mInternalGradLayerNormBeta = null, mInternalGradLayerNormGamma = null;
     
-    WTypeBasis(double aRCut, int aNumTypes, int aNMax, int aWType, @Nullable Vector aFuseWeight, @Nullable Vector aRFuseWeight, double @Nullable[] aRFuseScale,
-               boolean aLayerNorm, @Nullable Vector aLayerNormBeta, @Nullable Vector aLayerNormGamma) {
+    WTypeBasis(double aRCut, int aNumTypes, int aNMax, int aWType, @Nullable Vector aFuseWeight, @Nullable Vector aRFuseWeight, double @Nullable[] aRFuseScale) {
         if (aNumTypes <= 0) throw new IllegalArgumentException("Inpute ntypes MUST be Positive, input: "+ aNumTypes);
         if (aNMax<0 || aNMax>20) throw new IllegalArgumentException("Input nmax MUST be in [0, 20], input: "+aNMax);
         if (!ALL_WTYPE.containsValue(aWType)) throw new IllegalArgumentException("Input wtype MUST be in {-1, 0, 2, 3, 4, 6}, input: "+ aWType);
@@ -63,7 +56,6 @@ abstract class WTypeBasis extends MergeableBasis {
         if ((aWType!=WTYPE_FUSE && aWType!=WTYPE_EXFUSE) && aFuseWeight!=null) throw new IllegalArgumentException("Input fuse_weight MUST be null when wtype!='fuse' and 'exfuse'");
         if ((aWType==WTYPE_RFUSE) && aRFuseWeight==null) throw new IllegalArgumentException("Input rfuse_weight MUST NOT be null when wtype=='rfuse'");
         if ((aWType!=WTYPE_RFUSE) && aRFuseWeight!=null) throw new IllegalArgumentException("Input rfuse_weight MUST be null when wtype!='rfuse'");
-        if (!aLayerNorm && (aLayerNormBeta!=null || aLayerNormGamma!=null)) throw new IllegalArgumentException("Input ln_beta & ln_gamma MUST be null when ln==false");
         
         mRCut = aRCut;
         mNumTypes = aNumTypes;
@@ -107,24 +99,10 @@ abstract class WTypeBasis extends MergeableBasis {
         } else {
             mInternalWType = WTYPE_RFUSE;
         }
-        
-        mLayerNorm = aLayerNorm;
-        mInternalLayerNorm = mLayerNorm && aWType==WTYPE_RFUSE;
-        if (mInternalLayerNorm) {
-            mLayerNormBeta = aLayerNormBeta!=null ? aLayerNormBeta : Vectors.zeros(mSizeNP);
-            mLayerNormGamma = aLayerNormGamma!=null ? aLayerNormGamma : Vectors.zeros(mSizeNP);
-            if (mLayerNormBeta.size()!=mSizeNP) throw new IllegalArgumentException("Size of ln_beta mismatch");
-            if (mLayerNormGamma.size()!=mSizeNP) throw new IllegalArgumentException("Size of ln_gamma mismatch");
-        } else {
-            mLayerNormBeta = aLayerNormBeta;
-            mLayerNormGamma = aLayerNormGamma;
-        }
     }
     @Override public void requireGrad(int aNumThreads) {
         if (mInternalGradRFuseWeight !=null) return;
         mInternalGradRFuseWeight = new IDoubleOrFloatCPointer[aNumThreads];
-        mInternalGradLayerNormBeta = new IDoubleOrFloatCPointer[aNumThreads];
-        mInternalGradLayerNormGamma = new IDoubleOrFloatCPointer[aNumThreads];
     }
     
     @Override public void updateParameters() {
@@ -133,18 +111,6 @@ abstract class WTypeBasis extends MergeableBasis {
     @SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
     @Override public void backwardParameter() {
         if (mInternalGradRFuseWeight==null) throw new IllegalStateException("invoke `requireGrad(nthreads)` first.");
-        if (mInternalLayerNorm) {
-            int tNumThreads = mInternalGradRFuseWeight.length;
-            for (int ti = 0; ti < tNumThreads; ++ti) {
-                assert mGradLayerNormBeta!=null && mGradLayerNormGamma!=null;
-                IDoubleOrFloatCPointer tInternalGradLayerNormBeta = mInternalGradLayerNormBeta[ti];
-                IDoubleOrFloatCPointer tInternalGradLayerNormGamma = mInternalGradLayerNormGamma[ti];
-                for (int i = 0; i < mSizeNP; ++i) {
-                    mGradLayerNormBeta.add(i, tInternalGradLayerNormBeta.getAtD(i));
-                    mGradLayerNormGamma.add(i, tInternalGradLayerNormGamma.getAtD(i));
-                }
-            }
-        }
         if (mTypedWType!=WTYPE_FUSE && mTypedWType!=WTYPE_EXFUSE && mRFuseWeight==null) return;
         for (IDoubleOrFloatCPointer tInternalGradRFuseWeight : mInternalGradRFuseWeight) {
             double tScale = mRFuseScale[0];
@@ -191,10 +157,6 @@ abstract class WTypeBasis extends MergeableBasis {
     
     @SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
     final void updateParameters_(boolean aCheck) {
-        if (mInternalLayerNorm) {
-            mInternalLayerNormBeta.fillD(mLayerNormBeta);
-            mInternalLayerNormGamma.fillD(mLayerNormGamma);
-        }
         if (aCheck) {
             if (mTypedWType!=WTYPE_FUSE && mTypedWType!=WTYPE_EXFUSE && mRFuseWeight==null) return;
         }
@@ -292,12 +254,6 @@ abstract class WTypeBasis extends MergeableBasis {
             rSaveTo.put("rfuse_scale", mRFuseScale[0]);
             rSaveTo.put("rfuse_weight", mRFuseWeight.asList());
         }
-        if (mLayerNorm) {
-            assert mLayerNormBeta!=null && mLayerNormGamma!=null;
-            rSaveTo.put("layer_norm", true);
-            rSaveTo.put("layer_norm_beta", mLayerNormBeta.asList());
-            rSaveTo.put("layer_norm_gamma", mLayerNormGamma.asList());
-        }
     }
     static int getFuseSize(int aWType, int aNumTypes, IVector aFuseWeight) {
         if (aWType!=WTYPE_FUSE && aWType!=WTYPE_EXFUSE) {
@@ -338,18 +294,6 @@ abstract class WTypeBasis extends MergeableBasis {
         @Nullable Integer tOut = ALL_WTYPE.get(tType.toString());
         if (tOut == null) throw new IllegalArgumentException("Input wtype MUST be in {default, none, full, exfull, fuse, rfuse, exfuse}, input: "+tType);
         return tOut;
-    }
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    static @Nullable Vector getLNBeta_(Map aMap) {
-        List tLNBeta = (List)UT.Code.get(aMap, "layer_norm_beta", "ln_beta");
-        if (tLNBeta == null) return null;
-        return Vectors.from(tLNBeta);
-    }
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    static @Nullable Vector getLNGamma_(Map aMap) {
-        List tLNGamma = (List)UT.Code.get(aMap, "layer_norm_gamma", "ln_gamma");
-        if (tLNGamma == null) return null;
-        return Vectors.from(tLNGamma);
     }
     @SuppressWarnings({"rawtypes", "unchecked"})
     static @Nullable Vector getFuseWeight_(Map aMap, int aWType, int aNumTypes) {
@@ -581,45 +525,23 @@ abstract class WTypeBasis extends MergeableBasis {
         // 在这个经验设定下，scale 设置为此值确保输出的基组值数量级一致
         mRFuseScale[0] = MathEX.Fast.sqrt(1.0 / mSizeN);
     }
-    private void initLayerNormParam_() {
-        if (!mInternalLayerNorm) return;
-        assert mLayerNormBeta!=null && mLayerNormGamma!=null;
-        // 简单采用固定值初始化
-        mLayerNormBeta.fill(0.0);
-        mLayerNormGamma.fill(1.0);
-    }
     @Override public void initParameters() {
         initFuseWeight_();
         initRFuseWeight_();
-        initLayerNormParam_();
         // 参数更新
         updateParameters_(true);
     }
     
-    @SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
     @Override public void mountCptrParameter(IDoubleOrFloatCPointer aPtr) {
         mInternalRFuseWeight = aPtr.copy();
-        if (mInternalLayerNorm) {
-            mInternalLayerNormBeta = mInternalRFuseWeight.plus((mSizeNP*mNumTypes)*(mNMax+1));
-            mInternalLayerNormGamma = mInternalLayerNormBeta.plus(mSizeNP);
-        }
         updateParameters_(false);
     }
-    @SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
     @Override public void mountGradCptrParameter(int aThreadID, IDoubleOrFloatCPointer aPtr) {
         if (mInternalGradRFuseWeight ==null) throw new IllegalStateException("invoke `requireGrad(nthreads)` first.");
         mInternalGradRFuseWeight[aThreadID] = aPtr.copy();
-        if (mInternalLayerNorm) {
-            mInternalGradLayerNormBeta[aThreadID] = mInternalGradRFuseWeight[aThreadID].plus((mSizeNP*mNumTypes)*(mNMax+1));
-            mInternalGradLayerNormGamma[aThreadID] = mInternalGradLayerNormBeta[aThreadID].plus(mSizeNP);
-        }
     }
     @Override public int cptrParameterSize() {
-        int tCParaSize = (mSizeNP*mNumTypes)*(mNMax+1);
-        if (mInternalLayerNorm) {
-            tCParaSize += (mSizeNP+mSizeNP);
-        }
-        return tCParaSize;
+        return (mSizeNP*mNumTypes)*(mNMax+1);
     }
     
     @Override public void mountParameter(Vector aVec) {
@@ -643,19 +565,6 @@ abstract class WTypeBasis extends MergeableBasis {
             int tSize = oPostFuseWeight.size();
             mRFuseWeight = aVec.subVec(tShift, tShift+tSize);
             mRFuseWeight.fill(oPostFuseWeight);
-            tShift += tSize;
-        }
-        if (mInternalLayerNorm) {
-            assert mLayerNormBeta!=null && mLayerNormGamma!=null;
-            IVector oLayerNormBeta = mLayerNormBeta;
-            int tSize = oLayerNormBeta.size();
-            mLayerNormBeta = aVec.subVec(tShift, tShift+tSize);
-            mLayerNormBeta.fill(oLayerNormBeta);
-            tShift += tSize;
-            IVector oLayerNormGamma = mLayerNormGamma;
-            tSize = oLayerNormGamma.size();
-            mLayerNormGamma = aVec.subVec(tShift, tShift+tSize);
-            mLayerNormGamma.fill(oLayerNormGamma);
         }
     }
     @Override public void mountGradParameter(Vector aVec) {
@@ -676,15 +585,6 @@ abstract class WTypeBasis extends MergeableBasis {
             assert mRFuseWeight != null;
             int tSize = mRFuseWeight.size();
             mGradRFuseWeight = aVec.subVec(tShift, tShift+tSize);
-            tShift += tSize;
-        }
-        if (mInternalLayerNorm) {
-            assert mLayerNormBeta!=null && mLayerNormGamma!=null;
-            int tSize = mLayerNormBeta.size();
-            mGradLayerNormBeta = aVec.subVec(tShift, tShift+tSize);
-            tShift += tSize;
-            tSize = mLayerNormGamma.size();
-            mGradLayerNormGamma = aVec.subVec(tShift, tShift+tSize);
         }
     }
     @Override public int parameterSize() {
@@ -697,11 +597,6 @@ abstract class WTypeBasis extends MergeableBasis {
             assert mRFuseWeight != null;
             tParaSize += mRFuseWeight.size();
         }
-        if (mInternalLayerNorm) {
-            assert mLayerNormBeta!=null && mLayerNormGamma!=null;
-            tParaSize += mLayerNormBeta.size();
-            tParaSize += mLayerNormGamma.size();
-        }
         return tParaSize;
     }
     
@@ -712,12 +607,11 @@ abstract class WTypeBasis extends MergeableBasis {
         rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_WTYPE", mInternalWType);
         rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_NMAX", mNMax);
         rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_SIZE_NP", mSizeNP);
-        rGenMap.put(aGenIdxType+":"+aGenIdxMerge+":NNAPGEN_FP_LN", mInternalLayerNorm?1:0);
     }
     @Override public boolean hasSameGenMap(MergeableBasis aBasis) {
         if (!(aBasis instanceof WTypeBasis)) return false;
         WTypeBasis tBasis = (WTypeBasis)aBasis;
         return size()==tBasis.size() && cptrHyperParameterSize()==tBasis.cptrHyperParameterSize() && cptrParameterSize()==tBasis.cptrParameterSize() &&
-            mNumTypes==tBasis.mNumTypes && (mRFuseWeight!=null)==(tBasis.mRFuseWeight!=null) && mWType==tBasis.mWType && mNMax==tBasis.mNMax && mSizeNP==tBasis.mSizeNP && mInternalLayerNorm==tBasis.mInternalLayerNorm;
+            mNumTypes==tBasis.mNumTypes && (mRFuseWeight!=null)==(tBasis.mRFuseWeight!=null) && mWType==tBasis.mWType && mNMax==tBasis.mNMax && mSizeNP==tBasis.mSizeNP;
     }
 }
