@@ -120,14 +120,13 @@ public class NEP implements IPairPotential {
             mNlTypeBuf.add(type-1); mNlIdxBuf.add(idx);
         });
         int tNeiNum = mNlIdxBuf.size();
-        mNlDx.ensureCapacity(tNeiNum); mNlDx.fillD(mNlDxBuf);
-        mNlDy.ensureCapacity(tNeiNum); mNlDy.fillD(mNlDyBuf);
-        mNlDz.ensureCapacity(tNeiNum); mNlDz.fillD(mNlDzBuf);
-        mNlType.ensureCapacity(tNeiNum);
-        mNlType.fill(mNlTypeBuf);
-        mNlFx.ensureCapacity(tNeiNum);
-        mNlFy.ensureCapacity(tNeiNum);
-        mNlFz.ensureCapacity(tNeiNum);
+        mPtrMng.ensureCapacity(mNlDx, tNeiNum); mNlDx.fillD(mNlDxBuf);
+        mPtrMng.ensureCapacity(mNlDy, tNeiNum); mNlDy.fillD(mNlDyBuf);
+        mPtrMng.ensureCapacity(mNlDz, tNeiNum); mNlDz.fillD(mNlDzBuf);
+        mPtrMng.ensureCapacity(mNlType, tNeiNum); mNlType.fill(mNlTypeBuf);
+        mPtrMng.ensureCapacity(mNlFx, tNeiNum);
+        mPtrMng.ensureCapacity(mNlFy, tNeiNum);
+        mPtrMng.ensureCapacity(mNlFz, tNeiNum);
         return tNeiNum;
     }
     
@@ -141,8 +140,8 @@ public class NEP implements IPairPotential {
         if (mDead) throw new IllegalStateException("This NEP is dead");
         if (!mInited) throw new IllegalStateException();
         if (mCuda) throw new UnsupportedOperationException();
-        Fp.ensureCapacity(annmb.dim);
-        sum_fxyz.ensureCapacity((long) (paramb.n_max_angular + 1) * NUM_OF_ABC);
+        mPtrMng.ensureCapacity(Fp, annmb.dim);
+        mPtrMng.ensureCapacity(sum_fxyz, (long) (paramb.n_max_angular + 1)*NUM_OF_ABC);
         aNeighborListGetter.forEachNLWithException(null, null, (threadID, cIdx, cType, nl) -> {
             // 近邻列表构建以及相关值设置
             int tNeiNum = buildNL_(nl, rcutMax());
@@ -189,8 +188,8 @@ public class NEP implements IPairPotential {
         if (mDead) throw new IllegalStateException("This NEP is dead");
         if (!mInited) throw new IllegalStateException();
         if (mCuda) throw new UnsupportedOperationException();
-        Fp.ensureCapacity(annmb.dim);
-        sum_fxyz.ensureCapacity((long) (paramb.n_max_angular + 1) * NUM_OF_ABC);
+        mPtrMng.ensureCapacity(Fp, annmb.dim);
+        mPtrMng.ensureCapacity(sum_fxyz, (long) (paramb.n_max_angular + 1)*NUM_OF_ABC);
         aNeighborListGetter.forEachNLWithException(null, null, (threadID, cIdx, cType, nl) -> {
             // 近邻列表构建以及相关值设置
             int tNeiNum = buildNL_(nl, rcutMax());
@@ -250,14 +249,14 @@ public class NEP implements IPairPotential {
     
     
     private void validNlLammps_(int aNeiNum) {
-        mNlDx.ensureCapacity(aNeiNum);
-        mNlDy.ensureCapacity(aNeiNum);
-        mNlDz.ensureCapacity(aNeiNum);
-        mNlType.ensureCapacity(aNeiNum);
-        mNlIdx.ensureCapacity(aNeiNum);
-        mNlFx.ensureCapacity(aNeiNum);
-        mNlFy.ensureCapacity(aNeiNum);
-        mNlFz.ensureCapacity(aNeiNum);
+        mPtrMng.ensureCapacity(mNlDx, aNeiNum);
+        mPtrMng.ensureCapacity(mNlDy, aNeiNum);
+        mPtrMng.ensureCapacity(mNlDz, aNeiNum);
+        mPtrMng.ensureCapacity(mNlType, aNeiNum);
+        mPtrMng.ensureCapacity(mNlIdx, aNeiNum);
+        mPtrMng.ensureCapacity(mNlFx, aNeiNum);
+        mPtrMng.ensureCapacity(mNlFy, aNeiNum);
+        mPtrMng.ensureCapacity(mNlFz, aNeiNum);
     }
     void computeLammps(PairNEP aPair) {
         if (mDead) throw new IllegalStateException("This NEP is dead");
@@ -274,8 +273,9 @@ public class NEP implements IPairPotential {
         mStatNeiNumLammps.invoke(mDataIn, mOutNums);
         validNlLammps_(mOutNums.getAt(0));
         
-        Fp.ensureCapacity(annmb.dim);
-        sum_fxyz.ensureCapacity((long) (paramb.n_max_angular + 1) * NUM_OF_ABC);
+        
+        mPtrMng.ensureCapacity(Fp, annmb.dim);
+        mPtrMng.ensureCapacity(sum_fxyz, (long) (paramb.n_max_angular + 1)*NUM_OF_ABC);
         // compute 开始，参数设置
         mInNums.putAt(0, inum);
         mInNums.putAt(1, aPair.eflagEither()?1:0);
@@ -332,7 +332,7 @@ public class NEP implements IPairPotential {
     private void initLmpParamCuda_(PairNEP aPair) throws CudaException {
         if (mCudaParaInited) return;
         mCudaParaInited = true;
-        mCudaTypeMap = IntCudaPointer.malloc(aPair.mTypeNum+1);
+        mCudaTypeMap = mPtrMng.newIntCudaPointer(aPair.mTypeNum+1);
         mCudaTypeMap.fill(aPair.mTypeMap, aPair.mTypeNum+1);
     }
     void computeLammpsCuda(PairNEP aPair) throws CudaException {
@@ -347,22 +347,22 @@ public class NEP implements IPairPotential {
         final int nlocal = aPair.atomNlocal();
         final int nghost = aPair.atomNghost();
         final int nlocalghost = nlocal + nghost;
-        mFltBuf.ensureCapacity((long)nlocalghost*9);
-        mCudaX.ensureCapacity((long)nlocalghost*3);
-        mCudaF0.ensureCapacity((long)inum*3);
-        mCudaF1.ensureCapacity((long)nlocalghost*3);
-        mCudaEatom0.ensureCapacity((long)inum);
-        mCudaVatom0.ensureCapacity((long)inum*6);
-        mCudaVatom1.ensureCapacity((long)nlocalghost*(cvflagAtom?9:6));
-        mCudaType.ensureCapacity(nlocalghost);
+        mPtrMng.ensureCapacity(mFltBuf, (long)nlocalghost*9);
+        mPtrMng.ensureCapacity(mCudaX, (long)nlocalghost*3);
+        mPtrMng.ensureCapacity(mCudaF0, (long)inum*3);
+        mPtrMng.ensureCapacity(mCudaF1, (long)nlocalghost*3);
+        mPtrMng.ensureCapacity(mCudaEatom0, (long)inum);
+        mPtrMng.ensureCapacity(mCudaVatom0, (long)inum*6);
+        mPtrMng.ensureCapacity(mCudaVatom1, (long)nlocalghost*(cvflagAtom?9:6));
+        mPtrMng.ensureCapacity(mCudaType, nlocalghost);
         if (nlflag) {
-            mCudaIlist.ensureCapacity(inum);
-            mCudaNumneigh.ensureCapacity(inum);
+            mPtrMng.ensureCapacity(mCudaIlist, inum);
+            mPtrMng.ensureCapacity(mCudaNumneigh, inum);
         }
-        mCudaGNeiNum.ensureCapacity(inum);
-        mCudaGCType.ensureCapacity(inum);
-        cuda_Fp.ensureCapacity((long)inum*annmb.dim);
-        cuda_sum_fxyz.ensureCapacity((long)inum*(paramb.n_max_angular+1)*NUM_OF_ABC);
+        mPtrMng.ensureCapacity(mCudaGNeiNum, inum);
+        mPtrMng.ensureCapacity(mCudaGCType, inum);
+        mPtrMng.ensureCapacity(cuda_Fp, (long)inum*annmb.dim);
+        mPtrMng.ensureCapacity(cuda_sum_fxyz, (long)inum*(paramb.n_max_angular+1)*NUM_OF_ABC);
         // 近邻列表大小获取和缓存合理化
         IPointer ilist = NULL;
         IPointer numneigh = NULL;
@@ -381,16 +381,16 @@ public class NEP implements IPairPotential {
         // 近邻列表缓存向量长度规范
         if (nlflag) {
             int tTotNeiNum = inum*mNumneighMax;
-            mIntBuf.ensureCapacity(tTotNeiNum);
-            mCudaFirstneigh.ensureCapacity(tTotNeiNum);
-            mCudaGNlType.ensureCapacity(tTotNeiNum);
-            mCudaGNlIdx.ensureCapacity(tTotNeiNum);
-            mCudaGNlDx.ensureCapacity(tTotNeiNum);
-            mCudaGNlDy.ensureCapacity(tTotNeiNum);
-            mCudaGNlDz.ensureCapacity(tTotNeiNum);
-            mCudaGNlFx.ensureCapacity(tTotNeiNum);
-            mCudaGNlFy.ensureCapacity(tTotNeiNum);
-            mCudaGNlFz.ensureCapacity(tTotNeiNum);
+            mPtrMng.ensureCapacity(mIntBuf, tTotNeiNum);
+            mPtrMng.ensureCapacity(mCudaFirstneigh, tTotNeiNum);
+            mPtrMng.ensureCapacity(mCudaGNlType, tTotNeiNum);
+            mPtrMng.ensureCapacity(mCudaGNlIdx, tTotNeiNum);
+            mPtrMng.ensureCapacity(mCudaGNlDx, tTotNeiNum);
+            mPtrMng.ensureCapacity(mCudaGNlDy, tTotNeiNum);
+            mPtrMng.ensureCapacity(mCudaGNlDz, tTotNeiNum);
+            mPtrMng.ensureCapacity(mCudaGNlFx, tTotNeiNum);
+            mPtrMng.ensureCapacity(mCudaGNlFy, tTotNeiNum);
+            mPtrMng.ensureCapacity(mCudaGNlFz, tTotNeiNum);
         }
         
         // lammps -> cuda
@@ -539,53 +539,39 @@ public class NEP implements IPairPotential {
         int num_c_radial = 0;
         int num_types = 0;
         final IDoubleOrFloatCPointer q_scaler;
-        final IntCPointer atomic_numbers = IntCPointer.malloc(NUM_ELEMENTS);
+        final IntCPointer atomic_numbers;
         final boolean cuda;
         final FloatCudaPointer cuda_q_scaler;
         final IntCudaPointer cuda_atomic_numbers;
-        ParaMB(boolean single, boolean cuda) throws CudaException {
-            q_scaler = single ? FloatCPointer.malloc(140) : DoubleCPointer.malloc(140);
+        ParaMB(PointerManager ptrMng, boolean single, boolean cuda) throws CudaException {
+            atomic_numbers = ptrMng.newIntCPointer(NUM_ELEMENTS);
+            q_scaler = ptrMng.newDoubleOrFloatCPointer(single, 140);
             this.cuda = cuda;
-            cuda_q_scaler = cuda ? FloatCudaPointer.malloc(140) : null;
-            cuda_atomic_numbers = cuda ? IntCudaPointer.malloc(NUM_ELEMENTS) : null;
+            cuda_q_scaler = cuda ? ptrMng.newFloatCudaPointer(140) : null;
+            cuda_atomic_numbers = cuda ? ptrMng.newIntCudaPointer(NUM_ELEMENTS) : null;
         }
         void parse2cuda() throws CudaException {
             if (!cuda) throw new IllegalStateException();
             cuda_q_scaler.fill((FloatCPointer)q_scaler, 140);
             cuda_atomic_numbers.fill(atomic_numbers, NUM_ELEMENTS);
         }
-        
-        private boolean mFree = false;
-        void free() {
-            if (mFree) throw new IllegalStateException();
-            mFree = true;
-            q_scaler.free();
-            atomic_numbers.free();
-            if (cuda) {
-                try {
-                    cuda_q_scaler.free();
-                    cuda_atomic_numbers.free();
-                } catch (CudaException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
     }
     static class ANN {
         private boolean inited = false;
+        final PointerManager ptrMng;
         int dim = 0;
         int num_neurons1 = 0;
         int num_para = 0;
         int num_para_ann = 0;
-        final AnyCPointer w0 = AnyCPointer.calloc(NUM_ELEMENTS);
-        final AnyCPointer b0 = AnyCPointer.calloc(NUM_ELEMENTS);
-        final AnyCPointer w1 = AnyCPointer.calloc(NUM_ELEMENTS);
+        final AnyCPointer w0;
+        final AnyCPointer b0;
+        final AnyCPointer w1;
         IDoubleOrFloatCPointer b1 = null;
         IDoubleOrFloatCPointer c = null;
         // for the scalar part of polarizability
-        final AnyCPointer w0_pol = AnyCPointer.calloc(NUM_ELEMENTS);
-        final AnyCPointer b0_pol = AnyCPointer.calloc(NUM_ELEMENTS);
-        final AnyCPointer w1_pol = AnyCPointer.calloc(NUM_ELEMENTS);
+        final AnyCPointer w0_pol;
+        final AnyCPointer b0_pol;
+        final AnyCPointer w1_pol;
         IDoubleOrFloatCPointer b1_pol = null;
         
         final boolean cuda;
@@ -597,20 +583,27 @@ public class NEP implements IPairPotential {
         final AnyCPointer cuda0_w0_pol, cuda0_b0_pol, cuda0_w1_pol;
         final CudaPointer cuda_w0_pol, cuda_b0_pol, cuda_w1_pol;
         FloatCudaPointer cuda_b1_pol = null;
-        ANN(boolean single, boolean cuda) throws CudaException {
+        ANN(PointerManager ptrMng, boolean single, boolean cuda) throws CudaException {
+            this.ptrMng = ptrMng;
+            w0 = ptrMng.newAnyCPointer(NUM_ELEMENTS);
+            b0 = ptrMng.newAnyCPointer(NUM_ELEMENTS);
+            w1 = ptrMng.newAnyCPointer(NUM_ELEMENTS);
+            w0_pol = ptrMng.newAnyCPointer(NUM_ELEMENTS);
+            b0_pol = ptrMng.newAnyCPointer(NUM_ELEMENTS);
+            w1_pol = ptrMng.newAnyCPointer(NUM_ELEMENTS);
             this.cuda = cuda;
-            cuda0_w0 = cuda ? AnyCPointer.calloc(NUM_ELEMENTS) : null;
-            cuda0_b0 = cuda ? AnyCPointer.calloc(NUM_ELEMENTS) : null;
-            cuda0_w1 = cuda ? AnyCPointer.calloc(NUM_ELEMENTS) : null;
-            cuda0_w0_pol = cuda ? AnyCPointer.calloc(NUM_ELEMENTS) : null;
-            cuda0_b0_pol = cuda ? AnyCPointer.calloc(NUM_ELEMENTS) : null;
-            cuda0_w1_pol = cuda ? AnyCPointer.calloc(NUM_ELEMENTS) : null;
-            cuda_w0 = cuda ? CudaPointer.malloc(NUM_ELEMENTS*AnyCPointer.TYPE_SIZE) : null;
-            cuda_b0 = cuda ? CudaPointer.malloc(NUM_ELEMENTS*AnyCPointer.TYPE_SIZE) : null;
-            cuda_w1 = cuda ? CudaPointer.malloc(NUM_ELEMENTS*AnyCPointer.TYPE_SIZE) : null;
-            cuda_w0_pol = cuda ? CudaPointer.malloc(NUM_ELEMENTS*AnyCPointer.TYPE_SIZE) : null;
-            cuda_b0_pol = cuda ? CudaPointer.malloc(NUM_ELEMENTS*AnyCPointer.TYPE_SIZE) : null;
-            cuda_w1_pol = cuda ? CudaPointer.malloc(NUM_ELEMENTS*AnyCPointer.TYPE_SIZE) : null;
+            cuda0_w0 = cuda ? ptrMng.newAnyCPointer(NUM_ELEMENTS) : null;
+            cuda0_b0 = cuda ? ptrMng.newAnyCPointer(NUM_ELEMENTS) : null;
+            cuda0_w1 = cuda ? ptrMng.newAnyCPointer(NUM_ELEMENTS) : null;
+            cuda0_w0_pol = cuda ? ptrMng.newAnyCPointer(NUM_ELEMENTS) : null;
+            cuda0_b0_pol = cuda ? ptrMng.newAnyCPointer(NUM_ELEMENTS) : null;
+            cuda0_w1_pol = cuda ? ptrMng.newAnyCPointer(NUM_ELEMENTS) : null;
+            cuda_w0 = cuda ? ptrMng.newCudaPointer(NUM_ELEMENTS*AnyCPointer.TYPE_SIZE) : null;
+            cuda_b0 = cuda ? ptrMng.newCudaPointer(NUM_ELEMENTS*AnyCPointer.TYPE_SIZE) : null;
+            cuda_w1 = cuda ? ptrMng.newCudaPointer(NUM_ELEMENTS*AnyCPointer.TYPE_SIZE) : null;
+            cuda_w0_pol = cuda ? ptrMng.newCudaPointer(NUM_ELEMENTS*AnyCPointer.TYPE_SIZE) : null;
+            cuda_b0_pol = cuda ? ptrMng.newCudaPointer(NUM_ELEMENTS*AnyCPointer.TYPE_SIZE) : null;
+            cuda_w1_pol = cuda ? ptrMng.newCudaPointer(NUM_ELEMENTS*AnyCPointer.TYPE_SIZE) : null;
         }
         
         void clear() {
@@ -624,10 +617,10 @@ public class NEP implements IPairPotential {
                 getAndFree_(t, b0_pol);
                 getAndFree_(t, w1_pol);
             }
-            b1.free(); b1 = null;
-            c.free(); c = null;
+            ptrMng.free(b1); b1 = null;
+            ptrMng.free(c); c = null;
             if (b1_pol!=null) {
-                b1_pol.free();
+                ptrMng.free(b1_pol);
                 b1_pol = null;
             }
             if (cuda) {
@@ -646,10 +639,10 @@ public class NEP implements IPairPotential {
                     cuda_w0_pol.memset(0, NUM_ELEMENTS*AnyCPointer.TYPE_SIZE);
                     cuda_b0_pol.memset(0, NUM_ELEMENTS*AnyCPointer.TYPE_SIZE);
                     cuda_w1_pol.memset(0, NUM_ELEMENTS*AnyCPointer.TYPE_SIZE);
-                    cuda_b1.free(); cuda_b1 = null;
-                    cuda_c.free(); c = null;
+                    ptrMng.free(cuda_b1); cuda_b1 = null;
+                    ptrMng.free(cuda_c); c = null;
                     if (cuda_b1_pol!=null) {
-                        cuda_b1_pol.free();
+                        ptrMng.free(cuda_b1_pol);
                         cuda_b1_pol = null;
                     }
                 } catch (CudaException e) {
@@ -660,34 +653,15 @@ public class NEP implements IPairPotential {
         private void getAndFree_(int i, AnyCPointer aNestedPtr) {
             CPointer tPtr = aNestedPtr.getAsCPointerAt(i);
             if (!tPtr.isNull()) {
-                tPtr.free();
+                ptrMng.free(tPtr);
                 aNestedPtr.putAt(i, NULL);
             }
         }
         private void getAndFreeCuda_(int i, AnyCPointer aNestedPtr) throws CudaException {
             CudaPointer tPtr = aNestedPtr.getAsCudaPointerAt(i);
             if (!tPtr.isNull()) {
-                tPtr.free();
+                ptrMng.free(tPtr);
                 aNestedPtr.putAt(i, NULL);
-            }
-        }
-        
-        private boolean mFree = false;
-        void free() {
-            if (mFree) throw new IllegalStateException();
-            mFree = true;
-            clear();
-            w0.free(); b0.free(); w1.free();
-            w0_pol.free(); b0_pol.free(); w1_pol.free();
-            if (cuda) {
-                cuda0_w0.free(); cuda0_b0.free(); cuda0_w1.free();
-                cuda0_w0_pol.free(); cuda0_b0_pol.free(); cuda0_w1_pol.free();
-                try {
-                    cuda_w0.free(); cuda_b0.free(); cuda_w1.free();
-                    cuda_w0_pol.free(); cuda_b0_pol.free(); cuda_w1_pol.free();
-                } catch (CudaException e) {
-                    throw new RuntimeException(e);
-                }
             }
         }
     }
@@ -700,63 +674,50 @@ public class NEP implements IPairPotential {
         final IDoubleOrFloatCPointer para;
         final boolean cuda;
         final FloatCudaPointer cuda_para;
-        ZBL(boolean single, boolean cuda) throws CudaException {
-            para = single ? FloatCPointer.malloc(550) : DoubleCPointer.calloc(550);
+        ZBL(PointerManager ptrMng, boolean single, boolean cuda) throws CudaException {
+            para = ptrMng.newDoubleOrFloatCPointer(single, 550);
             this.cuda = cuda;
-            cuda_para = cuda ? FloatCudaPointer.malloc(550) : null;
+            cuda_para = cuda ? ptrMng.newFloatCudaPointer(550) : null;
         }
         void parse2cuda() throws CudaException {
             if (!cuda) throw new IllegalStateException();
             cuda_para.fill((FloatCPointer)para, 550);
-        }
-        
-        private boolean mFree = false;
-        void free() {
-            if (mFree) throw new IllegalStateException();
-            mFree = true;
-            para.free();
-            if (cuda) {
-                try {
-                    cuda_para.free();
-                } catch (CudaException e) {
-                    throw new RuntimeException(e);
-                }
-            }
         }
     }
     
     ParaMB paramb = null;
     ANN annmb = null;
     ZBL zbl = null;
-    IGrowableDoubleOrFloatCPointer Fp = null, sum_fxyz = null;
+    IDoubleOrFloatCPointer Fp = null, sum_fxyz = null;
     ArrayList<String> element_list = new ArrayList<>();
     
-    IGrowableDoubleOrFloatCPointer gn_radial = null;   // tabulated gn_radial functions
-    IGrowableDoubleOrFloatCPointer gnp_radial = null;  // tabulated gnp_radial functions
-    IGrowableDoubleOrFloatCPointer gn_angular = null;  // tabulated gn_angular functions
-    IGrowableDoubleOrFloatCPointer gnp_angular = null; // tabulated gnp_angular functions
-    GrowableFloatCudaPointer cuda_gn_radial = null, cuda_gnp_radial = null, cuda_gn_angular = null, cuda_gnp_angular = null;
+    IDoubleOrFloatCPointer gn_radial = null;   // tabulated gn_radial functions
+    IDoubleOrFloatCPointer gnp_radial = null;  // tabulated gnp_radial functions
+    IDoubleOrFloatCPointer gn_angular = null;  // tabulated gn_angular functions
+    IDoubleOrFloatCPointer gnp_angular = null; // tabulated gnp_angular functions
+    FloatCudaPointer cuda_gn_radial = null, cuda_gnp_radial = null, cuda_gn_angular = null, cuda_gnp_angular = null;
     
+    final PointerManager mPtrMng = new PointerManager();
     boolean mInited = false, mSingle = false, mCuda = true;
-    AnyCPointer mDataIn = AnyCPointer.calloc(32), mDataOut = AnyCPointer.calloc(32);
-    IntCPointer mInNums = IntCPointer.malloc(32), mOutNums = IntCPointer.malloc(32);
+    AnyCPointer mDataIn = mPtrMng.newAnyCPointer(32), mDataOut = mPtrMng.newAnyCPointer(32);
+    IntCPointer mInNums = mPtrMng.newIntCPointer(32), mOutNums = mPtrMng.newIntCPointer(32);
     IDoubleOrFloatCPointer mOutEng = null;
-    IGrowableDoubleOrFloatCPointer mNlDx = null, mNlDy = null, mNlDz = null;
-    IGrowableDoubleOrFloatCPointer mNlFx = null, mNlFy = null, mNlFz = null;
-    GrowableIntCPointer mNlType = null, mNlIdx = null;
+    IDoubleOrFloatCPointer mNlDx = null, mNlDy = null, mNlDz = null;
+    IDoubleOrFloatCPointer mNlFx = null, mNlFy = null, mNlFz = null;
+    IntCPointer mNlType = null, mNlIdx = null;
     
     /// gpu stuffs
     // cpu 数据
     private int mNumneighMax = -1;
-    private GrowableFloatCPointer mFltBuf = null;
-    private GrowableIntCPointer mIntBuf = null;
+    private FloatCPointer mFltBuf = null;
+    private IntCPointer mIntBuf = null;
     // cuda 数据
-    private GrowableFloatCudaPointer mCudaX = null, mCudaF0 = null, mCudaF1 = null, mCudaEatom0 = null, mCudaVatom0 = null, mCudaVatom1 = null;
-    private GrowableIntCudaPointer mCudaType = null, mCudaIlist = null, mCudaNumneigh = null, mCudaGNeiNum = null, mCudaGCType = null;
-    private GrowableIntCudaPointer mCudaFirstneigh = null, mCudaGNlType = null, mCudaGNlIdx = null;
-    private GrowableFloatCudaPointer mCudaGNlDx = null, mCudaGNlDy = null, mCudaGNlDz = null, mCudaGNlFx = null, mCudaGNlFy = null, mCudaGNlFz = null;
+    private FloatCudaPointer mCudaX = null, mCudaF0 = null, mCudaF1 = null, mCudaEatom0 = null, mCudaVatom0 = null, mCudaVatom1 = null;
+    private IntCudaPointer mCudaType = null, mCudaIlist = null, mCudaNumneigh = null, mCudaGNeiNum = null, mCudaGCType = null;
+    private IntCudaPointer mCudaFirstneigh = null, mCudaGNlType = null, mCudaGNlIdx = null;
+    private FloatCudaPointer mCudaGNlDx = null, mCudaGNlDy = null, mCudaGNlDz = null, mCudaGNlFx = null, mCudaGNlFy = null, mCudaGNlFz = null;
     private IntCudaPointer mCudaTypeMap = null;
-    private GrowableFloatCudaPointer cuda_Fp = null, cuda_sum_fxyz = null;
+    private FloatCudaPointer cuda_Fp = null, cuda_sum_fxyz = null;
     
     /// jit stuffs
     IJITEngine mJITEngine = null;
@@ -784,49 +745,7 @@ public class NEP implements IPairPotential {
     @Override public void close() throws Exception {
         if (mDead) return;
         mDead = true;
-        
-        mDataIn.free(); mDataOut.free();
-        mInNums.free();
-        if (mInited) {
-            mOutEng.free();
-            Fp.free(); sum_fxyz.free();
-            gn_radial.free(); gnp_radial.free();
-            gn_angular.free(); gnp_angular.free();
-            mNlType.free(); mNlIdx.free();
-            mNlDx.free(); mNlDy.free(); mNlDz.free();
-            mNlFx.free(); mNlFy.free(); mNlFz.free();
-            mJITEngine.close();
-            paramb.free(); annmb.free(); zbl.free();
-        }
-        if (mCuda) {
-            cuda_Fp.free(); cuda_sum_fxyz.free();
-            cuda_gn_radial.free(); cuda_gnp_radial.free();
-            cuda_gn_angular.free(); cuda_gnp_angular.free();
-            mCudaX.free();
-            mCudaF0.free();
-            mCudaF1.free();
-            mCudaEatom0.free();
-            mCudaVatom0.free();
-            mCudaVatom1.free();
-            mCudaType.free();
-            mCudaIlist.free();
-            mCudaNumneigh.free();
-            mCudaGNeiNum.free();
-            mCudaGCType.free();
-            mCudaFirstneigh.free();
-            mCudaGNlType.free();
-            mCudaGNlIdx.free();
-            mCudaGNlDx.free();
-            mCudaGNlDy.free();
-            mCudaGNlDz.free();
-            mCudaGNlFx.free();
-            mCudaGNlFy.free();
-            mCudaGNlFz.free();
-        }
-        if (mCudaTypeMap != null) {
-            mCudaTypeMap.free();
-            mCudaTypeMap = null;
-        }
+        mPtrMng.close();
     }
     
     void compileJIT() throws Exception {
@@ -1011,9 +930,9 @@ public class NEP implements IPairPotential {
                 throw new IllegalArgumentException("NEP precision MUST be 'double' or 'single', input: " + Conf.PRECISION);
             }
         }
-        paramb = new ParaMB(mSingle, mCuda);
-        annmb = new ANN(mSingle, mCuda);
-        zbl = new ZBL(mSingle, mCuda);
+        paramb = new ParaMB(mPtrMng, mSingle, mCuda);
+        annmb = new ANN(mPtrMng, mSingle, mCuda);
+        zbl = new ZBL(mPtrMng, mSingle, mCuda);
         
         DoubleList parameters = new DoubleList();
         int num_para_descriptor;
@@ -1231,56 +1150,56 @@ public class NEP implements IPairPotential {
             }
         }
         // init cpointer here
-        Fp = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
-        sum_fxyz = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+        Fp = mPtrMng.newDoubleOrFloatCPointer(mSingle);
+        sum_fxyz = mPtrMng.newDoubleOrFloatCPointer(mSingle);
         
-        gn_radial = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
-        gnp_radial = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
-        gn_angular = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
-        gnp_angular = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+        gn_radial = mPtrMng.newDoubleOrFloatCPointer(mSingle);
+        gnp_radial = mPtrMng.newDoubleOrFloatCPointer(mSingle);
+        gn_angular = mPtrMng.newDoubleOrFloatCPointer(mSingle);
+        gnp_angular = mPtrMng.newDoubleOrFloatCPointer(mSingle);
         
-        mOutEng = mSingle ? FloatCPointer.malloc(1) : DoubleCPointer.malloc(1);
-        mNlDx = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
-        mNlDy = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
-        mNlDz = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
-        mNlFx = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
-        mNlFy = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
-        mNlFz = mSingle ? new GrowableFloatCPointer(16) : new GrowableDoubleCPointer(16);
-        mNlType = new GrowableIntCPointer(16);
-        mNlIdx = new GrowableIntCPointer(16);
+        mOutEng = mPtrMng.newDoubleOrFloatCPointer(mSingle, 1);
+        mNlDx = mPtrMng.newDoubleOrFloatCPointer(mSingle);
+        mNlDy = mPtrMng.newDoubleOrFloatCPointer(mSingle);
+        mNlDz = mPtrMng.newDoubleOrFloatCPointer(mSingle);
+        mNlFx = mPtrMng.newDoubleOrFloatCPointer(mSingle);
+        mNlFy = mPtrMng.newDoubleOrFloatCPointer(mSingle);
+        mNlFz = mPtrMng.newDoubleOrFloatCPointer(mSingle);
+        mNlType = mPtrMng.newIntCPointer();
+        mNlIdx = mPtrMng.newIntCPointer();
         
         // init cuda pointer here
         if (mCuda) {
-            cuda_Fp = new GrowableFloatCudaPointer(1);
-            cuda_sum_fxyz = new GrowableFloatCudaPointer(1);
+            cuda_Fp = mPtrMng.newFloatCudaPointer();
+            cuda_sum_fxyz = mPtrMng.newFloatCudaPointer();
             
-            cuda_gn_radial = new GrowableFloatCudaPointer(1);
-            cuda_gnp_radial = new GrowableFloatCudaPointer(1);
-            cuda_gn_angular = new GrowableFloatCudaPointer(1);
-            cuda_gnp_angular = new GrowableFloatCudaPointer(1);
+            cuda_gn_radial = mPtrMng.newFloatCudaPointer();
+            cuda_gnp_radial = mPtrMng.newFloatCudaPointer();
+            cuda_gn_angular = mPtrMng.newFloatCudaPointer();
+            cuda_gnp_angular = mPtrMng.newFloatCudaPointer();
             
-            mFltBuf = new GrowableFloatCPointer(128);
-            mIntBuf = new GrowableIntCPointer(1024);
-            mCudaX = new GrowableFloatCudaPointer(128);
-            mCudaF0 = new GrowableFloatCudaPointer(128);
-            mCudaF1 = new GrowableFloatCudaPointer(128);
-            mCudaEatom0 = new GrowableFloatCudaPointer(128);
-            mCudaVatom0 = new GrowableFloatCudaPointer(128);
-            mCudaVatom1 = new GrowableFloatCudaPointer(128);
-            mCudaType = new GrowableIntCudaPointer(128);
-            mCudaIlist = new GrowableIntCudaPointer(128);
-            mCudaNumneigh = new GrowableIntCudaPointer(128);
-            mCudaGNeiNum = new GrowableIntCudaPointer(128);
-            mCudaGCType = new GrowableIntCudaPointer(128);
-            mCudaFirstneigh = new GrowableIntCudaPointer(1024);
-            mCudaGNlType = new GrowableIntCudaPointer(1024);
-            mCudaGNlIdx = new GrowableIntCudaPointer(1024);
-            mCudaGNlDx = new GrowableFloatCudaPointer(1024);
-            mCudaGNlDy = new GrowableFloatCudaPointer(1024);
-            mCudaGNlDz = new GrowableFloatCudaPointer(1024);
-            mCudaGNlFx = new GrowableFloatCudaPointer(1024);
-            mCudaGNlFy = new GrowableFloatCudaPointer(1024);
-            mCudaGNlFz = new GrowableFloatCudaPointer(1024);
+            mFltBuf = mPtrMng.newFloatCPointer(128);
+            mIntBuf = mPtrMng.newIntCPointer(1024);
+            mCudaX = mPtrMng.newFloatCudaPointer(128);
+            mCudaF0 = mPtrMng.newFloatCudaPointer(128);
+            mCudaF1 = mPtrMng.newFloatCudaPointer(128);
+            mCudaEatom0 = mPtrMng.newFloatCudaPointer(128);
+            mCudaVatom0 = mPtrMng.newFloatCudaPointer(128);
+            mCudaVatom1 = mPtrMng.newFloatCudaPointer(128);
+            mCudaType = mPtrMng.newIntCudaPointer(128);
+            mCudaIlist = mPtrMng.newIntCudaPointer(128);
+            mCudaNumneigh = mPtrMng.newIntCudaPointer(128);
+            mCudaGNeiNum = mPtrMng.newIntCudaPointer(128);
+            mCudaGCType = mPtrMng.newIntCudaPointer(128);
+            mCudaFirstneigh = mPtrMng.newIntCudaPointer(1024);
+            mCudaGNlType = mPtrMng.newIntCudaPointer(1024);
+            mCudaGNlIdx = mPtrMng.newIntCudaPointer(1024);
+            mCudaGNlDx = mPtrMng.newFloatCudaPointer(1024);
+            mCudaGNlDy = mPtrMng.newFloatCudaPointer(1024);
+            mCudaGNlDz = mPtrMng.newFloatCudaPointer(1024);
+            mCudaGNlFx = mPtrMng.newFloatCudaPointer(1024);
+            mCudaGNlFy = mPtrMng.newFloatCudaPointer(1024);
+            mCudaGNlFz = mPtrMng.newFloatCudaPointer(1024);
         }
         
         // compile nep here
@@ -1294,15 +1213,15 @@ public class NEP implements IPairPotential {
         DoubleCPointer parametersPtr = DoubleCPointer.malloc(parameters.size());
         parametersPtr.fill(parameters);
         update_potential(parametersPtr);
-
+        
         if (Conf.USE_TABLE_FOR_RADIAL_FUNCTIONS) {
             if (paramb.use_typewise_cutoff) {
                 throw new IllegalStateException("Cannot use tabulated radial functions with typewise cutoff.");
             }
-            gn_radial.ensureCapacity((long) table_length * paramb.num_types_sq * (paramb.n_max_radial + 1));
-            gnp_radial.ensureCapacity((long) table_length * paramb.num_types_sq * (paramb.n_max_radial + 1));
-            gn_angular.ensureCapacity((long) table_length * paramb.num_types_sq * (paramb.n_max_angular + 1));
-            gnp_angular.ensureCapacity((long) table_length * paramb.num_types_sq * (paramb.n_max_angular + 1));
+            mPtrMng.ensureCapacity(gn_radial, (long) table_length * paramb.num_types_sq * (paramb.n_max_radial + 1));
+            mPtrMng.ensureCapacity(gnp_radial, (long) table_length * paramb.num_types_sq * (paramb.n_max_radial + 1));
+            mPtrMng.ensureCapacity(gn_angular, (long) table_length * paramb.num_types_sq * (paramb.n_max_angular + 1));
+            mPtrMng.ensureCapacity(gnp_angular, (long) table_length * paramb.num_types_sq * (paramb.n_max_angular + 1));
             mDataOut.putAt(0, gn_radial);
             mDataOut.putAt(1, gn_angular);
             mDataOut.putAt(2, gnp_radial);
@@ -1311,13 +1230,13 @@ public class NEP implements IPairPotential {
             if (mCuda) {
                 long count;
                 count = (long) table_length * paramb.num_types_sq * (paramb.n_max_radial + 1);
-                cuda_gn_radial.ensureCapacity(count); cuda_gn_radial.fill((FloatCPointer)gn_radial, count);
+                mPtrMng.ensureCapacity(cuda_gn_radial, count); cuda_gn_radial.fill((FloatCPointer)gn_radial, count);
                 count = (long) table_length * paramb.num_types_sq * (paramb.n_max_radial + 1);
-                cuda_gnp_radial.ensureCapacity(count); cuda_gnp_radial.fill((FloatCPointer)gnp_radial, count);
+                mPtrMng.ensureCapacity(cuda_gnp_radial, count); cuda_gnp_radial.fill((FloatCPointer)gnp_radial, count);
                 count = (long) table_length * paramb.num_types_sq * (paramb.n_max_angular + 1);
-                cuda_gn_angular.ensureCapacity(count); cuda_gn_angular.fill((FloatCPointer)gn_angular, count);
+                mPtrMng.ensureCapacity(cuda_gn_angular, count); cuda_gn_angular.fill((FloatCPointer)gn_angular, count);
                 count = (long) table_length * paramb.num_types_sq * (paramb.n_max_angular + 1);
-                cuda_gnp_angular.ensureCapacity(count); cuda_gnp_angular.fill((FloatCPointer)gnp_angular, count);
+                mPtrMng.ensureCapacity(cuda_gnp_angular, count); cuda_gnp_angular.fill((FloatCPointer)gnp_angular, count);
             }
         }
         parametersPtr.free();
@@ -1337,16 +1256,16 @@ public class NEP implements IPairPotential {
                 ptr.leftShift((long) (annmb.dim + 2) * annmb.num_neurons1);
             }
             count = annmb.num_neurons1 * annmb.dim;
-            buf = mSingle?FloatCPointer.malloc(count):DoubleCPointer.malloc(count); buf.fillD(ptr, count); ptr.rightShift(count);
+            buf = mPtrMng.newDoubleOrFloatCPointer(mSingle, count); buf.fillD(ptr, count); ptr.rightShift(count);
             annmb.w0.putAt(t, buf);
             count = annmb.num_neurons1;
-            buf = mSingle?FloatCPointer.malloc(count):DoubleCPointer.malloc(count); buf.fillD(ptr, count); ptr.rightShift(count);
+            buf = mPtrMng.newDoubleOrFloatCPointer(mSingle, count); buf.fillD(ptr, count); ptr.rightShift(count);
             annmb.b0.putAt(t, buf);
             count = paramb.version==5 ? annmb.num_neurons1+1 : annmb.num_neurons1; // one extra bias for NEP5 stored in ann.w1[t]
-            buf = mSingle?FloatCPointer.malloc(count):DoubleCPointer.malloc(count); buf.fillD(ptr, count); ptr.rightShift(count);
+            buf = mPtrMng.newDoubleOrFloatCPointer(mSingle, count); buf.fillD(ptr, count); ptr.rightShift(count);
             annmb.w1.putAt(t, buf);
         }
-        buf = mSingle?FloatCPointer.malloc(1):DoubleCPointer.malloc(1); buf.setD(ptr.get()); ptr.next();
+        buf = mPtrMng.newDoubleOrFloatCPointer(mSingle, 1); buf.setD(ptr.get()); ptr.next();
         annmb.b1 = buf;
         
         if (paramb.model_type == 2) {
@@ -1355,20 +1274,20 @@ public class NEP implements IPairPotential {
                     ptr.leftShift((long) (annmb.dim + 2) * annmb.num_neurons1);
                 }
                 count = annmb.num_neurons1 * annmb.dim;
-                buf = mSingle?FloatCPointer.malloc(count):DoubleCPointer.malloc(count); buf.fillD(ptr, count); ptr.rightShift(count);
+                buf = mPtrMng.newDoubleOrFloatCPointer(mSingle, count); buf.fillD(ptr, count); ptr.rightShift(count);
                 annmb.w0_pol.putAt(t, buf);
                 count = annmb.num_neurons1;
-                buf = mSingle?FloatCPointer.malloc(count):DoubleCPointer.malloc(count); buf.fillD(ptr, count); ptr.rightShift(count);
+                buf = mPtrMng.newDoubleOrFloatCPointer(mSingle, count); buf.fillD(ptr, count); ptr.rightShift(count);
                 annmb.b0_pol.putAt(t, buf);
                 count = annmb.num_neurons1;
-                buf = mSingle ?FloatCPointer.malloc(count):DoubleCPointer.malloc(count); buf.fillD(ptr, count); ptr.rightShift(count);
+                buf = mPtrMng.newDoubleOrFloatCPointer(mSingle, count); buf.fillD(ptr, count); ptr.rightShift(count);
                 annmb.w1_pol.putAt(t, buf);
             }
-            buf = mSingle?FloatCPointer.malloc(1):DoubleCPointer.malloc(1); buf.setD(ptr.get()); ptr.next();
+            buf = mPtrMng.newDoubleOrFloatCPointer(mSingle, 1); buf.setD(ptr.get()); ptr.next();
             annmb.b1_pol = buf;
         }
         count = annmb.num_para - annmb.num_para_ann;
-        buf = mSingle?FloatCPointer.malloc(count):DoubleCPointer.malloc(count); buf.fillD(ptr, count);
+        buf = mPtrMng.newDoubleOrFloatCPointer(mSingle, count); buf.fillD(ptr, count);
         annmb.c = buf;
         
         if (mCuda) {

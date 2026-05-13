@@ -127,10 +127,20 @@ public class CPointer implements ICPointer {
      * 直接从一个任意的 c 指针初始化一个 {@link CPointer} 对象
      * @param aPtr 需要包装的 c 指针值
      */
-    @ApiStatus.Internal public CPointer(long aPtr) {mPtr = aPtr;}
+    @ApiStatus.Internal public CPointer(long aPtr) {
+        mPtr = aPtr;
+    }
     /** @return {@inheritDoc} */
-    @Override @ApiStatus.Internal public final long ptr_() {return mPtr;}
-    
+    @Override @ApiStatus.Internal public final long ptr_() {
+        return mPtr;
+    }
+    /**
+     * {@inheritDoc}
+     * @param aPtr {@inheritDoc}
+     */
+    @Override public void setPtr_(long aPtr) {
+        mPtr = aPtr;
+    }
     
     /**
      * 调用 c 中的 {@code malloc} 来分配内存创建一个 c 指针

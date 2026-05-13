@@ -12,6 +12,12 @@ import org.jetbrains.annotations.ApiStatus;
 @ApiStatus.Experimental
 public interface ICudaPointer extends IPointer {
     /**
+     * 直接设置内部的包装指针
+     * @param aPtr 需要设置的内部指针值
+     */
+    @ApiStatus.Internal void setPtr_(long aPtr);
+    
+    /**
      * 调用 {@link CudaCore#cudaFree} 来释放一个 cuda 指针对应的内存
      *
      * @throws IllegalStateException 如果此 cuda 指针是空指针

@@ -32,6 +32,14 @@ public interface IPointer {
      */
     default Int64CPointer asInt64CPointer() {return new Int64CPointer(ptr_());}
     /**
+     * 将此接口根据输入转换成一个双精度或单精度浮点的 c 指针 {@link IDoubleOrFloatCPointer}
+     * @param aSingle 是否转换为单精度
+     * @return 双精度浮点的 c 指针包装类
+     */
+    default IDoubleOrFloatCPointer asDoubleOrFloatCPointer(boolean aSingle) {
+        return aSingle ? new FloatCPointer(ptr_()) : new DoubleCPointer(ptr_());
+    }
+    /**
      * 将此接口转换成一个双精度浮点的 c 指针 {@link DoubleCPointer}，类似在 c
      * 中使用 {@code (double *)ptr} 来进行强制类型转换
      * @return 双精度浮点的 c 指针包装类

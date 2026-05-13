@@ -11,6 +11,12 @@ import org.jetbrains.annotations.ApiStatus;
 @ApiStatus.Experimental
 public interface ICPointer extends IPointer {
     /**
+     * 直接设置内部的包装指针
+     * @param aPtr 需要设置的内部指针值
+     */
+    @ApiStatus.Internal void setPtr_(long aPtr);
+    
+    /**
      * 调用 c 中的 {@code free} 来释放一个 c 指针对应的内存
      * <p>
      * 实际内部默认会统一使用 {@link MiMalloc} 来加速内存释放的过程

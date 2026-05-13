@@ -1,9 +1,8 @@
 package jsex.nnap;
 
-import jse.cptr.DoubleCPointer;
-import jse.cptr.GrowableIntCPointer;
-import jse.cptr.IntCPointer;
 import jse.cptr.AnyCPointer;
+import jse.cptr.DoubleCPointer;
+import jse.cptr.IntCPointer;
 import jse.jit.SimpleJIT;
 import jse.lmp.LmpPlugin;
 
@@ -74,6 +73,7 @@ public class PairNNAP extends LmpPlugin.Pair {
             coeff_(aArgs);
         }
     }
+    @SuppressWarnings("resource")
     private void coeff_(String... aArgs) throws Exception {
         if (aArgs==null || aArgs.length<4) throw new IllegalArgumentException("Not enough arguments, pair_coeff MUST be like `* * path/to/nnpot elem1 ...`");
         if (!aArgs[0].equals("*") || !aArgs[1].equals("*")) throw new IllegalArgumentException("pair_coeff MUST start with `* *`");
@@ -83,9 +83,9 @@ public class PairNNAP extends LmpPlugin.Pair {
             String tLmpUnits = unitStyle();
             if (tLmpUnits!=null && !tLmpUnits.equals(tNNAPUnits)) throw new IllegalArgumentException("Invalid units ("+tLmpUnits+") for this model ("+tNNAPUnits+")");
         }
-        mTypeNum = atomNtypes();
+        mNumTypes = atomNtypes();
         int tArgLen = aArgs.length-2;
-        if (tArgLen-1 != mTypeNum) throw new IllegalArgumentException("Elements number in pair_coeff not match ntypes ("+mTypeNum+").");
+        if (tArgLen-1 != mNumTypes) throw new IllegalArgumentException("Elements number in pair_coeff not match ntypes ("+ mNumTypes +").");
         mLmpType2NNAPType = IntCPointer.calloc(tArgLen);
         mCutoff = new double[tArgLen];
         mCutsq = DoubleCPointer.calloc(tArgLen);
@@ -99,10 +99,8 @@ public class PairNNAP extends LmpPlugin.Pair {
         }
         mTypeInum = IntCPointer.calloc(tArgLen);
         mTypeIlist = AnyCPointer.calloc(tArgLen);
-        mTypeIlistBuf = new GrowableIntCPointer[tArgLen];
-        for (int type = 1; type < tArgLen; ++type) {
-            mTypeIlistBuf[type] = new GrowableIntCPointer(128);
-        }
+        mTypeIlistBuf = new IntCPointer[tArgLen];
+        mBufSize = new int[tArgLen];
     }
     protected NNAP initNNAP(String aPath) throws Exception {
         return new NNAP(aPath, 1);
@@ -112,10 +110,28 @@ public class PairNNAP extends LmpPlugin.Pair {
     IntCPointer mLmpType2NNAPType = null;
     double[] mCutoff = null;
     DoubleCPointer mCutsq = null;
-    int mTypeNum = -1;
-    GrowableIntCPointer[] mTypeIlistBuf = null;
+    int mNumTypes = -1;
     AnyCPointer mTypeIlist = null;
     IntCPointer mTypeInum = null;
+    
+    private IntCPointer[] mTypeIlistBuf = null;
+    private int[] mBufSize = null;
+    IntCPointer getTypeIlistBuf(int type, int inum) {
+        IntCPointer tBuf = mTypeIlistBuf[type];
+        if (tBuf == null) {
+            tBuf = IntCPointer.calloc(inum);
+            mBufSize[type] = inum;
+            mTypeIlistBuf[type] = tBuf;
+        }
+        int tSize = mBufSize[type];
+        if (tSize < inum) {
+            tBuf.free();
+            tBuf = IntCPointer.calloc(inum);
+            mBufSize[type] = inum;
+            mTypeIlistBuf[type] = tBuf;
+        }
+        return tBuf;
+    }
     
     @Override public double initOne(int i, int j) {
         return mCutoff[i];
@@ -131,7 +147,10 @@ public class PairNNAP extends LmpPlugin.Pair {
             mCutsq = null;
         }
         if (mTypeIlistBuf != null) {
-            for (int type = 1; type < mTypeNum; ++type) mTypeIlistBuf[type].free();
+            for (int type = 1; type < mNumTypes; ++type) {
+                IntCPointer tBuf = mTypeIlistBuf[type];
+                if (tBuf!=null) tBuf.free();
+            }
             mTypeIlistBuf = null;
         }
         if (mTypeIlist != null) {

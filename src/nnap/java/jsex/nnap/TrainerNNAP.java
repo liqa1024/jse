@@ -62,7 +62,7 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
         return tErrAbs>=1.0 ? (tErrAbs-0.5) : (0.5*tErr*tErr);
     };
     
-    protected static class DataSet implements AutoCloseable {
+    protected static class DataSet {
         public int mSize = 0;
         /** 原始的原子结构数据，简单引用因为初始化后就会自动清空 */
         public final List<IAtomData> mAtomData = new ArrayList<>(64);
@@ -88,37 +88,13 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
         public final List<IDoubleOrFloatCPointer[]> mNlDx = new ArrayList<>(64);
         public final List<IDoubleOrFloatCPointer[]> mNlDy = new ArrayList<>(64);
         public final List<IDoubleOrFloatCPointer[]> mNlDz = new ArrayList<>(64);
-        
-        @Override public void close() {
-            for (int i = 0; i < mSize; ++i) {
-                final int tNumAtoms = mAtomType.get(i).size();
-                IntCPointer[] tNl = mNl.get(i), tNlType = mNlType.get(i);
-                IDoubleOrFloatCPointer[] tNlDx = mNlDx.get(i), tNlDy = mNlDy.get(i), tNlDz = mNlDz.get(i);
-                for (int k = 0; k < tNumAtoms; ++k) {
-                    tNl[k].free(); tNlType[k].free();
-                    tNlDx[k].free(); tNlDy[k].free(); tNlDz[k].free();
-                }
-            }
-            mNl.clear(); mNlType.clear();
-            mNlDx.clear(); mNlDy.clear(); mNlDz.clear();
-        }
     }
     
     /// ParforThreadPool stuffs
     protected final ParforThreadPool mPool;
-    @Override public void close() {
+    @Override public void close() throws Exception {
         mPool.close();
-        
-        final int tNumThreads = mPool.nthreads();
-        for (int ti = 0; ti < tNumThreads; ++ti) {
-            mAGradNlDxBuf[ti].free(); mAGradNlDyBuf[ti].free(); mAGradNlDzBuf[ti].free();
-            mBGradAGradNlDxBuf[ti].free(); mBGradAGradNlDyBuf[ti].free(); mBGradAGradNlDzBuf[ti].free();
-            for (IGrowableDoubleOrFloatCPointer tSubCache : mCacheBuf.get(ti)) {
-                tSubCache.free();
-            }
-        }
-        mTrainData.close();
-        mTestData.close();
+        mPtrMng.close();
     }
     /// IHasSymbol stuffs
     @Override public int ntypes() {return mNNAP.ntypes();}
@@ -129,6 +105,7 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
     public String precision() {return mNNAP.precision();}
     
     
+    protected final PointerManager mPtrMng;
     protected final boolean mSingle;
     protected final DataSet mTrainData, mTestData;
     protected final boolean mIsRetrain;
@@ -153,9 +130,9 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
     private IntVector mAllSliceTrain = null;
     
     /// buffer stuffs
-    private final List<List<IGrowableDoubleOrFloatCPointer>> mCacheBuf;
-    private final IGrowableDoubleOrFloatCPointer[] mAGradNlDxBuf, mAGradNlDyBuf, mAGradNlDzBuf;
-    private final IGrowableDoubleOrFloatCPointer[] mBGradAGradNlDxBuf, mBGradAGradNlDyBuf, mBGradAGradNlDzBuf;
+    private final List<List<IDoubleOrFloatCPointer>> mCacheBuf;
+    private final IDoubleOrFloatCPointer[] mAGradNlDxBuf, mAGradNlDyBuf, mAGradNlDzBuf;
+    private final IDoubleOrFloatCPointer[] mBGradAGradNlDxBuf, mBGradAGradNlDyBuf, mBGradAGradNlDzBuf;
     private final DoubleList[] mForceXBuf, mForceYBuf, mForceZBuf;
     private final DoubleList[] mBGradForceXBuf, mBGradForceYBuf, mBGradForceZBuf;
     
@@ -301,6 +278,7 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
     @SuppressWarnings("unchecked")
     TrainerNNAP(@Range(from=1, to=Integer.MAX_VALUE) int aNumThreads, Map<String, ?> aArgs, @Nullable Map<String, ?> aModelInfo) throws Exception {
         mPool = new ParforThreadPool(aNumThreads);
+        mPtrMng = new PointerManager();
         if (aModelInfo != null) {
             mIsRetrain = true;
             argsCheckRetrain_(aArgs);
@@ -347,12 +325,12 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
         mTestData = new DataSet();
         
         mCacheBuf = new ArrayList<>(aNumThreads);
-        mAGradNlDxBuf = new IGrowableDoubleOrFloatCPointer[aNumThreads];
-        mAGradNlDyBuf = new IGrowableDoubleOrFloatCPointer[aNumThreads];
-        mAGradNlDzBuf = new IGrowableDoubleOrFloatCPointer[aNumThreads];
-        mBGradAGradNlDxBuf = new IGrowableDoubleOrFloatCPointer[aNumThreads];
-        mBGradAGradNlDyBuf = new IGrowableDoubleOrFloatCPointer[aNumThreads];
-        mBGradAGradNlDzBuf = new IGrowableDoubleOrFloatCPointer[aNumThreads];
+        mAGradNlDxBuf = new IDoubleOrFloatCPointer[aNumThreads];
+        mAGradNlDyBuf = new IDoubleOrFloatCPointer[aNumThreads];
+        mAGradNlDzBuf = new IDoubleOrFloatCPointer[aNumThreads];
+        mBGradAGradNlDxBuf = new IDoubleOrFloatCPointer[aNumThreads];
+        mBGradAGradNlDyBuf = new IDoubleOrFloatCPointer[aNumThreads];
+        mBGradAGradNlDzBuf = new IDoubleOrFloatCPointer[aNumThreads];
         mForceXBuf = new DoubleList[aNumThreads];
         mForceYBuf = new DoubleList[aNumThreads];
         mForceZBuf = new DoubleList[aNumThreads];
@@ -360,14 +338,14 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
         mBGradForceYBuf = new DoubleList[aNumThreads];
         mBGradForceZBuf = new DoubleList[aNumThreads];
         for (int ti = 0; ti < aNumThreads; ++ti) {
-            List<IGrowableDoubleOrFloatCPointer> tCacheBuf = new ArrayList<>(16);
+            List<IDoubleOrFloatCPointer> tCacheBuf = new ArrayList<>(16);
             mCacheBuf.add(tCacheBuf);
-            mAGradNlDxBuf[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
-            mAGradNlDyBuf[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
-            mAGradNlDzBuf[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
-            mBGradAGradNlDxBuf[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
-            mBGradAGradNlDyBuf[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
-            mBGradAGradNlDzBuf[ti] = mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1);
+            mAGradNlDxBuf[ti] = mPtrMng.newDoubleOrFloatCPointer(mSingle);
+            mAGradNlDyBuf[ti] = mPtrMng.newDoubleOrFloatCPointer(mSingle);
+            mAGradNlDzBuf[ti] = mPtrMng.newDoubleOrFloatCPointer(mSingle);
+            mBGradAGradNlDxBuf[ti] = mPtrMng.newDoubleOrFloatCPointer(mSingle);
+            mBGradAGradNlDyBuf[ti] = mPtrMng.newDoubleOrFloatCPointer(mSingle);
+            mBGradAGradNlDzBuf[ti] = mPtrMng.newDoubleOrFloatCPointer(mSingle);
             mForceXBuf[ti] = new DoubleList();
             mForceYBuf[ti] = new DoubleList();
             mForceZBuf[ti] = new DoubleList();
@@ -860,18 +838,25 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
             IDoubleOrFloatCPointer[] tNlDz = tData.mNlDz.get(i);
             
             DoubleWrapper rBGradEng = new DoubleWrapper(0.0);
-            List<IGrowableDoubleOrFloatCPointer> rCache = mCacheBuf.get(threadID);
-            while (rCache.size() < tNumAtoms) rCache.add(mSingle ? new GrowableFloatCPointer(1) : new GrowableDoubleCPointer(1));
+            List<IDoubleOrFloatCPointer> rCache = mCacheBuf.get(threadID);
+            while (rCache.size() < tNumAtoms) rCache.add(mPtrMng.newDoubleOrFloatCPointer(mSingle));
             
             if (!tHasForce && !tHasStress) {
                 if (!tHasEng) return;
                 
                 double rEng = 0.0;
                 for (int k = 0; k < tNumAtoms; ++k) {
+                    final int tNlSize = tNumNei.get(k);
                     final int cType = tAtomType.get(k);
-                    double tSubEng = mNNAP.forwardEnergy(threadID,
-                        tNlDx[k], tNlDy[k], tNlDz[k], tNlType[k],
-                        tNumNei.get(k), cType, rCache.get(k)
+                    IDoubleOrFloatCPointer tSubCache = rCache.get(k);
+                    mPtrMng.ensureCapacity(tSubCache, mNNAP.forwardEnergyCacheSize(tNlSize, cType));
+                    double tSubEng = mNNAP.forwardEnergy(
+                        threadID,
+                        tNlDx[k].asDoubleOrFloatCPointer(mSingle),
+                        tNlDy[k].asDoubleOrFloatCPointer(mSingle),
+                        tNlDz[k].asDoubleOrFloatCPointer(mSingle),
+                        tNlType[k].asIntCPointer(),
+                        tNlSize, cType, tSubCache
                     );
                     // 注意 nnap 内部获取能量会是准确值，这里需要再次归一化
                     rEng += (tSubEng - mRefEngs.get(cType-1));
@@ -901,15 +886,15 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
             DoubleWrapper rBGradSxx = new DoubleWrapper(0.0), rBGradSyy = new DoubleWrapper(0.0), rBGradSzz = new DoubleWrapper(0.0);
             DoubleWrapper rBGradSxy = new DoubleWrapper(0.0), rBGradSxz = new DoubleWrapper(0.0), rBGradSyz = new DoubleWrapper(0.0);
             
-            IGrowableDoubleOrFloatCPointer rAGradNlDx = mAGradNlDxBuf[threadID];
-            IGrowableDoubleOrFloatCPointer rAGradNlDy = mAGradNlDyBuf[threadID];
-            IGrowableDoubleOrFloatCPointer rAGradNlDz = mAGradNlDzBuf[threadID];
+            IDoubleOrFloatCPointer rAGradNlDx = mAGradNlDxBuf[threadID];
+            IDoubleOrFloatCPointer rAGradNlDy = mAGradNlDyBuf[threadID];
+            IDoubleOrFloatCPointer rAGradNlDz = mAGradNlDzBuf[threadID];
             DoubleList rFx = mForceXBuf[threadID];
             DoubleList rFy = mForceYBuf[threadID];
             DoubleList rFz = mForceZBuf[threadID];
-            IGrowableDoubleOrFloatCPointer rBGradAGradNlDx = mBGradAGradNlDxBuf[threadID];
-            IGrowableDoubleOrFloatCPointer rBGradAGradNlDy = mBGradAGradNlDyBuf[threadID];
-            IGrowableDoubleOrFloatCPointer rBGradAGradNlDz = mBGradAGradNlDzBuf[threadID];
+            IDoubleOrFloatCPointer rBGradAGradNlDx = mBGradAGradNlDxBuf[threadID];
+            IDoubleOrFloatCPointer rBGradAGradNlDy = mBGradAGradNlDyBuf[threadID];
+            IDoubleOrFloatCPointer rBGradAGradNlDz = mBGradAGradNlDzBuf[threadID];
             DoubleList rBGradFx = mBGradForceXBuf[threadID];
             DoubleList rBGradFy = mBGradForceYBuf[threadID];
             DoubleList rBGradFz = mBGradForceZBuf[threadID];
@@ -927,13 +912,15 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
                 IntCPointer tSubNl = tNl[k], tSubNlType = tNlType[k];
                 IDoubleOrFloatCPointer tSubNlDx = tNlDx[k], tSubNlDy = tNlDy[k], tSubNlDz = tNlDz[k];
                 
-                rAGradNlDx.ensureCapacity(tNlSize);
-                rAGradNlDy.ensureCapacity(tNlSize);
-                rAGradNlDz.ensureCapacity(tNlSize);
+                mPtrMng.ensureCapacity(rAGradNlDx, tNlSize);
+                mPtrMng.ensureCapacity(rAGradNlDy, tNlSize);
+                mPtrMng.ensureCapacity(rAGradNlDz, tNlSize);
                 
+                IDoubleOrFloatCPointer tSubCache = rCache.get(k);
+                mPtrMng.ensureCapacity(tSubCache, mNNAP.forwardEnergyForceCacheSize(tNlSize, cType));
                 double tSubEng = mNNAP.forwardEnergyForce(threadID,
                     tSubNlDx, tSubNlDy, tSubNlDz, tSubNlType,
-                    tNlSize, cType, rCache.get(k),
+                    tNlSize, cType, tSubCache,
                     rAGradNlDx, rAGradNlDy, rAGradNlDz
                 );
                 // 注意 nnap 内部获取能量会是准确值，这里需要再次归一化
@@ -1037,9 +1024,9 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
                 IntCPointer tSubNl = tNl[k], tSubNlType = tNlType[k];
                 IDoubleOrFloatCPointer tSubNlDx = tNlDx[k], tSubNlDy = tNlDy[k], tSubNlDz = tNlDz[k];
                 
-                rBGradAGradNlDx.ensureCapacity(tNlSize);
-                rBGradAGradNlDy.ensureCapacity(tNlSize);
-                rBGradAGradNlDz.ensureCapacity(tNlSize);
+                mPtrMng.ensureCapacity(rBGradAGradNlDx, tNlSize);
+                mPtrMng.ensureCapacity(rBGradAGradNlDy, tNlSize);
+                mPtrMng.ensureCapacity(rBGradAGradNlDz, tNlSize);
                 // 反向传播力和压力的构造过程
                 double tBGradFxk = 0.0, tBGradFyk = 0.0, tBGradFzk = 0.0;
                 if (tHasForce) {
@@ -1333,12 +1320,11 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
                     });
                     int tNlSize = tNlBuf.size();
                     rNumNei.set(k, tNlSize);
-                    if (tNlSize==0) tNlSize = 1; // for malloc
-                    IntCPointer tNlPtr = IntCPointer.malloc(tNlSize);
-                    IntCPointer tNlTypePtr = IntCPointer.malloc(tNlSize);
-                    IDoubleOrFloatCPointer tNlDxPtr = mSingle ? FloatCPointer.malloc(tNlSize) : DoubleCPointer.malloc(tNlSize);
-                    IDoubleOrFloatCPointer tNlDyPtr = mSingle ? FloatCPointer.malloc(tNlSize) : DoubleCPointer.malloc(tNlSize);
-                    IDoubleOrFloatCPointer tNlDzPtr = mSingle ? FloatCPointer.malloc(tNlSize) : DoubleCPointer.malloc(tNlSize);
+                    IntCPointer tNlPtr = mPtrMng.newIntCPointer(tNlSize);
+                    IntCPointer tNlTypePtr = mPtrMng.newIntCPointer(tNlSize);
+                    IDoubleOrFloatCPointer tNlDxPtr = mPtrMng.newDoubleOrFloatCPointer(mSingle, tNlSize);
+                    IDoubleOrFloatCPointer tNlDyPtr = mPtrMng.newDoubleOrFloatCPointer(mSingle, tNlSize);
+                    IDoubleOrFloatCPointer tNlDzPtr = mPtrMng.newDoubleOrFloatCPointer(mSingle, tNlSize);
                     tNlPtr.fill(tNlBuf); rNl[k] = tNlPtr;
                     tNlTypePtr.fill(tNlTypeBuf); rNlType[k] = tNlTypePtr;
                     tNlDxPtr.fillD(tNlDxBuf); rNlDx[k] = tNlDxPtr;
@@ -1401,7 +1387,7 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
             IDoubleOrFloatCPointer[] tNlDz = mTrainData.mNlDz.get(i);
             
             // 直接使用 nnap 内部的 cache 即可
-            IGrowableDoubleOrFloatCPointer rFpPtr = mNNAP.mCache[threadID];
+            IDoubleOrFloatCPointer rFpPtr = mNNAP.mCache[threadID];
             Vector[] tFp = tFpPar[threadID];
             Vector[] tNormMu = tMuPar[threadID];
             Vector[] tNormSigma = tSigmaPar[threadID];
@@ -1411,8 +1397,8 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
             
             for (int k = 0; k < tNumAtoms; ++k) {
                 int tType = tAtomType.get(k);
-                // 现在实时计算基组而不是缓存
-                rFpPtr.ensureCapacity(mNNAP.mBasis[tType-1].size());
+                // NNAP 内部缓存使用 NNAP 内部的管理器
+                mNNAP.mPtrMng.ensureCapacity(rFpPtr, mNNAP.mBasis[tType-1].size());
                 mNNAP.calFp(threadID,
                     tNlDx[k], tNlDy[k], tNlDz[k], tNlType[k],
                     tNumNei.get(k), tType, rFpPtr
@@ -1567,9 +1553,9 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
         IntVector tSlice = Vectors.range(tDataSize);
         tSlice.shuffle();
         
-        IGrowableDoubleOrFloatCPointer rAGradNlDx = mAGradNlDxBuf[0];
-        IGrowableDoubleOrFloatCPointer rAGradNlDy = mAGradNlDyBuf[0];
-        IGrowableDoubleOrFloatCPointer rAGradNlDz = mAGradNlDzBuf[0];
+        IDoubleOrFloatCPointer rAGradNlDx = mAGradNlDxBuf[0];
+        IDoubleOrFloatCPointer rAGradNlDy = mAGradNlDyBuf[0];
+        IDoubleOrFloatCPointer rAGradNlDz = mAGradNlDzBuf[0];
         
         AccumulatedTimer tTimer = new AccumulatedTimer();
         long tSteps = 0;
@@ -1586,9 +1572,9 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
             tTimer.from();
             for (int k = 0; k < tNumAtoms; ++k) {
                 int tNlSize = tNumNei.get(k);
-                rAGradNlDx.ensureCapacity(tNlSize);
-                rAGradNlDy.ensureCapacity(tNlSize);
-                rAGradNlDz.ensureCapacity(tNlSize);
+                mPtrMng.ensureCapacity(rAGradNlDx, tNlSize);
+                mPtrMng.ensureCapacity(rAGradNlDy, tNlSize);
+                mPtrMng.ensureCapacity(rAGradNlDz, tNlSize);
                 
                 mNNAP.calEnergyForce(
                     0, tNlDx[k], tNlDy[k], tNlDz[k], tNlType[k],

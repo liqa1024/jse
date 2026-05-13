@@ -97,6 +97,16 @@ public class AnyCPointer extends CPointer {
         return new CPointer(get0(mPtr));
     }
     /**
+     * 对此指针解引用，获取内部值，并转换成 double 或 float 指针
+     * @param aSingle 是否转换为单精度
+     * @return 此指针对应的值
+     */
+    @UnsafeJNI("Access wild pointer will directly result in JVM SIGSEGV")
+    public IDoubleOrFloatCPointer getAsDoubleOrFloatCPointer(boolean aSingle) {
+        if (isNull()) throw new NullPointerException();
+        return aSingle ? new FloatCPointer(get0(mPtr)) : new DoubleCPointer(get0(mPtr));
+    }
+    /**
      * 对此指针解引用，获取内部值，并转换成 double 指针，即对应 c 中的 {@code (double *)*ptr}
      * @return 此指针对应的值
      */
@@ -193,6 +203,17 @@ public class AnyCPointer extends CPointer {
     public CPointer getAsCPointerAt(long aIdx) {
         if (isNull()) throw new NullPointerException();
         return new CPointer(getAt0(mPtr, aIdx));
+    }
+    /**
+     * 将此指针当作一个 c 的数组，获取内部指定位置的数值，并转换成 double 或者 float 指针
+     * @param aSingle 是否转换为单精度
+     * @param aIdx 需要获取的索引位置
+     * @return 此指针对应的值
+     */
+    @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
+    public IDoubleOrFloatCPointer getAsDoubleOrFloatCPointerAt(boolean aSingle, long aIdx) {
+        if (isNull()) throw new NullPointerException();
+        return aSingle ? new FloatCPointer(getAt0(mPtr, aIdx)) : new DoubleCPointer(getAt0(mPtr, aIdx));
     }
     /**
      * 将此指针当作一个 c 的数组，获取内部指定位置的数值，并转换成 double 指针，即对应 c 中的 {@code (double *)ptr[aIdx]}

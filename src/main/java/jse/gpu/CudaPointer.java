@@ -22,10 +22,20 @@ public class CudaPointer implements ICudaPointer {
      * 直接从一个任意的 cuda 指针初始化一个 {@link CudaPointer} 对象
      * @param aPtr 需要包装的 cuda 指针值
      */
-    @ApiStatus.Internal public CudaPointer(long aPtr) {mPtr = aPtr;}
+    @ApiStatus.Internal public CudaPointer(long aPtr) {
+        mPtr = aPtr;
+    }
     /** @return {@inheritDoc} */
-    @Override @ApiStatus.Internal public final long ptr_() {return mPtr;}
-    
+    @Override @ApiStatus.Internal public final long ptr_() {
+        return mPtr;
+    }
+    /**
+     * {@inheritDoc}
+     * @param aPtr {@inheritDoc}
+     */
+    @Override public void setPtr_(long aPtr) {
+        mPtr = aPtr;
+    }
     
     /**
      * 调用 {@link CudaCore#cudaMalloc} 来分配内存创建一个 cuda 指针
