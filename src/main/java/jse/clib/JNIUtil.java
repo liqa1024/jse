@@ -156,7 +156,10 @@ public class JNIUtil {
         String tWinCmd = aWinPs.startsWith("& ") ? aWinPs.substring(2) : aWinPs;
         return tWinCmd.replace("/", "\\");
     }
-    
+    @ApiStatus.Internal
+    public static String validCmdPath(String aPath) {
+        return IS_WINDOWS ? ("\"'"+aPath+"'\"") : ("\""+aPath+"\"");
+    }
     
     @ApiStatus.Internal
     @FunctionalInterface public interface IEnvChecker {void check() throws Exception;}
@@ -241,7 +244,7 @@ public class JNIUtil {
             // 总是 release 编译
             rCommand.add("-D"); rCommand.add("CMAKE_BUILD_TYPE=Release");
             // 设置 ninja 生成
-            rCommand.add("-D"); rCommand.add("CMAKE_MAKE_PROGRAM='"+Ninja.EXE_PATH+"'");
+            rCommand.add("-D"); rCommand.add("CMAKE_MAKE_PROGRAM="+validCmdPath(Ninja.EXE_PATH));
             rCommand.add("-G"); rCommand.add("Ninja");
             // 这里设置 C/C++ 编译器（如果有）
             if (mUsedCmakeCCompiler) {
@@ -252,8 +255,8 @@ public class JNIUtil {
                 String tCmakeCxxCompiler = mCmakeCxxCompiler==null ? Compiler.CXX_COMPILER : mCmakeCxxCompiler;
                 if (tCmakeCxxCompiler!=null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+tCmakeCxxCompiler);}
             }
-            if (mCmakeCFlags!=null) {rCommand.add("-D"); rCommand.add("CMAKE_C_FLAGS='"+mCmakeCFlags+"'");}
-            if (mCmakeCxxFlags!=null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_FLAGS='"+mCmakeCxxFlags+"'");}
+            if (mCmakeCFlags!=null) {rCommand.add("-D"); rCommand.add("CMAKE_C_FLAGS=\""+mCmakeCFlags+"\"");}
+            if (mCmakeCxxFlags!=null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_FLAGS=\""+mCmakeCxxFlags+"\"");}
             // 配置其余的参数设置
             if (mUseMiMalloc!=null) {
                 rCommand.add("-D"); rCommand.add("JSE_USE_MIMALLOC="+(((!Compiler.Conf.FORCE || !Compiler.GCC_OLD) && mUseMiMalloc) ? "ON" : "OFF"));
@@ -264,12 +267,12 @@ public class JNIUtil {
             }
             // 设置构建输出目录为 lib
             IO.makeDir(mLibDir); // 初始化一下这个目录避免意料外的问题
-            rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH='"+ mLibDir +"'");
-            rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH='"+ mLibDir +"'");
-            rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH='"+ mLibDir +"'");
-            rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH='"+ mLibDir +"'");
-            rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE:PATH='"+ mLibDir +"'");
-            rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE:PATH='"+ mLibDir +"'");
+            rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH="+validCmdPath(mLibDir));
+            rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH="+validCmdPath(mLibDir));
+            rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH="+validCmdPath(mLibDir));
+            rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH="+validCmdPath(mLibDir));
+            rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE:PATH="+validCmdPath(mLibDir));
+            rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE:PATH="+validCmdPath(mLibDir));
             // 添加额外的设置参数
             for (Map.Entry<String, String> tEntry : mCmakeSettings.entrySet()) {
                 rCommand.add("-D"); rCommand.add(String.format("%s=%s", tEntry.getKey(), tEntry.getValue()));
@@ -334,9 +337,10 @@ public class JNIUtil {
             // 现在 windows 构建需要附加 dev 环境，专门写入 bat 脚本来执行
             if (IS_WINDOWS) {
                 String tBuildBat = tWorkingDir + "build.bat";
-                // 注意使用 CRLF 换行
+                // 注意使用 CRLF 换行以及编码问题
                 IO.write(tBuildBat,
                     "@echo off\r",
+                    "chcp 65001 >nul\n",
                     "call \""+Compiler.MSVC_DEVCMD_PATH+"\" -arch=x64\r",
                     validWinCmd(tCmakeInitCmd)+"\r",
                     validWinCmd(tCmakeBuildCmd)+"\r"

@@ -277,20 +277,20 @@ public class SimpleJIT {
             // 总是 release 编译
             rCommand.add("-D"); rCommand.add("CMAKE_BUILD_TYPE=Release");
             // 设置 ninja 生成
-            rCommand.add("-D"); rCommand.add("CMAKE_MAKE_PROGRAM='"+Ninja.EXE_PATH+"'");
+            rCommand.add("-D"); rCommand.add("CMAKE_MAKE_PROGRAM="+JNIUtil.validCmdPath(Ninja.EXE_PATH));
             rCommand.add("-G"); rCommand.add("Ninja");
             // 这里设置 C++ 编译器
             String tCmakeCxxCompiler = mCmakeCxxCompiler==null ? Compiler.CXX_COMPILER : mCmakeCxxCompiler;
             if (tCmakeCxxCompiler!=null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_COMPILER="+tCmakeCxxCompiler);}
-            if (mCmakeCxxFlags!=null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_FLAGS='"+mCmakeCxxFlags+"'");}
+            if (mCmakeCxxFlags!=null) {rCommand.add("-D"); rCommand.add("CMAKE_CXX_FLAGS=\""+mCmakeCxxFlags+"\"");}
             // 设置构建输出目录为 lib
             IO.makeDir(mLibDir); // 初始化一下这个目录避免意料外的问题
-            rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH='"+ mLibDir +"'");
-            rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH='"+ mLibDir +"'");
-            rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH='"+ mLibDir +"'");
-            rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH='"+ mLibDir +"'");
-            rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE:PATH='"+ mLibDir +"'");
-            rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE:PATH='"+ mLibDir +"'");
+            rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY:PATH="+JNIUtil.validCmdPath(mLibDir));
+            rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY:PATH="+JNIUtil.validCmdPath(mLibDir));
+            rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH="+JNIUtil.validCmdPath(mLibDir));
+            rCommand.add("-D"); rCommand.add("CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH="+JNIUtil.validCmdPath(mLibDir));
+            rCommand.add("-D"); rCommand.add("CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE:PATH="+JNIUtil.validCmdPath(mLibDir));
+            rCommand.add("-D"); rCommand.add("CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE:PATH="+JNIUtil.validCmdPath(mLibDir));
             // 添加优化等级设置参数
             switch(mOptimLevel) {
             case OPTIM_MAX: {
@@ -380,9 +380,10 @@ public class SimpleJIT {
             // 现在 windows 构建需要附加 dev 环境，专门写入 bat 脚本来执行
             if (IS_WINDOWS) {
                 String tBuildBat = tWorkingDir + "build.bat";
-                // 注意使用 CRLF 换行
+                // 注意使用 CRLF 换行以及编码问题
                 IO.write(tBuildBat,
                     "@echo off\r",
+                    "chcp 65001 >nul\n",
                     "call \""+Compiler.MSVC_DEVCMD_PATH+"\" -arch=x64\r",
                     JNIUtil.validWinCmd(tCmakeInitCmd)+"\r",
                     JNIUtil.validWinCmd(tCmakeBuildCmd)+"\r"
