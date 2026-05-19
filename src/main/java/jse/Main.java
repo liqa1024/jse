@@ -537,7 +537,7 @@ public class Main {
         aPrinter.println(IO.Text.green("    --groovytext   ")+"Run the groovy text script");
         aPrinter.println(IO.Text.green("    --pythontext   ")+"Run the python text script");
         aPrinter.println(IO.Text.green("    --jupyter      ")+"Install current jse to the jupyter kernel");
-        aPrinter.println(IO.Text.green("    --jniclean     ")+"clean all jni libraries");
+        aPrinter.println(IO.Text.green("    --jniclean     ")+"clean jni caches");
         aPrinter.println(IO.Text.green("    --jnibuild     ")+"Build all jni libraries (JEP, MPI, LMP, NNAP)");
     }
     private static void printHelp() {printHelp(System.out);}
