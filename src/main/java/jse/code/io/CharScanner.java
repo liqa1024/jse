@@ -131,10 +131,6 @@ public class CharScanner {
         return true;
     }
     
-    public static int parseInt(boolean ignoreErr, boolean[] anyErr, char[] digitChars) {
-        return parseIntFromTo(ignoreErr, anyErr, digitChars, 0, digitChars.length);
-    }
-    
     public static int parseIntFromTo(boolean ignoreErr, boolean[] anyErr, char[] digitChars, int from, int to) {
         int num;
         boolean negative = false;
@@ -269,10 +265,6 @@ public class CharScanner {
         }
         
         return negative ? num * -1 : num;
-    }
-    
-    public static long parseLong(boolean ignoreErr, boolean[] anyErr, char[] digitChars) {
-        return parseLongFromTo(ignoreErr, anyErr, digitChars, 0, digitChars.length);
     }
     
     public static float parseFloat(boolean ignoreErr, boolean[] anyErr, char[] digitChars) {

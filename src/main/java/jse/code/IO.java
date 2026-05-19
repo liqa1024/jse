@@ -301,26 +301,6 @@ public class IO {
         }
         
         /**
-         * 将单个字符串转为 int 值，要求前后不能含有任何空格
-         * @param aStr 需要进行转换的字符串
-         * @return 转换得到的数字
-         */
-        public static int str2int(String aStr) {
-            return str2int(!Conf.STRICT_IO, aStr);
-        }
-        /**
-         * 将单个字符串转为 int 值，要求前后不能含有任何空格
-         * @param aIgnoreErr 在转换失败时是否忽略错误，如果忽略错误则返回 {@code 0}，默认在
-         *        {@link Conf#STRICT_IO} 开启时则不会忽略
-         * @param aStr 需要进行转换的字符串
-         * @return 转换得到的数字
-         */
-        public static int str2int(boolean aIgnoreErr, String aStr) {
-            boolean[] rAnyErr = {false};
-            return CharScanner.parseInt(aIgnoreErr, rAnyErr, aStr.toCharArray());
-        }
-        
-        /**
          * 将单个字符串转为 double 值，要求前后不能含有任何空格
          * @param aStr 需要进行转换的字符串
          * @return 转换得到的数字

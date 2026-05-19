@@ -1177,13 +1177,13 @@ public class DataXYZ extends AbstractSettableAtomData {
                     }
                 } else
                 if (tValue instanceof IIntVector) {
-                    ((IIntVector)tValue).set(i, IO.Text.str2int(tTokens[j]));
+                    ((IIntVector)tValue).set(i, Integer.parseInt(tTokens[j]));
                     ++j;
                 } else
                 if (tValue instanceof IIntMatrix) {
                     IIntVector tRow = ((IIntMatrix)tValue).row(i);
                     for (int k = 0; k < tRow.size(); ++k) {
-                        tRow.set(k, IO.Text.str2int(tTokens[j]));
+                        tRow.set(k, Integer.parseInt(tTokens[j]));
                         ++j;
                     }
                 } else
