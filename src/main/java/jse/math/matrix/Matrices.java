@@ -100,7 +100,7 @@ public class Matrices {
         return fromDouble(aSize, aGroovyTask);
     }
     public static RowMatrix from(int aNumRows, int aNumCols, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {
-        return fromDouble(aNumRows, aGroovyTask);
+        return fromDouble(aNumRows, aNumCols, aGroovyTask);
     }
     public static RowMatrix fromDouble(int aSize, @ClosureParams(value=FromString.class, options={"int,int"}) final Closure<? extends Number> aGroovyTask) {
         return fromDouble(aSize, (i, j) -> UT.Code.doubleValue(aGroovyTask.call(i, j)));
