@@ -4,7 +4,9 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static jse.code.CS.MASS;
 import static jse.code.CS.ZL_STR;
@@ -58,7 +60,7 @@ public final class SettableAtomData extends AbstractSettableAtomData {
     
     private final @Unmodifiable List<? extends ISettableAtom> mAtoms;
     private IBox mBox;
-    private int mAtomTypeNum;
+    private int mNumTypes;
     private final boolean mHasID;
     private boolean mHasVelocity;
     private String @Nullable[] mSymbols;
@@ -68,16 +70,16 @@ public final class SettableAtomData extends AbstractSettableAtomData {
      * <p>
      * 此方法目前不会对输入进行合理性检测，直接存储到内部
      * @param aAtoms 原子数据的原子列表，这里需要是可以设置的原子 {@link ISettableAtom}
-     * @param aAtomTypeNum 需要的原子种类数目，如果实际原子种类编号大于此值会被截断
+     * @param aNumTypes 需要的原子种类数目，如果实际原子种类编号大于此值会被截断
      * @param aBox 原子数目的模拟盒
      * @param aHasID 原子数据是否包含 id 信息
      * @param aHasVelocity 原子数据是否包含速度信息
      * @param aSymbols 原子数据的元素符号信息
      */
-    public SettableAtomData(List<? extends ISettableAtom> aAtoms, int aAtomTypeNum, IBox aBox, boolean aHasID, boolean aHasVelocity, String... aSymbols) {
+    public SettableAtomData(List<? extends ISettableAtom> aAtoms, int aNumTypes, IBox aBox, boolean aHasID, boolean aHasVelocity, String... aSymbols) {
         mAtoms = aAtoms;
         mBox = aBox;
-        mAtomTypeNum = aAtomTypeNum;
+        mNumTypes = aNumTypes;
         mHasID = aHasID;
         mHasVelocity = aHasVelocity;
         mSymbols = (aSymbols==null || aSymbols.length==0) ? null : aSymbols;
@@ -87,15 +89,15 @@ public final class SettableAtomData extends AbstractSettableAtomData {
      * <p>
      * 现在会自动通过输入的原子列表自动检测生成元素符号信息
      * @param aAtoms 原子数据的原子列表，这里需要是可以设置的原子 {@link ISettableAtom}
-     * @param aAtomTypeNum 需要的原子种类数目，如果实际原子种类编号大于此值会被截断
+     * @param aNumTypes 需要的原子种类数目，如果实际原子种类编号大于此值会被截断
      * @param aBox 原子数目的模拟盒
      * @param aHasID 原子数据是否包含 id 信息
      * @param aHasVelocity 原子数据是否包含速度信息
      */
-    public SettableAtomData(List<? extends ISettableAtom> aAtoms, int aAtomTypeNum, IBox aBox, boolean aHasID, boolean aHasVelocity) {
-        this(aAtoms, aAtomTypeNum, aBox, aHasID, aHasVelocity, (!aAtoms.isEmpty() && aAtoms.get(0).hasSymbol()) ? new String[aAtomTypeNum] : ZL_STR);
+    public SettableAtomData(List<? extends ISettableAtom> aAtoms, int aNumTypes, IBox aBox, boolean aHasID, boolean aHasVelocity) {
+        this(aAtoms, aNumTypes, aBox, aHasID, aHasVelocity, (!aAtoms.isEmpty() && aAtoms.get(0).hasSymbol()) ? new String[aNumTypes] : ZL_STR);
         if (mSymbols != null) for (IAtom tAtom : aAtoms) {
-            int tTypeMM = Math.min(tAtom.type(), mAtomTypeNum) - 1;
+            int tTypeMM = Math.min(tAtom.type(), mNumTypes) - 1;
             if (mSymbols[tTypeMM] == null) mSymbols[tTypeMM] = tAtom.symbol();
         }
     }
@@ -117,8 +119,8 @@ public final class SettableAtomData extends AbstractSettableAtomData {
         for (IAtom tAtom : aAtoms) {
             tAtomTypeNum = Math.max(tAtom.type(), tAtomTypeNum);
         }
-        mAtomTypeNum = tAtomTypeNum;
-        mSymbols = (!aAtoms.isEmpty() && aAtoms.get(0).hasSymbol()) ? new String[mAtomTypeNum] : null;
+        mNumTypes = tAtomTypeNum;
+        mSymbols = (!aAtoms.isEmpty() && aAtoms.get(0).hasSymbol()) ? new String[mNumTypes] : null;
         if (mSymbols != null) for (IAtom tAtom : aAtoms) {
             int tTypeMM = tAtom.type() - 1;
             if (mSymbols[tTypeMM] == null) mSymbols[tTypeMM] = tAtom.symbol();
@@ -129,10 +131,10 @@ public final class SettableAtomData extends AbstractSettableAtomData {
      * <p>
      * 现在会自动通过输入的原子列表检测是否包含 id 和速度信息，并且生成元素符号信息
      * @param aAtoms 原子数据的原子列表，这里需要是可以设置的原子 {@link ISettableAtom}
-     * @param aAtomTypeNum 需要的原子种类数目，如果实际原子种类编号大于此值会被截断
+     * @param aNumTypes 需要的原子种类数目，如果实际原子种类编号大于此值会被截断
      * @param aBox 原子数目的模拟盒
      */
-    public SettableAtomData(List<? extends ISettableAtom> aAtoms, int aAtomTypeNum, IBox aBox) {this(aAtoms, aAtomTypeNum, aBox, !aAtoms.isEmpty() && aAtoms.get(0).hasID(), !aAtoms.isEmpty() && aAtoms.get(0).hasVelocity());}
+    public SettableAtomData(List<? extends ISettableAtom> aAtoms, int aNumTypes, IBox aBox) {this(aAtoms, aNumTypes, aBox, !aAtoms.isEmpty() && aAtoms.get(0).hasID(), !aAtoms.isEmpty() && aAtoms.get(0).hasVelocity());}
     /**
      * 创建一个一般的可以设置的原子数据，内部直接存储输入的引用
      * <p>
@@ -180,7 +182,7 @@ public final class SettableAtomData extends AbstractSettableAtomData {
     /** @return {@inheritDoc} */
     @Override public int natoms() {return mAtoms.size();}
     /** @return {@inheritDoc} */
-    @Override public int ntypes() {return mAtomTypeNum;}
+    @Override public int ntypes() {return mNumTypes;}
     /**
      * {@inheritDoc}
      * @param aNumTypes {@inheritDoc}
@@ -189,9 +191,9 @@ public final class SettableAtomData extends AbstractSettableAtomData {
      * @see IAtom#type()
      */
     @Override public SettableAtomData setNtypes(int aNumTypes) {
-        int oTypeNum = mAtomTypeNum;
+        int oTypeNum = mNumTypes;
         if (aNumTypes == oTypeNum) return this;
-        mAtomTypeNum = aNumTypes;
+        mNumTypes = aNumTypes;
         if (aNumTypes < oTypeNum) {
             // 现在支持设置更小的值，更大的种类会直接截断
             for (ISettableAtom tAtom : mAtoms) if (tAtom.type() > aNumTypes){
@@ -199,7 +201,7 @@ public final class SettableAtomData extends AbstractSettableAtomData {
             }
             return this;
         }
-        if (mSymbols!=null && mSymbols.length< aNumTypes) {
+        if (mSymbols!=null && mSymbols.length<aNumTypes) {
             String[] rSymbols = new String[aNumTypes];
             System.arraycopy(mSymbols, 0, rSymbols, 0, mSymbols.length);
             for (int tType = mSymbols.length+1; tType <= aNumTypes; ++tType) rSymbols[tType-1] = "T" + tType;
@@ -253,6 +255,43 @@ public final class SettableAtomData extends AbstractSettableAtomData {
      * @see #hasSymbol()
      */
     @Override public @Nullable String symbol(int aType) {return mSymbols==null ? null : mSymbols[aType-1];}
+    /**
+     * {@inheritDoc}
+     * @param aSymbolOrder {@inheritDoc}
+     * @return {@inheritDoc}
+     * @see #setSymbols(String...)
+     */
+    @Override public SettableAtomData setSymbolOrder(String... aSymbolOrder) {
+        if (mSymbols == null) throw new UnsupportedOperationException("`setSymbolOrder` for AtomData without symbols");
+        if (aSymbolOrder==null || aSymbolOrder.length==0) return this;
+        // 构造一个 tSymbol2Type
+        final Map<String, Integer> tSymbol2Type = new HashMap<>();
+        for (String tSymbol : aSymbolOrder) {
+            // 注意这里需要考虑可能存在相同符号的情况
+            if (!tSymbol2Type.containsKey(tSymbol)) {
+                int tType = tSymbol2Type.size() + 1;
+                tSymbol2Type.put(tSymbol, tType);
+            }
+        }
+        // 遍历一次 mSymbols 确保 tSymbol2Type 全部覆盖
+        for (int typeMM = 0; typeMM < mNumTypes; ++typeMM) {
+            String tSymbol = mSymbols[typeMM];
+            if (!tSymbol2Type.containsKey(tSymbol)) {
+                int tType = tSymbol2Type.size() + 1;
+                tSymbol2Type.put(tSymbol, tType);
+            }
+        }
+        // 映射调整原子 types
+        for (ISettableAtom tAtom : mAtoms) {
+            tAtom.setType(tSymbol2Type.get(mSymbols[tAtom.type()-1]));
+        }
+        // 构建 mSymbols
+        if (tSymbol2Type.size()>mSymbols.length) mSymbols = new String[tSymbol2Type.size()];
+        for (Map.Entry<String, Integer> tEntry : tSymbol2Type.entrySet()) {
+            mSymbols[tEntry.getValue()-1] = tEntry.getKey();
+        }
+        return this;
+    }
     /**
      * {@inheritDoc}
      * @param aSymbols {@inheritDoc}
