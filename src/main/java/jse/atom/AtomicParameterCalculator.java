@@ -531,7 +531,7 @@ public class AtomicParameterCalculator implements AutoCloseable {
         final double dr = aRMax/aN;
         // 这里需要使用 IFunc 来进行函数的相关运算操作
         final List<IFunc1[]> dnAllPar = NewCollections.from(nthreads(), i -> {
-            IFunc1[] dnAll = new IFunc1[(mNomTypes *(mNomTypes +1))/2 + 1];
+            IFunc1[] dnAll = new IFunc1[(mNomTypes*(mNomTypes+1))/2 + 1];
             for (int j = 0; j < dnAll.length; ++j) {
                 dnAll[j] = FixBoundFunc1.zeros(0.0, dr, aN).setBound(0.0, 1.0);
             }
@@ -838,7 +838,7 @@ public class AtomicParameterCalculator implements AutoCloseable {
         final double dq = (aQMax-aQMin)/aN;
         // 这里的 parfor 支持不同线程直接写入不同位置而不需要加锁
         final IFunc1[] HqPar = new IFunc1[nthreads()];
-        for (int i = 0; i < HqPar.length; ++i) HqPar[i] = FixBoundFunc1.zeros(aQMin, dq, aN+1).setBound(0.0, 1.0);
+        for (int i = 0; i < HqPar.length; ++i) HqPar[i] = FixBoundFunc1.zeros(aQMin, dq, aN).setBound(0.0, 1.0);
         
         // 需要这样遍历才能得到正确结果
         mPool.parfor(mNumAtoms, (i, threadID) -> {
@@ -853,7 +853,7 @@ public class AtomicParameterCalculator implements AutoCloseable {
         // 获取结果
         IFunc1 Sq = HqPar[0];
         for (int i = 1; i < HqPar.length; ++i) Sq.plus2this(HqPar[i]);
-        Sq.div2this(mNumAtoms *0.5);
+        Sq.div2this(mNumAtoms*0.5);
         Sq.plus2this(1.0);
         
         // 输出
@@ -895,7 +895,7 @@ public class AtomicParameterCalculator implements AutoCloseable {
         final double dq = (aQMax-aQMin)/aN;
         // 这里的 parfor 支持不同线程直接写入不同位置而不需要加锁
         final IFunc1[] HqPar = new IFunc1[nthreads()];
-        for (int i = 0; i < HqPar.length; ++i) HqPar[i] = FixBoundFunc1.zeros(aQMin, dq, aN+1).setBound(0.0, 1.0);
+        for (int i = 0; i < HqPar.length; ++i) HqPar[i] = FixBoundFunc1.zeros(aQMin, dq, aN).setBound(0.0, 1.0);
         
         // 需要这样遍历才能得到正确结果
         mPool.parfor(mNumAtoms, (i, threadID) -> {
@@ -974,14 +974,14 @@ public class AtomicParameterCalculator implements AutoCloseable {
         final double dq = (aQMax-aQMin)/aN;
         // 这里需要使用 IFunc 来进行函数的相关运算操作
         final List<IFunc1[]> HqAllPar = NewCollections.from(nthreads(), i -> {
-            IFunc1[] HqAll = new IFunc1[(mNomTypes *(mNomTypes +1))/2 + 1];
+            IFunc1[] HqAll = new IFunc1[(mNomTypes*(mNomTypes+1))/2 + 1];
             for (int j = 0; j < HqAll.length; ++j) {
-                HqAll[j] = FixBoundFunc1.zeros(aQMin, dq, aN+1).setBound(0.0, 1.0);
+                HqAll[j] = FixBoundFunc1.zeros(aQMin, dq, aN).setBound(0.0, 1.0);
             }
             return HqAll;
         });
         // 累加量缓存，可以避免重复计算
-        final List<? extends IVector> tDeltaPar = VectorCache.getVec(aN+1, nthreads());
+        final List<? extends IVector> tDeltaPar = VectorCache.getVec(aN, nthreads());
         
         // 需要这样遍历才能得到正确结果
         mPool.parfor(mNumAtoms, (i, threadID) -> {
@@ -1062,7 +1062,7 @@ public class AtomicParameterCalculator implements AutoCloseable {
     public static IFunc1 RDF2SF(IFunc1 aGr, double aRho, int aN, double aQMax, double aQMin) {
         double dq = (aQMax-aQMin)/aN;
         
-        IFunc1 Sq = FixBoundFunc1.zeros(aQMin, dq, aN+1).setBound(0.0, 1.0);
+        IFunc1 Sq = FixBoundFunc1.zeros(aQMin, dq, aN).setBound(0.0, 1.0);
         Sq.fill(aGr.operation().refConvolveFull((gr, r, q) -> (r * (gr-1.0) * Fast.sin(q*r) / q)));
         Sq.multiply2this(4.0*PI*aRho);
         Sq.plus2this(1.0);
@@ -1111,7 +1111,7 @@ public class AtomicParameterCalculator implements AutoCloseable {
     public static IFunc1 SF2RDF(IFunc1 aSq, double aRho, int aN, double aRMax, double aRMin) {
         double dr = (aRMax-aRMin)/aN;
         
-        IFunc1 gr = FixBoundFunc1.zeros(aRMin, dr, aN+1).setBound(0.0, 1.0);
+        IFunc1 gr = FixBoundFunc1.zeros(aRMin, dr, aN).setBound(0.0, 1.0);
         gr.fill(aSq.operation().refConvolveFull((Sq, q, r) -> (q * (Sq-1.0) * Fast.sin(q*r) / r)));
         gr.multiply2this(1.0/(2.0*PI*PI*aRho));
         gr.plus2this(1.0);
