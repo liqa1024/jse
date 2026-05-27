@@ -26,6 +26,10 @@ class SourceScanner {
             // 简单验证类型合法性，计算输入的内存占用
             int tMemCount = 0;
             for (String tTypeStr : mParams.values()) {
+                // 简单处理 const
+                if (tTypeStr.startsWith("const")) {
+                    tTypeStr = tTypeStr.substring(5).trim();
+                }
                 if (tTypeStr.endsWith("*")) {
                     tMemCount += (int)AnyCPointer.TYPE_SIZE;
                     continue;
@@ -60,6 +64,10 @@ class SourceScanner {
             for (Map.Entry<String, String> tEntry : mParams.entrySet()) {
                 String tKey = tEntry.getKey();
                 String tTypeStr = tEntry.getValue();
+                // 简单处理 const
+                if (tTypeStr.startsWith("const")) {
+                    tTypeStr = tTypeStr.substring(5).trim();
+                }
                 Object tArg = aArgs[i]; ++i;
                 if (tTypeStr.endsWith("*")) {
                     if (!(tArg instanceof IPointer)) {
@@ -149,8 +157,10 @@ class SourceScanner {
             for (Map.Entry<String, String> tEntry : mParams.entrySet()) {
                 String tKey = tEntry.getKey();
                 String tType = tEntry.getValue();
-                rBuf.append(tType).append(" ").append(tKey).append(" = *(").append(tType).append("*)__jsefunc_ptr__;");
-                rBuf.append(" __jsefunc_ptr__ = (").append(tType).append("*)__jsefunc_ptr__ + 1;\n");
+                // 简单处理 const
+                String tTypeRaw = tType.startsWith("const") ? tType.substring(5).trim() : tType;
+                rBuf.append(tType).append(" ").append(tKey).append(" = *(").append(tTypeRaw).append("*)__jsefunc_ptr__;");
+                rBuf.append(" __jsefunc_ptr__ = (").append(tTypeRaw).append("*)__jsefunc_ptr__ + 1;\n");
             }
             rBuf.append(aBody).append("\n}");
         }
