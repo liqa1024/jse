@@ -22,6 +22,18 @@ class SourceScanner {
         FuncInfo(String aName, Map<String, String> aParams) {
             mName = aName;
             mParams = aParams;
+            // 简单验证类型合法性
+            for (String tTypeStr : aParams.values()) {
+                if (tTypeStr.endsWith("*")) continue;
+                switch(tTypeStr) {
+                case "int": case "int64_t":
+                case "jint": case "jlong":
+                case "double": case "float":
+                case "jdouble": case "jfloat": {
+                    continue;
+                }}
+                throw new IllegalArgumentException("Invalid C type: "+tTypeStr);
+            }
         }
         void write(String aBody, StringBuilder rBuf) {
             rBuf.append("int ").append(mName).append("(void *__jsefunc_data__) {\n");
@@ -124,15 +136,22 @@ class SourceScanner {
         int depth = 1;
         while (tIdx < aTo) {
             char c = aSrc.charAt(tIdx);
-            // 还需要注意忽略掉中间注释里的花括号
+            // 还需要注意忽略掉中间注释里和字符串里的花括号
             if (aSrc.startsWith("//", tIdx)) {
-                tIdx += 2;
                 tIdx = skipLine(aSrc, tIdx, aTo);
                 continue;
             }
             if (aSrc.startsWith("/*", tIdx)){
-                tIdx += 2;
                 tIdx = skipBlockComment(aSrc, tIdx, aTo);
+                continue;
+            }
+            // 字符串内注意跳过
+            if (c == '"') {
+                tIdx = skipString(aSrc, tIdx, aTo);
+                continue;
+            }
+            if (c == '\'') {
+                tIdx = skipCharLiteral(aSrc, tIdx, aTo);
                 continue;
             }
             if (c == '{') {
@@ -235,13 +254,11 @@ class SourceScanner {
                 continue;
             }
             if (aSrc.startsWith("//", tIdx)) {
-                tIdx += 2;
                 tIdx = skipLine(aSrc, tIdx, aTo);
                 tValid = true;
                 continue;
             }
             if (aSrc.startsWith("/*", tIdx)){
-                tIdx += 2;
                 tIdx = skipBlockComment(aSrc, tIdx, aTo);
                 tValid = true;
                 continue;
@@ -287,6 +304,7 @@ class SourceScanner {
     }
     private int skipBlockComment(String aSrc, int aFrom, int aTo) {
         int tIdx = aFrom;
+        tIdx += 2;
         while (tIdx < aTo) {
             if (aSrc.startsWith("*/", tIdx)) {
                 tIdx += 2;
@@ -295,6 +313,41 @@ class SourceScanner {
             ++tIdx;
         }
         throw new IllegalArgumentException("Unclosed block comment: '"+subSrc(aSrc, aFrom, aTo)+"'");
+    }
+    
+    private int skipString(String aSrc, int aFrom, int aTo) {
+        int tIdx = aFrom;
+        ++tIdx;
+        while (tIdx < aTo) {
+            char c = aSrc.charAt(tIdx);
+            if (c == '\\') {
+                tIdx += 2;
+            } else
+            if (c == '"') {
+                ++tIdx;
+                return tIdx;
+            } else {
+                ++tIdx;
+            }
+        }
+        throw new IllegalArgumentException("Unclosed string: '"+subSrc(aSrc, aFrom, aTo)+"'");
+    }
+    private int skipCharLiteral(String aSrc, int aFrom, int aTo) {
+        int tIdx = aFrom;
+        ++tIdx;
+        while (tIdx < aTo) {
+            char c = aSrc.charAt(tIdx);
+            if (c == '\\') {
+                tIdx += 2;
+            } else
+            if (c == '\'') {
+                ++tIdx;
+                return tIdx;
+            } else {
+                ++tIdx;
+            }
+        }
+        throw new IllegalArgumentException("Unclosed char literal: '"+subSrc(aSrc, aFrom, aTo)+"'");
     }
     
     private String subSrc(String aSrc, int aFrom, int aTo) {
