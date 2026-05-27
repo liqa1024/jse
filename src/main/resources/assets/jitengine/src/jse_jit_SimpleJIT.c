@@ -9,7 +9,7 @@
 
 #include <stdint.h>
 
-typedef int (*plugin_method_t)(void *, void *);
+typedef int (*plugin_method_t)(void *);
 
 static inline void throwExceptionJIT(JNIEnv *aEnv, const char *aErrStr) {
     const char *tClazzName = "jse/jit/JITException";
@@ -113,8 +113,8 @@ JNIEXPORT jlong JNICALL Java_jse_jit_SimpleJIT_findMethod0(JNIEnv *aEnv, jclass 
 #endif
 }
 
-JNIEXPORT jint JNICALL Java_jse_jit_SimpleJIT_invokeMethod0(JNIEnv *aEnv, jclass aClazz, jlong aMethodPtr, jlong aInPtr, jlong aOutPtr) {
+JNIEXPORT jint JNICALL Java_jse_jit_SimpleJIT_invokeMethod0(JNIEnv *aEnv, jclass aClazz, jlong aMethodPtr, jlong aPtr) {
     plugin_method_t tMethod = (plugin_method_t)(intptr_t)aMethodPtr;
-    return (jint)tMethod((void *)(intptr_t)aInPtr, (void *)(intptr_t)aOutPtr);
+    return (jint)tMethod((void *)(intptr_t)aPtr);
 }
 

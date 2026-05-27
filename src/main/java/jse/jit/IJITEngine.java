@@ -2,8 +2,6 @@ package jse.jit;
 
 import org.intellij.lang.annotations.Language;
 
-import java.util.Collection;
-
 public interface IJITEngine extends AutoCloseable {
     /** 完全关闭 jit 的优化，主要用于调试或需要精确结果而不是速度 */
     int OPTIM_NONE = -1;
@@ -16,10 +14,6 @@ public interface IJITEngine extends AutoCloseable {
     
     IJITEngine setSrc(@Language(value="C++", prefix="extern \"C\" {", suffix="}") String aSrc);
     IJITEngine setOptimLevel(int aOptimLevel);
-    IJITEngine setMethodNames(String... aMethodNames);
-    IJITEngine setMethodNames(Collection<? extends CharSequence> aMethodNames);
-    IJITEngine addMethodName(CharSequence aMethodName);
-    IJITEngine removeMethodName(CharSequence aMethodName);
     
     /// utils
     boolean hasMethod(CharSequence aMethodName);

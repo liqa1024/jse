@@ -771,7 +771,7 @@ public class NEP implements IPairPotential {
                     engine.writeCmakeFile(wd, INTERFACE_NAME_CUDA);
                     return wd;
                 });
-            mJITEngine.setMethodNames(NAME_CONSTRUCT_TABLE, NAME_STAT_NEINUM_LAMMPS, NAME_LAMMPS2CUDA, NAME_CUDA2LAMMPS, NAME_COMPUTE_LAMMPS_CUDA).compile();
+//            mJITEngine.setMethodNames(NAME_CONSTRUCT_TABLE, NAME_STAT_NEINUM_LAMMPS, NAME_LAMMPS2CUDA, NAME_CUDA2LAMMPS, NAME_COMPUTE_LAMMPS_CUDA).compile();
             mLammps2Cuda = mJITEngine.findMethod(NAME_LAMMPS2CUDA);
             mCuda2Lammps = mJITEngine.findMethod(NAME_CUDA2LAMMPS);
             mComputeLammpsCuda = mJITEngine.findMethod(NAME_COMPUTE_LAMMPS_CUDA);
@@ -788,7 +788,7 @@ public class NEP implements IPairPotential {
                     engine.writeCmakeFile(wd, INTERFACE_NAME);
                     return wd;
                 });
-            mJITEngine.setMethodNames(NAME_CAL_ENERGY, NAME_CAL_ENERGYFORCE, NAME_CONSTRUCT_TABLE, NAME_STAT_NEINUM_LAMMPS, NAME_COMPUTE_LAMMPS).compile();
+//            mJITEngine.setMethodNames(NAME_CAL_ENERGY, NAME_CAL_ENERGYFORCE, NAME_CONSTRUCT_TABLE, NAME_STAT_NEINUM_LAMMPS, NAME_COMPUTE_LAMMPS).compile();
             mCalEnergy = mJITEngine.findMethod(NAME_CAL_ENERGY);
             mCalEnergyForce = mJITEngine.findMethod(NAME_CAL_ENERGYFORCE);
             mComputeLammps = mJITEngine.findMethod(NAME_COMPUTE_LAMMPS);

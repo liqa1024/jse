@@ -295,7 +295,7 @@ public class NNAP implements IPairPotential {
         if (mJITEngine!=null) throw new IllegalStateException("compileJIT() has already been called");
         // 开始 jit
         mJITEngine = mNNAPGEN.initEngine(mSingle);
-        mJITEngine.setMethodNames(NAME_CAL_FP, NAME_CAL_ENERGY, NAME_CAL_ENERGYFORCE, NAME_STAT_NEINUM_LAMMPS, NAME_COMPUTE_LAMMPS, NAME_FORWARD_ENERGY, NAME_BACKWARD_ENERGY, NAME_FORWARD_ENERGYFORCE, NAME_BACKWARD_ENERGYFORCE).compile();
+//        mJITEngine.setMethodNames(NAME_CAL_FP, NAME_CAL_ENERGY, NAME_CAL_ENERGYFORCE, NAME_STAT_NEINUM_LAMMPS, NAME_COMPUTE_LAMMPS, NAME_FORWARD_ENERGY, NAME_BACKWARD_ENERGY, NAME_FORWARD_ENERGYFORCE, NAME_BACKWARD_ENERGYFORCE).compile();
         mCalFp = mJITEngine.findMethod(NAME_CAL_FP);
         mCalEnergy = mJITEngine.findMethod(NAME_CAL_ENERGY);
         mCalEnergyForce = mJITEngine.findMethod(NAME_CAL_ENERGYFORCE);

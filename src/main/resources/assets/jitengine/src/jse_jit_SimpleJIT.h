@@ -26,10 +26,10 @@ JNIEXPORT jlong JNICALL Java_jse_jit_SimpleJIT_findMethod0
 /*
  * Class:     jse_jit_SimpleJIT
  * Method:    invokeMethod0
- * Signature: (JJJ)I
+ * Signature: (JJ)I
  */
 JNIEXPORT jint JNICALL Java_jse_jit_SimpleJIT_invokeMethod0
-  (JNIEnv *, jclass, jlong, jlong, jlong);
+  (JNIEnv *, jclass, jlong, jlong);
 
 #ifdef __cplusplus
 }

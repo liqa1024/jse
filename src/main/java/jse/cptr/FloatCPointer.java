@@ -86,7 +86,8 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
         rangeCheck(aData.length, aStart+aCount);
         fill0(mPtr, aData, aStart, aCount);
     }
-    private native static void fill0(long rPtr, float[] aData, int aStart, int aCount);
+    @ApiStatus.Internal
+    public native static void fill0(long rPtr, float[] aData, int aStart, int aCount);
     
     /**
      * {@inheritDoc}
@@ -127,7 +128,8 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
         rangeCheck(aData.length, aStart+aCount);
         fillD0(mPtr, aData, aStart, aCount);
     }
-    private native static void fillD0(long rPtr, double[] aData, int aStart, int aCount);
+    @ApiStatus.Internal
+    public native static void fillD0(long rPtr, double[] aData, int aStart, int aCount);
     
     /**
      * 将另一个 c 指针的数据填充到此 c 指针对应的内存中
@@ -161,7 +163,8 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
         if (isNull() || aData.isNull()) throw new NullPointerException();
         fillD1(mPtr, aData.mPtr, aCount);
     }
-    private native static void fillD1(long rPtr, long aData, long aCount);
+    @ApiStatus.Internal
+    public native static void fillD1(long rPtr, long aData, long aCount);
     
     /**
      * 将给定输入数值填充到此 c 指针对应的内存中
@@ -194,7 +197,8 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
     @Override public void fillF(float aData, long aCount) {
         fill(aData, aCount);
     }
-    private native static void fill2(long rPtr, float aValue, long aCount);
+    @ApiStatus.Internal
+    public native static void fill2(long rPtr, float aValue, long aCount);
     
     
     /**
@@ -225,7 +229,8 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
         rangeCheck(rDest.length, aStart+aCount);
         parse2dest0(mPtr, rDest, aStart, aCount);
     }
-    private native static void parse2dest0(long aPtr, float[] rDest, int aStart, int aCount);
+    @ApiStatus.Internal
+    public native static void parse2dest0(long aPtr, float[] rDest, int aStart, int aCount);
     /**
      * {@inheritDoc}
      * @param rDest {@inheritDoc}
@@ -265,7 +270,8 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
         rangeCheck(rDest.length, aStart+aCount);
         parse2destD0(mPtr, rDest, aStart, aCount);
     }
-    private native static void parse2destD0(long aPtr, double[] rDest, int aStart, int aCount);
+    @ApiStatus.Internal
+    public native static void parse2destD0(long aPtr, double[] rDest, int aStart, int aCount);
     
     /**
      * 将此 c 指针的数据填充到另一个 c 指针中
@@ -298,7 +304,8 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
         if (isNull() || rDest.isNull()) throw new NullPointerException();
         parse2destD1(mPtr, rDest.mPtr, aCount);
     }
-    private native static void parse2destD1(long aPtr, long rDest, long aCount);
+    @ApiStatus.Internal
+    public native static void parse2destD1(long aPtr, long rDest, long aCount);
     
     
     /**
@@ -310,7 +317,8 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
         if (isNull()) throw new NullPointerException();
         return get0(mPtr);
     }
-    private native static float get0(long aPtr);
+    @ApiStatus.Internal
+    public native static float get0(long aPtr);
     /**
      * {@inheritDoc}
      * @return {@inheritDoc}
@@ -338,7 +346,8 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
         if (isNull()) throw new NullPointerException();
         return getAt0(mPtr, aIdx);
     }
-    private native static float getAt0(long aPtr, long aIdx);
+    @ApiStatus.Internal
+    public native static float getAt0(long aPtr, long aIdx);
     /** 用于兼容 groovy 运算符重载，这是 groovy 的 bug */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public float getAt(int aIdx) {return getAt((long)aIdx);}
@@ -371,7 +380,8 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
         if (isNull()) throw new NullPointerException();
         set0(mPtr, aValue);
     }
-    private native static void set0(long aPtr, float aValue);
+    @ApiStatus.Internal
+    public native static void set0(long aPtr, float aValue);
     /**
      * {@inheritDoc}
      * @param aValue {@inheritDoc}
@@ -399,7 +409,8 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
         if (isNull()) throw new NullPointerException();
         putAt0(mPtr, aIdx, aValue);
     }
-    private native static void putAt0(long aPtr, long aIdx, float aValue);
+    @ApiStatus.Internal
+    public native static void putAt0(long aPtr, long aIdx, float aValue);
     /** 用于兼容 groovy 运算符重载，这是 groovy 的 bug */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public void putAt(int aIdx, float aValue) {putAt((long)aIdx, aValue);}
@@ -430,7 +441,8 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
         if (isNull()) throw new NullPointerException();
         mPtr = next0(mPtr);
     }
-    private native static long next0(long aPtr);
+    @ApiStatus.Internal
+    public native static long next0(long aPtr);
     
     /**
      * {@inheritDoc}
@@ -440,7 +452,8 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
         if (isNull()) throw new NullPointerException();
         mPtr = rightShift0(mPtr, aCount);
     }
-    private native static long rightShift0(long aPtr, long aCount);
+    @ApiStatus.Internal
+    public native static long rightShift0(long aPtr, long aCount);
     /**
      * {@inheritDoc}
      * @param aCount {@inheritDoc}
@@ -458,7 +471,8 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
         if (isNull()) throw new NullPointerException();
         mPtr = previous0(mPtr);
     }
-    private native static long previous0(long aPtr);
+    @ApiStatus.Internal
+    public native static long previous0(long aPtr);
     
     /**
      * {@inheritDoc}
@@ -468,7 +482,8 @@ public class FloatCPointer extends CPointer implements IDoubleOrFloatCPointer {
         if (isNull()) throw new NullPointerException();
         mPtr = leftShift0(mPtr, aCount);
     }
-    private native static long leftShift0(long aPtr, long aCount);
+    @ApiStatus.Internal
+    public native static long leftShift0(long aPtr, long aCount);
     /**
      * {@inheritDoc}
      * @param aCount {@inheritDoc}

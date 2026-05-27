@@ -1,12 +1,12 @@
 package jse.jit;
 
 import jse.code.IO;
+import jse.code.UT;
+import jse.cptr.*;
+import jse.gpu.*;
 import org.jetbrains.annotations.ApiStatus;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 针对 C 源码的扫描器，获取标记的需要导出的函数，并进行需要的替换
@@ -19,22 +19,130 @@ class SourceScanner {
     static class FuncInfo {
         public final String mName;
         public final Map<String, String> mParams;
+        public final int mMemCount;
         FuncInfo(String aName, Map<String, String> aParams) {
             mName = aName;
             mParams = aParams;
-            // 简单验证类型合法性
-            for (String tTypeStr : aParams.values()) {
-                if (tTypeStr.endsWith("*")) continue;
-                switch(tTypeStr) {
-                case "int": case "int64_t":
-                case "jint": case "jlong":
-                case "double": case "float":
-                case "jdouble": case "jfloat": {
+            // 简单验证类型合法性，计算输入的内存占用
+            int tMemCount = 0;
+            for (String tTypeStr : mParams.values()) {
+                if (tTypeStr.endsWith("*")) {
+                    tMemCount += (int)AnyCPointer.TYPE_SIZE;
                     continue;
+                }
+                switch(tTypeStr) {
+                case "int": case "jint": {
+                    tMemCount += (int)IntCPointer.TYPE_SIZE;
+                    break;
+                }
+                case "int64_t": case "jlong": {
+                    tMemCount += (int)Int64CPointer.TYPE_SIZE;
+                    break;
+                }
+                case "double": case "jdouble": {
+                    tMemCount += (int)DoubleCPointer.TYPE_SIZE;
+                    break;
+                }
+                case "float": case "jfloat": {
+                    tMemCount += (int)FloatCPointer.TYPE_SIZE;
+                    break;
+                }
+                default: {
+                    throw new IllegalArgumentException("Invalid C type: "+tTypeStr);
                 }}
-                throw new IllegalArgumentException("Invalid C type: "+tTypeStr);
+            }
+            mMemCount = tMemCount;
+        }
+        @ApiStatus.Internal
+        public void parseArgs_(long aPtr, Object... aArgs) {
+            long tPtr = aPtr;
+            int i = 0;
+            for (Map.Entry<String, String> tEntry : mParams.entrySet()) {
+                String tKey = tEntry.getKey();
+                String tTypeStr = tEntry.getValue();
+                Object tArg = aArgs[i]; ++i;
+                if (tTypeStr.endsWith("*")) {
+                    if (!(tArg instanceof IPointer)) {
+                        invalidType_(tKey, "? extends IPointer", tArg.getClass().getName());
+                    }
+                    String tElseTypeStr = tTypeStr.substring(0, tTypeStr.length()-1).trim();
+                    if (tElseTypeStr.endsWith("*")) {
+                        checkType_(tKey, AnyCPointer.class, tArg);
+                    } else {
+                        switch(tElseTypeStr) {
+                        case "int": case "jint": {
+                            checkType_(tKey, IntCPointer.class, IntCudaPointer.class, tArg);
+                            break;
+                        }
+                        case "int64_t": case "jlong": {
+                            checkType_(tKey, Int64CPointer.class, Int64CudaPointer.class, tArg);
+                            break;
+                        }
+                        case "double": case "jdouble": {
+                            checkType_(tKey, DoubleCPointer.class, DoubleCudaPointer.class, tArg);
+                            break;
+                        }
+                        case "float": case "jfloat": {
+                            checkType_(tKey, FloatCPointer.class, FloatCudaPointer.class, tArg);
+                            break;
+                        }
+                        case "void": case "char": {
+                            checkType_(tKey, CPointer.class, CudaPointer.class, tArg);
+                            break;
+                        }
+                        default: {
+                            UT.Code.warning("Unchecked casts: "+tArg.getClass().getName()+" to "+tTypeStr);
+                            break;
+                        }}
+                    }
+                    AnyCPointer.set0(tPtr, ((IPointer)tArg).ptr_());
+                    tPtr = AnyCPointer.next0(tPtr);
+                    continue;
+                }
+                switch(tTypeStr) {
+                case "int": case "jint": {
+                    checkType_(tKey, Integer.class, tArg);
+                    IntCPointer.set0(tPtr, (Integer)tArg);
+                    tPtr = IntCPointer.next0(tPtr);
+                    break;
+                }
+                case "int64_t": case "jlong": {
+                    checkType_(tKey, Long.class, tArg);
+                    Int64CPointer.set0(tPtr, (Long)tArg);
+                    tPtr = Int64CPointer.next0(tPtr);
+                    break;
+                }
+                case "double": case "jdouble": {
+                    checkType_(tKey, Number.class, tArg); // 浮点数使用更加粗略的判断
+                    DoubleCPointer.set0(tPtr, ((Number)tArg).doubleValue());
+                    tPtr = DoubleCPointer.next0(tPtr);
+                    break;
+                }
+                case "float": case "jfloat": {
+                    checkType_(tKey, Number.class, tArg); // 浮点数使用更加粗略的判断
+                    FloatCPointer.set0(tPtr, ((Number)tArg).floatValue());
+                    tPtr = FloatCPointer.next0(tPtr);
+                    break;
+                }
+                default: {
+                    throw new IllegalStateException();
+                }}
             }
         }
+        private void checkType_(String aKey, Class<?> aClazz, Object aArg) {
+            if (!aClazz.isInstance(aArg)) {
+                invalidType_(aKey, aClazz.getName(), aArg.getClass().getName());
+            }
+        }
+        private void checkType_(String aKey, Class<?> aClazz, Class<?> aClazzCuda, Object aArg) {
+            if (!aClazz.isInstance(aArg) && !aClazzCuda.isInstance(aArg)) {
+                invalidType_(aKey, aClazz.getName(), aArg.getClass().getName());
+            }
+        }
+        private void invalidType_(String aKey, String aExpected, String aInput) {
+            throw new IllegalArgumentException("Invalid args type for '"+aKey+"' in func '"+mName+"', expected: "+aExpected+", input: "+aInput);
+        }
+        
         void write(String aBody, StringBuilder rBuf) {
             rBuf.append("int ").append(mName).append("(void *__jsefunc_data__) {\n");
             rBuf.append("void *__jsefunc_ptr__ = __jsefunc_data__;\n");
@@ -42,12 +150,12 @@ class SourceScanner {
                 String tKey = tEntry.getKey();
                 String tType = tEntry.getValue();
                 rBuf.append(tType).append(" ").append(tKey).append(" = *(").append(tType).append("*)__jsefunc_ptr__;");
-                rBuf.append(" ++((").append(tType).append("*)__jsefunc_ptr__);\n");
+                rBuf.append(" __jsefunc_ptr__ = (").append(tType).append("*)__jsefunc_ptr__ + 1;\n");
             }
             rBuf.append(aBody).append("\n}");
         }
     }
-    private final List<FuncInfo> mFuncs = new ArrayList<>();
+    private final Map<String, FuncInfo> mFuncs = new LinkedHashMap<>();
     private final String mMarker;
     private final int mMarkerLen;
     SourceScanner(String aMarker) {
@@ -55,7 +163,7 @@ class SourceScanner {
         mMarkerLen = mMarker.length();
     }
     
-    public List<FuncInfo> funcs() {
+    public Map<String, FuncInfo> funcs() {
         return mFuncs;
     }
     public String apply(String aSrc) {
@@ -103,7 +211,7 @@ class SourceScanner {
                 throw new IllegalArgumentException("Incomplete marker function: '"+subSrc(aSrc, tIdx, tEnd)+"'");
             }
             // 读取参数
-            Map<String, String> tParam = new HashMap<>();
+            Map<String, String> tParam = new LinkedHashMap<>();
             tIdx = parseParameterList(aSrc, tIdx, tEnd, tParam);
             // 读取函数体
             tIdx = skipWhitespace(aSrc, tIdx, tEnd);
@@ -112,10 +220,10 @@ class SourceScanner {
             }
             tIdx2 = findClosureEnd(aSrc, tIdx, tEnd);
             String tBody = aSrc.substring(tIdx+1, tIdx2);
-            tIdx = tIdx2;
+            tIdx = tIdx2+1;
             // 创建函数，并进行自定义修改后写入
             FuncInfo tFunc = new FuncInfo(tName, tParam);
-            mFuncs.add(tFunc);
+            mFuncs.put(tName, tFunc);
             tFunc.write(tBody, rBuf);
         }
         return rBuf.toString();
@@ -165,7 +273,9 @@ class SourceScanner {
                     return tIdx;
                 }
                 ++tIdx;
+                continue;
             }
+            ++tIdx;
         }
         throw new IllegalArgumentException("Unclosed function body("+depth+"): '"+subSrc(aSrc, tIdx, aTo)+"'");
     }

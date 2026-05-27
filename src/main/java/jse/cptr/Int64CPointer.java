@@ -84,7 +84,8 @@ public class Int64CPointer extends CPointer {
         rangeCheck(aData.length, aStart+aCount);
         fill0(mPtr, aData, aStart, aCount);
     }
-    private native static void fill0(long rPtr, long[] aData, int aStart, int aCount);
+    @ApiStatus.Internal
+    public native static void fill0(long rPtr, long[] aData, int aStart, int aCount);
     /**
      * 将另一个 c 指针的数据填充到此 c 指针对应的内存中
      * <p>
@@ -110,7 +111,8 @@ public class Int64CPointer extends CPointer {
         if (isNull()) throw new NullPointerException();
         fill2(mPtr, aValue, aCount);
     }
-    private native static void fill2(long rPtr, long aValue, long aCount);
+    @ApiStatus.Internal
+    public native static void fill2(long rPtr, long aValue, long aCount);
     
     /**
      * 将此 c 指针对应的内存数值写入 jse 的 {@code IDataShell<long[]>} 中
@@ -140,7 +142,8 @@ public class Int64CPointer extends CPointer {
         rangeCheck(rDest.length, aStart+aCount);
         parse2dest0(mPtr, rDest, aStart, aCount);
     }
-    private native static void parse2dest0(long aPtr, long[] rDest, int aStart, int aCount);
+    @ApiStatus.Internal
+    public native static void parse2dest0(long aPtr, long[] rDest, int aStart, int aCount);
     /**
      * 将此 c 指针的数据填充到另一个 c 指针中
      * <p>
@@ -164,7 +167,8 @@ public class Int64CPointer extends CPointer {
         if (isNull()) throw new NullPointerException();
         return get0(mPtr);
     }
-    private native static long get0(long aPtr);
+    @ApiStatus.Internal
+    public native static long get0(long aPtr);
     
     /**
      * 将此指针当作一个 c 的数组，获取内部指定位置的数值，即对应 c 中的 {@code ptr[aIdx]}
@@ -176,7 +180,8 @@ public class Int64CPointer extends CPointer {
         if (isNull()) throw new NullPointerException();
         return getAt0(mPtr, aIdx);
     }
-    private native static long getAt0(long aPtr, long aIdx);
+    @ApiStatus.Internal
+    public native static long getAt0(long aPtr, long aIdx);
     /** 用于兼容 groovy 运算符重载，这是 groovy 的 bug */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public long getAt(int aIdx) {return getAt((long)aIdx);}
@@ -190,7 +195,8 @@ public class Int64CPointer extends CPointer {
         if (isNull()) throw new NullPointerException();
         set0(mPtr, aValue);
     }
-    private native static void set0(long aPtr, long aValue);
+    @ApiStatus.Internal
+    public native static void set0(long aPtr, long aValue);
     
     /**
      * 将此指针当作一个 c 的数组，设置内部指定位置的数值，即对应 c 中的 {@code ptr[aIdx] = aValue}
@@ -202,7 +208,8 @@ public class Int64CPointer extends CPointer {
         if (isNull()) throw new NullPointerException();
         putAt0(mPtr, aIdx, aValue);
     }
-    private native static void putAt0(long aPtr, long aIdx, long aValue);
+    @ApiStatus.Internal
+    public native static void putAt0(long aPtr, long aIdx, long aValue);
     /** 用于兼容 groovy 运算符重载，这是 groovy 的 bug */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public void putAt(int aIdx, long aValue) {putAt((long)aIdx, aValue);}
@@ -215,7 +222,8 @@ public class Int64CPointer extends CPointer {
         if (isNull()) throw new NullPointerException();
         mPtr = next0(mPtr);
     }
-    private native static long next0(long aPtr);
+    @ApiStatus.Internal
+    public native static long next0(long aPtr);
     
     /**
      * {@inheritDoc}
@@ -225,7 +233,8 @@ public class Int64CPointer extends CPointer {
         if (isNull()) throw new NullPointerException();
         mPtr = rightShift0(mPtr, aCount);
     }
-    private native static long rightShift0(long aPtr, long aCount);
+    @ApiStatus.Internal
+    public native static long rightShift0(long aPtr, long aCount);
     /**
      * {@inheritDoc}
      * @param aCount {@inheritDoc}
@@ -243,7 +252,8 @@ public class Int64CPointer extends CPointer {
         if (isNull()) throw new NullPointerException();
         mPtr = previous0(mPtr);
     }
-    private native static long previous0(long aPtr);
+    @ApiStatus.Internal
+    public native static long previous0(long aPtr);
     
     /**
      * {@inheritDoc}
@@ -253,7 +263,8 @@ public class Int64CPointer extends CPointer {
         if (isNull()) throw new NullPointerException();
         mPtr = leftShift0(mPtr, aCount);
     }
-    private native static long leftShift0(long aPtr, long aCount);
+    @ApiStatus.Internal
+    public native static long leftShift0(long aPtr, long aCount);
     /**
      * {@inheritDoc}
      * @param aCount {@inheritDoc}

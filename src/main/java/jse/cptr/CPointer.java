@@ -154,7 +154,8 @@ public class CPointer implements ICPointer {
     public static CPointer malloc(long aCount) {
         return new CPointer(malloc0(aCount, TYPE_SIZE));
     }
-    protected static long malloc0(long aCount, long aSize) {
+    @ApiStatus.Internal
+    public static long malloc0(long aCount, long aSize) {
         if (aCount<=0) throw new IllegalArgumentException("Input count must be positive");
         return malloc1(aCount, aSize);
     }
@@ -172,7 +173,8 @@ public class CPointer implements ICPointer {
     public static CPointer calloc(long aCount) {
         return new CPointer(calloc0(aCount, TYPE_SIZE));
     }
-    protected static long calloc0(long aCount, long aSize) {
+    @ApiStatus.Internal
+    public static long calloc0(long aCount, long aSize) {
         if (aCount<=0) throw new IllegalArgumentException("Input count must be positive");
         return calloc1(aCount, aSize);
     }
@@ -195,7 +197,8 @@ public class CPointer implements ICPointer {
         free0(mPtr);
         mPtr = 0;
     }
-    protected native static void free0(long aPtr);
+    @ApiStatus.Internal
+    public native static void free0(long aPtr);
     
     /**
      * {@inheritDoc}
@@ -235,7 +238,8 @@ public class CPointer implements ICPointer {
         if (isNull() || aSrc.isNull()) throw new NullPointerException();
         memcpy0(aSrc.ptr_(), mPtr, aCount);
     }
-    protected native static void memcpy0(long aSrc, long rDest, long aCount);
+    @ApiStatus.Internal
+    public native static void memcpy0(long aSrc, long rDest, long aCount);
     
     @Override public void next() {throw new UnsupportedOperationException();}
     @Override public void rightShift(long aCount) {throw new UnsupportedOperationException();}

@@ -1,11 +1,10 @@
 package jse.jit;
 
 import jse.clib.*;
-import jse.cptr.IPointer;
+import jse.cptr.CPointer;
 import jse.code.IO;
 import jse.code.OS;
 import jse.code.UT;
-import jse.code.collection.AbstractCollections;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -79,6 +78,7 @@ public class SimpleJIT {
         , "jse_jit_SimpleJIT.h"
         , "jse_jit_JITLibHandle.h"
     };
+    public final static String JIT_FUNC_MARKER = "__jsefunc__";
     
     static {
         InitHelper.INITIALIZED = true;
@@ -94,23 +94,32 @@ public class SimpleJIT {
     public static Engine engine() {return new Engine();}
     
     public static class Method implements IJITMethod {
+        private final SourceScanner.FuncInfo mFunc;
         private final Engine mEngine;
         private final long mMethodPtr;
-        Method(long aMethodPtr, Engine aEngine) {
+        Method(SourceScanner.FuncInfo tFunc, long aMethodPtr, Engine aEngine) {
+            mFunc = tFunc;
             mMethodPtr = aMethodPtr;
             mEngine = aEngine;
         }
         
         @UnsafeJNI("Inputs mismatch or invalid usage will result in JVM SIGSEGV")
-        @Override public int invoke(IPointer aDataIn, IPointer rDataOut) {
+        @Override public int invoke(Object... aArgs) {
             if (mEngine.isClosed()) throw new RuntimeException("this JIT engine is dead");
             if (isNull()) throw new NullPointerException();
-            return invokeMethod0(mMethodPtr, aDataIn.ptr_(), rDataOut.ptr_());
+            // 实时内存分配和释放，在 MiMalloc 加持下，可以认为在保持简单的同时线程安全以及有着足够的性能
+            long tPtr = CPointer.calloc0(mFunc.mMemCount, 1);
+            mFunc.parseArgs_(tPtr, aArgs);
+            int tOut = invokeMethod0(mMethodPtr, tPtr);
+            CPointer.free0(tPtr);
+            return tOut;
         }
         @Override public long ptr_() {return mMethodPtr;}
     }
     
-    @FunctionalInterface public interface IDirIniter {String init(String aInputDir, Engine aEngine) throws Exception;}
+    @FunctionalInterface public interface IDirIniter {
+        String init(String aInputDir, Engine aEngine) throws Exception;
+    }
     public static class Engine implements IJITEngine {
         /// compiler stuffs
         private String mLibDir = null;
@@ -121,21 +130,23 @@ public class SimpleJIT {
         private @Nullable String mCmakeCxxCompiler = null, mCmakeCxxFlags = null;
         private final Map<String, String> mCmakeSettings = new LinkedHashMap<>();
         private int mOptimLevel = OPTIM_BASE;
+        private final SourceScanner mScanner = new SourceScanner(JIT_FUNC_MARKER);
         
         /// jit engins stuffs
         private Boolean mCacheLib = null;
         private String mLibPath = null;
         private @Nullable JITLibHandle mLibHandle = null;
-        private final Set<String> mMethodNames = new LinkedHashSet<>();
         private boolean mDead = false;
         
         /// initer
         protected Engine() {}
-        @Override public Engine setSrc(@Language(value="C++", prefix="extern \"C\" {", suffix="}") String aSrc) {
-            mSrc = aSrc;
+        @Override public Engine setSrc(@Language(value="C++", prefix="#define "+JIT_FUNC_MARKER+"\nextern \"C\" {", suffix="}") String aSrc) {
+            if (mSrc != null) throw new IllegalStateException();
+            mSrc = mScanner.apply(aSrc);
             return this;
         }
         public Engine setSrcCxx(@Language("C++") String aSrc) {
+            if (mSrcCxx != null) throw new IllegalStateException();
             mSrcCxx = aSrc;
             return this;
         }
@@ -149,24 +160,6 @@ public class SimpleJIT {
         }
         @Override public Engine setOptimLevel(int aOptimLevel) {
             mOptimLevel = aOptimLevel;
-            return this;
-        }
-        @Override public Engine setMethodNames(String... aMethodNames) {
-            mMethodNames.clear();
-            mMethodNames.addAll(AbstractCollections.from(aMethodNames));
-            return this;
-        }
-        @Override public Engine setMethodNames(Collection<? extends CharSequence> aMethodNames) {
-            mMethodNames.clear();
-            mMethodNames.addAll(AbstractCollections.map(aMethodNames, Object::toString));
-            return this;
-        }
-        @Override public Engine addMethodName(CharSequence aMethodName) {
-            mMethodNames.add(aMethodName.toString());
-            return this;
-        }
-        @Override public Engine removeMethodName(CharSequence aMethodName) {
-            mMethodNames.remove(aMethodName.toString());
             return this;
         }
         public Engine setCmakeSettings(Map<? extends CharSequence, ? extends CharSequence> aCmakeSettings) {
@@ -197,7 +190,7 @@ public class SimpleJIT {
         
         /// utils
         @Override public boolean hasMethod(CharSequence aMethodName) {
-            return mMethodNames.contains(aMethodName.toString());
+            return mScanner.funcs().containsKey(aMethodName.toString());
         }
         public boolean isNull() {
             return mLibHandle==null || mLibHandle.isNull();
@@ -234,8 +227,10 @@ public class SimpleJIT {
             if (mDead) throw new RuntimeException("this JIT engine is dead");
             if (mLibHandle==null) throw new IllegalStateException("Require compile() first.");
             if (mLibHandle.isNull()) throw new NullPointerException();
-            if (!hasMethod(aMethodName)) throw new IllegalArgumentException("No method name: "+aMethodName);
-            return new Method(findMethod0(mLibHandle.mPtr, aMethodName.toString()), this);
+            String tName = aMethodName.toString();
+            SourceScanner.FuncInfo tFunc = mScanner.funcs().get(tName);
+            if (tFunc==null) throw new IllegalArgumentException("No method name: "+tName);
+            return new Method(tFunc, findMethod0(mLibHandle.mPtr, tName), this);
         }
         @Override public void close() throws Exception {
             if (mDead) return;
@@ -499,8 +494,8 @@ public class SimpleJIT {
             rLines.add("#endif");
             rLines.add("");
             rLines.add("extern \"C\" {");
-            for (String tMethodName : mMethodNames) {
-            rLines.add("JSE_PLUGINEXPORT int JSE_PLUGINCALL "+tMethodName+"(void *, void *);");
+            for (String tMethodName : mScanner.funcs().keySet()) {
+            rLines.add("JSE_PLUGINEXPORT int JSE_PLUGINCALL "+tMethodName+"(void *);");
             }
             rLines.add("}");
             rLines.add("#endif //JITSRC_H");
@@ -512,6 +507,7 @@ public class SimpleJIT {
                 "/* DO NOT EDIT THIS FILE - it is machine generated */",
                 "#include \""+aHeadName+"\"",
                 mSrcCxx==null?"":mSrcCxx,
+                "#define "+JIT_FUNC_MARKER,
                 "extern \"C\" {",
                 mSrc,
                 "}"
@@ -521,5 +517,5 @@ public class SimpleJIT {
     
     private static native long loadLibrary0(String aLibPath) throws JITException;
     private static native long findMethod0(long aLibHandle, String aMethodName) throws JITException;
-    private static native int invokeMethod0(long aMethodPtr, long aInPtr, long rOutPtr);
+    private static native int invokeMethod0(long aMethodPtr, long aPtr);
 }

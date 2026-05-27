@@ -178,7 +178,8 @@ public class AnyCPointer extends CPointer {
         if (isNull()) throw new NullPointerException();
         return new DoubleCudaPointer(get0(mPtr));
     }
-    native static long get0(long aPtr);
+    @ApiStatus.Internal
+    public native static long get0(long aPtr);
     
     /**
      * 将此指针当作一个 c 的数组，获取内部指定位置的值，即对应 c 中的 {@code ptr[aIdx]}
@@ -295,7 +296,8 @@ public class AnyCPointer extends CPointer {
         if (isNull()) throw new NullPointerException();
         return new DoubleCudaPointer(getAt0(mPtr, aIdx));
     }
-    native static long getAt0(long aPtr, long aIdx);
+    @ApiStatus.Internal
+    public native static long getAt0(long aPtr, long aIdx);
     
     /**
      * 设置此指针对应的值，即对应 c 中的 {@code *ptr = aValue}
@@ -306,7 +308,8 @@ public class AnyCPointer extends CPointer {
         if (isNull()) throw new NullPointerException();
         set0(mPtr, aValue.ptr_());
     }
-    native static void set0(long aPtr, long aValue);
+    @ApiStatus.Internal
+    public native static void set0(long aPtr, long aValue);
     
     /**
      * 将此指针当作一个 c 的数组，设置内部指定位置的值，即对应 c 中的 {@code ptr[aIdx] = aValue}
@@ -318,7 +321,8 @@ public class AnyCPointer extends CPointer {
         if (isNull()) throw new NullPointerException();
         putAt0(mPtr, aIdx, aValue.ptr_());
     }
-    native static void putAt0(long aPtr, long aIdx, long aValue);
+    @ApiStatus.Internal
+    public native static void putAt0(long aPtr, long aIdx, long aValue);
     /** 用于兼容 groovy 运算符重载，这是 groovy 的 bug */
     @UnsafeJNI("Invalid input index may directly result in JVM SIGSEGV")
     public void putAt(int aIdx, @NotNull IPointer aValue) {putAt((long)aIdx, aValue);}
@@ -330,7 +334,8 @@ public class AnyCPointer extends CPointer {
         if (isNull()) throw new NullPointerException();
         mPtr = next0(mPtr);
     }
-    native static long next0(long aPtr);
+    @ApiStatus.Internal
+    public native static long next0(long aPtr);
     
     /**
      * 指针向后移动指定步数，即对应 c 中的 {@code ptr += aCount}
@@ -340,7 +345,8 @@ public class AnyCPointer extends CPointer {
         if (isNull()) throw new NullPointerException();
         mPtr = rightShift0(mPtr, aCount);
     }
-    native static long rightShift0(long aPtr, long aCount);
+    @ApiStatus.Internal
+    public native static long rightShift0(long aPtr, long aCount);
     /**
      * 计算并返回向后移动指定步数的指针，即对应 c 中的 {@code ptr + aCount}
      * @param aCount 需要移动的步数
@@ -358,7 +364,8 @@ public class AnyCPointer extends CPointer {
         if (isNull()) throw new NullPointerException();
         mPtr = previous0(mPtr);
     }
-    native static long previous0(long aPtr);
+    @ApiStatus.Internal
+    public native static long previous0(long aPtr);
     
     /**
      * 指针向前移动指定步数，即对应 c 中的 {@code ptr -= aCount}
@@ -368,7 +375,8 @@ public class AnyCPointer extends CPointer {
         if (isNull()) throw new NullPointerException();
         mPtr = leftShift0(mPtr, aCount);
     }
-    native static long leftShift0(long aPtr, long aCount);
+    @ApiStatus.Internal
+    public native static long leftShift0(long aPtr, long aCount);
     /**
      * 计算并返回向前移动指定步数的指针，即对应 c 中的 {@code ptr - aCount}
      * @param aCount 需要移动的步数
