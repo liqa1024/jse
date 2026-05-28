@@ -1,6 +1,4 @@
-#include "nep_interface_cuda.h"
 #include "nep_core.hpp"
-
 
 // >>> NEPGEN REMOVE
 #define __NEPGEN_CUDA_BLOCKSIZE__ 256
@@ -282,19 +280,17 @@ static void computeLammpsCuda0(int inum, int nlocalghost,
 
 }
 
+#define __jsefunc__
+
 extern "C" {
 
-JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_constructTable(void *aDataIn, void *rDataOut) {
-    auto tDataOut = (void **)rDataOut;
-    
-    auto gn_radial = (JSE_NEP::flt_t *)tDataOut[0];
-    auto gn_angular = (JSE_NEP::flt_t *)tDataOut[1];
-    auto gnp_radial = (JSE_NEP::flt_t *)tDataOut[2];
-    auto gnp_angular = (JSE_NEP::flt_t *)tDataOut[3];
+__jsefunc__ int jse_nep_constructTable(const double *parameters,
+    JSE_NEP::flt_t *gn_radial, JSE_NEP::flt_t *gn_angular,
+    JSE_NEP::flt_t *gnp_radial, JSE_NEP::flt_t *gnp_angular) {
     
     JSE_NEP::construct_table<__NEPGEN_VERSION__, __NEPGEN_NTYPES__, __NEPGEN_NMAX_R__, __NEPGEN_NMAX_A__,
                              __NEPGEN_BSIZE_R__, __NEPGEN_BSIZE_A__, __NEPGEN_NUMC_R__, __NEPGEN_NUM_PARA_ANN__>(
-        (const double *)aDataIn,
+        parameters,
         __NEPGEN_RCUT_R__, __NEPGEN_RCUT_A__,
         gn_radial, gn_angular,
         gnp_radial, gnp_angular
@@ -302,53 +298,27 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_constructTable(void *aDataIn, void *
     return 0;
 }
 
-JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_statNeiNumLammps(void *aDataIn, void *rDataOut) {
-    void **tDataIn = (void **)aDataIn;
-    int *tDataOut = (int *)rDataOut;
-    
-    int *tNums = (int *)tDataIn[0];
-    int *ilist = (int *)tDataIn[1];
-    int *numneigh = (int *)tDataIn[2];
-    
-    int inum = tNums[0];
-    int numneighMax = 0;
+__jsefunc__ int jse_nep_statNeiNumLammps(int *ilist, int *numneigh, int inum, int *numneighMax) {
+    int numneighMax_ = 0;
     for (int ii = 0; ii < inum; ++ii) {
         int i = ilist[ii];
         int jnum = numneigh[i];
-        if (jnum > numneighMax) numneighMax = jnum;
+        if (jnum > numneighMax_) numneighMax_ = jnum;
     }
-    tDataOut[0] = numneighMax;
-    
+    numneighMax[0] = numneighMax_;
     return 0;
 }
 
 
 #define JSE_LMP_NEIGHMASK 0x1FFFFFFF
 
-JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_lammps2cuda(void *aDataIn, void *rDataOut) {
-    auto tDataIn = (void **)aDataIn;
-    auto tDataOut = (void **)rDataOut;
-    
-    auto nums = (const int *)tDataIn[0];
-    
-    int inum = nums[0];
-    int nlocalghost = nums[1];
-    int nlflag = nums[2];
-    int neighnumMax = nums[3];
-    
-    auto x = (const double **)tDataIn[1];
-    auto type = (const int *)tDataIn[2];
-    const int *ilist = nlflag ? (const int *)tDataIn[3] : nullptr;
-    const int *numneigh = nlflag ? (const int *)tDataIn[4] : nullptr;
-    const int **firstneigh = nlflag ? (const int **)tDataIn[5] : nullptr;
-    
-    auto fltBuf = (JSE_NEP::flt_t *)tDataOut[0];
-    auto intBuf = (int *)tDataOut[1];
-    auto cudaX = (JSE_NEP::flt_t *)tDataOut[2];
-    auto cudaType = (int *)tDataOut[3];
-    int *cudaIlist = nlflag ? (int *)tDataOut[4] : nullptr;
-    int *cudaNumneigh = nlflag ? (int *)tDataOut[5] : nullptr;
-    int *cudaFirstneigh = nlflag ? (int *)tDataOut[6] : nullptr;
+__jsefunc__ int jse_nep_lammps2cuda(
+    int inum, int nlocalghost, int nlflag, int neighnumMax,
+    const double **x, const int *type,
+    const int *ilist, const int *numneigh, const int **firstneigh,
+    JSE_NEP::flt_t *fltBuf, int *intBuf,
+    JSE_NEP::flt_t *cudaX, int *cudaType,
+    int *cudaIlist, int *cudaNumneigh, int *cudaFirstneigh) {
     
     cudaError_t err;
     for (int i = 0; i < nlocalghost; ++i) {
@@ -384,33 +354,11 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_lammps2cuda(void *aDataIn, void *rDa
     return (int)cudaSuccess;
 }
 
-JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_cuda2lammps(void *aDataIn, void *rDataOut) {
-    auto tDataIn = (void **)aDataIn;
-    auto tDataOut = (void **)rDataOut;
-    
-    auto nums = (const int *)tDataIn[0];
-    
-    int inum = nums[0];
-    int nlocalghost = nums[1];
-    int eflag = nums[2];
-    int vflag = nums[3];
-    int eflagAtom = nums[4];
-    int vflagAtom = nums[5];
-    int cvflagAtom = nums[6];
-    
-    auto f = (double **)tDataOut[0];
-    auto engVdwl = (double *)tDataOut[1];
-    auto eatom = (double *)tDataOut[2];
-    auto virial = (double *)tDataOut[3];
-    auto vatom = (double **)tDataOut[4];
-    auto cvatom = (double **)tDataOut[5];
-    
-    auto fltBuf = (JSE_NEP::flt_t *)tDataIn[1];
-    auto ilist = (const int *)tDataIn[2];
-    auto cudaF1 = (const JSE_NEP::flt_t *)tDataIn[3];
-    auto cudaEatom0 = (const JSE_NEP::flt_t *)tDataIn[4];
-    auto cudaVatom0 = (const JSE_NEP::flt_t *)tDataIn[5];
-    auto cudaVatom1 = (const JSE_NEP::flt_t *)tDataIn[6];
+__jsefunc__ int jse_nep_cuda2lammps(
+    int inum, int nlocalghost, int eflag, int vflag, int eflagAtom, int vflagAtom, int cvflagAtom,
+    double **f, double *engVdwl, double *eatom, double *virial, double **vatom, double **cvatom,
+    JSE_NEP::flt_t *fltBuf, const int *ilist,
+    const JSE_NEP::flt_t *cudaF1, const JSE_NEP::flt_t *cudaEatom0, const JSE_NEP::flt_t *cudaVatom0, const JSE_NEP::flt_t *cudaVatom1) {
     
     cudaError_t err;
     err = cudaMemcpy(fltBuf, cudaF1, nlocalghost*3*sizeof(JSE_NEP::flt_t), cudaMemcpyDeviceToHost);
@@ -476,59 +424,16 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_cuda2lammps(void *aDataIn, void *rDa
 }
 
 
-JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_computeLammpsCuda(void *aDataIn, void *rDataOut) {
-    auto tDataIn = (void **)aDataIn;
-    auto tDataOut = (void **)rDataOut;
-
-    auto cpuNums = (const int *)tDataIn[0];
-    
-    int inum = cpuNums[0];
-    int nlocalghost = cpuNums[1];
-    int eflag = cpuNums[2];
-    int vflag = cpuNums[3];
-    int eflagAtom = cpuNums[4];
-    int vflagAtom = cpuNums[5];
-    int cvflagAtom = cpuNums[6];
-    
-    auto x = (JSE_NEP::flt_t *)tDataIn[1];
-    auto type = (int *)tDataIn[2];
-    auto ilist = (int *)tDataIn[3];
-    auto numneigh = (int *)tDataIn[4];
-    auto firstneigh = (int *)tDataIn[5];
-    auto cpuCutsq = (const double *)tDataIn[6];
-    auto type_map = (const int *)tDataIn[7];
-    const double cutsq = cpuCutsq[0];
-    
-    auto atomic_numbers = (const int *)tDataIn[8];
-    auto q_scaler = (const JSE_NEP::flt_t *)tDataIn[9];
-    auto ann_w0 = (const JSE_NEP::flt_t **)tDataIn[10];
-    auto ann_b0 = (const JSE_NEP::flt_t **)tDataIn[11];
-    auto ann_w1 = (const JSE_NEP::flt_t **)tDataIn[12];
-    auto ann_b1 = (const JSE_NEP::flt_t *)tDataIn[13];
-    auto ann_c = (const JSE_NEP::flt_t *)tDataIn[14];
-    auto zbl_para = (const JSE_NEP::flt_t *)tDataIn[15];
-    auto gn_radial = (const JSE_NEP::flt_t *)tDataIn[16];
-    auto gn_angular = (const JSE_NEP::flt_t *)tDataIn[17];
-    auto gnp_radial = (const JSE_NEP::flt_t *)tDataIn[18];
-    auto gnp_angular = (const JSE_NEP::flt_t *)tDataIn[19];
-    
-    auto f0 = (JSE_NEP::flt_t *)tDataOut[0];
-    auto f1 = (JSE_NEP::flt_t *)tDataOut[1];
-    auto eatom0 = (JSE_NEP::flt_t *)tDataOut[2];
-    auto vatom0 = (JSE_NEP::flt_t *)tDataOut[3];
-    auto vatom1 = (JSE_NEP::flt_t *)tDataOut[4];
-    auto g_nl_dx = (JSE_NEP::flt_t *)tDataOut[5];
-    auto g_nl_dy = (JSE_NEP::flt_t *)tDataOut[6];
-    auto g_nl_dz = (JSE_NEP::flt_t *)tDataOut[7];
-    auto g_nl_type = (int *)tDataOut[8];
-    auto g_nl_idx = (int *)tDataOut[9];
-    auto g_num_neigh = (int *)tDataOut[10];
-    auto g_ctype = (int *)tDataOut[11];
-    auto g_nl_fx = (JSE_NEP::flt_t *)tDataOut[12];
-    auto g_nl_fy = (JSE_NEP::flt_t *)tDataOut[13];
-    auto g_nl_fz = (JSE_NEP::flt_t *)tDataOut[14];
-    auto g_fp = (JSE_NEP::flt_t *)tDataOut[15];
-    auto g_sum_fxyz = (JSE_NEP::flt_t *)tDataOut[16];
+__jsefunc__ int jse_nep_computeLammpsCuda(
+    int inum, int nlocalghost, int eflag, int vflag, int eflagAtom, int vflagAtom, int cvflagAtom,
+    JSE_NEP::flt_t *x, int *type, int *ilist, int *numneigh, int *firstneigh, double cutsq, const int *type_map,
+    const int *atomic_numbers, const JSE_NEP::flt_t *q_scaler,
+    const JSE_NEP::flt_t **ann_w0, const JSE_NEP::flt_t **ann_b0, const JSE_NEP::flt_t **ann_w1, const JSE_NEP::flt_t *ann_b1, const JSE_NEP::flt_t *ann_c,
+    const JSE_NEP::flt_t *zbl_para, const JSE_NEP::flt_t *gn_radial, const JSE_NEP::flt_t *gn_angular, const JSE_NEP::flt_t *gnp_radial, const JSE_NEP::flt_t *gnp_angular,
+    JSE_NEP::flt_t *f0, JSE_NEP::flt_t *f1, JSE_NEP::flt_t *eatom0, JSE_NEP::flt_t *vatom0, JSE_NEP::flt_t *vatom1,
+    JSE_NEP::flt_t *g_nl_dx, JSE_NEP::flt_t *g_nl_dy, JSE_NEP::flt_t *g_nl_dz, int *g_nl_type, int *g_nl_idx, int *g_num_neigh, int *g_ctype,
+    JSE_NEP::flt_t *g_nl_fx, JSE_NEP::flt_t *g_nl_fy, JSE_NEP::flt_t *g_nl_fz,
+    JSE_NEP::flt_t *g_fp, JSE_NEP::flt_t *g_sum_fxyz) {
     
     cudaError_t err;
     err = cudaMemset(f0, 0, inum*3*sizeof(JSE_NEP::flt_t));

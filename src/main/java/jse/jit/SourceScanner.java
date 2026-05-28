@@ -62,6 +62,9 @@ class SourceScanner {
         }
         @ApiStatus.Internal
         public void parseArgs_(long aPtr, Object... aArgs) {
+            if (mParams.size() != aArgs.length) {
+                throw new IllegalArgumentException("Size of parameters mismatch: "+mParams.size()+" vs "+aArgs.length);
+            }
             long tPtr = aPtr;
             int i = 0;
             for (Map.Entry<String, String> tEntry : mParams.entrySet()) {
@@ -75,6 +78,12 @@ class SourceScanner {
                 if (tTypeStr.endsWith("*")) {
                     if (!(tArg instanceof IPointer)) {
                         invalidType_(tKey, "? extends IPointer", tArg.getClass().getName());
+                    }
+                    // 对于 NULL 不需要判断
+                    if (tArg == CPointer.NULL) {
+                        AnyCPointer.set0(tPtr, 0);
+                        tPtr = AnyCPointer.next0(tPtr);
+                        continue;
                     }
                     String tElseTypeStr = tTypeStr.substring(0, tTypeStr.length()-1).trim();
                     if (tElseTypeStr.endsWith("*")) {

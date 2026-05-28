@@ -31,23 +31,23 @@ heat transport, Phys. Rev. B. 104, 104309 (2021).
 
 // >>> NEPGEN PICK
 // --- NEPGEN PICK: cpu
-// >>> NEPGEN REMOVE
-/*
-// <<< NEPGEN REMOVE
 #include <cmath>
 #define NEP_ARCH_CPU
 #define NEP_DEVICE
 #define NEP_HOST
 #define NEP_CONST
-// >>> NEPGEN REMOVE
-*/
-// <<< NEPGEN REMOVE
 // --- NEPGEN PICK: cuda
+// >>> NEPGEN REMOVE
+/*
+// <<< NEPGEN REMOVE
 #define NEP_ARCH_CUDA
 #define NEP_DEVICE __device__
 #define NEP_HOST __host__
 #define NEP_CONST __constant__
 #include <codecvt>
+// >>> NEPGEN REMOVE
+*/
+// <<< NEPGEN REMOVE
 // <<< NEPGEN PICK [ARCH]
 
 namespace JSE_NEP {

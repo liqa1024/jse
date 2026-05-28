@@ -92,15 +92,14 @@ public class PairNEP extends LmpPlugin.Pair {
         }
         // get cutoff from NEP model
         mCutoff = mNEP.rcutMax();
-        mCutoffsq = DoubleCPointer.malloc(1);
-        mCutoffsq.set(mCutoff * mCutoff);
+        mCutoffsq = mCutoff * mCutoff;
     }
     protected void initNEP(String aPath) throws Exception {
         mNEP.init_from_file(aPath, "cpu");
     }
     
     protected double mCutoff = Double.NaN;
-    protected DoubleCPointer mCutoffsq = null;
+    protected double mCutoffsq = Double.NaN;
     protected int mTypeNum = -1;
     protected NEP mNEP = new NEP();
     protected IntCPointer mTypeMap = null;
@@ -113,10 +112,6 @@ public class PairNEP extends LmpPlugin.Pair {
         if (mTypeMap != null) {
             mTypeMap.free();
             mTypeMap = null;
-        }
-        if (mCutoffsq != null) {
-            mCutoffsq.free();
-            mCutoffsq = null;
         }
         if (mNEP != null) {
             mNEP.close();

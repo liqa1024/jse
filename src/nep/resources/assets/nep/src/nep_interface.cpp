@@ -1,6 +1,4 @@
-#include "nep_interface.h"
 #include "nep_core.hpp"
-
 
 // >>> NEPGEN REMOVE
 #define __NEPGEN_USE_TABLE__ 0
@@ -30,19 +28,17 @@
 #define __NEPGEN_ZBL_FLEXIBLED__ 0
 // <<< NEPGEN REMOVE
 
+#define __jsefunc__
+
 extern "C" {
 
-JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_constructTable(void *aDataIn, void *rDataOut) {
-    auto tDataOut = (void **)rDataOut;
-    
-    auto gn_radial = (JSE_NEP::flt_t *)tDataOut[0];
-    auto gn_angular = (JSE_NEP::flt_t *)tDataOut[1];
-    auto gnp_radial = (JSE_NEP::flt_t *)tDataOut[2];
-    auto gnp_angular = (JSE_NEP::flt_t *)tDataOut[3];
+__jsefunc__ int jse_nep_constructTable(const double *parameters,
+    JSE_NEP::flt_t *gn_radial, JSE_NEP::flt_t *gn_angular,
+    JSE_NEP::flt_t *gnp_radial, JSE_NEP::flt_t *gnp_angular) {
     
     JSE_NEP::construct_table<__NEPGEN_VERSION__, __NEPGEN_NTYPES__, __NEPGEN_NMAX_R__, __NEPGEN_NMAX_A__,
                              __NEPGEN_BSIZE_R__, __NEPGEN_BSIZE_A__, __NEPGEN_NUMC_R__, __NEPGEN_NUM_PARA_ANN__>(
-        (const double *)aDataIn,
+        parameters,
         __NEPGEN_RCUT_R__, __NEPGEN_RCUT_A__,
         gn_radial, gn_angular,
         gnp_radial, gnp_angular
@@ -50,35 +46,13 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_constructTable(void *aDataIn, void *
     return 0;
 }
 
-JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_calEnergy(void *aDataIn, void *rDataOut) {
-    auto tDataIn = (void **)aDataIn;
-    auto tDataOut = (void **)rDataOut;
-    
-    auto nums = (const int *)tDataIn[0];
-    auto nl_dx = (const JSE_NEP::flt_t *)tDataIn[1];
-    auto nl_dy = (const JSE_NEP::flt_t *)tDataIn[2];
-    auto nl_dz = (const JSE_NEP::flt_t *)tDataIn[3];
-    auto nl_type = (const int *)tDataIn[4];
-    auto atomic_numbers = (const int *)tDataIn[5];
-    auto q_scaler = (const JSE_NEP::flt_t *)tDataIn[6];
-    auto ann_w0 = (const JSE_NEP::flt_t **)tDataIn[7];
-    auto ann_b0 = (const JSE_NEP::flt_t **)tDataIn[8];
-    auto ann_w1 = (const JSE_NEP::flt_t **)tDataIn[9];
-    auto ann_b1 = (const JSE_NEP::flt_t *)tDataIn[10];
-    auto ann_c = (const JSE_NEP::flt_t *)tDataIn[11];
-    auto zbl_para = (const JSE_NEP::flt_t *)tDataIn[12];
-    auto gn_radial = (const JSE_NEP::flt_t *)tDataIn[13];
-    auto gn_angular = (const JSE_NEP::flt_t *)tDataIn[14];
-    
-    auto eng = (JSE_NEP::flt_t *)tDataOut[0];
-    auto nl_fx = (JSE_NEP::flt_t *)tDataOut[1];
-    auto nl_fy = (JSE_NEP::flt_t *)tDataOut[2];
-    auto nl_fz = (JSE_NEP::flt_t *)tDataOut[3];
-    auto fp = (JSE_NEP::flt_t *)tDataOut[4];
-    auto sum_fxyz = (JSE_NEP::flt_t *)tDataOut[5];
-    
-    int num_neigh = nums[0];
-    int ctype = nums[1];
+__jsefunc__ int jse_nep_calEnergy(
+    const JSE_NEP::flt_t *nl_dx, const JSE_NEP::flt_t *nl_dy, const JSE_NEP::flt_t *nl_dz, const int *nl_type, int num_neigh, int ctype,
+    const int *atomic_numbers, const JSE_NEP::flt_t *q_scaler,
+    const JSE_NEP::flt_t **ann_w0, const JSE_NEP::flt_t **ann_b0, const JSE_NEP::flt_t **ann_w1, const JSE_NEP::flt_t *ann_b1, const JSE_NEP::flt_t *ann_c,
+    const JSE_NEP::flt_t *zbl_para, const JSE_NEP::flt_t *gn_radial, const JSE_NEP::flt_t *gn_angular,
+    JSE_NEP::flt_t *eng, JSE_NEP::flt_t *nl_fx, JSE_NEP::flt_t *nl_fy, JSE_NEP::flt_t *nl_fz,
+    JSE_NEP::flt_t *fp, JSE_NEP::flt_t *sum_fxyz) {
     
     // manual clear required
     eng[0] = (JSE_NEP::flt_t)0.0;
@@ -129,37 +103,13 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_calEnergy(void *aDataIn, void *rData
     return 0;
 }
 
-JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_calEnergyForce(void *aDataIn, void *rDataOut) {
-    auto tDataIn = (void **)aDataIn;
-    auto tDataOut = (void **)rDataOut;
-    
-    auto nums = (const int *)tDataIn[0];
-    auto nl_dx = (const JSE_NEP::flt_t *)tDataIn[1];
-    auto nl_dy = (const JSE_NEP::flt_t *)tDataIn[2];
-    auto nl_dz = (const JSE_NEP::flt_t *)tDataIn[3];
-    auto nl_type = (const int *)tDataIn[4];
-    auto atomic_numbers = (const int *)tDataIn[5];
-    auto q_scaler = (const JSE_NEP::flt_t *)tDataIn[6];
-    auto ann_w0 = (const JSE_NEP::flt_t **)tDataIn[7];
-    auto ann_b0 = (const JSE_NEP::flt_t **)tDataIn[8];
-    auto ann_w1 = (const JSE_NEP::flt_t **)tDataIn[9];
-    auto ann_b1 = (const JSE_NEP::flt_t *)tDataIn[10];
-    auto ann_c = (const JSE_NEP::flt_t *)tDataIn[11];
-    auto zbl_para = (const JSE_NEP::flt_t *)tDataIn[12];
-    auto gn_radial = (const JSE_NEP::flt_t *)tDataIn[13];
-    auto gn_angular = (const JSE_NEP::flt_t *)tDataIn[14];
-    auto gnp_radial = (const JSE_NEP::flt_t *)tDataIn[15];
-    auto gnp_angular = (const JSE_NEP::flt_t *)tDataIn[16];
-    
-    auto eng = (JSE_NEP::flt_t *)tDataOut[0];
-    auto nl_fx = (JSE_NEP::flt_t *)tDataOut[1];
-    auto nl_fy = (JSE_NEP::flt_t *)tDataOut[2];
-    auto nl_fz = (JSE_NEP::flt_t *)tDataOut[3];
-    auto fp = (JSE_NEP::flt_t *)tDataOut[4];
-    auto sum_fxyz = (JSE_NEP::flt_t *)tDataOut[5];
-    
-    int num_neigh = nums[0];
-    int ctype = nums[1];
+__jsefunc__ int jse_nep_calEnergyForce(
+    const JSE_NEP::flt_t *nl_dx, const JSE_NEP::flt_t *nl_dy, const JSE_NEP::flt_t *nl_dz, const int *nl_type, int num_neigh, int ctype,
+    const int *atomic_numbers, const JSE_NEP::flt_t *q_scaler,
+    const JSE_NEP::flt_t **ann_w0, const JSE_NEP::flt_t **ann_b0, const JSE_NEP::flt_t **ann_w1, const JSE_NEP::flt_t *ann_b1, const JSE_NEP::flt_t *ann_c,
+    const JSE_NEP::flt_t *zbl_para, const JSE_NEP::flt_t *gn_radial, const JSE_NEP::flt_t *gn_angular, const JSE_NEP::flt_t *gnp_radial, const JSE_NEP::flt_t *gnp_angular,
+    JSE_NEP::flt_t *eng, JSE_NEP::flt_t *nl_fx, JSE_NEP::flt_t *nl_fy, JSE_NEP::flt_t *nl_fz,
+    JSE_NEP::flt_t *fp, JSE_NEP::flt_t *sum_fxyz) {
     
     // manual clear required
     eng[0] = (JSE_NEP::flt_t)0.0;
@@ -237,78 +187,28 @@ JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_calEnergyForce(void *aDataIn, void *
 
 #define JSE_LMP_NEIGHMASK 0x1FFFFFFF
 
-JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_statNeiNumLammps(void *aDataIn, void *rDataOut) {
-    void **tDataIn = (void **)aDataIn;
-    int *tDataOut = (int *)rDataOut;
-    
-    int *tNums = (int *)tDataIn[0];
-    int *ilist = (int *)tDataIn[1];
-    int *numneigh = (int *)tDataIn[2];
-    
-    int inum = tNums[0];
-    int numneighMax = 0;
+__jsefunc__ int jse_nep_statNeiNumLammps(int *ilist, int *numneigh, int inum, int *numneighMax) {
+    int numneighMax_ = 0;
     for (int ii = 0; ii < inum; ++ii) {
         int i = ilist[ii];
         int jnum = numneigh[i];
-        if (jnum > numneighMax) numneighMax = jnum;
+        if (jnum > numneighMax_) numneighMax_ = jnum;
     }
-    tDataOut[0] = numneighMax;
-    
+    numneighMax[0] = numneighMax_;
     return 0;
 }
 
-JSE_PLUGINEXPORT int JSE_PLUGINCALL jse_nep_computeLammps(void *aDataIn, void *rDataOut) {
-    void **tDataIn = (void **)aDataIn;
-    void **tDataOut = (void **)rDataOut;
-    
-    auto nums = (const int *)tDataIn[0];
-    auto nl_dx = (JSE_NEP::flt_t *)tDataIn[1];
-    auto nl_dy = (JSE_NEP::flt_t *)tDataIn[2];
-    auto nl_dz = (JSE_NEP::flt_t *)tDataIn[3];
-    auto nl_type = (int *)tDataIn[4];
-    auto nl_idx = (int *)tDataIn[5];
-    auto atomic_numbers = (const int *)tDataIn[6];
-    auto q_scaler = (const JSE_NEP::flt_t *)tDataIn[7];
-    auto ann_w0 = (const JSE_NEP::flt_t **)tDataIn[8];
-    auto ann_b0 = (const JSE_NEP::flt_t **)tDataIn[9];
-    auto ann_w1 = (const JSE_NEP::flt_t **)tDataIn[10];
-    auto ann_b1 = (const JSE_NEP::flt_t *)tDataIn[11];
-    auto ann_c = (const JSE_NEP::flt_t *)tDataIn[12];
-    auto zbl_para = (const JSE_NEP::flt_t *)tDataIn[13];
-    auto gn_radial = (const JSE_NEP::flt_t *)tDataIn[14];
-    auto gn_angular = (const JSE_NEP::flt_t *)tDataIn[15];
-    auto gnp_radial = (const JSE_NEP::flt_t *)tDataIn[16];
-    auto gnp_angular = (const JSE_NEP::flt_t *)tDataIn[17];
-    
-    auto nl_fx = (JSE_NEP::flt_t *)tDataOut[1];
-    auto nl_fy = (JSE_NEP::flt_t *)tDataOut[2];
-    auto nl_fz = (JSE_NEP::flt_t *)tDataOut[3];
-    auto fp = (JSE_NEP::flt_t *)tDataOut[4];
-    auto sum_fxyz = (JSE_NEP::flt_t *)tDataOut[5];
-    
-    int inum = nums[0];
-    int eflag = nums[1];
-    int vflag = nums[2];
-    int eflagAtom = nums[3];
-    int vflagAtom = nums[4];
-    int cvflagAtom = nums[5];
-    
-    auto x = (const double **)tDataIn[18];
-    auto f = (double **)tDataOut[0];
-    auto type = (const int *)tDataIn[19];
-    
-    auto ilist = (const int *)tDataIn[20];
-    auto numneigh = (const int *)tDataIn[21];
-    auto firstneigh = (const int **)tDataIn[22];
-    auto cutsq_ = (const double *)tDataIn[23];
-    auto type_map = (const int *)tDataIn[24];
-    const double cutsq = cutsq_[0];
-    
-    auto engVdwl = (double *)tDataOut[6];
-    auto eatom = (double *)tDataOut[7];
-    auto virial = (double *)tDataOut[8];
-    auto vatom = (double **)tDataOut[9];
-    auto cvatom = (double **)tDataOut[10];
+__jsefunc__ int jse_nep_computeLammps(
+    int inum, int eflag, int vflag, int eflagAtom, int vflagAtom, int cvflagAtom,
+    const double **x, double **f, const int *type,
+    const int *ilist, const int *numneigh, const int **firstneigh, double cutsq, const int *type_map,
+    double *engVdwl, double *eatom, double *virial, double **vatom, double **cvatom,
+    JSE_NEP::flt_t *nl_dx, JSE_NEP::flt_t *nl_dy, JSE_NEP::flt_t *nl_dz, int *nl_type, int *nl_idx,
+    const int *atomic_numbers, const JSE_NEP::flt_t *q_scaler,
+    const JSE_NEP::flt_t **ann_w0, const JSE_NEP::flt_t **ann_b0, const JSE_NEP::flt_t **ann_w1, const JSE_NEP::flt_t *ann_b1, const JSE_NEP::flt_t *ann_c,
+    const JSE_NEP::flt_t *zbl_para, const JSE_NEP::flt_t *gn_radial, const JSE_NEP::flt_t *gn_angular, const JSE_NEP::flt_t *gnp_radial, const JSE_NEP::flt_t *gnp_angular,
+    JSE_NEP::flt_t *nl_fx, JSE_NEP::flt_t *nl_fy, JSE_NEP::flt_t *nl_fz,
+    JSE_NEP::flt_t *fp, JSE_NEP::flt_t *sum_fxyz) {
     
     /// begin compute here
     for (int ii = 0; ii < inum; ++ii) {

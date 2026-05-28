@@ -145,32 +145,15 @@ public class NEP implements IPairPotential {
         aNeighborListGetter.forEachNLWithException(null, null, (threadID, cIdx, cType, nl) -> {
             // 近邻列表构建以及相关值设置
             int tNeiNum = buildNL_(nl, rcutMax());
-            mInNums.putAt(0, tNeiNum);
-            mInNums.putAt(1, cType-1);
-            // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
-            mDataIn.putAt(0, mInNums);
-            mDataIn.putAt(1, mNlDx);
-            mDataIn.putAt(2, mNlDy);
-            mDataIn.putAt(3, mNlDz);
-            mDataIn.putAt(4, mNlType);
-            mDataIn.putAt(5, paramb.atomic_numbers);
-            mDataIn.putAt(6, paramb.q_scaler);
-            mDataIn.putAt(7, annmb.w0);
-            mDataIn.putAt(8, annmb.b0);
-            mDataIn.putAt(9, annmb.w1);
-            mDataIn.putAt(10, annmb.b1);
-            mDataIn.putAt(11, annmb.c);
-            mDataIn.putAt(12, zbl.para);
-            mDataIn.putAt(13, gn_radial);
-            mDataIn.putAt(14, gn_angular);
-            mDataOut.putAt(0, mOutEng);
-            mDataOut.putAt(1, mNlFx);
-            mDataOut.putAt(2, mNlFy);
-            mDataOut.putAt(3, mNlFz);
-            mDataOut.putAt(4, Fp);
-            mDataOut.putAt(5, sum_fxyz);
             // 调用 jit 方法获取结果
-            mCalEnergy.invoke(mDataIn, mDataOut);
+            mCalEnergy.invoke(
+                mNlDx, mNlDy, mNlDz, mNlType, tNeiNum, cType-1,
+                paramb.atomic_numbers, paramb.q_scaler,
+                annmb.w0, annmb.b0, annmb.w1, annmb.b1, annmb.c,
+                zbl.para, gn_radial, gn_angular,
+                mOutEng, mNlFx, mNlFy, mNlFz,
+                Fp, sum_fxyz
+            );
             double tEng = mOutEng.getD();
             rEnergyAccumulator.add(threadID, cIdx, -1, tEng);
         });
@@ -193,34 +176,15 @@ public class NEP implements IPairPotential {
         aNeighborListGetter.forEachNLWithException(null, null, (threadID, cIdx, cType, nl) -> {
             // 近邻列表构建以及相关值设置
             int tNeiNum = buildNL_(nl, rcutMax());
-            mInNums.putAt(0, tNeiNum);
-            mInNums.putAt(1, cType-1);
-            // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
-            mDataIn.putAt(0, mInNums);
-            mDataIn.putAt(1, mNlDx);
-            mDataIn.putAt(2, mNlDy);
-            mDataIn.putAt(3, mNlDz);
-            mDataIn.putAt(4, mNlType);
-            mDataIn.putAt(5, paramb.atomic_numbers);
-            mDataIn.putAt(6, paramb.q_scaler);
-            mDataIn.putAt(7, annmb.w0);
-            mDataIn.putAt(8, annmb.b0);
-            mDataIn.putAt(9, annmb.w1);
-            mDataIn.putAt(10, annmb.b1);
-            mDataIn.putAt(11, annmb.c);
-            mDataIn.putAt(12, zbl.para);
-            mDataIn.putAt(13, gn_radial);
-            mDataIn.putAt(14, gn_angular);
-            mDataIn.putAt(15, gnp_radial);
-            mDataIn.putAt(16, gnp_angular);
-            mDataOut.putAt(0, mOutEng);
-            mDataOut.putAt(1, mNlFx);
-            mDataOut.putAt(2, mNlFy);
-            mDataOut.putAt(3, mNlFz);
-            mDataOut.putAt(4, Fp);
-            mDataOut.putAt(5, sum_fxyz);
             // 调用 jit 方法获取结果
-            mCalEnergyForce.invoke(mDataIn, mDataOut);
+            mCalEnergyForce.invoke(
+                mNlDx, mNlDy, mNlDz, mNlType, tNeiNum, cType-1,
+                paramb.atomic_numbers, paramb.q_scaler,
+                annmb.w0, annmb.b0, annmb.w1, annmb.b1, annmb.c,
+                zbl.para, gn_radial, gn_angular, gnp_radial, gnp_angular,
+                mOutEng, mNlFx, mNlFy, mNlFz,
+                Fp, sum_fxyz
+            );
             double tEng = mOutEng.getD();
             if (rEnergyAccumulator != null) {
                 rEnergyAccumulator.add(threadID, cIdx, -1, tEng);
@@ -266,65 +230,24 @@ public class NEP implements IPairPotential {
         int inum = aPair.listInum();
         IntCPointer ilist = aPair.listIlist();
         IntCPointer numneigh = aPair.listNumneigh();
-        mInNums.putAt(0, inum);
-        mDataIn.putAt(0, mInNums);
-        mDataIn.putAt(1, ilist);
-        mDataIn.putAt(2, numneigh);
-        mStatNeiNumLammps.invoke(mDataIn, mOutNums);
+        mStatNeiNumLammps.invoke(ilist, numneigh, inum, mOutNums);
         validNlLammps_(mOutNums.getAt(0));
-        
         
         mPtrMng.ensureCapacity(Fp, annmb.dim);
         mPtrMng.ensureCapacity(sum_fxyz, (long) (paramb.n_max_angular + 1)*NUM_OF_ABC);
-        // compute 开始，参数设置
-        mInNums.putAt(0, inum);
-        mInNums.putAt(1, aPair.eflagEither()?1:0);
-        mInNums.putAt(2, aPair.vflagEither()?1:0);
-        mInNums.putAt(3, aPair.eflagAtom()?1:0);
-        mInNums.putAt(4, aPair.vflagAtom()?1:0);
-        mInNums.putAt(5, aPair.cvflagAtom()?1:0);
-        
-        // 统一指定所有的位置，这样保证一致和避免其他调用导致的意外结果
-        mDataIn.putAt(0, mInNums);
-        mDataIn.putAt(1, mNlDx);
-        mDataIn.putAt(2, mNlDy);
-        mDataIn.putAt(3, mNlDz);
-        mDataIn.putAt(4, mNlType);
-        mDataIn.putAt(5, mNlIdx);
-        mDataIn.putAt(6, paramb.atomic_numbers);
-        mDataIn.putAt(7, paramb.q_scaler);
-        mDataIn.putAt(8, annmb.w0);
-        mDataIn.putAt(9, annmb.b0);
-        mDataIn.putAt(10, annmb.w1);
-        mDataIn.putAt(11, annmb.b1);
-        mDataIn.putAt(12, annmb.c);
-        mDataIn.putAt(13, zbl.para);
-        mDataIn.putAt(14, gn_radial);
-        mDataIn.putAt(15, gn_angular);
-        mDataIn.putAt(16, gnp_radial);
-        mDataIn.putAt(17, gnp_angular);
-        mDataIn.putAt(18, aPair.atomX());
-        mDataIn.putAt(19, aPair.atomType());
-        mDataIn.putAt(20, ilist);
-        mDataIn.putAt(21, numneigh);
-        mDataIn.putAt(22, aPair.listFirstneigh());
-        mDataIn.putAt(23, aPair.mCutoffsq);
-        mDataIn.putAt(24, aPair.mTypeMap);
-        
-        mDataOut.putAt(0, aPair.atomF());
-        mDataOut.putAt(1, mNlFx);
-        mDataOut.putAt(2, mNlFy);
-        mDataOut.putAt(3, mNlFz);
-        mDataOut.putAt(4, Fp);
-        mDataOut.putAt(5, sum_fxyz);
-        mDataOut.putAt(6, aPair.engVdwl());
-        mDataOut.putAt(7, aPair.eatom());
-        mDataOut.putAt(8, aPair.virial());
-        mDataOut.putAt(9, aPair.vatom());
-        mDataOut.putAt(10, aPair.cvatom());
-        
         // 调用 jit 方法计算
-        mComputeLammps.invoke(mDataIn, mDataOut);
+        mComputeLammps.invoke(
+            inum, aPair.eflagEither()?1:0, aPair.vflagEither()?1:0, aPair.eflagAtom()?1:0, aPair.vflagAtom()?1:0, aPair.cvflagAtom()?1:0,
+            aPair.atomX(), aPair.atomF(), aPair.atomType(),
+            ilist, numneigh, aPair.listFirstneigh(), aPair.mCutoffsq, aPair.mTypeMap,
+            aPair.engVdwl(), aPair.eatom(), aPair.virial(), aPair.vatom(), aPair.cvatom(),
+            mNlDx, mNlDy, mNlDz, mNlType, mNlIdx,
+            paramb.atomic_numbers, paramb.q_scaler,
+            annmb.w0, annmb.b0, annmb.w1, annmb.b1, annmb.c,
+            zbl.para, gn_radial, gn_angular, gnp_radial, gnp_angular,
+            mNlFx, mNlFy, mNlFz,
+            Fp, sum_fxyz
+        );
     }
     
     
@@ -371,11 +294,7 @@ public class NEP implements IPairPotential {
             ilist = aPair.listIlist();
             numneigh = aPair.listNumneigh();
             firstneigh = aPair.listFirstneigh();
-            mInNums.putAt(0, inum);
-            mDataIn.putAt(0, mInNums);
-            mDataIn.putAt(1, ilist);
-            mDataIn.putAt(2, numneigh);
-            mStatNeiNumLammps.invoke(mDataIn, mOutNums);
+            mStatNeiNumLammps.invoke(ilist, numneigh, inum, mOutNums);
             mNumneighMax = mOutNums.getAt(0);
         }
         // 近邻列表缓存向量长度规范
@@ -394,109 +313,37 @@ public class NEP implements IPairPotential {
         }
         
         // lammps -> cuda
-        mInNums.putAt(0, inum);
-        mInNums.putAt(1, nlocalghost);
-        mInNums.putAt(2, nlflag?1:0);
-        mInNums.putAt(3, mNumneighMax);
-        
-        mDataIn.putAt(0, mInNums);
-        mDataIn.putAt(1, aPair.atomX());
-        mDataIn.putAt(2, aPair.atomType());
-        if (nlflag) {
-            mDataIn.putAt(3, ilist);
-            mDataIn.putAt(4, numneigh);
-            mDataIn.putAt(5, firstneigh);
-        }
-        
-        mDataOut.putAt(0, mFltBuf);
-        mDataOut.putAt(1, mIntBuf);
-        mDataOut.putAt(2, mCudaX);
-        mDataOut.putAt(3, mCudaType);
-        if (nlflag) {
-            mDataOut.putAt(4, mCudaIlist);
-            mDataOut.putAt(5, mCudaNumneigh);
-            mDataOut.putAt(6, mCudaFirstneigh);
-        }
-        
-        int tCode = mLammps2Cuda.invoke(mDataIn, mDataOut);
+        int tCode = mLammps2Cuda.invoke(
+            inum, nlocalghost, nlflag?1:0, mNumneighMax,
+            aPair.atomX(), aPair.atomType(),
+            ilist, numneigh, firstneigh,
+            mFltBuf, mIntBuf,
+            mCudaX, mCudaType,
+            nlflag?mCudaIlist:NULL, nlflag?mCudaNumneigh:NULL, nlflag?mCudaFirstneigh:NULL
+        );
         CudaCore.cudaExceptionCheck(tCode);
         
         // cuda compute
-        mInNums.putAt(0, inum);
-        mInNums.putAt(1, nlocalghost);
-        mInNums.putAt(2, aPair.eflagEither()?1:0);
-        mInNums.putAt(3, aPair.vflagEither()?1:0);
-        mInNums.putAt(4, aPair.eflagAtom()?1:0);
-        mInNums.putAt(5, aPair.vflagAtom()?1:0);
-        mInNums.putAt(6, cvflagAtom?1:0);
-        
-        mDataIn.putAt(0, mInNums);
-        mDataIn.putAt(1, mCudaX);
-        mDataIn.putAt(2, mCudaType);
-        mDataIn.putAt(3, mCudaIlist);
-        mDataIn.putAt(4, mCudaNumneigh);
-        mDataIn.putAt(5, mCudaFirstneigh);
-        mDataIn.putAt(6, aPair.mCutoffsq);
-        mDataIn.putAt(7, mCudaTypeMap);
-        mDataIn.putAt(8, paramb.cuda_atomic_numbers);
-        mDataIn.putAt(9, paramb.cuda_q_scaler);
-        mDataIn.putAt(10, annmb.cuda_w0);
-        mDataIn.putAt(11, annmb.cuda_b0);
-        mDataIn.putAt(12, annmb.cuda_w1);
-        mDataIn.putAt(13, annmb.cuda_b1);
-        mDataIn.putAt(14, annmb.cuda_c);
-        mDataIn.putAt(15, zbl.cuda_para);
-        mDataIn.putAt(16, cuda_gn_radial);
-        mDataIn.putAt(17, cuda_gn_angular);
-        mDataIn.putAt(18, cuda_gnp_radial);
-        mDataIn.putAt(19, cuda_gnp_angular);
-        
-        mDataOut.putAt(0, mCudaF0);
-        mDataOut.putAt(1, mCudaF1);
-        mDataOut.putAt(2, mCudaEatom0);
-        mDataOut.putAt(3, mCudaVatom0);
-        mDataOut.putAt(4, mCudaVatom1);
-        mDataOut.putAt(5, mCudaGNlDx);
-        mDataOut.putAt(6, mCudaGNlDy);
-        mDataOut.putAt(7, mCudaGNlDz);
-        mDataOut.putAt(8, mCudaGNlType);
-        mDataOut.putAt(9, mCudaGNlIdx);
-        mDataOut.putAt(10, mCudaGNeiNum);
-        mDataOut.putAt(11, mCudaGCType);
-        mDataOut.putAt(12, mCudaGNlFx);
-        mDataOut.putAt(13, mCudaGNlFy);
-        mDataOut.putAt(14, mCudaGNlFz);
-        mDataOut.putAt(15, cuda_Fp);
-        mDataOut.putAt(16, cuda_sum_fxyz);
-        
-        tCode = mComputeLammpsCuda.invoke(mDataIn, mDataOut);
+        tCode = mComputeLammpsCuda.invoke(
+            inum, nlocalghost, aPair.eflagEither()?1:0, aPair.vflagEither()?1:0, aPair.eflagAtom()?1:0, aPair.vflagAtom()?1:0, cvflagAtom?1:0,
+            mCudaX, mCudaType, mCudaIlist, mCudaNumneigh, mCudaFirstneigh, aPair.mCutoffsq, mCudaTypeMap,
+            paramb.cuda_atomic_numbers, paramb.cuda_q_scaler,
+            annmb.cuda_w0, annmb.cuda_b0, annmb.cuda_w1, annmb.cuda_b1, annmb.cuda_c,
+            zbl.cuda_para, cuda_gn_radial, cuda_gn_angular, cuda_gnp_radial, cuda_gnp_angular,
+            mCudaF0, mCudaF1, mCudaEatom0, mCudaVatom0, mCudaVatom1,
+            mCudaGNlDx, mCudaGNlDy, mCudaGNlDz, mCudaGNlType, mCudaGNlIdx, mCudaGNeiNum, mCudaGCType,
+            mCudaGNlFx, mCudaGNlFy, mCudaGNlFz,
+            cuda_Fp, cuda_sum_fxyz
+        );
         CudaCore.cudaExceptionCheck(tCode);
         
         // cuda -> lammps
-        mInNums.putAt(0, inum);
-        mInNums.putAt(1, nlocalghost);
-        mInNums.putAt(2, aPair.eflagEither()?1:0);
-        mInNums.putAt(3, aPair.vflagEither()?1:0);
-        mInNums.putAt(4, aPair.eflagAtom()?1:0);
-        mInNums.putAt(5, aPair.vflagAtom()?1:0);
-        mInNums.putAt(6, cvflagAtom?1:0);
-        
-        mDataIn.putAt(0, mInNums);
-        mDataIn.putAt(1, mFltBuf);
-        mDataIn.putAt(2, ilist);
-        mDataIn.putAt(3, mCudaF1);
-        mDataIn.putAt(4, mCudaEatom0);
-        mDataIn.putAt(5, mCudaVatom0);
-        mDataIn.putAt(6, mCudaVatom1);
-        
-        mDataOut.putAt(0, aPair.atomF());
-        mDataOut.putAt(1, aPair.engVdwl());
-        mDataOut.putAt(2, aPair.eatom());
-        mDataOut.putAt(3, aPair.virial());
-        mDataOut.putAt(4, aPair.vatom());
-        mDataOut.putAt(5, aPair.cvatom());
-        
-        tCode = mCuda2Lammps.invoke(mDataIn, mDataOut);
+        tCode = mCuda2Lammps.invoke(
+            inum, nlocalghost, aPair.eflagEither()?1:0, aPair.vflagEither()?1:0, aPair.eflagAtom()?1:0, aPair.vflagAtom()?1:0, cvflagAtom?1:0,
+            aPair.atomF(), aPair.engVdwl(), aPair.eatom(), aPair.virial(), aPair.vatom(), aPair.cvatom(),
+            mFltBuf, ilist,
+            mCudaF1, mCudaEatom0, mCudaVatom0, mCudaVatom1
+        );
         CudaCore.cudaExceptionCheck(tCode);
     }
     
@@ -699,8 +546,7 @@ public class NEP implements IPairPotential {
     
     final PointerManager mPtrMng = new PointerManager();
     boolean mInited = false, mSingle = false, mCuda = true;
-    AnyCPointer mDataIn = mPtrMng.newAnyCPointer(32), mDataOut = mPtrMng.newAnyCPointer(32);
-    IntCPointer mInNums = mPtrMng.newIntCPointer(32), mOutNums = mPtrMng.newIntCPointer(32);
+    IntCPointer mOutNums = mPtrMng.newIntCPointer(16);
     IDoubleOrFloatCPointer mOutEng = null;
     IDoubleOrFloatCPointer mNlDx = null, mNlDy = null, mNlDz = null;
     IDoubleOrFloatCPointer mNlFx = null, mNlFy = null, mNlFz = null;
@@ -721,10 +567,6 @@ public class NEP implements IPairPotential {
     
     /// jit stuffs
     IJITEngine mJITEngine = null;
-    private static final String NAME_CAL_ENERGY = "jse_nep_calEnergy", NAME_CAL_ENERGYFORCE = "jse_nep_calEnergyForce";
-    private static final String NAME_CONSTRUCT_TABLE = "jse_nep_constructTable";
-    private static final String NAME_STAT_NEINUM_LAMMPS = "jse_nep_statNeiNumLammps", NAME_COMPUTE_LAMMPS = "jse_nep_computeLammps";
-    private static final String NAME_LAMMPS2CUDA = "jse_nep_lammps2cuda", NAME_CUDA2LAMMPS = "jse_nep_cuda2lammps", NAME_COMPUTE_LAMMPS_CUDA = "jse_nep_computeLammpsCuda";
     private IJITMethod mCalEnergy = null, mCalEnergyForce = null;
     private IJITMethod mConstructTable = null;
     private IJITMethod mStatNeiNumLammps = null, mComputeLammps = null;
@@ -762,39 +604,43 @@ public class NEP implements IPairPotential {
                 .setCmakeCudaCompiler(Conf.CMAKE_CUDA_COMPILER).setCmakeCudaFlags(Conf.CMAKE_CUDA_FLAGS)
                 .setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
                 .setCmakeSettings(Conf.CMAKE_SETTING).setOptimLevel(Conf.OPTIM_LEVEL)
+                .addTypeMap("JSE_NEP::flt_t", mSingle?"float":"double")
                 .setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID)
+                .setSrc(codeGenStr_(IO.getResource("nep/src/"+INTERFACE_NAME_CUDA), rGenMap)).setNoExtern()
                 .setSrcDirIniter((wd, engine) -> {
                     codeGen_(IO.getResource("nep/src/"+SRC_NAME), wd+SRC_NAME, rGenMap);
-                    codeGen_(IO.getResource("nep/src/"+INTERFACE_NAME_CUDA), wd+INTERFACE_NAME_CUDA, rGenMap);
-                    codeGen_(IO.getResource("nep/src/"+INTERFACE_HEAD_NAME_CUDA), wd+INTERFACE_HEAD_NAME_CUDA, rGenMap);
-                    // 注意这里需要使用 jit 中的通用 CMakeLists，确保 project name 同步
+                    // 其余操作使用 jit 通用操作，确保 project name 同步
                     engine.writeCmakeFile(wd, INTERFACE_NAME_CUDA);
+                    engine.writeHeadFile(wd, INTERFACE_HEAD_NAME_CUDA);
+                    engine.writeSrcFile(wd, INTERFACE_NAME_CUDA, INTERFACE_HEAD_NAME_CUDA);
                     return wd;
                 });
-//            mJITEngine.setMethodNames(NAME_CONSTRUCT_TABLE, NAME_STAT_NEINUM_LAMMPS, NAME_LAMMPS2CUDA, NAME_CUDA2LAMMPS, NAME_COMPUTE_LAMMPS_CUDA).compile();
-            mLammps2Cuda = mJITEngine.findMethod(NAME_LAMMPS2CUDA);
-            mCuda2Lammps = mJITEngine.findMethod(NAME_CUDA2LAMMPS);
-            mComputeLammpsCuda = mJITEngine.findMethod(NAME_COMPUTE_LAMMPS_CUDA);
+            mJITEngine.compile();
+            mLammps2Cuda = mJITEngine.findMethod("jse_nep_lammps2cuda");
+            mCuda2Lammps = mJITEngine.findMethod("jse_nep_cuda2lammps");
+            mComputeLammpsCuda = mJITEngine.findMethod("jse_nep_computeLammpsCuda");
         } else {
             mJITEngine = SimpleJIT.engine()
                 .setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
                 .setCmakeSettings(Conf.CMAKE_SETTING).setOptimLevel(Conf.OPTIM_LEVEL)
+                .addTypeMap("JSE_NEP::flt_t", mSingle?"float":"double")
                 .setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID)
+                .setSrc(codeGenStr_(IO.getResource("nep/src/"+INTERFACE_NAME), rGenMap)).setNoExtern()
                 .setSrcDirIniter((wd, engine) -> {
                     codeGen_(IO.getResource("nep/src/"+SRC_NAME), wd+SRC_NAME, rGenMap);
-                    codeGen_(IO.getResource("nep/src/"+INTERFACE_NAME), wd+INTERFACE_NAME, rGenMap);
-                    codeGen_(IO.getResource("nep/src/"+INTERFACE_HEAD_NAME), wd+INTERFACE_HEAD_NAME, rGenMap);
-                    // 注意这里需要使用 jit 中的通用 CMakeLists，确保 project name 同步
+                    // 其余操作使用 jit 通用操作，确保 project name 同步
                     engine.writeCmakeFile(wd, INTERFACE_NAME);
+                    engine.writeHeadFile(wd, INTERFACE_HEAD_NAME);
+                    engine.writeSrcFile(wd, INTERFACE_NAME, INTERFACE_HEAD_NAME);
                     return wd;
                 });
-//            mJITEngine.setMethodNames(NAME_CAL_ENERGY, NAME_CAL_ENERGYFORCE, NAME_CONSTRUCT_TABLE, NAME_STAT_NEINUM_LAMMPS, NAME_COMPUTE_LAMMPS).compile();
-            mCalEnergy = mJITEngine.findMethod(NAME_CAL_ENERGY);
-            mCalEnergyForce = mJITEngine.findMethod(NAME_CAL_ENERGYFORCE);
-            mComputeLammps = mJITEngine.findMethod(NAME_COMPUTE_LAMMPS);
+            mJITEngine.compile();
+            mCalEnergy = mJITEngine.findMethod("jse_nep_calEnergy");
+            mCalEnergyForce = mJITEngine.findMethod("jse_nep_calEnergyForce");
+            mComputeLammps = mJITEngine.findMethod("jse_nep_computeLammps");
         }
-        mConstructTable = mJITEngine.findMethod(NAME_CONSTRUCT_TABLE);
-        mStatNeiNumLammps = mJITEngine.findMethod(NAME_STAT_NEINUM_LAMMPS);
+        mConstructTable = mJITEngine.findMethod("jse_nep_constructTable");
+        mStatNeiNumLammps = mJITEngine.findMethod("jse_nep_statNeiNumLammps");
     }
     private Map<String, Object> initGenMap_() {
         Map<String, Object> rGenMap = new LinkedHashMap<>();
@@ -828,10 +674,17 @@ public class NEP implements IPairPotential {
     }
     private static void codeGen_(URL aSourceURL, String aTargetPath, Map<String, Object> aGenMap) throws Exception {
         List<String> tLines;
-        try (BufferedReader tReader = jse.code.IO.toReader(aSourceURL)) {
-            tLines = jse.code.IO.readAllLines(tReader);
+        try (BufferedReader tReader = IO.toReader(aSourceURL)) {
+            tLines = IO.readAllLines(tReader);
         }
         IO.write(aTargetPath, processLines_(tLines, aGenMap));
+    }
+    private static String codeGenStr_(URL aSourceURL, Map<String, Object> aGenMap) throws Exception {
+        List<String> tLines;
+        try (BufferedReader tReader = IO.toReader(aSourceURL)) {
+            tLines = IO.readAllLines(tReader);
+        }
+        return String.join("\n", processLines_(tLines, aGenMap));
     }
     private static List<String> processLines_(List<String> aLines, Map<String, Object> aGenMap) {
         int tState = STATE_NORMAL;
@@ -1222,11 +1075,7 @@ public class NEP implements IPairPotential {
             mPtrMng.ensureCapacity(gnp_radial, (long) table_length * paramb.num_types_sq * (paramb.n_max_radial + 1));
             mPtrMng.ensureCapacity(gn_angular, (long) table_length * paramb.num_types_sq * (paramb.n_max_angular + 1));
             mPtrMng.ensureCapacity(gnp_angular, (long) table_length * paramb.num_types_sq * (paramb.n_max_angular + 1));
-            mDataOut.putAt(0, gn_radial);
-            mDataOut.putAt(1, gn_angular);
-            mDataOut.putAt(2, gnp_radial);
-            mDataOut.putAt(3, gnp_angular);
-            mConstructTable.invoke(parametersPtr, mDataOut);
+            mConstructTable.invoke(parametersPtr, gn_radial, gn_angular, gnp_radial, gnp_angular);
             if (mCuda) {
                 long count;
                 count = (long) table_length * paramb.num_types_sq * (paramb.n_max_radial + 1);
