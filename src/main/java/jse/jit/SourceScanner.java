@@ -16,7 +16,7 @@ import java.util.*;
  */
 @ApiStatus.Internal
 class SourceScanner {
-    static class FuncInfo {
+    class FuncInfo {
         public final String mName;
         public final Map<String, String> mParams;
         public final int mMemCount;
@@ -34,6 +34,9 @@ class SourceScanner {
                     tMemCount += (int)AnyCPointer.TYPE_SIZE;
                     continue;
                 }
+                // 简单处理 type map
+                String tNewType = mTypeMap.get(tTypeStr);
+                if (tNewType!=null) tTypeStr = tNewType;
                 switch(tTypeStr) {
                 case "int": case "jint": {
                     tMemCount += (int)IntCPointer.TYPE_SIZE;
@@ -75,8 +78,26 @@ class SourceScanner {
                     }
                     String tElseTypeStr = tTypeStr.substring(0, tTypeStr.length()-1).trim();
                     if (tElseTypeStr.endsWith("*")) {
-                        checkType_(tKey, AnyCPointer.class, tArg);
+                        // 针对嵌套指针特殊处理，这里反向优先级
+                        String tElseTypeStr2 = tElseTypeStr.substring(0, tElseTypeStr.length()-1).trim();
+                        String tNewType = mTypeMap.get(tElseTypeStr2);
+                        if (tNewType!=null) tElseTypeStr2 = tNewType;
+                        if (tArg instanceof NestedDoubleCPointer) {
+                            if (!tElseTypeStr2.equals("double") && !tElseTypeStr2.equals("jdouble")) {
+                                throw new IllegalArgumentException("Invalid args type for '"+tKey+"' in func '"+mName+"', input expected: double ** (for NestedDoubleCPointer), real: "+tTypeStr);
+                            }
+                        } else
+                        if (tArg instanceof NestedIntCPointer) {
+                            if (!tElseTypeStr2.equals("int") && !tElseTypeStr2.equals("jint")) {
+                                throw new IllegalArgumentException("Invalid args type for '"+tKey+"' in func '"+mName+"', input expected: int ** (for NestedIntCPointer), real: "+tTypeStr);
+                            }
+                        } else {
+                            checkType_(tKey, AnyCPointer.class, tArg);
+                        }
                     } else {
+                        // 简单处理 type map
+                        String tNewType = mTypeMap.get(tElseTypeStr);
+                        if (tNewType!=null) tElseTypeStr = tNewType;
                         switch(tElseTypeStr) {
                         case "int": case "jint": {
                             checkType_(tKey, IntCPointer.class, IntCudaPointer.class, tArg);
@@ -107,6 +128,9 @@ class SourceScanner {
                     tPtr = AnyCPointer.next0(tPtr);
                     continue;
                 }
+                // 简单处理 type map
+                String tNewType = mTypeMap.get(tTypeStr);
+                if (tNewType!=null) tTypeStr = tNewType;
                 switch(tTypeStr) {
                 case "int": case "jint": {
                     checkType_(tKey, Integer.class, tArg);
@@ -152,25 +176,29 @@ class SourceScanner {
         }
         
         void write(String aBody, StringBuilder rBuf) {
-            rBuf.append("int ").append(mName).append("(void *__jsefunc_data__) {\n");
+            rBuf.append("JSE_PLUGINEXPORT int JSE_PLUGINCALL ").append(mName).append("(void *__jsefunc_data__) {\n");
             rBuf.append("void *__jsefunc_ptr__ = __jsefunc_data__;\n");
             for (Map.Entry<String, String> tEntry : mParams.entrySet()) {
                 String tKey = tEntry.getKey();
                 String tType = tEntry.getValue();
                 // 简单处理 const
                 String tTypeRaw = tType.startsWith("const") ? tType.substring(5).trim() : tType;
-                rBuf.append(tType).append(" ").append(tKey).append(" = *(").append(tTypeRaw).append("*)__jsefunc_ptr__;");
+                rBuf.append(tType).append(" ").append(tKey).append(" = *(").append(tType).append("*)__jsefunc_ptr__;");
                 rBuf.append(" __jsefunc_ptr__ = (").append(tTypeRaw).append("*)__jsefunc_ptr__ + 1;\n");
             }
             rBuf.append(aBody).append("\n}");
         }
     }
     private final Map<String, FuncInfo> mFuncs = new LinkedHashMap<>();
+    private final Map<String, String> mTypeMap = new HashMap<>();
     private final String mMarker;
     private final int mMarkerLen;
     SourceScanner(String aMarker) {
         mMarker = aMarker;
         mMarkerLen = mMarker.length();
+    }
+    public void addTypeMap(String aSrcType, String aTargetType) {
+        mTypeMap.put(aSrcType, aTargetType);
     }
     
     public Map<String, FuncInfo> funcs() {
