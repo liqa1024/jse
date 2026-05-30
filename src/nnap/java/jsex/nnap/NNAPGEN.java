@@ -115,7 +115,7 @@ class NNAPGEN {
     }
     
     @SuppressWarnings("SameParameterValue")
-    IJITEngine initEngine(boolean aSinglePrecision) {
+    IJITEngine initEngine(boolean aSinglePrecision) throws Exception {
         Map<String, Object> rGenMap = initGenMap_();
         rGenMap.put("[PRECISION]", aSinglePrecision ? "single" : "double");
         rGenMap.put("[ARCH]", "cpu");
@@ -124,20 +124,22 @@ class NNAPGEN {
         return SimpleJIT.engine()
             .setCmakeCxxCompiler(NNAP.Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(NNAP.Conf.CMAKE_CXX_FLAGS)
             .setCmakeSettings(NNAP.Conf.CMAKE_SETTING).setOptimLevel(NNAP.Conf.OPTIM_LEVEL)
+            .addTypeMap("JSE_NNAP::flt_t", aSinglePrecision?"float":"double")
             .setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID)
+            .setSrc(codeGenStr_(IO.getResource("nep/src/"+INTERFACE_NAME), rGenMap)).setNoExtern()
             .setSrcDirIniter((wd, engine) -> {
                 for (String tName : SRC_NAME) {
                     codeGen_(IO.getResource("nnap/src/"+tName), wd+tName, rGenMap);
                 }
-                codeGen_(IO.getResource("nnap/src/"+INTERFACE_NAME), wd+INTERFACE_NAME, rGenMap);
-                codeGen_(IO.getResource("nnap/src/"+INTERFACE_HEAD_NAME), wd+INTERFACE_HEAD_NAME, rGenMap);
-                // 注意这里需要使用 jit 中的通用 CMakeLists，确保 project name 同步
+                // 其余操作使用 jit 通用操作，确保 project name 同步
                 engine.writeCmakeFile(wd, INTERFACE_NAME);
+                engine.writeHeadFile(wd, INTERFACE_HEAD_NAME);
+                engine.writeSrcFile(wd, INTERFACE_NAME, INTERFACE_HEAD_NAME);
                 return wd;
             });
     }
     @SuppressWarnings("SameParameterValue")
-    IJITEngine initEngineCuda() {
+    IJITEngine initEngineCuda() throws Exception {
         Map<String, Object> rGenMap = initGenMap_();
         rGenMap.put("NNAPGEN_CUDA_BLOCKSIZE", NNAP_cuda.Conf.CUDA_BLOCKSIZE);
         rGenMap.put("[PRECISION]", "single");
@@ -148,15 +150,17 @@ class NNAPGEN {
             .setCmakeCudaCompiler(NNAP_cuda.Conf.CMAKE_CUDA_COMPILER).setCmakeCudaFlags(NNAP_cuda.Conf.CMAKE_CUDA_FLAGS)
             .setCmakeCxxCompiler(NNAP_cuda.Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(NNAP_cuda.Conf.CMAKE_CXX_FLAGS)
             .setCmakeSettings(NNAP_cuda.Conf.CMAKE_SETTING).setOptimLevel(NNAP_cuda.Conf.OPTIM_LEVEL)
+            .addTypeMap("JSE_NNAP::flt_t", "float")
             .setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID)
+            .setSrc(codeGenStr_(IO.getResource("nep/src/nnap_interface_cuda.cu"), rGenMap)).setNoExtern()
             .setSrcDirIniter((wd, engine) -> {
                 for (String tName : SRC_NAME) {
                     codeGen_(IO.getResource("nnap/src/"+tName), wd+tName, rGenMap);
                 }
-                codeGen_(IO.getResource("nnap/src/nnap_interface_cuda.cu"), wd+"nnap_interface_cuda.cu", rGenMap);
-                codeGen_(IO.getResource("nnap/src/nnap_interface_cuda.h"), wd+"nnap_interface_cuda.h", rGenMap);
-                // 注意这里需要使用 jit 中的通用 CMakeLists，确保 project name 同步
+                // 其余操作使用 jit 通用操作，确保 project name 同步
                 engine.writeCmakeFile(wd, "nnap_interface_cuda.cu");
+                engine.writeHeadFile(wd, "nnap_interface_cuda.h");
+                engine.writeSrcFile(wd, "nnap_interface_cuda.cu", "nnap_interface_cuda.h");
                 return wd;
             });
     }
@@ -194,10 +198,17 @@ class NNAPGEN {
     
     private static void codeGen_(URL aSourceURL, String aTargetPath, Map<String, Object> aGenMap) throws Exception {
         List<String> tLines;
-        try (BufferedReader tReader = jse.code.IO.toReader(aSourceURL)) {
-            tLines = jse.code.IO.readAllLines(tReader);
+        try (BufferedReader tReader = IO.toReader(aSourceURL)) {
+            tLines = IO.readAllLines(tReader);
         }
         IO.write(aTargetPath, processLines_(tLines, aGenMap));
+    }
+    private static String codeGenStr_(URL aSourceURL, Map<String, Object> aGenMap) throws Exception {
+        List<String> tLines;
+        try (BufferedReader tReader = IO.toReader(aSourceURL)) {
+            tLines = IO.readAllLines(tReader);
+        }
+        return String.join("\n", processLines_(tLines, aGenMap));
     }
     @SuppressWarnings("unchecked")
     private static List<String> processLines_(List<String> aLines, Map<String, Object> aGenMap) throws Exception {

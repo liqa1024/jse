@@ -79,8 +79,7 @@ public class NNAP implements IPairPotential {
     public String precision() {return mSingle ? "single" : "double";}
     // 现在所有数据都改为 c 指针，并统一使用 PointerManager 管理内存实现自动回收
     final PointerManager mPtrMng;
-    final AnyCPointer[] mDataIn, mDataOut;
-    final IntCPointer[] mInNums, mOutNums;
+    final IntCPointer[] mOutNums;
     final AnyCPointer mFpHyperParam, mFpParam, mNnParam, mNormParam;
     final IDoubleOrFloatCPointer[] mCache;
     private final IDoubleOrFloatCPointer[] mOutEng;
@@ -136,8 +135,7 @@ public class NNAP implements IPairPotential {
         mNNAPGEN = new NNAPGEN(aLibDir, aProjectName, mBasis, mNN);
         // 初始化数组
         mPtrMng = new PointerManager();
-        mDataIn = new AnyCPointer[mNumThreads]; mDataOut = new AnyCPointer[mNumThreads];
-        mInNums = new IntCPointer[mNumThreads]; mOutNums = new IntCPointer[mNumThreads];
+        mOutNums = new IntCPointer[mNumThreads];
         mNlDx = new IDoubleOrFloatCPointer[mNumThreads];
         mNlDy = new IDoubleOrFloatCPointer[mNumThreads];
         mNlDz = new IDoubleOrFloatCPointer[mNumThreads];
@@ -154,10 +152,7 @@ public class NNAP implements IPairPotential {
         mNlTypeBuf = new IntList[mNumThreads];
         mNlIdxBuf = new IntList[mNumThreads];
         for (int ti = 0; ti < mNumThreads; ++ti) {
-            mDataIn[ti] = mPtrMng.newAnyCPointer(32);
-            mDataOut[ti] = mPtrMng.newAnyCPointer(32);
-            mInNums[ti] = mPtrMng.newIntCPointer(32);
-            mOutNums[ti] = mPtrMng.newIntCPointer(32);
+            mOutNums[ti] = mPtrMng.newIntCPointer(16);
             mNlDx[ti] = mPtrMng.newDoubleOrFloatCPointer(mSingle);
             mNlDy[ti] = mPtrMng.newDoubleOrFloatCPointer(mSingle);
             mNlDz[ti] = mPtrMng.newDoubleOrFloatCPointer(mSingle);
@@ -282,10 +277,6 @@ public class NNAP implements IPairPotential {
     // jit stuffs
     final NNAPGEN mNNAPGEN;
     IJITEngine mJITEngine = null;
-    private static final String NAME_CAL_FP = "jse_nnap_calFp", NAME_CAL_ENERGY = "jse_nnap_calEnergy", NAME_CAL_ENERGYFORCE = "jse_nnap_calEnergyForce";
-    private static final String NAME_STAT_NEINUM_LAMMPS = "jse_nnap_statNeiNumLammps", NAME_COMPUTE_LAMMPS = "jse_nnap_computeLammps";
-    private static final String NAME_FORWARD_ENERGY = "jse_nnap_forwardEnergy", NAME_BACKWARD_ENERGY = "jse_nnap_backwardEnergy";
-    private static final String NAME_FORWARD_ENERGYFORCE = "jse_nnap_forwardEnergyForce", NAME_BACKWARD_ENERGYFORCE = "jse_nnap_backwardEnergyForce";
     private IJITMethod mCalFp = null, mCalEnergy = null, mCalEnergyForce = null;
     private IJITMethod mStatNeiNumLammps = null, mComputeLammps = null;
     private IJITMethod mForwardEnergy = null, mBackwardEnergy = null;
@@ -295,16 +286,16 @@ public class NNAP implements IPairPotential {
         if (mJITEngine!=null) throw new IllegalStateException("compileJIT() has already been called");
         // 开始 jit
         mJITEngine = mNNAPGEN.initEngine(mSingle);
-//        mJITEngine.setMethodNames(NAME_CAL_FP, NAME_CAL_ENERGY, NAME_CAL_ENERGYFORCE, NAME_STAT_NEINUM_LAMMPS, NAME_COMPUTE_LAMMPS, NAME_FORWARD_ENERGY, NAME_BACKWARD_ENERGY, NAME_FORWARD_ENERGYFORCE, NAME_BACKWARD_ENERGYFORCE).compile();
-        mCalFp = mJITEngine.findMethod(NAME_CAL_FP);
-        mCalEnergy = mJITEngine.findMethod(NAME_CAL_ENERGY);
-        mCalEnergyForce = mJITEngine.findMethod(NAME_CAL_ENERGYFORCE);
-        mStatNeiNumLammps = mJITEngine.findMethod(NAME_STAT_NEINUM_LAMMPS);
-        mComputeLammps = mJITEngine.findMethod(NAME_COMPUTE_LAMMPS);
-        mForwardEnergy = mJITEngine.findMethod(NAME_FORWARD_ENERGY);
-        mBackwardEnergy = mJITEngine.findMethod(NAME_BACKWARD_ENERGY);
-        mForwardEnergyForce = mJITEngine.findMethod(NAME_FORWARD_ENERGYFORCE);
-        mBackwardEnergyForce = mJITEngine.findMethod(NAME_BACKWARD_ENERGYFORCE);
+        mJITEngine.compile();
+        mCalFp = mJITEngine.findMethod("jse_nnap_calFp");
+        mCalEnergy = mJITEngine.findMethod("jse_nnap_calEnergy");
+        mCalEnergyForce = mJITEngine.findMethod("jse_nnap_calEnergyForce");
+        mStatNeiNumLammps = mJITEngine.findMethod("jse_nnap_statNeiNumLammps");
+        mComputeLammps = mJITEngine.findMethod("jse_nnap_computeLammps");
+        mForwardEnergy = mJITEngine.findMethod("jse_nnap_forwardEnergy");
+        mBackwardEnergy = mJITEngine.findMethod("jse_nnap_backwardEnergy");
+        mForwardEnergyForce = mJITEngine.findMethod("jse_nnap_forwardEnergyForce");
+        mBackwardEnergyForce = mJITEngine.findMethod("jse_nnap_backwardEnergyForce");
     }
     
     @Override public void close() throws Exception {
