@@ -857,6 +857,13 @@ public class AseAtoms extends AbstractSettableAtomData {
         SP.Python.exec("from jsepy.atom import convertAseAtomsToPyObject");
         return (PyObject)SP.Python.invoke("convertAseAtomsToPyObject", this, aLimited);
     }
+    /**
+     * {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override public PyObject ase() throws JepException {
+        return toPyObject();
+    }
     
     /** @return {@inheritDoc} */
     @Override public AseAtoms copy() {
@@ -864,7 +871,7 @@ public class AseAtoms extends AbstractSettableAtomData {
         if (mType2AtomicNumber != null) {
             int ntypes = ntypes();
             String[] tSymbols = new String[ntypes];
-            for (int type = 1; type < ntypes; ++type) {
+            for (int type = 1; type <= ntypes; ++type) {
                 tSymbols[type-1] = symbol(type);
             }
             tOut.setSymbolOrder(tSymbols);
