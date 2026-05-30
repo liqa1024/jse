@@ -126,7 +126,7 @@ class NNAPGEN {
             .setCmakeSettings(NNAP.Conf.CMAKE_SETTING).setOptimLevel(NNAP.Conf.OPTIM_LEVEL)
             .addTypeMap("JSE_NNAP::flt_t", aSinglePrecision?"float":"double")
             .setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID)
-            .setSrc(codeGenStr_(IO.getResource("nep/src/"+INTERFACE_NAME), rGenMap)).setNoExtern()
+            .setSrc(codeGenStr_(IO.getResource("nnap/src/"+INTERFACE_NAME), rGenMap)).setNoExtern()
             .setSrcDirIniter((wd, engine) -> {
                 for (String tName : SRC_NAME) {
                     codeGen_(IO.getResource("nnap/src/"+tName), wd+tName, rGenMap);
@@ -152,7 +152,7 @@ class NNAPGEN {
             .setCmakeSettings(NNAP_cuda.Conf.CMAKE_SETTING).setOptimLevel(NNAP_cuda.Conf.OPTIM_LEVEL)
             .addTypeMap("JSE_NNAP::flt_t", "float")
             .setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID)
-            .setSrc(codeGenStr_(IO.getResource("nep/src/nnap_interface_cuda.cu"), rGenMap)).setNoExtern()
+            .setSrc(codeGenStr_(IO.getResource("nnap/src/nnap_interface_cuda.cu"), rGenMap)).setNoExtern()
             .setSrcDirIniter((wd, engine) -> {
                 for (String tName : SRC_NAME) {
                     codeGen_(IO.getResource("nnap/src/"+tName), wd+tName, rGenMap);

@@ -10,17 +10,19 @@ import java.util.Map;
  * 通过存储这个管理器的引用来自动借助 java 垃圾回收来自动释放其分配的指针
  * <p>
  * 这套写法应该和原本逻辑是兼容的，并且可以保留最大的灵活性
+ * <p>
+ * 为了保证使用合法此类设计上保证线程安全
  * @author liqa
  */
 public class PointerManager implements AutoCloseable {
     private final Map<Long, AutoCPointerHandle> mCPointers = new HashMap<>();
     private final Map<Long, AutoCudaPointerHandle> mCudaPointers = new HashMap<>();
     
-    private boolean mDead = false;
-    public final boolean isClosed() {
+    private volatile boolean mDead = false;
+    public final synchronized boolean isClosed() {
         return mDead;
     }
-    @Override public final void close() {
+    @Override public final synchronized void close() {
         if (mDead) return;
         mDead = true;
         for (AutoCPointerHandle tHandle : mCPointers.values()) {
@@ -35,7 +37,7 @@ public class PointerManager implements AutoCloseable {
         mCudaPointers.clear();
     }
     
-    public long getCount(ICPointer rPtr) {
+    public synchronized long getCount(ICPointer rPtr) {
         if (mDead) throw new IllegalStateException("This PointerManager is dead");
         long tPtr = rPtr.ptr_();
         if (tPtr==0) return 0;
@@ -44,7 +46,7 @@ public class PointerManager implements AutoCloseable {
         if (tHandle.mSize!=rPtr.typeSize()) throw new IllegalArgumentException("Type size mismatch: "+tHandle.mSize+" vs "+rPtr.typeSize());
         return tHandle.mCount;
     }
-    public long getCount(ICudaPointer rPtr) {
+    public synchronized long getCount(ICudaPointer rPtr) {
         if (mDead) throw new IllegalStateException("This PointerManager is dead");
         long tPtr = rPtr.ptr_();
         if (tPtr==0) return 0;
@@ -52,7 +54,7 @@ public class PointerManager implements AutoCloseable {
         if (tHandle==null) throw new IllegalArgumentException("Input pointer is not created by this PointerManager");
         return tHandle.mCount/rPtr.typeSize();
     }
-    public void free(ICPointer rPtr) {
+    public synchronized void free(ICPointer rPtr) {
         if (mDead) throw new IllegalStateException("This PointerManager is dead");
         long tPtr = rPtr.ptr_();
         if (tPtr==0) throw new IllegalStateException("Cannot free a NULL pointer");
@@ -63,7 +65,7 @@ public class PointerManager implements AutoCloseable {
         mCPointers.remove(tPtr);
         rPtr.setPtr_(0);
     }
-    public void free(ICudaPointer rPtr) {
+    public synchronized void free(ICudaPointer rPtr) {
         if (mDead) throw new IllegalStateException("This PointerManager is dead");
         long tPtr = rPtr.ptr_();
         if (tPtr==0) throw new IllegalStateException("Cannot free a NULL pointer");
@@ -74,7 +76,7 @@ public class PointerManager implements AutoCloseable {
         mCudaPointers.remove(tPtr);
         rPtr.setPtr_(0);
     }
-    public void ensureCapacity(ICPointer rPtr, long aMinCount) {
+    public synchronized void ensureCapacity(ICPointer rPtr, long aMinCount) {
         if (mDead) throw new IllegalStateException("This PointerManager is dead");
         final long oCount, tSize;
         final AutoCPointerHandle oHandle;
@@ -102,7 +104,7 @@ public class PointerManager implements AutoCloseable {
             rPtr.setPtr_(tHandle.mPtr);
         }
     }
-    public void ensureCapacity(ICudaPointer rPtr, long aMinCount) throws CudaException {
+    public synchronized void ensureCapacity(ICudaPointer rPtr, long aMinCount) throws CudaException {
         if (mDead) throw new IllegalStateException("This PointerManager is dead");
         final long oCount;
         final AutoCudaPointerHandle oHandle;
@@ -129,7 +131,7 @@ public class PointerManager implements AutoCloseable {
         }
     }
     
-    public CPointer newCPointer(long aCount) {
+    public synchronized CPointer newCPointer(long aCount) {
         if (mDead) throw new IllegalStateException("This PointerManager is dead");
         if (aCount<0) throw new IllegalArgumentException("Input count must be non-negative");
         if (aCount==0) return new CPointer(0);
@@ -137,7 +139,7 @@ public class PointerManager implements AutoCloseable {
         mCPointers.put(tHandle.mPtr, tHandle);
         return new CPointer(tHandle.mPtr);
     }
-    public CudaPointer newCudaPointer(long aCount) throws CudaException {
+    public synchronized CudaPointer newCudaPointer(long aCount) throws CudaException {
         if (mDead) throw new IllegalStateException("This PointerManager is dead");
         if (aCount<0) throw new IllegalArgumentException("Input count must be non-negative");
         if (aCount==0) return new CudaPointer(0);
@@ -145,19 +147,19 @@ public class PointerManager implements AutoCloseable {
         mCudaPointers.put(tHandle.mPtr, tHandle);
         return new CudaPointer(tHandle.mPtr);
     }
-    public IDoubleOrFloatCPointer newDoubleOrFloatCPointer(boolean aSingle, long aCount) {
+    public synchronized IDoubleOrFloatCPointer newDoubleOrFloatCPointer(boolean aSingle, long aCount) {
         return aSingle ? newFloatCPointer(aCount) : newDoubleCPointer(aCount);
     }
-    public IDoubleOrFloatCPointer newDoubleOrFloatCPointer(boolean aSingle) {
+    public synchronized IDoubleOrFloatCPointer newDoubleOrFloatCPointer(boolean aSingle) {
         return newDoubleOrFloatCPointer(aSingle, 0);
     }
-    public IDoubleOrFloatCudaPointer newDoubleOrFloatCudaPointer(boolean aSingle, long aCount) throws CudaException {
+    public synchronized IDoubleOrFloatCudaPointer newDoubleOrFloatCudaPointer(boolean aSingle, long aCount) throws CudaException {
         return aSingle ? newFloatCudaPointer(aCount) : newDoubleCudaPointer(aCount);
     }
-    public IDoubleOrFloatCudaPointer newDoubleOrFloatCudaPointer(boolean aSingle) throws CudaException {
+    public synchronized IDoubleOrFloatCudaPointer newDoubleOrFloatCudaPointer(boolean aSingle) throws CudaException {
         return newDoubleOrFloatCudaPointer(aSingle, 0);
     }
-    public DoubleCPointer newDoubleCPointer(long aCount) {
+    public synchronized DoubleCPointer newDoubleCPointer(long aCount) {
         if (mDead) throw new IllegalStateException("This PointerManager is dead");
         if (aCount<0) throw new IllegalArgumentException("Input count must be non-negative");
         if (aCount==0) return new DoubleCPointer(0);
@@ -165,10 +167,10 @@ public class PointerManager implements AutoCloseable {
         mCPointers.put(tHandle.mPtr, tHandle);
         return new DoubleCPointer(tHandle.mPtr);
     }
-    public DoubleCPointer newDoubleCPointer() {
+    public synchronized DoubleCPointer newDoubleCPointer() {
         return newDoubleCPointer(0);
     }
-    public DoubleCudaPointer newDoubleCudaPointer(long aCount) throws CudaException {
+    public synchronized DoubleCudaPointer newDoubleCudaPointer(long aCount) throws CudaException {
         if (mDead) throw new IllegalStateException("This PointerManager is dead");
         if (aCount<0) throw new IllegalArgumentException("Input count must be non-negative");
         if (aCount==0) return new DoubleCudaPointer(0);
@@ -176,10 +178,10 @@ public class PointerManager implements AutoCloseable {
         mCudaPointers.put(tHandle.mPtr, tHandle);
         return new DoubleCudaPointer(tHandle.mPtr);
     }
-    public DoubleCudaPointer newDoubleCudaPointer() throws CudaException {
+    public synchronized DoubleCudaPointer newDoubleCudaPointer() throws CudaException {
         return newDoubleCudaPointer(0);
     }
-    public FloatCPointer newFloatCPointer(long aCount) {
+    public synchronized FloatCPointer newFloatCPointer(long aCount) {
         if (mDead) throw new IllegalStateException("This PointerManager is dead");
         if (aCount<0) throw new IllegalArgumentException("Input count must be non-negative");
         if (aCount==0) return new FloatCPointer(0);
@@ -187,10 +189,10 @@ public class PointerManager implements AutoCloseable {
         mCPointers.put(tHandle.mPtr, tHandle);
         return new FloatCPointer(tHandle.mPtr);
     }
-    public FloatCPointer newFloatCPointer() {
+    public synchronized FloatCPointer newFloatCPointer() {
         return newFloatCPointer(0);
     }
-    public FloatCudaPointer newFloatCudaPointer(long aCount) throws CudaException {
+    public synchronized FloatCudaPointer newFloatCudaPointer(long aCount) throws CudaException {
         if (mDead) throw new IllegalStateException("This PointerManager is dead");
         if (aCount<0) throw new IllegalArgumentException("Input count must be non-negative");
         if (aCount==0) return new FloatCudaPointer(0);
@@ -198,10 +200,10 @@ public class PointerManager implements AutoCloseable {
         mCudaPointers.put(tHandle.mPtr, tHandle);
         return new FloatCudaPointer(tHandle.mPtr);
     }
-    public FloatCudaPointer newFloatCudaPointer() throws CudaException {
+    public synchronized FloatCudaPointer newFloatCudaPointer() throws CudaException {
         return newFloatCudaPointer(0);
     }
-    public IntCPointer newIntCPointer(long aCount) {
+    public synchronized IntCPointer newIntCPointer(long aCount) {
         if (mDead) throw new IllegalStateException("This PointerManager is dead");
         if (aCount<0) throw new IllegalArgumentException("Input count must be non-negative");
         if (aCount==0) return new IntCPointer(0);
@@ -209,10 +211,10 @@ public class PointerManager implements AutoCloseable {
         mCPointers.put(tHandle.mPtr, tHandle);
         return new IntCPointer(tHandle.mPtr);
     }
-    public IntCPointer newIntCPointer() {
+    public synchronized IntCPointer newIntCPointer() {
         return newIntCPointer(0);
     }
-    public IntCudaPointer newIntCudaPointer(long aCount) throws CudaException {
+    public synchronized IntCudaPointer newIntCudaPointer(long aCount) throws CudaException {
         if (mDead) throw new IllegalStateException("This PointerManager is dead");
         if (aCount<0) throw new IllegalArgumentException("Input count must be non-negative");
         if (aCount==0) return new IntCudaPointer(0);
@@ -220,10 +222,10 @@ public class PointerManager implements AutoCloseable {
         mCudaPointers.put(tHandle.mPtr, tHandle);
         return new IntCudaPointer(tHandle.mPtr);
     }
-    public IntCudaPointer newIntCudaPointer() throws CudaException {
+    public synchronized IntCudaPointer newIntCudaPointer() throws CudaException {
         return newIntCudaPointer(0);
     }
-    public Int64CPointer newInt64CPointer(long aCount) {
+    public synchronized Int64CPointer newInt64CPointer(long aCount) {
         if (mDead) throw new IllegalStateException("This PointerManager is dead");
         if (aCount<0) throw new IllegalArgumentException("Input count must be non-negative");
         if (aCount==0) return new Int64CPointer(0);
@@ -231,10 +233,10 @@ public class PointerManager implements AutoCloseable {
         mCPointers.put(tHandle.mPtr, tHandle);
         return new Int64CPointer(tHandle.mPtr);
     }
-    public Int64CPointer newInt64CPointer() {
+    public synchronized Int64CPointer newInt64CPointer() {
         return newInt64CPointer(0);
     }
-    public Int64CudaPointer newInt64CudaPointer(long aCount) throws CudaException {
+    public synchronized Int64CudaPointer newInt64CudaPointer(long aCount) throws CudaException {
         if (mDead) throw new IllegalStateException("This PointerManager is dead");
         if (aCount<0) throw new IllegalArgumentException("Input count must be non-negative");
         if (aCount==0) return new Int64CudaPointer(0);
@@ -242,10 +244,10 @@ public class PointerManager implements AutoCloseable {
         mCudaPointers.put(tHandle.mPtr, tHandle);
         return new Int64CudaPointer(tHandle.mPtr);
     }
-    public Int64CudaPointer newInt64CudaPointer() throws CudaException {
+    public synchronized Int64CudaPointer newInt64CudaPointer() throws CudaException {
         return newInt64CudaPointer(0);
     }
-    public AnyCPointer newAnyCPointer(long aCount) {
+    public synchronized AnyCPointer newAnyCPointer(long aCount) {
         if (mDead) throw new IllegalStateException("This PointerManager is dead");
         if (aCount<0) throw new IllegalArgumentException("Input count must be non-negative");
         if (aCount==0) return new AnyCPointer(0);
@@ -253,7 +255,7 @@ public class PointerManager implements AutoCloseable {
         mCPointers.put(tHandle.mPtr, tHandle);
         return new AnyCPointer(tHandle.mPtr);
     }
-    public AnyCPointer newAnyCPointer() {
+    public synchronized AnyCPointer newAnyCPointer() {
         return newAnyCPointer(0);
     }
 }

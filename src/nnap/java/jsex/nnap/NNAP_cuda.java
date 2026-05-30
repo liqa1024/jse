@@ -200,128 +200,128 @@ class NNAP_cuda extends NNAP {
         IPointer ilist = NULL;
         IPointer numneigh = NULL;
         IPointer firstneigh = NULL;
-        if (nlflag) {
-            ilist = aPair.listIlist();
-            numneigh = aPair.listNumneigh();
-            firstneigh = aPair.listFirstneigh();
-            mInNums[0].putAt(0, inum);
-            mDataIn[0].putAt(0, mInNums[0]);
-            mDataIn[0].putAt(1, ilist);
-            mDataIn[0].putAt(2, numneigh);
-            mStatNeiNumLammps.invoke(mDataIn[0], mOutNums[0]);
-            mNeighnumMax = mOutNums[0].getAt(0);
-        }
-        // 近邻列表缓存向量长度规范
-        if (nlflag) {
-            int tTotNeiNum = inum*mNeighnumMax;
-            mPtrMng.ensureCapacity(mIntBuf, tTotNeiNum);
-            mPtrMng.ensureCapacity(mCudaFirstneigh, tTotNeiNum);
-            mPtrMng.ensureCapacity(mCudaBufNlType, tTotNeiNum);
-            mPtrMng.ensureCapacity(mCudaBufNlIdx, tTotNeiNum);
-            mPtrMng.ensureCapacity(mCudaBufNlDx, tTotNeiNum);
-            mPtrMng.ensureCapacity(mCudaBufNlDy, tTotNeiNum);
-            mPtrMng.ensureCapacity(mCudaBufNlDz, tTotNeiNum);
-            mPtrMng.ensureCapacity(mCudaBufGradNlDx, tTotNeiNum);
-            mPtrMng.ensureCapacity(mCudaBufGradNlDy, tTotNeiNum);
-            mPtrMng.ensureCapacity(mCudaBufGradNlDz, tTotNeiNum);
-        }
-        
-        // lammps -> cuda
-        mInNums[0].putAt(0, inum);
-        mInNums[0].putAt(1, nlocalghost);
-        mInNums[0].putAt(2, nlflag?1:0);
-        mInNums[0].putAt(3, mNeighnumMax);
-        
-        mDataIn[0].putAt(0, mInNums[0]);
-        mDataIn[0].putAt(1, aPair.atomX());
-        mDataIn[0].putAt(2, aPair.atomType());
-        if (nlflag) {
-            mDataIn[0].putAt(3, ilist);
-            mDataIn[0].putAt(4, numneigh);
-            mDataIn[0].putAt(5, firstneigh);
-        }
-        
-        mDataOut[0].putAt(0, mFltBuf);
-        mDataOut[0].putAt(1, mIntBuf);
-        mDataOut[0].putAt(2, mCudaX);
-        mDataOut[0].putAt(3, mCudaType);
-        if (nlflag) {
-            mDataOut[0].putAt(4, mCudaIlist);
-            mDataOut[0].putAt(5, mCudaNumneigh);
-            mDataOut[0].putAt(6, mCudaFirstneigh);
-        }
-        
-        int tCode = mLammps2Cuda.invoke(mDataIn[0], mDataOut[0]);
-        CudaCore.cudaExceptionCheck(tCode);
-        
-        // cuda compute
-        mInNums[0].putAt(0, inum);
-        mInNums[0].putAt(1, nlocalghost);
-        mInNums[0].putAt(2, mNeighnumMax);
-        mInNums[0].putAt(3, aPair.eflagEither()?1:0);
-        mInNums[0].putAt(4, aPair.vflagEither()?1:0);
-        mInNums[0].putAt(5, aPair.eflagAtom()?1:0);
-        mInNums[0].putAt(6, aPair.vflagAtom()?1:0);
-        mInNums[0].putAt(7, cvflagAtom?1:0);
-        
-        mDataIn[0].putAt(0, mInNums[0]);
-        mDataIn[0].putAt(1, mCudaX);
-        mDataIn[0].putAt(2, mCudaType);
-        mDataIn[0].putAt(3, mCudaIlist);
-        mDataIn[0].putAt(4, mCudaNumneigh);
-        mDataIn[0].putAt(5, mCudaFirstneigh);
-        mDataIn[0].putAt(6, mCudaCutsq);
-        mDataIn[0].putAt(7, mCudaLmpType2NNAPType);
-        mDataIn[0].putAt(8, mCudaFpHyperParam);
-        mDataIn[0].putAt(9, mCudaFpParam);
-        mDataIn[0].putAt(10, mCudaNnParam);
-        mDataIn[0].putAt(11, mCudaNormParam);
-        
-        mDataOut[0].putAt(0, mCudaF0);
-        mDataOut[0].putAt(1, mCudaF1);
-        mDataOut[0].putAt(2, mCudaEatom0);
-        mDataOut[0].putAt(3, mCudaVatom0);
-        mDataOut[0].putAt(4, mCudaVatom1);
-        mDataOut[0].putAt(5, mCudaBufNlDx);
-        mDataOut[0].putAt(6, mCudaBufNlDy);
-        mDataOut[0].putAt(7, mCudaBufNlDz);
-        mDataOut[0].putAt(8, mCudaBufNlType);
-        mDataOut[0].putAt(9, mCudaBufNlIdx);
-        mDataOut[0].putAt(10, mCudaBufNeiNum);
-        mDataOut[0].putAt(11, mCudaBufCType);
-        mDataOut[0].putAt(12, mCudaBufGradNlDx);
-        mDataOut[0].putAt(13, mCudaBufGradNlDy);
-        mDataOut[0].putAt(14, mCudaBufGradNlDz);
-        
-        tCode = mComputeLammpsCuda.invoke(mDataIn[0], mDataOut[0]);
-        CudaCore.cudaExceptionCheck(tCode);
-        
-        // cuda -> lammps
-        mInNums[0].putAt(0, inum);
-        mInNums[0].putAt(1, nlocalghost);
-        mInNums[0].putAt(2, aPair.eflagEither()?1:0);
-        mInNums[0].putAt(3, aPair.vflagEither()?1:0);
-        mInNums[0].putAt(4, aPair.eflagAtom()?1:0);
-        mInNums[0].putAt(5, aPair.vflagAtom()?1:0);
-        mInNums[0].putAt(6, cvflagAtom?1:0);
-        
-        mDataIn[0].putAt(0, mInNums[0]);
-        mDataIn[0].putAt(1, mFltBuf);
-        mDataIn[0].putAt(2, ilist);
-        mDataIn[0].putAt(3, mCudaF1);
-        mDataIn[0].putAt(4, mCudaEatom0);
-        mDataIn[0].putAt(5, mCudaVatom0);
-        mDataIn[0].putAt(6, mCudaVatom1);
-        
-        mDataOut[0].putAt(0, aPair.atomF());
-        mDataOut[0].putAt(1, aPair.engVdwl());
-        mDataOut[0].putAt(2, aPair.eatom());
-        mDataOut[0].putAt(3, aPair.virial());
-        mDataOut[0].putAt(4, aPair.vatom());
-        mDataOut[0].putAt(5, aPair.cvatom());
-        
-        tCode = mCuda2Lammps.invoke(mDataIn[0], mDataOut[0]);
-        CudaCore.cudaExceptionCheck(tCode);
+//        if (nlflag) {
+//            ilist = aPair.listIlist();
+//            numneigh = aPair.listNumneigh();
+//            firstneigh = aPair.listFirstneigh();
+//            mInNums[0].putAt(0, inum);
+//            mDataIn[0].putAt(0, mInNums[0]);
+//            mDataIn[0].putAt(1, ilist);
+//            mDataIn[0].putAt(2, numneigh);
+//            mStatNeiNumLammps.invoke(mDataIn[0], mOutNums[0]);
+//            mNeighnumMax = mOutNums[0].getAt(0);
+//        }
+//        // 近邻列表缓存向量长度规范
+//        if (nlflag) {
+//            int tTotNeiNum = inum*mNeighnumMax;
+//            mPtrMng.ensureCapacity(mIntBuf, tTotNeiNum);
+//            mPtrMng.ensureCapacity(mCudaFirstneigh, tTotNeiNum);
+//            mPtrMng.ensureCapacity(mCudaBufNlType, tTotNeiNum);
+//            mPtrMng.ensureCapacity(mCudaBufNlIdx, tTotNeiNum);
+//            mPtrMng.ensureCapacity(mCudaBufNlDx, tTotNeiNum);
+//            mPtrMng.ensureCapacity(mCudaBufNlDy, tTotNeiNum);
+//            mPtrMng.ensureCapacity(mCudaBufNlDz, tTotNeiNum);
+//            mPtrMng.ensureCapacity(mCudaBufGradNlDx, tTotNeiNum);
+//            mPtrMng.ensureCapacity(mCudaBufGradNlDy, tTotNeiNum);
+//            mPtrMng.ensureCapacity(mCudaBufGradNlDz, tTotNeiNum);
+//        }
+//
+//        // lammps -> cuda
+//        mInNums[0].putAt(0, inum);
+//        mInNums[0].putAt(1, nlocalghost);
+//        mInNums[0].putAt(2, nlflag?1:0);
+//        mInNums[0].putAt(3, mNeighnumMax);
+//
+//        mDataIn[0].putAt(0, mInNums[0]);
+//        mDataIn[0].putAt(1, aPair.atomX());
+//        mDataIn[0].putAt(2, aPair.atomType());
+//        if (nlflag) {
+//            mDataIn[0].putAt(3, ilist);
+//            mDataIn[0].putAt(4, numneigh);
+//            mDataIn[0].putAt(5, firstneigh);
+//        }
+//
+//        mDataOut[0].putAt(0, mFltBuf);
+//        mDataOut[0].putAt(1, mIntBuf);
+//        mDataOut[0].putAt(2, mCudaX);
+//        mDataOut[0].putAt(3, mCudaType);
+//        if (nlflag) {
+//            mDataOut[0].putAt(4, mCudaIlist);
+//            mDataOut[0].putAt(5, mCudaNumneigh);
+//            mDataOut[0].putAt(6, mCudaFirstneigh);
+//        }
+//
+//        int tCode = mLammps2Cuda.invoke(mDataIn[0], mDataOut[0]);
+//        CudaCore.cudaExceptionCheck(tCode);
+//
+//        // cuda compute
+//        mInNums[0].putAt(0, inum);
+//        mInNums[0].putAt(1, nlocalghost);
+//        mInNums[0].putAt(2, mNeighnumMax);
+//        mInNums[0].putAt(3, aPair.eflagEither()?1:0);
+//        mInNums[0].putAt(4, aPair.vflagEither()?1:0);
+//        mInNums[0].putAt(5, aPair.eflagAtom()?1:0);
+//        mInNums[0].putAt(6, aPair.vflagAtom()?1:0);
+//        mInNums[0].putAt(7, cvflagAtom?1:0);
+//
+//        mDataIn[0].putAt(0, mInNums[0]);
+//        mDataIn[0].putAt(1, mCudaX);
+//        mDataIn[0].putAt(2, mCudaType);
+//        mDataIn[0].putAt(3, mCudaIlist);
+//        mDataIn[0].putAt(4, mCudaNumneigh);
+//        mDataIn[0].putAt(5, mCudaFirstneigh);
+//        mDataIn[0].putAt(6, mCudaCutsq);
+//        mDataIn[0].putAt(7, mCudaLmpType2NNAPType);
+//        mDataIn[0].putAt(8, mCudaFpHyperParam);
+//        mDataIn[0].putAt(9, mCudaFpParam);
+//        mDataIn[0].putAt(10, mCudaNnParam);
+//        mDataIn[0].putAt(11, mCudaNormParam);
+//
+//        mDataOut[0].putAt(0, mCudaF0);
+//        mDataOut[0].putAt(1, mCudaF1);
+//        mDataOut[0].putAt(2, mCudaEatom0);
+//        mDataOut[0].putAt(3, mCudaVatom0);
+//        mDataOut[0].putAt(4, mCudaVatom1);
+//        mDataOut[0].putAt(5, mCudaBufNlDx);
+//        mDataOut[0].putAt(6, mCudaBufNlDy);
+//        mDataOut[0].putAt(7, mCudaBufNlDz);
+//        mDataOut[0].putAt(8, mCudaBufNlType);
+//        mDataOut[0].putAt(9, mCudaBufNlIdx);
+//        mDataOut[0].putAt(10, mCudaBufNeiNum);
+//        mDataOut[0].putAt(11, mCudaBufCType);
+//        mDataOut[0].putAt(12, mCudaBufGradNlDx);
+//        mDataOut[0].putAt(13, mCudaBufGradNlDy);
+//        mDataOut[0].putAt(14, mCudaBufGradNlDz);
+//
+//        tCode = mComputeLammpsCuda.invoke(mDataIn[0], mDataOut[0]);
+//        CudaCore.cudaExceptionCheck(tCode);
+//
+//        // cuda -> lammps
+//        mInNums[0].putAt(0, inum);
+//        mInNums[0].putAt(1, nlocalghost);
+//        mInNums[0].putAt(2, aPair.eflagEither()?1:0);
+//        mInNums[0].putAt(3, aPair.vflagEither()?1:0);
+//        mInNums[0].putAt(4, aPair.eflagAtom()?1:0);
+//        mInNums[0].putAt(5, aPair.vflagAtom()?1:0);
+//        mInNums[0].putAt(6, cvflagAtom?1:0);
+//
+//        mDataIn[0].putAt(0, mInNums[0]);
+//        mDataIn[0].putAt(1, mFltBuf);
+//        mDataIn[0].putAt(2, ilist);
+//        mDataIn[0].putAt(3, mCudaF1);
+//        mDataIn[0].putAt(4, mCudaEatom0);
+//        mDataIn[0].putAt(5, mCudaVatom0);
+//        mDataIn[0].putAt(6, mCudaVatom1);
+//
+//        mDataOut[0].putAt(0, aPair.atomF());
+//        mDataOut[0].putAt(1, aPair.engVdwl());
+//        mDataOut[0].putAt(2, aPair.eatom());
+//        mDataOut[0].putAt(3, aPair.virial());
+//        mDataOut[0].putAt(4, aPair.vatom());
+//        mDataOut[0].putAt(5, aPair.cvatom());
+//
+//        tCode = mCuda2Lammps.invoke(mDataIn[0], mDataOut[0]);
+//        CudaCore.cudaExceptionCheck(tCode);
     }
     
     void computeGPUMD(int number_of_particles, int N1, int N2, int neighnumMax,
@@ -341,39 +341,39 @@ class NNAP_cuda extends NNAP {
         mPtrMng.ensureCapacity(mCudaBufGradNlDy, tTotNeiNum);
         mPtrMng.ensureCapacity(mCudaBufGradNlDz, tTotNeiNum);
         
-        // 数据打包
-        mInNums[0].putAt(0, number_of_particles);
-        mInNums[0].putAt(1, N1);
-        mInNums[0].putAt(2, N2);
-        mInNums[0].putAt(3, neighnumMax);
-        
-        mDataIn[0].putAt(0, mInNums[0]);
-        mDataIn[0].putAt(1, new CudaPointer(g_neighbor_number));
-        mDataIn[0].putAt(2, new CudaPointer(g_neighbor_list));
-        mDataIn[0].putAt(3, new CudaPointer(nl_dx));
-        mDataIn[0].putAt(4, new CudaPointer(nl_dy));
-        mDataIn[0].putAt(5, new CudaPointer(nl_dz));
-        mDataIn[0].putAt(6, new CudaPointer(g_type));
-        mDataIn[0].putAt(7, mCudaFpHyperParam);
-        mDataIn[0].putAt(8, mCudaFpParam);
-        mDataIn[0].putAt(9, mCudaNnParam);
-        mDataIn[0].putAt(10, mCudaNormParam);
-        
-        mDataOut[0].putAt(0, new CudaPointer(g_fx));
-        mDataOut[0].putAt(1, new CudaPointer(g_fy));
-        mDataOut[0].putAt(2, new CudaPointer(g_fz));
-        mDataOut[0].putAt(3, new CudaPointer(g_virial));
-        mDataOut[0].putAt(4, new CudaPointer(g_potential));
-        mDataOut[0].putAt(5, mCudaBufNlDx);
-        mDataOut[0].putAt(6, mCudaBufNlDy);
-        mDataOut[0].putAt(7, mCudaBufNlDz);
-        mDataOut[0].putAt(8, mCudaBufNlType);
-        mDataOut[0].putAt(9, mCudaBufNlIdx);
-        mDataOut[0].putAt(10, mCudaBufGradNlDx);
-        mDataOut[0].putAt(11, mCudaBufGradNlDy);
-        mDataOut[0].putAt(12, mCudaBufGradNlDz);
-        
-        int tCode = mComputeGPUMD.invoke(mDataIn[0], mDataOut[0]);
-        CudaCore.cudaExceptionCheck(tCode);
+//        // 数据打包
+//        mInNums[0].putAt(0, number_of_particles);
+//        mInNums[0].putAt(1, N1);
+//        mInNums[0].putAt(2, N2);
+//        mInNums[0].putAt(3, neighnumMax);
+//
+//        mDataIn[0].putAt(0, mInNums[0]);
+//        mDataIn[0].putAt(1, new CudaPointer(g_neighbor_number));
+//        mDataIn[0].putAt(2, new CudaPointer(g_neighbor_list));
+//        mDataIn[0].putAt(3, new CudaPointer(nl_dx));
+//        mDataIn[0].putAt(4, new CudaPointer(nl_dy));
+//        mDataIn[0].putAt(5, new CudaPointer(nl_dz));
+//        mDataIn[0].putAt(6, new CudaPointer(g_type));
+//        mDataIn[0].putAt(7, mCudaFpHyperParam);
+//        mDataIn[0].putAt(8, mCudaFpParam);
+//        mDataIn[0].putAt(9, mCudaNnParam);
+//        mDataIn[0].putAt(10, mCudaNormParam);
+//
+//        mDataOut[0].putAt(0, new CudaPointer(g_fx));
+//        mDataOut[0].putAt(1, new CudaPointer(g_fy));
+//        mDataOut[0].putAt(2, new CudaPointer(g_fz));
+//        mDataOut[0].putAt(3, new CudaPointer(g_virial));
+//        mDataOut[0].putAt(4, new CudaPointer(g_potential));
+//        mDataOut[0].putAt(5, mCudaBufNlDx);
+//        mDataOut[0].putAt(6, mCudaBufNlDy);
+//        mDataOut[0].putAt(7, mCudaBufNlDz);
+//        mDataOut[0].putAt(8, mCudaBufNlType);
+//        mDataOut[0].putAt(9, mCudaBufNlIdx);
+//        mDataOut[0].putAt(10, mCudaBufGradNlDx);
+//        mDataOut[0].putAt(11, mCudaBufGradNlDy);
+//        mDataOut[0].putAt(12, mCudaBufGradNlDz);
+//
+//        int tCode = mComputeGPUMD.invoke(mDataIn[0], mDataOut[0]);
+//        CudaCore.cudaExceptionCheck(tCode);
     }
 }

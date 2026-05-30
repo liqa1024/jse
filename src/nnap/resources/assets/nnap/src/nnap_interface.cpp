@@ -116,8 +116,7 @@ __jsefunc__ int jse_nnap_backwardEnergy(
     JSE_NNAP::flt_t *aNlDx, JSE_NNAP::flt_t *aNlDy, JSE_NNAP::flt_t *aNlDz, int *aNlType, int aNeiNum, int ctype,
     JSE_NNAP::flt_t **aFpHyperParam, JSE_NNAP::flt_t **aFpParam, JSE_NNAP::flt_t **aNnParam, JSE_NNAP::flt_t *aNormParam,
     JSE_NNAP::flt_t aGradEng, JSE_NNAP::flt_t **rGradFpParam, JSE_NNAP::flt_t **rGradNnParam,
-    JSE_NNAP::flt_t *aFpForwardCache, JSE_NNAP::flt_t *aNnForwardCache
-    ) {
+    JSE_NNAP::flt_t *aFpForwardCache, JSE_NNAP::flt_t *aNnForwardCache) {
     
     int code;
 // >>> NNAPGEN SWITCH
