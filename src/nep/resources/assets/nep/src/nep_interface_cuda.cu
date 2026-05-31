@@ -69,7 +69,7 @@ static __global__ void initLammpsNeiKernel(int inum, int nlocalghost,
 
 static __global__ void collectLammpsResultsKernel(int inum, int nlocalghost,
         int vflag, int vflagAtom, int cvflagAtom,
-        flt_t *f0, flt_t *f1, flt_t *vatom0, flt_t *vatom1,
+        flt_t *f, flt_t *vatom0, flt_t *vatom1,
         flt_t *g_nl_dx, flt_t *g_nl_dy, flt_t *g_nl_dz, int *g_nl_idx, int *g_num_neigh,
         flt_t *g_nl_fx, flt_t *g_nl_fy, flt_t *g_nl_fz) {
     const int ii = (int)(blockIdx.x * blockDim.x + threadIdx.x);
@@ -88,9 +88,9 @@ static __global__ void collectLammpsResultsKernel(int inum, int nlocalghost,
         f0x -= fx;
         f0y -= fy;
         f0z -= fz;
-        atomicAdd(f1 + (0*nlocalghost + j), fx);
-        atomicAdd(f1 + (1*nlocalghost + j), fy);
-        atomicAdd(f1 + (2*nlocalghost + j), fz);
+        atomicAdd(f + (0*nlocalghost + j), fx);
+        atomicAdd(f + (1*nlocalghost + j), fy);
+        atomicAdd(f + (2*nlocalghost + j), fz);
         if (vflag) {
             const flt_t dx = g_nl_dx[jj*inum + ii];
             const flt_t dy = g_nl_dy[jj*inum + ii];
@@ -127,20 +127,9 @@ static __global__ void collectLammpsResultsKernel(int inum, int nlocalghost,
             }
         }
     }
-    f0[0*inum + ii] += f0x;
-    f0[1*inum + ii] += f0y;
-    f0[2*inum + ii] += f0z;
-}
-
-static __global__ void postLammpsResultsKernel(int inum, int nlocalghost,
-        int *ilist, flt_t *f0, flt_t *f1) {
-    const int ii = (int)(blockIdx.x * blockDim.x + threadIdx.x);
-    if (ii >= inum) return;
-    
-    const int i = ilist[ii];
-    f1[0*nlocalghost + i] += f0[0*inum + ii];
-    f1[1*nlocalghost + i] += f0[1*inum + ii];
-    f1[2*nlocalghost + i] += f0[2*inum + ii];
+    atomicAdd(f + (0*nlocalghost + ii), f0x);
+    atomicAdd(f + (1*nlocalghost + ii), f0y);
+    atomicAdd(f + (2*nlocalghost + ii), f0z);
 }
 
 static __global__ void computeLammpsKernel(int inum,
@@ -239,7 +228,7 @@ static void computeLammpsCuda0(int inum, int nlocalghost,
         flt_t cutsq, int *numneigh, int *firstneigh, const int *type_map,
         flt_t *g_nl_dx, flt_t *g_nl_dy, flt_t *g_nl_dz, int *g_nl_type, int *g_nl_idx,
         int *g_num_neigh, int *g_ctype,
-        flt_t *f0, flt_t *f1, flt_t *eatom0, flt_t *vatom0, flt_t *vatom1,
+        flt_t *f, flt_t *eatom0, flt_t *vatom0, flt_t *vatom1,
         const int *atomic_numbers, const flt_t *q_scaler, const flt_t *zbl_para,
         const flt_t **ann_w0, const flt_t **ann_b0, const flt_t **ann_w1, const flt_t *ann_b1, const flt_t *ann_c,
         const flt_t *gn_radial, const flt_t *gn_angular,
@@ -269,12 +258,9 @@ static void computeLammpsCuda0(int inum, int nlocalghost,
     
     collectLammpsResultsKernel<<<tGridSize, tBlockSize>>>(inum, nlocalghost,
         vflag, vflagAtom, cvflagAtom,
-        f0, f1, vatom0, vatom1,
+        f, vatom0, vatom1,
         g_nl_dx, g_nl_dy, g_nl_dz, g_nl_idx, g_num_neigh,
         g_nl_fx, g_nl_fy, g_nl_fz
-    );
-    postLammpsResultsKernel<<<tGridSize, tBlockSize>>>(inum, nlocalghost,
-        ilist, f0, f1
     );
 }
 
@@ -430,15 +416,13 @@ __jsefunc__ int jse_nep_computeLammpsCuda(
     const int *atomic_numbers, const JSE_NEP::flt_t *q_scaler,
     const JSE_NEP::flt_t **ann_w0, const JSE_NEP::flt_t **ann_b0, const JSE_NEP::flt_t **ann_w1, const JSE_NEP::flt_t *ann_b1, const JSE_NEP::flt_t *ann_c,
     const JSE_NEP::flt_t *zbl_para, const JSE_NEP::flt_t *gn_radial, const JSE_NEP::flt_t *gn_angular, const JSE_NEP::flt_t *gnp_radial, const JSE_NEP::flt_t *gnp_angular,
-    JSE_NEP::flt_t *f0, JSE_NEP::flt_t *f1, JSE_NEP::flt_t *eatom0, JSE_NEP::flt_t *vatom0, JSE_NEP::flt_t *vatom1,
+    JSE_NEP::flt_t *f, JSE_NEP::flt_t *eatom0, JSE_NEP::flt_t *vatom0, JSE_NEP::flt_t *vatom1,
     JSE_NEP::flt_t *g_nl_dx, JSE_NEP::flt_t *g_nl_dy, JSE_NEP::flt_t *g_nl_dz, int *g_nl_type, int *g_nl_idx, int *g_num_neigh, int *g_ctype,
     JSE_NEP::flt_t *g_nl_fx, JSE_NEP::flt_t *g_nl_fy, JSE_NEP::flt_t *g_nl_fz,
     JSE_NEP::flt_t *g_fp, JSE_NEP::flt_t *g_sum_fxyz) {
     
     cudaError_t err;
-    err = cudaMemset(f0, 0, inum*3*sizeof(JSE_NEP::flt_t));
-    if (err!=cudaSuccess) return (int)err;
-    err = cudaMemset(f1, 0, nlocalghost*3*sizeof(JSE_NEP::flt_t));
+    err = cudaMemset(f, 0, nlocalghost*3*sizeof(JSE_NEP::flt_t));
     if (err!=cudaSuccess) return (int)err;
     if (eflag||eflagAtom) {
         err = cudaMemset(eatom0, 0, inum*sizeof(JSE_NEP::flt_t));
@@ -463,7 +447,7 @@ __jsefunc__ int jse_nep_computeLammpsCuda(
         (JSE_NEP::flt_t)cutsq, numneigh, firstneigh, type_map,
         g_nl_dx, g_nl_dy, g_nl_dz, g_nl_type, g_nl_idx,
         g_num_neigh, g_ctype,
-        f0, f1, eatom0, vatom0, vatom1,
+        f, eatom0, vatom0, vatom1,
         atomic_numbers, q_scaler, zbl_para,
         ann_w0, ann_b0, ann_w1, ann_b1, ann_c,
         gn_radial, gn_angular,

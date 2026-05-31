@@ -272,8 +272,7 @@ public class NEP implements IPairPotential {
         final int nlocalghost = nlocal + nghost;
         mPtrMng.ensureCapacity(mFltBuf, (long)nlocalghost*9);
         mPtrMng.ensureCapacity(mCudaX, (long)nlocalghost*3);
-        mPtrMng.ensureCapacity(mCudaF0, (long)inum*3);
-        mPtrMng.ensureCapacity(mCudaF1, (long)nlocalghost*3);
+        mPtrMng.ensureCapacity(mCudaF, (long)nlocalghost*3);
         mPtrMng.ensureCapacity(mCudaEatom0, (long)inum);
         mPtrMng.ensureCapacity(mCudaVatom0, (long)inum*6);
         mPtrMng.ensureCapacity(mCudaVatom1, (long)nlocalghost*(cvflagAtom?9:6));
@@ -330,7 +329,7 @@ public class NEP implements IPairPotential {
             paramb.cuda_atomic_numbers, paramb.cuda_q_scaler,
             annmb.cuda_w0, annmb.cuda_b0, annmb.cuda_w1, annmb.cuda_b1, annmb.cuda_c,
             zbl.cuda_para, cuda_gn_radial, cuda_gn_angular, cuda_gnp_radial, cuda_gnp_angular,
-            mCudaF0, mCudaF1, mCudaEatom0, mCudaVatom0, mCudaVatom1,
+            mCudaF, mCudaEatom0, mCudaVatom0, mCudaVatom1,
             mCudaGNlDx, mCudaGNlDy, mCudaGNlDz, mCudaGNlType, mCudaGNlIdx, mCudaGNeiNum, mCudaGCType,
             mCudaGNlFx, mCudaGNlFy, mCudaGNlFz,
             cuda_Fp, cuda_sum_fxyz
@@ -342,7 +341,7 @@ public class NEP implements IPairPotential {
             inum, nlocalghost, aPair.eflagEither()?1:0, aPair.vflagEither()?1:0, aPair.eflagAtom()?1:0, aPair.vflagAtom()?1:0, cvflagAtom?1:0,
             aPair.atomF(), aPair.engVdwl(), aPair.eatom(), aPair.virial(), aPair.vatom(), aPair.cvatom(),
             mFltBuf, ilist,
-            mCudaF1, mCudaEatom0, mCudaVatom0, mCudaVatom1
+            mCudaF, mCudaEatom0, mCudaVatom0, mCudaVatom1
         );
         CudaCore.cudaExceptionCheck(tCode);
     }
@@ -558,7 +557,7 @@ public class NEP implements IPairPotential {
     private FloatCPointer mFltBuf = null;
     private IntCPointer mIntBuf = null;
     // cuda 数据
-    private FloatCudaPointer mCudaX = null, mCudaF0 = null, mCudaF1 = null, mCudaEatom0 = null, mCudaVatom0 = null, mCudaVatom1 = null;
+    private FloatCudaPointer mCudaX = null, mCudaF = null, mCudaEatom0 = null, mCudaVatom0 = null, mCudaVatom1 = null;
     private IntCudaPointer mCudaType = null, mCudaIlist = null, mCudaNumneigh = null, mCudaGNeiNum = null, mCudaGCType = null;
     private IntCudaPointer mCudaFirstneigh = null, mCudaGNlType = null, mCudaGNlIdx = null;
     private FloatCudaPointer mCudaGNlDx = null, mCudaGNlDy = null, mCudaGNlDz = null, mCudaGNlFx = null, mCudaGNlFy = null, mCudaGNlFz = null;
@@ -1034,8 +1033,7 @@ public class NEP implements IPairPotential {
             mFltBuf = mPtrMng.newFloatCPointer(128);
             mIntBuf = mPtrMng.newIntCPointer(1024);
             mCudaX = mPtrMng.newFloatCudaPointer(128);
-            mCudaF0 = mPtrMng.newFloatCudaPointer(128);
-            mCudaF1 = mPtrMng.newFloatCudaPointer(128);
+            mCudaF = mPtrMng.newFloatCudaPointer(128);
             mCudaEatom0 = mPtrMng.newFloatCudaPointer(128);
             mCudaVatom0 = mPtrMng.newFloatCudaPointer(128);
             mCudaVatom1 = mPtrMng.newFloatCudaPointer(128);
