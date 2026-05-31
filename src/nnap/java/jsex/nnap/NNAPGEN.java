@@ -64,6 +64,8 @@ class NNAPGEN {
     private static final String JIT_NAME = "nnapjit";
     private final static String INTERFACE_NAME = "nnap_interface.cpp";
     private final static String INTERFACE_HEAD_NAME = "nnap_interface.h";
+    private final static String INTERFACE_NAME_CUDA = "nnap_interface_cuda.cu";
+    private final static String INTERFACE_HEAD_NAME_CUDA = "nnap_interface_cuda.h";
     private final static String[] SRC_NAME = {
           "nnap_util.hpp"
         , "nnap_main.hpp"
@@ -152,15 +154,15 @@ class NNAPGEN {
             .setCmakeSettings(NNAP_cuda.Conf.CMAKE_SETTING).setOptimLevel(NNAP_cuda.Conf.OPTIM_LEVEL)
             .addTypeMap("JSE_NNAP::flt_t", "float")
             .setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID)
-            .setSrc(codeGenStr_(IO.getResource("nnap/src/nnap_interface_cuda.cu"), rGenMap)).setNoExtern()
+            .setSrc(codeGenStr_(IO.getResource("nnap/src/"+INTERFACE_NAME_CUDA), rGenMap)).setNoExtern()
             .setSrcDirIniter((wd, engine) -> {
                 for (String tName : SRC_NAME) {
                     codeGen_(IO.getResource("nnap/src/"+tName), wd+tName, rGenMap);
                 }
                 // 其余操作使用 jit 通用操作，确保 project name 同步
-                engine.writeCmakeFile(wd, "nnap_interface_cuda.cu");
-                engine.writeHeadFile(wd, "nnap_interface_cuda.h");
-                engine.writeSrcFile(wd, "nnap_interface_cuda.cu", "nnap_interface_cuda.h");
+                engine.writeCmakeFile(wd, INTERFACE_NAME_CUDA);
+                engine.writeHeadFile(wd, INTERFACE_HEAD_NAME_CUDA);
+                engine.writeSrcFile(wd, INTERFACE_NAME_CUDA, INTERFACE_HEAD_NAME_CUDA);
                 return wd;
             });
     }

@@ -344,10 +344,10 @@ __jsefunc__ int jse_nep_cuda2lammps(
     int inum, int nlocalghost, int eflag, int vflag, int eflagAtom, int vflagAtom, int cvflagAtom,
     double **f, double *engVdwl, double *eatom, double *virial, double **vatom, double **cvatom,
     JSE_NEP::flt_t *fltBuf, const int *ilist,
-    const JSE_NEP::flt_t *cudaF1, const JSE_NEP::flt_t *cudaEatom0, const JSE_NEP::flt_t *cudaVatom0, const JSE_NEP::flt_t *cudaVatom1) {
+    const JSE_NEP::flt_t *cudaF, const JSE_NEP::flt_t *cudaEatom0, const JSE_NEP::flt_t *cudaVatom0, const JSE_NEP::flt_t *cudaVatom1) {
     
     cudaError_t err;
-    err = cudaMemcpy(fltBuf, cudaF1, nlocalghost*3*sizeof(JSE_NEP::flt_t), cudaMemcpyDeviceToHost);
+    err = cudaMemcpy(fltBuf, cudaF, nlocalghost*3*sizeof(JSE_NEP::flt_t), cudaMemcpyDeviceToHost);
     if (err!=cudaSuccess) return (int)err;
     for (int i = 0; i < nlocalghost; ++i) {
         f[i][0] += (double)fltBuf[0*nlocalghost + i];

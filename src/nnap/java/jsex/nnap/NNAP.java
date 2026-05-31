@@ -79,7 +79,7 @@ public class NNAP implements IPairPotential {
     public String precision() {return mSingle ? "single" : "double";}
     // 现在所有数据都改为 c 指针，并统一使用 PointerManager 管理内存实现自动回收
     final PointerManager mPtrMng;
-    final IntCPointer[] mOutNums;
+    final IntCPointer mOutNums;
     final AnyCPointer mFpHyperParam, mFpParam, mNnParam, mNormParam;
     final IDoubleOrFloatCPointer[] mCache;
     private final IDoubleOrFloatCPointer[] mOutEng;
@@ -135,7 +135,7 @@ public class NNAP implements IPairPotential {
         mNNAPGEN = new NNAPGEN(aLibDir, aProjectName, mBasis, mNN);
         // 初始化数组
         mPtrMng = new PointerManager();
-        mOutNums = new IntCPointer[mNumThreads];
+        mOutNums = mPtrMng.newIntCPointer(16);
         mNlDx = new IDoubleOrFloatCPointer[mNumThreads];
         mNlDy = new IDoubleOrFloatCPointer[mNumThreads];
         mNlDz = new IDoubleOrFloatCPointer[mNumThreads];
@@ -152,7 +152,6 @@ public class NNAP implements IPairPotential {
         mNlTypeBuf = new IntList[mNumThreads];
         mNlIdxBuf = new IntList[mNumThreads];
         for (int ti = 0; ti < mNumThreads; ++ti) {
-            mOutNums[ti] = mPtrMng.newIntCPointer(16);
             mNlDx[ti] = mPtrMng.newDoubleOrFloatCPointer(mSingle);
             mNlDy[ti] = mPtrMng.newDoubleOrFloatCPointer(mSingle);
             mNlDz[ti] = mPtrMng.newDoubleOrFloatCPointer(mSingle);
@@ -714,12 +713,11 @@ public class NNAP implements IPairPotential {
             IntCPointer tList = aPair.getTypeIlistBuf(type, inum);
             aPair.mTypeIlist.putAt(type, tList);
         }
-        IntCPointer tOutNums = mOutNums[0];
         // 近邻列表大小获取和缓存合理化
         IntCPointer ilist = aPair.listIlist();
         IntCPointer numneigh = aPair.listNumneigh();
-        mStatNeiNumLammps.invoke(ilist, numneigh, inum, tOutNums);
-        validNlLammps_(tOutNums.getAt(0));
+        mStatNeiNumLammps.invoke(ilist, numneigh, inum, mOutNums);
+        validNlLammps_(mOutNums.getAt(0));
         
         // 调用 jit 方法计算
         int tCode = mComputeLammps.invoke(

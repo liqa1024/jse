@@ -360,10 +360,10 @@ __jsefunc__ int jse_nnap_cuda2lammps(
     int inum, int nlocalghost, int eflag, int vflag, int eflagAtom, int vflagAtom, int cvflagAtom,
     double **f, double *engVdwl, double *eatom, double *virial, double **vatom, double **cvatom,
     JSE_NNAP::flt_t *fltBuf, const int *ilist,
-    JSE_NNAP::flt_t *cudaF1, JSE_NNAP::flt_t *cudaEatom0, JSE_NNAP::flt_t *cudaVatom0, JSE_NNAP::flt_t *cudaVatom1) {
+    JSE_NNAP::flt_t *cudaF, JSE_NNAP::flt_t *cudaEatom0, JSE_NNAP::flt_t *cudaVatom0, JSE_NNAP::flt_t *cudaVatom1) {
     
     cudaError_t tErr;
-    tErr = cudaMemcpy(fltBuf, cudaF1, nlocalghost*3*sizeof(JSE_NNAP::flt_t), cudaMemcpyDeviceToHost);
+    tErr = cudaMemcpy(fltBuf, cudaF, nlocalghost*3*sizeof(JSE_NNAP::flt_t), cudaMemcpyDeviceToHost);
     if (tErr!=cudaSuccess) return (int)tErr;
     for (int i = 0; i < nlocalghost; ++i) {
         f[i][0] += (double)fltBuf[0*nlocalghost + i];

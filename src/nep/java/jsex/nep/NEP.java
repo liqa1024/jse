@@ -1030,27 +1030,27 @@ public class NEP implements IPairPotential {
             cuda_gn_angular = mPtrMng.newFloatCudaPointer();
             cuda_gnp_angular = mPtrMng.newFloatCudaPointer();
             
-            mFltBuf = mPtrMng.newFloatCPointer(128);
-            mIntBuf = mPtrMng.newIntCPointer(1024);
-            mCudaX = mPtrMng.newFloatCudaPointer(128);
-            mCudaF = mPtrMng.newFloatCudaPointer(128);
-            mCudaEatom0 = mPtrMng.newFloatCudaPointer(128);
-            mCudaVatom0 = mPtrMng.newFloatCudaPointer(128);
-            mCudaVatom1 = mPtrMng.newFloatCudaPointer(128);
-            mCudaType = mPtrMng.newIntCudaPointer(128);
-            mCudaIlist = mPtrMng.newIntCudaPointer(128);
-            mCudaNumneigh = mPtrMng.newIntCudaPointer(128);
-            mCudaGNeiNum = mPtrMng.newIntCudaPointer(128);
-            mCudaGCType = mPtrMng.newIntCudaPointer(128);
-            mCudaFirstneigh = mPtrMng.newIntCudaPointer(1024);
-            mCudaGNlType = mPtrMng.newIntCudaPointer(1024);
-            mCudaGNlIdx = mPtrMng.newIntCudaPointer(1024);
-            mCudaGNlDx = mPtrMng.newFloatCudaPointer(1024);
-            mCudaGNlDy = mPtrMng.newFloatCudaPointer(1024);
-            mCudaGNlDz = mPtrMng.newFloatCudaPointer(1024);
-            mCudaGNlFx = mPtrMng.newFloatCudaPointer(1024);
-            mCudaGNlFy = mPtrMng.newFloatCudaPointer(1024);
-            mCudaGNlFz = mPtrMng.newFloatCudaPointer(1024);
+            mFltBuf = mPtrMng.newFloatCPointer();
+            mIntBuf = mPtrMng.newIntCPointer();
+            mCudaX = mPtrMng.newFloatCudaPointer();
+            mCudaF = mPtrMng.newFloatCudaPointer();
+            mCudaEatom0 = mPtrMng.newFloatCudaPointer();
+            mCudaVatom0 = mPtrMng.newFloatCudaPointer();
+            mCudaVatom1 = mPtrMng.newFloatCudaPointer();
+            mCudaType = mPtrMng.newIntCudaPointer();
+            mCudaIlist = mPtrMng.newIntCudaPointer();
+            mCudaNumneigh = mPtrMng.newIntCudaPointer();
+            mCudaGNeiNum = mPtrMng.newIntCudaPointer();
+            mCudaGCType = mPtrMng.newIntCudaPointer();
+            mCudaFirstneigh = mPtrMng.newIntCudaPointer();
+            mCudaGNlType = mPtrMng.newIntCudaPointer();
+            mCudaGNlIdx = mPtrMng.newIntCudaPointer();
+            mCudaGNlDx = mPtrMng.newFloatCudaPointer();
+            mCudaGNlDy = mPtrMng.newFloatCudaPointer();
+            mCudaGNlDz = mPtrMng.newFloatCudaPointer();
+            mCudaGNlFx = mPtrMng.newFloatCudaPointer();
+            mCudaGNlFy = mPtrMng.newFloatCudaPointer();
+            mCudaGNlFz = mPtrMng.newFloatCudaPointer();
         }
         
         // compile nep here

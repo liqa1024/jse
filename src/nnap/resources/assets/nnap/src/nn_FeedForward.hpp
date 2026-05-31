@@ -5,15 +5,15 @@
 
 namespace JSE_NNAP {
 
-static inline NNAP_DEVICE flt_t silu(flt_t aX) noexcept {
+static inline NNAP_DEVICE NNAP_HOST flt_t silu(flt_t aX) noexcept {
     return aX / (ONE + nnap_exp(-aX));
 }
-static inline NNAP_DEVICE flt_t siluGrad(flt_t aX, flt_t *rGrad) noexcept {
+static inline NNAP_DEVICE NNAP_HOST flt_t siluGrad(flt_t aX, flt_t *rGrad) noexcept {
     flt_t tSigmoid = ONE / (ONE + nnap_exp(-aX));
     *rGrad = tSigmoid * (ONE + aX * (ONE - tSigmoid));
     return aX * tSigmoid;
 }
-static inline NNAP_DEVICE flt_t siluGradGrad(flt_t aX, flt_t *rGrad, flt_t *rGradGrad) noexcept {
+static inline NNAP_DEVICE NNAP_HOST flt_t siluGradGrad(flt_t aX, flt_t *rGrad, flt_t *rGradGrad) noexcept {
     flt_t tSigmoid = ONE / (ONE + nnap_exp(-aX));
     *rGrad = tSigmoid * (ONE + aX * (ONE - tSigmoid));
     *rGradGrad = tSigmoid * (ONE - tSigmoid) * (TWO + aX * (ONE - tSigmoid - tSigmoid));
@@ -94,7 +94,7 @@ static NNAP_DEVICE void nnBackwardGpu(
     flt_t aAGradY, flt_t *rAGradFp, flt_t *aWeights, flt_t *aGradCache) noexcept {
     
 // >>> NNAPGEN SWITCH
-    flt_t bHiddenLayers[__NNAPGENX_NN_SIZE_HB__];
+    flt_t bHiddenLayers[__NNAPGENX_NN_SIZE_HB__] = {0};
     flt_t *rSubAGradX = bHiddenLayers;
     flt_t *tSubAGradY = NULL;
     
