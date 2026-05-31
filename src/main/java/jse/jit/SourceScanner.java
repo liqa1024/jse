@@ -101,7 +101,7 @@ class SourceScanner {
                                 throw new IllegalArgumentException("Invalid args type for '"+tKey+"' in func '"+mName+"', input expected: int ** (for NestedIntCPointer), real: "+tTypeStr);
                             }
                         } else {
-                            checkType_(tKey, AnyCPointer.class, tArg);
+                            checkType_(tKey, AnyCPointer.class, CudaPointer.class, tArg);
                         }
                     } else {
                         // 简单处理 type map

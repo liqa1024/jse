@@ -148,8 +148,8 @@ static NNAP_DEVICE void calYPtheta_(flt_t *rYPtheta, flt_t *aY, flt_t aCosPhi, f
 template <int LMAX>
 static NNAP_DEVICE void calYPthetaPphi_(flt_t *rYPtheta, flt_t *rYPphi, flt_t *aY, flt_t aCosPhi, flt_t aSinPhi) noexcept {
 // >>> NNAPGEN REPEAT
-    calYPphi_<__NNAPGENS_X__>(rYPphi, aY);
     calYPtheta_<__NNAPGENS_X__>(rYPtheta, aY, aCosPhi, aSinPhi);
+    calYPphi_<__NNAPGENS_X__>(rYPphi, aY);
     if (LMAX==__NNAPGENS_X__) return;
 // <<< NNAPGEN REPEAT 0..12
 }
@@ -180,6 +180,57 @@ static NNAP_DEVICE void calYPthetaPphi(flt_t *rYPtheta, flt_t *rYPphi, flt_t *aY
     rPhiPx = dxyCloseZero ? ZERO : ( sinPhi/dxy);
     rPhiPy = dxyCloseZero ? ZERO : (-cosPhi/dxy);
 }
+
+
+template <int L>
+static NNAP_DEVICE void calYPphiGpu_(flt_t *aY_rYPphi) noexcept {
+    constexpr int tStart = L*L;
+    constexpr int tIdx = tStart+L;
+    aY_rYPphi[tIdx] = ZERO;
+    for (int m = 1; m <= L; ++m) {
+        const flt_t tYm1 = aY_rYPphi[tIdx-m];
+        const flt_t tYm2 = aY_rYPphi[tIdx+m];
+        aY_rYPphi[tIdx+m] = -((flt_t)m) * tYm1;
+        aY_rYPphi[tIdx-m] =  ((flt_t)m) * tYm2;
+    }
+}
+template <int LMAX>
+static NNAP_DEVICE void calYPthetaPphiGpu_(flt_t *rYPtheta, flt_t *aY_rYPphi, flt_t aCosPhi, flt_t aSinPhi) noexcept {
+    // >>> NNAPGEN REPEAT
+    calYPtheta_<__NNAPGENS_X__>(rYPtheta, aY_rYPphi, aCosPhi, aSinPhi);
+    calYPphiGpu_<__NNAPGENS_X__>(aY_rYPphi);
+    if (LMAX==__NNAPGENS_X__) return;
+    // <<< NNAPGEN REPEAT 0..12
+}
+template <int LMAX>
+static NNAP_DEVICE void calYPthetaPphiGpu(flt_t *rYPtheta, flt_t *aY_rYPphi, flt_t aDx, flt_t aDy, flt_t aDz, flt_t aDis,
+                                          flt_t &rThetaPx, flt_t &rThetaPy, flt_t &rThetaPz, flt_t &rPhiPx, flt_t &rPhiPy) noexcept {
+    constexpr int tLMAll = (LMAX+1)*(LMAX+1);
+    const flt_t dxy = nnap_hypot(aDx, aDy);
+    const flt_t cosTheta = aDz / aDis;
+    const flt_t sinTheta = dxy / aDis;
+    const int dxyCloseZero = numericEqual(dxy, ZERO);
+    flt_t cosPhi, sinPhi;
+    if (dxyCloseZero) {
+        cosPhi = ONE;
+        sinPhi = ZERO;
+    } else {
+        cosPhi = aDx / dxy;
+        sinPhi = aDy / dxy;
+    }
+    calYPthetaPphiGpu_<LMAX>(rYPtheta, aY_rYPphi, cosPhi, sinPhi);
+    if (dxyCloseZero) {
+        // fix singularity
+        fill<tLMAll>(aY_rYPphi, ZERO);
+    }
+    rThetaPx = -cosTheta*cosPhi/aDis;
+    rThetaPy = -cosTheta*sinPhi/aDis;
+    rThetaPz =  sinTheta/aDis;
+    rPhiPx = dxyCloseZero ? ZERO : ( sinPhi/dxy);
+    rPhiPy = dxyCloseZero ? ZERO : (-cosPhi/dxy);
+}
+
+
 static inline NNAP_DEVICE void calthetaPhiPxyz(flt_t aDx, flt_t aDy, flt_t aDz, flt_t aDis,
                                                flt_t &rThetaPx, flt_t &rThetaPy, flt_t &rThetaPz,
                                                flt_t &rPhiPx, flt_t &rPhiPy) noexcept {

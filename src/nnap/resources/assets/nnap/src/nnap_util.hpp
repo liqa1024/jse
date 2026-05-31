@@ -259,14 +259,14 @@ static inline NNAP_DEVICE void calRn(flt_t *rRn, flt_t aDis, flt_t aRCut) noexce
     chebyshevFull<N>(tRnX, ONE, rRn);
 }
 template <int N>
-static inline NNAP_DEVICE void calRnGrad(flt_t *rRnGrad, flt_t *rCheby2, flt_t aDis, flt_t aRCut) noexcept {
+static inline NNAP_DEVICE void calRnGrad(flt_t *rRnGrad, flt_t aDis, flt_t aRCut) noexcept {
     const flt_t tX = aDis/aRCut;
     const flt_t tCheby2Mul = TWO / (aDis*aRCut);
     const flt_t tRnX = ONE - (tX+tX);
-    chebyshev2Full<N-1>(tRnX, tCheby2Mul, rCheby2);
+    chebyshev2Full<N-1>(tRnX, tCheby2Mul, rRnGrad+1);
     rRnGrad[0] = ZERO;
     for (int n = 1; n <= N; ++n) {
-        rRnGrad[n] = ((flt_t)n)*rCheby2[n-1];
+        rRnGrad[n] *= (flt_t)n;
     }
 }
 

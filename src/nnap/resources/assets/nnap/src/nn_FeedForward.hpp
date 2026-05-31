@@ -32,9 +32,104 @@ static inline NNAP_DEVICE flt_t siluGradGrad(flt_t aX, flt_t *rGrad, flt_t *rGra
 #define __NNAPGENOS_X__ 1
 // <<< NNAPGEN REMOVE
 
+template <int IN_SIZE, int OUT_SIZE>
+static NNAP_DEVICE void nnForwardLayerGpu(
+    flt_t *aX, flt_t *rY, flt_t *aWeight, flt_t *aBias, flt_t *rSiLUGrad) noexcept {
+    
+    flt_t *tWeight = aWeight;
+    for (int j = 0; j < OUT_SIZE; ++j) {
+        const flt_t tDot = dot<IN_SIZE>(aX, tWeight) + aBias[j];
+        tWeight += IN_SIZE;
+        flt_t rGrad;
+        rY[j] = siluGrad(tDot, &rGrad);
+        rSiLUGrad[j] = rGrad;
+    }
+}
+
+template <int CTYPE_GEN>
+static NNAP_DEVICE flt_t nnForwardGpu(
+    flt_t *aFp, flt_t *aWeights, flt_t *aBiases, flt_t *rGradCache) noexcept {
+    
+    flt_t rOut;
+// >>> NNAPGEN SWITCH
+    flt_t bHiddenLayers[__NNAPGENX_NN_SIZE_HB__];
+    flt_t *tSubX = aFp;
+    flt_t *rSubY = bHiddenLayers;
+    
+    flt_t *tWeight = aWeights;
+    flt_t *tBias = aBiases;
+    flt_t *rSiLUGrad = rGradCache;
+    
+// >>> NNAPGEN REPEAT
+    nnForwardLayerGpu<__NNAPGENXX_NN_IN_SIZE__, __NNAPGENXX_NN_OUT_SIZE__>(
+        tSubX, rSubY, tWeight, tBias, rSiLUGrad
+    );
+    tWeight += __NNAPGENXX_NN_IN_SIZE__*__NNAPGENXX_NN_OUT_SIZE__;
+    tBias += __NNAPGENXX_NN_OUT_SIZE__;
+    rSiLUGrad += __NNAPGENXX_NN_OUT_SIZE__;
+    tSubX = rSubY;
+    rSubY += __NNAPGENXX_NN_OUT_SIZE__;
+// <<< NNAPGEN REPEAT 0..<[NN HIDDEN LAYERS __NNAPGENS_X__]
+    
+    rOut = dot<__NNAPGENX_NN_SIZE_OW__>(tSubX, tWeight) + tBias[0];
+// <<< NNAPGEN SWITCH (CTYPE_GEN) [NN TYPE]
+    return rOut;
+}
+
+
+template <int IN_SIZE, int OUT_SIZE>
+static NNAP_DEVICE void nnBackwardLayerGpu(
+    flt_t *rAGradX, flt_t *aAGradY, flt_t *aWeight, flt_t *aSiLUGrad) noexcept {
+    
+    flt_t *tWeight = aWeight;
+    for (int j = 0; j < OUT_SIZE; ++j) {
+        flt_t tAGradZ = aAGradY[j] * aSiLUGrad[j];
+        mplus<IN_SIZE>(rAGradX, tAGradZ, tWeight);
+        tWeight += IN_SIZE;
+    }
+}
+
+template <int CTYPE_GEN>
+static NNAP_DEVICE void nnBackwardGpu(
+    flt_t aAGradY, flt_t *rAGradFp, flt_t *aWeights, flt_t *aGradCache) noexcept {
+    
+// >>> NNAPGEN SWITCH
+    flt_t bHiddenLayers[__NNAPGENX_NN_SIZE_HB__];
+    flt_t *rSubAGradX = bHiddenLayers;
+    flt_t *tSubAGradY = NULL;
+    
+    flt_t *tWeight = aWeights;
+    flt_t *tSiLUGrad = aGradCache;
+    
+    // switch to last layer
+    tWeight += __NNAPGENX_NN_SIZE_HW__;
+    tSiLUGrad += __NNAPGENX_NN_SIZE_HB__;
+    rSubAGradX += __NNAPGENX_NN_SIZE_HB__;
+    
+    // begin backward
+    rSubAGradX -= __NNAPGENX_NN_SIZE_OW__;
+    mplus<__NNAPGENX_NN_SIZE_OW__>(rSubAGradX, aAGradY, tWeight);
+// >>> NNAPGEN REPEAT
+    tWeight -= __NNAPGENXX_NN_IN_SIZE__*__NNAPGENXX_NN_OUT_SIZE__;
+    tSiLUGrad -= __NNAPGENXX_NN_OUT_SIZE__;
+    tSubAGradY = rSubAGradX;
+    if (__NNAPGENOS_X__ == 0) {
+        rSubAGradX = rAGradFp;
+    } else {
+        rSubAGradX -= __NNAPGENXX_NN_IN_SIZE__;
+    }
+    nnBackwardLayerGpu<__NNAPGENXX_NN_IN_SIZE__, __NNAPGENXX_NN_OUT_SIZE__>(
+        rSubAGradX, tSubAGradY, tWeight, tSiLUGrad
+    );
+// <<< NNAPGEN REPEAT [NN HIDDEN LAYERS __NNAPGENS_X__]<..0
+
+// <<< NNAPGEN SWITCH (CTYPE_GEN) [NN TYPE]
+}
+
+
 
 template <int IN_SIZE, int OUT_SIZE, int CACHE_GRAD, int CACHE_GRADGRAD>
-static NNAP_DEVICE void nnForwardLayer(flt_t *aX, flt_t *rY, flt_t *aWeight, flt_t *aBias, flt_t *rSiLUGrad, flt_t *rSiLUGradGrad) noexcept {
+static void nnForwardLayer(flt_t *aX, flt_t *rY, flt_t *aWeight, flt_t *aBias, flt_t *rSiLUGrad, flt_t *rSiLUGradGrad) noexcept {
     flt_t *tWeight = aWeight;
     for (int j = 0; j < OUT_SIZE; ++j) {
         const flt_t tDot = dot<IN_SIZE>(aX, tWeight) + aBias[j];
@@ -57,7 +152,7 @@ static NNAP_DEVICE void nnForwardLayer(flt_t *aX, flt_t *rY, flt_t *aWeight, flt
 
 
 template <int CTYPE_GEN, int CACHE_GRAD, int CACHE_GRADGRAD>
-static NNAP_DEVICE flt_t nnForward(flt_t *rLayers, flt_t *aWeights, flt_t *aBiases, flt_t *rGradCache, flt_t *rGradGradCache) noexcept {
+static flt_t nnForward(flt_t *rLayers, flt_t *aWeights, flt_t *aBiases, flt_t *rGradCache, flt_t *rGradGradCache) noexcept {
     flt_t rOut;
 // >>> NNAPGEN SWITCH
     flt_t *tSubX = rLayers;
@@ -87,8 +182,8 @@ static NNAP_DEVICE flt_t nnForward(flt_t *rLayers, flt_t *aWeights, flt_t *aBias
 
 
 template <int IN_SIZE, int OUT_SIZE, int GRAD_PARAM, int CACHE_Z>
-static NNAP_DEVICE void nnBackwardLayer(flt_t *aX, flt_t *rAGradX, flt_t *aAGradY, flt_t *rAGradZ,
-                                        flt_t *aWeight, flt_t *rAGradWeight, flt_t *rAGradBias, flt_t *aSiLUGrad) noexcept {
+static void nnBackwardLayer(flt_t *aX, flt_t *rAGradX, flt_t *aAGradY, flt_t *rAGradZ,
+                            flt_t *aWeight, flt_t *rAGradWeight, flt_t *rAGradBias, flt_t *aSiLUGrad) noexcept {
     flt_t *tWeight = aWeight;
     flt_t *tAGradWeight = GRAD_PARAM ? rAGradWeight : NULL;
     for (int j = 0; j < OUT_SIZE; ++j) {
@@ -108,8 +203,8 @@ static NNAP_DEVICE void nnBackwardLayer(flt_t *aX, flt_t *rAGradX, flt_t *aAGrad
 }
 
 template <int CTYPE_GEN, int GRAD_PARAM, int CACHE_Z>
-static NNAP_DEVICE void nnBackward(flt_t aAGradY, flt_t *aLayers, flt_t *rAGradLayers, flt_t *rAGradLayersZ,
-                                   flt_t *aWeights, flt_t *rAGradWeights, flt_t *rAGradBiases, flt_t *aGradCache) noexcept {
+static void nnBackward(flt_t aAGradY, flt_t *aLayers, flt_t *rAGradLayers, flt_t *rAGradLayersZ,
+                       flt_t *aWeights, flt_t *rAGradWeights, flt_t *rAGradBiases, flt_t *aGradCache) noexcept {
 // >>> NNAPGEN SWITCH
     flt_t *rSubAGradX = rAGradLayers;
     flt_t *tSubAGradY = NULL;
@@ -167,8 +262,8 @@ static NNAP_DEVICE void nnBackward(flt_t aAGradY, flt_t *aLayers, flt_t *rAGradL
 
 
 template <int IN_SIZE, int OUT_SIZE>
-static NNAP_DEVICE void nnBackwardBackwardLayer(flt_t *aBGradAGradX, flt_t *aAGradY, flt_t *rBGradAGradY, flt_t *aAGradZ, flt_t *rBGradZ,
-                                                flt_t *aWeight, flt_t *rBGradWeight, flt_t *aSiLUGrad, flt_t *aSiLUGradGrad) noexcept {
+static void nnBackwardBackwardLayer(flt_t *aBGradAGradX, flt_t *aAGradY, flt_t *rBGradAGradY, flt_t *aAGradZ, flt_t *rBGradZ,
+                                    flt_t *aWeight, flt_t *rBGradWeight, flt_t *aSiLUGrad, flt_t *aSiLUGradGrad) noexcept {
     flt_t *tWeight = aWeight;
     flt_t *tBGradWeight = rBGradWeight;
     for (int j = 0; j < OUT_SIZE; ++j) {
@@ -187,8 +282,8 @@ static NNAP_DEVICE void nnBackwardBackwardLayer(flt_t *aBGradAGradX, flt_t *aAGr
 }
 
 template <int CTYPE_GEN, int GRAD_IN>
-static NNAP_DEVICE void nnBackwardBackward(flt_t aAGradY, flt_t *rBGradAGradY, flt_t *aAGradLayers, flt_t *rBGradAGradLayers, flt_t *aAGradLayersZ, flt_t *rBGradLayersZ,
-                                           flt_t *aWeights, flt_t *rBGradWeights, flt_t *aGradCache, flt_t *aGradGradCache) noexcept {
+static void nnBackwardBackward(flt_t aAGradY, flt_t *rBGradAGradY, flt_t *aAGradLayers, flt_t *rBGradAGradLayers, flt_t *aAGradLayersZ, flt_t *rBGradLayersZ,
+                               flt_t *aWeights, flt_t *rBGradWeights, flt_t *aGradCache, flt_t *aGradGradCache) noexcept {
 // >>> NNAPGEN SWITCH
     flt_t *tSubAGradY = aAGradLayers + __NNAPGENX_NN_SIZE_IN__;
     flt_t *tSubBGradAGradX = rBGradAGradLayers;

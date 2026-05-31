@@ -5,9 +5,157 @@
 
 namespace JSE_NNAP {
 
+template <int WTYPE, int NMAX, int LMAXMAX, int SIZE_NP>
+static NNAP_DEVICE void calAnlmGpu(int nb, int bi, int np,
+    flt_t *aBufNlDx, flt_t *aBufNlDy, flt_t *aBufNlDz, int *aBufNlType, int aNeiNum, flt_t *rAnlm,
+    flt_t aRCut, flt_t *aParams) noexcept {
+    // const init
+    constexpr int tLMAll = (LMAXMAX+1)*(LMAXMAX+1);
+    // init cache
+    flt_t bRn[NMAX+1];
+    flt_t bY[tLMAll];
+    // loop for neighbor
+    for (int j = 0; j < aNeiNum; ++j) {
+        int type = aBufNlType[j*nb + bi];
+        flt_t dx = aBufNlDx[j*nb + bi], dy = aBufNlDy[j*nb + bi], dz = aBufNlDz[j*nb + bi];
+        flt_t dis = nnap_sqrt(dx*dx + dy*dy + dz*dz);
+        // check rcut for merge
+        if (dis >= aRCut) continue;
+        // cal Y
+        calY<LMAXMAX>(bY, dx, dy, dz, dis);
+        // cal Rn, fc
+        calRn<NMAX>(bRn, dis, aRCut);
+        flt_t fc = calFc(dis, aRCut);
+        // cal Rnp
+        const int tParamShift = (type-1)*(SIZE_NP*(NMAX+1)) + np*(NMAX+1);
+        flt_t tRnp = dot<NMAX+1>(bRn, aParams+tParamShift);
+        // to anlm
+        mplus<tLMAll>(rAnlm, fc*tRnp, bY);
+    }
+}
+template <int WTYPE, int NMAX, int LMAX, int L3MAX, int L4MAX, int SIZE_NP>
+static NNAP_DEVICE void sphForwardGpu(int nb, int bi,
+    flt_t *aBufNlDx, flt_t *aBufNlDy, flt_t *aBufNlDz, int *aBufNlType, int aNeiNum, flt_t *rFp,
+    flt_t aRCut, flt_t *aParams) noexcept {
+    // const init
+    constexpr int tSizeL = (LMAX+1) + L3NCOLS[L3MAX] + L4NCOLS[L4MAX];
+    constexpr int tLMaxMax = LMAX>L3MAX ? (LMAX>L4MAX?LMAX:L4MAX) : (L3MAX>L4MAX?L3MAX:L4MAX);
+    constexpr int tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
+    // init cache
+    flt_t bAnlm[tLMAll];
+    // change loop order for less cache
+    constexpr int tSizeL2 = LMAX+1;
+    constexpr int tSizeL3 = L3NCOLS[L3MAX];
+    for (int np=0, tShiftFp=0; np < SIZE_NP; ++np, tShiftFp+=tSizeL) {
+        fill<tLMAll>(bAnlm, ZERO);
+        calAnlmGpu<WTYPE, NMAX, tLMaxMax, SIZE_NP>(nb, bi, np,
+            aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aNeiNum, bAnlm,
+            aRCut, aParams
+        );
+        // anlm -> fp
+        calSphL2<LMAX >(bAnlm, rFp+tShiftFp);
+        calSphL3<L3MAX>(bAnlm, rFp+tShiftFp+tSizeL2);
+        calSphL4<L4MAX>(bAnlm, rFp+tShiftFp+tSizeL2+tSizeL3);
+    }
+}
+
+template <int WTYPE, int NMAX, int LMAXMAX, int SIZE_NP>
+static NNAP_DEVICE void backwardAnlmGpu(int nb, int bi, int np,
+    flt_t *aBufNlDx, flt_t *aBufNlDy, flt_t *aBufNlDz, int *aBufNlType, int aNeiNum, flt_t *bY, flt_t *aAGradAnlm,
+    flt_t *rBufAGradNlDx, flt_t *rBufAGradNlDy, flt_t *rBufAGradNlDz,
+    flt_t aRCut, flt_t *aParams) {
+    // const init
+    constexpr int tLMAll = (LMAXMAX+1)*(LMAXMAX+1);
+    // init cache
+    flt_t bRn[NMAX+1];
+    flt_t bYPtheta[tLMAll];
+    // loop for neighbor
+    for (int j = 0; j < aNeiNum; ++j) {
+        // init nl
+        int type = aBufNlType[j*nb + bi];
+        flt_t dx = aBufNlDx[j*nb + bi], dy = aBufNlDy[j*nb + bi], dz = aBufNlDz[j*nb + bi];
+        flt_t dis = nnap_sqrt(dx*dx + dy*dy + dz*dz);
+        // check rcut for merge
+        if (dis >= aRCut) continue;
+        // cal Y
+        calY<LMAXMAX>(bY, dx, dy, dz, dis);
+        // cal Rn, fc
+        calRn<NMAX>(bRn, dis, aRCut);
+        flt_t fc = calFc(dis, aRCut);
+        // cal Rnp
+        const int tParamShift = (type-1)*(SIZE_NP*(NMAX+1)) + np*(NMAX+1);
+        flt_t tRnp = dot<NMAX+1>(bRn, aParams+tParamShift);
+        
+        // cal grad fc & Rnp here, for no use Y later
+        const flt_t tAGradFcRnp = dot<tLMAll>(aAGradAnlm, bY);
+        const flt_t tAGradFc = tAGradFcRnp*tRnp;
+        const flt_t tAGradRnp = tAGradFcRnp*fc;
+        // cal RnGrad, fcGrag
+        flt_t *tRnGrad = bRn;
+        calRnGrad<NMAX>(tRnGrad, dis, aRCut);
+        flt_t fcGrad = calFcGrad(dis, aRCut);
+        // gradRnp to gradRn (cache optim)
+        flt_t rAGradj = tAGradRnp * dot<NMAX+1>(aParams+tParamShift, tRnGrad);
+        rAGradj += tAGradFc*fcGrad;
+        
+        // cal YlmPthetaPphi
+        flt_t thetaPx, thetaPy, thetaPz, phiPx, phiPy;
+        calYPthetaPphiGpu<LMAXMAX>(
+            bYPtheta, bY, dx, dy, dz, dis,
+            thetaPx, thetaPy, thetaPz, phiPx, phiPy
+        );
+        // backward in single loop for save cache
+        flt_t rAGradThetaj = ZERO, rAGradPhij = ZERO;
+        const flt_t subFcRnp = fc*tRnp;
+        for (int k = 0; k < tLMAll; ++k) {
+            const flt_t subAGradY = aAGradAnlm[k]*subFcRnp;
+            rAGradThetaj += subAGradY*bYPtheta[k];
+            rAGradPhij += subAGradY*bY[k]; // bY <-> bYPphi
+        }
+        // to grad xyz
+        rBufAGradNlDx[j*nb + bi] += rAGradj*dx + rAGradThetaj*thetaPx + rAGradPhij*phiPx;
+        rBufAGradNlDy[j*nb + bi] += rAGradj*dy + rAGradThetaj*thetaPy + rAGradPhij*phiPy;
+        rBufAGradNlDz[j*nb + bi] += rAGradj*dz + rAGradThetaj*thetaPz;
+    }
+}
+template <int WTYPE, int NMAX, int LMAX, int L3MAX, int L4MAX, int SIZE_NP>
+static NNAP_DEVICE void sphBackwardGpu(int nb, int bi,
+    flt_t *aBufNlDx, flt_t *aBufNlDy, flt_t *aBufNlDz, int *aBufNlType, int aNeiNum, flt_t *aAGradFp,
+    flt_t *rBufAGradNlDx, flt_t *rBufAGradNlDy, flt_t *rBufAGradNlDz,
+    flt_t aRCut, flt_t *aParams) noexcept {
+    // const init
+    constexpr int tSizeL = (LMAX+1) + L3NCOLS[L3MAX] + L4NCOLS[L4MAX];
+    constexpr int tLMaxMax = LMAX>L3MAX ? (LMAX>L4MAX?LMAX:L4MAX) : (L3MAX>L4MAX?L3MAX:L4MAX);
+    constexpr int tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
+    // init cache
+    flt_t bAnlm[tLMAll], bAGradAnlm[tLMAll];
+    // change loop order for less cache
+    constexpr int tSizeL2 = LMAX+1;
+    constexpr int tSizeL3 = L3NCOLS[L3MAX];
+    for (int np=0, tShiftFp=0; np < SIZE_NP; ++np, tShiftFp+=tSizeL) {
+        // recalculated for save cache
+        fill<tLMAll>(bAnlm, ZERO);
+        calAnlmGpu<WTYPE, NMAX, tLMaxMax, SIZE_NP>(nb, bi, np,
+            aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aNeiNum, bAnlm,
+            aRCut, aParams
+        );
+        fill<tLMAll>(bAGradAnlm, ZERO);
+        calGradSphL2<LMAX >(bAnlm, bAGradAnlm, aAGradFp+tShiftFp);
+        calGradSphL3<L3MAX>(bAnlm, bAGradAnlm, aAGradFp+tShiftFp+tSizeL2);
+        calGradSphL4<L4MAX>(bAnlm, bAGradAnlm, aAGradFp+tShiftFp+tSizeL2+tSizeL3);
+        backwardAnlmGpu<WTYPE, NMAX, tLMaxMax, SIZE_NP>(nb, bi, np,
+            aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aNeiNum, bAnlm, bAGradAnlm,
+            rBufAGradNlDx, rBufAGradNlDy, rBufAGradNlDz,
+            aRCut, aParams
+        );
+    }
+}
+
+
+
 template <int WTYPE, int NMAX, int LMAXMAX, int SIZE_NP, int REQUIRE_CACHE>
-static NNAP_DEVICE void calAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rAnlm,
-                                flt_t **rForwardCache, flt_t aRCut, flt_t *aParams) noexcept {
+static void calAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rAnlm,
+                    flt_t **rForwardCache, flt_t aRCut, flt_t *aParams) noexcept {
     constexpr int tLMAll = (LMAXMAX+1)*(LMAXMAX+1);
     // init cache
     flt_t bRn[REQUIRE_CACHE ? 1 : (NMAX+1)]; flt_t *rRn = REQUIRE_CACHE ? NULL : bRn;
@@ -63,8 +211,8 @@ static NNAP_DEVICE void calAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *a
 }
 
 template <int WTYPE, int NMAX, int LMAX, int L3MAX, int L4MAX, int SIZE_NP, int REQUIRE_CACHE>
-static NNAP_DEVICE void sphForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rFp,
-                                   flt_t **rForwardCache, flt_t aRCut, flt_t *aParams) noexcept {
+static void sphForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rFp,
+                       flt_t **rForwardCache, flt_t aRCut, flt_t *aParams) noexcept {
     // const init
     constexpr int tSizeL = (LMAX+1) + L3NCOLS[L3MAX] + L4NCOLS[L4MAX];
     constexpr int tLMaxMax = LMAX>L3MAX ? (LMAX>L4MAX?LMAX:L4MAX) : (L3MAX>L4MAX?L3MAX:L4MAX);
@@ -95,10 +243,10 @@ static NNAP_DEVICE void sphForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int
 }
 
 template <int WTYPE, int NMAX, int LMAXMAX, int SIZE_NP, int GRAD_PARAM, int USE_BB, int REQUIRE_CACHE>
-static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aAGradAnlm,
-                                     flt_t *rAGradNlDx, flt_t *rAGradNlDy, flt_t *rAGradNlDz,
-                                     flt_t **aForwardCache, flt_t **rBackwardCache, flt_t **rBackwardBackwardCache,
-                                     flt_t aRCut, flt_t *aParams, flt_t *rAGradParams) {
+static void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aAGradAnlm,
+                         flt_t *rAGradNlDx, flt_t *rAGradNlDy, flt_t *rAGradNlDz,
+                         flt_t **aForwardCache, flt_t **rBackwardCache, flt_t **rBackwardBackwardCache,
+                         flt_t aRCut, flt_t *aParams, flt_t *rAGradParams) {
     static_assert(!(GRAD_PARAM && REQUIRE_CACHE), "INVALID STATE");
     static_assert(!(USE_BB && REQUIRE_CACHE), "INVALID STATE");
     static_assert(!(!GRAD_PARAM && USE_BB), "INVALID STATE");
@@ -128,7 +276,7 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
     if (USE_BB) {
         rNlAGradRnp = *rBackwardBackwardCache; *rBackwardBackwardCache += aNeiNum*SIZE_NP;
     }
-    flt_t rCheby2[NMAX+1], rAGradRn[NMAX+1];
+    flt_t rAGradRn[NMAX+1];
     flt_t rAGradY[tLMAll];
     // loop for neighbor
     for (int j = 0; j < aNeiNum; ++j) {
@@ -180,7 +328,7 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
         if (!GRAD_PARAM) {
             // cal RnGrad, fcGrag
             if (REQUIRE_CACHE) rRnGrad = rNlRnGrad + j*(NMAX+1);
-            calRnGrad<NMAX>(rRnGrad, rCheby2, dis, aRCut);
+            calRnGrad<NMAX>(rRnGrad, dis, aRCut);
             flt_t fcGrad = calFcGrad(dis, aRCut);
             if (REQUIRE_CACHE) rNlFcGrad[j] = fcGrad;
             // cal YlmPthetaPphi
@@ -208,10 +356,10 @@ static NNAP_DEVICE void backwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
     }
 }
 template <int WTYPE, int NMAX, int LMAX, int L3MAX, int L4MAX, int SIZE_NP, int GRAD_PARAM, int USE_BB, int REQUIRE_CACHE>
-static NNAP_DEVICE void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aAGradFp,
-                                    flt_t *rAGradNlDx, flt_t *rAGradNlDy, flt_t *rAGradNlDz,
-                                    flt_t **aForwardCache, flt_t **rBackwardCache, flt_t **rBackwardBackwardCache,
-                                    flt_t aRCut, flt_t *aParams, flt_t *rAGradParams) noexcept {
+static void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aAGradFp,
+                        flt_t *rAGradNlDx, flt_t *rAGradNlDy, flt_t *rAGradNlDz,
+                        flt_t **aForwardCache, flt_t **rBackwardCache, flt_t **rBackwardBackwardCache,
+                        flt_t aRCut, flt_t *aParams, flt_t *rAGradParams) noexcept {
     static_assert(!(GRAD_PARAM && REQUIRE_CACHE), "INVALID STATE");
     static_assert(!(USE_BB && REQUIRE_CACHE), "INVALID STATE");
     static_assert(!(!GRAD_PARAM && USE_BB), "INVALID STATE");
@@ -269,10 +417,10 @@ static NNAP_DEVICE void sphBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, in
 }
 
 template <int WTYPE, int NMAX, int LMAXMAX, int SIZE_NP>
-static NNAP_DEVICE void backwardBackwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aAGradAnlm, flt_t *rBGradAGradAnlm,
-                                             flt_t *aBGradAGradNlDx, flt_t *aBGradAGradNlDy, flt_t *aBGradAGradNlDz,
-                                             flt_t **aForwardCache, flt_t **aBackwardCache, flt_t **rBackwardBackwardCache,
-                                             flt_t aRCut, flt_t *aParams, flt_t *rBGradParams) {
+static void backwardBackwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aAGradAnlm, flt_t *rBGradAGradAnlm,
+                                 flt_t *aBGradAGradNlDx, flt_t *aBGradAGradNlDy, flt_t *aBGradAGradNlDz,
+                                 flt_t **aForwardCache, flt_t **aBackwardCache, flt_t **rBackwardBackwardCache,
+                                 flt_t aRCut, flt_t *aParams, flt_t *rBGradParams) {
     constexpr int tLMAll = (LMAXMAX+1)*(LMAXMAX+1);
     // init cache
     flt_t *tNlFc = *aForwardCache; *aForwardCache += aNeiNum;
@@ -360,10 +508,10 @@ static NNAP_DEVICE void backwardBackwardAnlm(flt_t *aNlDx, flt_t *aNlDy, flt_t *
     }
 }
 template <int WTYPE, int NMAX, int LMAX, int L3MAX, int L4MAX, int SIZE_NP>
-static NNAP_DEVICE void sphBackwardBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aAGradFp, flt_t *rBGradAGradFp,
-                                            flt_t *aBGradAGradNlDx, flt_t *aBGradAGradNlDy, flt_t *aBGradAGradNlDz,
-                                            flt_t **aForwardCache, flt_t **aBackwardCache, flt_t **rBackwardBackwardCache,
-                                            flt_t aRCut, flt_t *aParams, flt_t *rBGradParams) noexcept {
+static void sphBackwardBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aAGradFp, flt_t *rBGradAGradFp,
+                                flt_t *aBGradAGradNlDx, flt_t *aBGradAGradNlDy, flt_t *aBGradAGradNlDz,
+                                flt_t **aForwardCache, flt_t **aBackwardCache, flt_t **rBackwardBackwardCache,
+                                flt_t aRCut, flt_t *aParams, flt_t *rBGradParams) noexcept {
     // const init
     constexpr int tSizeL = (LMAX+1) + L3NCOLS[L3MAX] + L4NCOLS[L4MAX];
     constexpr int tLMaxMax = LMAX>L3MAX ? (LMAX>L4MAX?LMAX:L4MAX) : (L3MAX>L4MAX?L3MAX:L4MAX);

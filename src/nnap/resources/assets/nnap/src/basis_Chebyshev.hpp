@@ -5,9 +5,83 @@
 
 namespace JSE_NNAP {
 
+template <int WTYPE, int NMAX, int SIZE_NP>
+static NNAP_DEVICE void chebyForwardGpu(int nb, int bi,
+    flt_t *aBufNlDx, flt_t *aBufNlDy, flt_t *aBufNlDz, int *aBufNlType, int aNeiNum, flt_t *rFp,
+    flt_t aRCut, flt_t *aParams) noexcept {
+    // init cache
+    flt_t bRn[NMAX+1];
+    flt_t bRnp[SIZE_NP];
+    // clear fp first
+    fill<SIZE_NP>(rFp, ZERO);
+    // loop for neighbor
+    for (int j = 0; j < aNeiNum; ++j) {
+        int type = aBufNlType[j*nb + bi];
+        flt_t dx = aBufNlDx[j*nb + bi], dy = aBufNlDy[j*nb + bi], dz = aBufNlDz[j*nb + bi];
+        flt_t dis = nnap_sqrt(dx*dx + dy*dy + dz*dz);
+        // check rcut for merge
+        if (dis >= aRCut) continue;
+        // cal Rn, fc
+        calRn<NMAX>(bRn, dis, aRCut);
+        flt_t fc = calFc(dis, aRCut);
+        // cal Rnp
+        const int tParamShift = (type-1)*(SIZE_NP*(NMAX+1));
+        calRnp<NMAX, SIZE_NP>(bRnp, bRn, aParams+tParamShift);
+        // Rn to fp
+        mplusFp<SIZE_NP>(rFp, fc, bRnp);
+    }
+}
+template <int WTYPE, int NMAX, int SIZE_NP>
+static NNAP_DEVICE void chebyBackwardGpu(int nb, int bi,
+    flt_t *aBufNlDx, flt_t *aBufNlDy, flt_t *aBufNlDz, int *aBufNlType, int aNeiNum, flt_t *aAGradFp,
+    flt_t *rBufAGradNlDx, flt_t *rBufAGradNlDy, flt_t *rBufAGradNlDz,
+    flt_t aRCut, flt_t *aParams) noexcept {
+    // init cache
+    flt_t bRn[NMAX+1], bAGradRn[NMAX+1];
+    flt_t bRnp[SIZE_NP];
+    // loop for neighbor
+    for (int j = 0; j < aNeiNum; ++j) {
+        // init nl
+        int type = aBufNlType[j*nb + bi];
+        flt_t dx = aBufNlDx[j*nb + bi], dy = aBufNlDy[j*nb + bi], dz = aBufNlDz[j*nb + bi];
+        flt_t dis = nnap_sqrt(dx*dx + dy*dy + dz*dz);
+        // check rcut for merge
+        if (dis >= aRCut) continue;
+        // cal Rn, fc
+        calRn<NMAX>(bRn, dis, aRCut);
+        flt_t fc = calFc(dis, aRCut);
+        // cal Rnp
+        const int tParamShift = (type-1)*(SIZE_NP*(NMAX+1));
+        calRnp<NMAX, SIZE_NP>(bRnp, bRn, aParams+tParamShift);
+        
+        // backward in single loop for save cache
+        flt_t rAGradFc = ZERO;
+        fill<NMAX+1>(bAGradRn, ZERO);
+        flt_t *tWeight = aParams+tParamShift;
+        for (int np = 0; np < SIZE_NP; ++np) {
+            const flt_t subAGradFp = aAGradFp[np];
+            rAGradFc += subAGradFp*bRnp[np];
+            mplus<NMAX+1>(bAGradRn, subAGradFp*fc, tWeight);
+            tWeight += (NMAX+1);
+        }
+        // cal RnGrad, fcGrag
+        flt_t *tRnGrad = bRn;
+        calRnGrad<NMAX>(tRnGrad, dis, aRCut);
+        flt_t fcGrad = calFcGrad(dis, aRCut);
+        flt_t rAGradj = dot<NMAX+1>(bAGradRn, tRnGrad);
+        rAGradj += rAGradFc*fcGrad;
+        // to grad xyz
+        rBufAGradNlDx[j*nb + bi] += rAGradj*dx;
+        rBufAGradNlDy[j*nb + bi] += rAGradj*dy;
+        rBufAGradNlDz[j*nb + bi] += rAGradj*dz;
+    }
+}
+
+
+
 template <int WTYPE, int NMAX, int SIZE_NP, int REQUIRE_CACHE>
-static NNAP_DEVICE void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rFp,
-                                     flt_t **rForwardCache, flt_t aRCut, flt_t *aParams) noexcept {
+static void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *rFp,
+                         flt_t **rForwardCache, flt_t aRCut, flt_t *aParams) noexcept {
     // init cache
     flt_t bRn[REQUIRE_CACHE ? 1 : (NMAX+1)]; flt_t *rRn = REQUIRE_CACHE ? NULL : bRn;
     flt_t bRnp[REQUIRE_CACHE ? 1 : SIZE_NP]; flt_t *rRnp = REQUIRE_CACHE ? NULL : bRnp;
@@ -59,10 +133,10 @@ static NNAP_DEVICE void chebyForward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, i
 }
 
 template <int WTYPE, int NMAX, int SIZE_NP, int GRAD_PARAM, int USE_BB, int REQUIRE_CACHE>
-static NNAP_DEVICE void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aAGradFp,
-                                      flt_t *rAGradNlDx, flt_t *rAGradNlDy, flt_t *rAGradNlDz,
-                                      flt_t **aForwardCache, flt_t **rBackwardCache, flt_t **rBackwardBackwardCache,
-                                      flt_t aRCut, flt_t *aParams, flt_t *rAGradParams) noexcept {
+static void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aAGradFp,
+                          flt_t *rAGradNlDx, flt_t *rAGradNlDy, flt_t *rAGradNlDz,
+                          flt_t **aForwardCache, flt_t **rBackwardCache, flt_t **rBackwardBackwardCache,
+                          flt_t aRCut, flt_t *aParams, flt_t *rAGradParams) noexcept {
     static_assert(!(GRAD_PARAM && REQUIRE_CACHE), "INVALID STATE");
     static_assert(!(USE_BB && REQUIRE_CACHE), "INVALID STATE");
     static_assert(!(!GRAD_PARAM && USE_BB), "INVALID STATE");
@@ -95,7 +169,7 @@ static NNAP_DEVICE void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, 
     if (USE_BB) {
         rNlAGradRnp = *rBackwardBackwardCache; *rBackwardBackwardCache += aNeiNum*SIZE_NP;
     }
-    flt_t rCheby2[NMAX+1], rAGradRn[NMAX+1];
+    flt_t rAGradRn[NMAX+1];
     // loop for neighbor
     for (int j = 0; j < aNeiNum; ++j) {
         // init nl
@@ -144,7 +218,7 @@ static NNAP_DEVICE void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, 
         if (!GRAD_PARAM) {
             // cal RnGrad, fcGrag
             if (REQUIRE_CACHE) rRnGrad = rNlRnGrad + j*(NMAX+1);
-            calRnGrad<NMAX>(rRnGrad, rCheby2, dis, aRCut);
+            calRnGrad<NMAX>(rRnGrad, dis, aRCut);
             flt_t fcGrad = calFcGrad(dis, aRCut);
             if (REQUIRE_CACHE) rNlFcGrad[j] = fcGrad;
             flt_t rAGradj = dot<NMAX+1>(rAGradRn, rRnGrad);
@@ -157,10 +231,10 @@ static NNAP_DEVICE void chebyBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, 
 }
 
 template <int WTYPE, int NMAX, int SIZE_NP>
-static NNAP_DEVICE void chebyBackwardBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aAGradFp, flt_t *rBGradAGradFp,
-                                              flt_t *aBGradAGradNlDx, flt_t *aBGradAGradNlDy, flt_t *aBGradAGradNlDz,
-                                              flt_t **aForwardCache, flt_t **aBackwardCache, flt_t **rBackwardBackwardCache,
-                                              flt_t aRCut, flt_t *aParams, flt_t *rBGradParams) noexcept {
+static void chebyBackwardBackward(flt_t *aNlDx, flt_t *aNlDy, flt_t *aNlDz, int *aNlType, int aNeiNum, flt_t *aAGradFp, flt_t *rBGradAGradFp,
+                                  flt_t *aBGradAGradNlDx, flt_t *aBGradAGradNlDy, flt_t *aBGradAGradNlDz,
+                                  flt_t **aForwardCache, flt_t **aBackwardCache, flt_t **rBackwardBackwardCache,
+                                  flt_t aRCut, flt_t *aParams, flt_t *rBGradParams) noexcept {
     // init cache
     flt_t *tNlFc = *aForwardCache; *aForwardCache += aNeiNum;
     flt_t *tNlRn = *aForwardCache; *aForwardCache += aNeiNum*(NMAX+1);

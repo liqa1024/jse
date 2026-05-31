@@ -330,6 +330,7 @@ class NNAP_cuda extends NNAP {
                       long g_type,
                       long g_fx, long g_fy, long g_fz,
                       long g_virial, long g_potential) throws CudaException {
+        if (!mSingle) throw new IllegalStateException();
         // 近邻列表缓存向量长度规范
         int tTotNeiNum = number_of_particles*neighnumMax;
         mPtrMng.ensureCapacity(mCudaBufNlType, tTotNeiNum);
