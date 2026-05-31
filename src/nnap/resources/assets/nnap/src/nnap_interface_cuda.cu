@@ -47,7 +47,7 @@ static __global__ void initLammpsNeiKernel(int inum, int nlocalghost,
 
 static __global__ void collectLammpsResultsKernel(int inum, int nlocalghost,
         int vflag, int vflagAtom, int cvflagAtom,
-        flt_t *f0, flt_t *f1, flt_t *vatom0, flt_t *vatom1,
+        flt_t *f, flt_t *vatom0, flt_t *vatom1,
         flt_t *aBufNlDx, flt_t *aBufNlDy, flt_t *aBufNlDz, int *aBufNlIdx, int *aBufNeiNum,
         flt_t *rBufGradNlDx, flt_t *rBufGradNlDy, flt_t *rBufGradNlDz) {
     const int ii = (int)(blockIdx.x * blockDim.x + threadIdx.x);
@@ -66,9 +66,9 @@ static __global__ void collectLammpsResultsKernel(int inum, int nlocalghost,
         f0x -= fx;
         f0y -= fy;
         f0z -= fz;
-        atomicAdd(f1 + (0*nlocalghost + j), fx);
-        atomicAdd(f1 + (1*nlocalghost + j), fy);
-        atomicAdd(f1 + (2*nlocalghost + j), fz);
+        atomicAdd(f + (0*nlocalghost + j), fx);
+        atomicAdd(f + (1*nlocalghost + j), fy);
+        atomicAdd(f + (2*nlocalghost + j), fz);
         if (vflag) {
             const flt_t dx = aBufNlDx[jj*inum + ii];
             const flt_t dy = aBufNlDy[jj*inum + ii];
@@ -105,9 +105,9 @@ static __global__ void collectLammpsResultsKernel(int inum, int nlocalghost,
             }
         }
     }
-    f0[0*inum + ii] += f0x;
-    f0[1*inum + ii] += f0y;
-    f0[2*inum + ii] += f0z;
+    atomicAdd(f + (0*nlocalghost + ii), f0x);
+    atomicAdd(f + (1*nlocalghost + ii), f0y);
+    atomicAdd(f + (2*nlocalghost + ii), f0z);
 }
 
 static __global__ void postLammpsResultsKernel(int inum, int nlocalghost,
@@ -174,7 +174,7 @@ static void computeLammpsCuda0(int inum, int nlocalghost,
         flt_t *cutsq, int *numneigh, int *firstneigh, int *aLmpType2NNAPType,
         flt_t *rBufNlDx, flt_t *rBufNlDy, flt_t *rBufNlDz, int *rBufNlType, int *rBufNlIdx,
         int *rBufNeiNum, int *rBufCType,
-        flt_t *f0, flt_t *f1, flt_t *eatom0, flt_t *vatom0, flt_t *vatom1,
+        flt_t *f, flt_t *eatom0, flt_t *vatom0, flt_t *vatom1,
         flt_t **aFpHyperParam, flt_t **aFpParam, flt_t **aNormParam, flt_t **aNnParam,
         flt_t *rBufGradNlDx, flt_t *rBufGradNlDy, flt_t *rBufGradNlDz) {
     constexpr int tBlockSize = __NNAPGEN_CUDA_BLOCKSIZE__;
@@ -196,12 +196,9 @@ static void computeLammpsCuda0(int inum, int nlocalghost,
     
     collectLammpsResultsKernel<<<tGridSize, tBlockSize>>>(inum, nlocalghost,
         vflag, vflagAtom, cvflagAtom,
-        f0, f1, vatom0, vatom1,
+        f, vatom0, vatom1,
         rBufNlDx, rBufNlDy, rBufNlDz, rBufNlIdx, rBufNeiNum,
         rBufGradNlDx, rBufGradNlDy, rBufGradNlDz
-    );
-    postLammpsResultsKernel<<<tGridSize, tBlockSize>>>(inum, nlocalghost,
-        ilist, f0, f1
     );
 }
 
@@ -433,14 +430,12 @@ __jsefunc__ int jse_nnap_computeLammpsCuda(
     int inum, int nlocalghost, int eflag, int vflag, int eflagAtom, int vflagAtom, int cvflagAtom,
     JSE_NNAP::flt_t *x, int *type, int *ilist, int *numneigh, int *firstneigh, JSE_NNAP::flt_t *cutsq, int *aLmpType2NNAPType,
     JSE_NNAP::flt_t **aFpHyperParam, JSE_NNAP::flt_t **aFpParam, JSE_NNAP::flt_t **aNnParam, JSE_NNAP::flt_t **aNormParam,
-    JSE_NNAP::flt_t *f0, JSE_NNAP::flt_t *f1, JSE_NNAP::flt_t *eatom0, JSE_NNAP::flt_t *vatom0, JSE_NNAP::flt_t *vatom1,
+    JSE_NNAP::flt_t *f, JSE_NNAP::flt_t *eatom0, JSE_NNAP::flt_t *vatom0, JSE_NNAP::flt_t *vatom1,
     JSE_NNAP::flt_t *rBufNlDx, JSE_NNAP::flt_t *rBufNlDy, JSE_NNAP::flt_t *rBufNlDz, int *rBufNlType, int *rBufNlIdx, int *rBufNeiNum, int *rBufCType,
     JSE_NNAP::flt_t *rBufGradNlDx, JSE_NNAP::flt_t *rBufGradNlDy, JSE_NNAP::flt_t *rBufGradNlDz) {
     
     cudaError_t tErr;
-    tErr = cudaMemset(f0, 0, inum*3*sizeof(JSE_NNAP::flt_t));
-    if (tErr!=cudaSuccess) return (int)tErr;
-    tErr = cudaMemset(f1, 0, nlocalghost*3*sizeof(JSE_NNAP::flt_t));
+    tErr = cudaMemset(f, 0, nlocalghost*3*sizeof(JSE_NNAP::flt_t));
     if (tErr!=cudaSuccess) return (int)tErr;
     if (eflag||eflagAtom) {
         tErr = cudaMemset(eatom0, 0, inum*sizeof(JSE_NNAP::flt_t));
@@ -465,7 +460,7 @@ __jsefunc__ int jse_nnap_computeLammpsCuda(
         cutsq, numneigh, firstneigh, aLmpType2NNAPType,
         rBufNlDx, rBufNlDy, rBufNlDz, rBufNlType, rBufNlIdx,
         rBufNeiNum, rBufCType,
-        f0, f1, eatom0, vatom0, vatom1,
+        f, eatom0, vatom0, vatom1,
         aFpHyperParam, aFpParam, aNormParam, aNnParam,
         rBufGradNlDx, rBufGradNlDy, rBufGradNlDz
     );
