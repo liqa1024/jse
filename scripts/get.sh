@@ -11,7 +11,7 @@ set -o pipefail
 #
 
 JSE_DIR="${1:-"${HOME}/jse"}"
-JSE_VERSION="4.0.1"
+JSE_VERSION="4.1.0"
 JSE_PKG_NAME="jse-${JSE_VERSION}.tar.gz"
 JSE_URL="https://github.com/liqa1024/jse/releases/download/v${JSE_VERSION}/${JSE_PKG_NAME}"
 
