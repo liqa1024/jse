@@ -39,6 +39,7 @@ import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.customizers.ASTTransformationCustomizer;
 import org.codehaus.groovy.runtime.InvokerHelper;
 import org.intellij.lang.annotations.Language;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
@@ -57,11 +58,8 @@ import static jse.code.Conf.*;
 import static jse.code.OS.*;
 
 /**
+ * 运行脚本（script）的通用类，目前支持运行 Groovy 脚本和 Python 脚本
  * @author liqa
- * <p> 运行脚本（script）的通用类，目前支持运行 Groovy 脚本和 Python 脚本 </p>
- * <p> 为了方便调用这里使用纯静态的类来实现 </p>
- * <p> 根据底层实现，所有方法都是线程不安全的，这里不加上 synchronized 来避免死锁 </p>
- * <p> 虽然经过测试一般情况不会发生死锁，但在尝试中断执行线程时会失败（具体原因未知） </p>
  */
 @SuppressWarnings("UnusedReturnValue")
 public class SP {
@@ -606,7 +604,7 @@ public class SP {
         
         
         /** 包的版本 */
-        public final static String JEP_VERSION = "4.2.2", ASE_VERSION = "3.25.0";
+        public final static String JEP_VERSION = LibVer.JEP;
         /** 检测到的 python prefix 路径位置，已经合法化可以直接拼接路径 */
         public final static String PYTHON_PREFIX_DIR;
         /** 是否有 numpy 支持，除了检测 numpy 包，也会据此强制要求 jni 编译时开启相应支持 */
@@ -1014,6 +1012,7 @@ public class SP {
         
         
         /** 基于 pip 的 python 包管理，下载指定包到 .pypkg */
+        @ApiStatus.Obsolete
         public static int downloadPackage(String aRequirement, boolean aIncludeDep, String aPlatform, String aPythonVersion, String aIndexUrl) throws IOException {
             // 组装指令
             List<String> rCommand = new ArrayList<>();
@@ -1049,29 +1048,37 @@ public class SP {
             // 直接通过系统指令执行 pip 来下载
             return EXEC.system(String.join(" ", rCommand));
         }
+        @ApiStatus.Obsolete
         public static int downloadPackage(String aRequirement, String aPlatform, String aPythonVersion, String aIndexUrl) throws IOException {
             return downloadPackage(aRequirement, false, aPlatform, aPythonVersion, aIndexUrl);
         }
+        @ApiStatus.Obsolete
         public static int downloadPackage(String aRequirement, String aPlatform, String aPythonVersion) throws IOException {
             return downloadPackage(aRequirement, false, aPlatform, aPythonVersion);
         }
+        @ApiStatus.Obsolete
         public static int downloadPackage(String aRequirement, String aPlatform) throws IOException {
             return downloadPackage(aRequirement, aPlatform, null);
         }
+        @ApiStatus.Obsolete
         public static int downloadPackage(String aRequirement, boolean aIncludeDep, String aPlatform, String aPythonVersion) throws IOException {
             return downloadPackage(aRequirement, aIncludeDep, aPlatform, aPythonVersion, null);
         }
+        @ApiStatus.Obsolete
         public static int downloadPackage(String aRequirement, boolean aIncludeDep, String aPlatform) throws IOException {
             return downloadPackage(aRequirement, aIncludeDep, aPlatform, null);
         }
+        @ApiStatus.Obsolete
         public static int downloadPackage(String aRequirement, boolean aIncludeDep) throws IOException {
             return downloadPackage(aRequirement, aIncludeDep, null);
         }
+        @ApiStatus.Obsolete
         public static int downloadPackage(String aRequirement) throws IOException {
             return downloadPackage(aRequirement, false);
         }
         
         /** 基于 pip 的 python 包管理，直接安装指定包到 lib */
+        @ApiStatus.Obsolete
         public static int installPackage(String aRequirement, boolean aIncludeDep, boolean aIncludeIndex) throws IOException {
             // 组装指令
             List<String> rCommand = new ArrayList<>();
@@ -1094,32 +1101,13 @@ public class SP {
             // 直接通过系统指令执行 pip 来下载
             return EXEC.system(String.join(" ", rCommand));
         }
+        @ApiStatus.Obsolete
         public static int installPackage(String aRequirement, boolean aIncludeDep) throws IOException {
             return installPackage(aRequirement, aIncludeDep, false);
         }
+        @ApiStatus.Obsolete
         public static int installPackage(String aRequirement) throws IOException {
             return installPackage(aRequirement, false);
-        }
-        
-        /** 一些内置的 python 库安装，主要用于内部使用 */
-        public static void installAse() throws IOException {
-            // 首先获取源码路径，这里直接检测是否是 ase-$ASE_VERSION 开头
-            IO.makeDir(PYTHON_PKG_DIR);
-            String[] tList = IO.list(PYTHON_PKG_DIR);
-            boolean tHasAsePkg = false;
-            for (String tName : tList) if (tName.startsWith("ase-"+ASE_VERSION)) {
-                tHasAsePkg = true; break;
-            }
-            // 如果没有 ase 包则直接下载，指定版本 ASE_VERSION 避免因为更新造成的问题
-            if (!tHasAsePkg) {
-                System.out.printf(IO.Text.green("ASE INIT INFO:")+" No ase package in %s, downloading...\n", PYTHON_PKG_DIR);
-                downloadPackage("ase=="+ASE_VERSION);
-                System.out.println(IO.Text.green("ASE INIT INFO:")+" ase package downloading finished");
-            }
-            // 安装 ase 包
-            System.out.println(IO.Text.green("ASE INIT INFO:")+" Installing ase from package...");
-            installPackage("ase=="+ASE_VERSION);
-            System.out.println(IO.Text.green("ASE INIT INFO:")+" ase Installing finished");
         }
     }
 }

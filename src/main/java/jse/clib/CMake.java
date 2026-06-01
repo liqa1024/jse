@@ -1,6 +1,7 @@
 package jse.clib;
 
 import jse.code.IO;
+import jse.code.LibVer;
 import jse.code.OS;
 import jse.code.UT;
 
@@ -34,7 +35,7 @@ public class CMake {
     }
     
     /** 自动下载使用的 cmake 版本 */
-    public final static String VERSION = "4.2.1";
+    public final static String VERSION = LibVer.CMAKE;
     /** 内部 cmake 会使用的路径 */
     public final static String INTERNAL_HOME = JAR_DIR+"cmake/core/" + UT.Code.uniqueID(OS.OS_NAME, CMake.VERSION) + "/";
     private final static boolean USE_SYSTEM_ = Conf.USE_SYSTEM;

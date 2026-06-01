@@ -1,6 +1,7 @@
 package jse.clib;
 
 import jse.code.IO;
+import jse.code.LibVer;
 import jse.code.OS;
 import jse.code.UT;
 import org.jetbrains.annotations.Nullable;
@@ -51,7 +52,7 @@ public class LmpCore {
          * 指定需要下载的 lammps 的 tag，只在下载时有用
          */
         public static String TAG = OS.env("JSE_LMP_TAG");
-        private final static String DEFAULT_TAG = "stable_22Jul2025_update2";
+        private final static String DEFAULT_TAG = LibVer.LMP_TAG;
         
         /**
          * 指定编译时的并行数目，应该可以大大加速编译时间（特别对于现在这种版本隔离的情况）

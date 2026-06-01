@@ -1,10 +1,7 @@
 package jse.lmp;
 
 import jse.clib.*;
-import jse.code.IO;
-import jse.code.OS;
-import jse.code.SP;
-import jse.code.UT;
+import jse.code.*;
 import jse.parallel.MPI;
 import jse.parallel.MPIException;
 import jse.cptr.*;
@@ -43,7 +40,7 @@ public class LmpPlugin {
         
         /** 插件依赖的 lammps 版本字符串，默认自动检测 */
         public static String LMP_VERSION = null;
-        private final static String DEFAULT_LMP_VERSION = "22 Jul 2025";
+        private final static String DEFAULT_LMP_VERSION = LibVer.LMP;
         
         /** 插件是否开启 debug 模式，此时会让所有 rank 都输出异常 */
         public static boolean DEBUG = OS.envZ("JSE_DEBUG_LMPPLUGIN", jse.code.Conf.DEBUG);

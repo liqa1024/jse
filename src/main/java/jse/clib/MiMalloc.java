@@ -1,6 +1,7 @@
 package jse.clib;
 
 import jse.code.IO;
+import jse.code.LibVer;
 import jse.code.OS;
 import jse.code.UT;
 import org.jetbrains.annotations.NotNull;
@@ -73,7 +74,7 @@ public class MiMalloc {
     
     
     /** 当前 {@link MiMalloc} 所使用的版本号 */
-    public final static String VERSION = "2.2.4";
+    public final static String VERSION = LibVer.MIMALLOC;
     
     /** 当前 {@link MiMalloc} 库的根目录，结尾一定存在 {@code '/'} */
     public final static String HOME;

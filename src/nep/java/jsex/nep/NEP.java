@@ -3,6 +3,7 @@ package jsex.nep;
 import jse.atom.IPairPotential;
 import jse.clib.Compiler;
 import jse.code.IO;
+import jse.code.LibVer;
 import jse.code.OS;
 import jse.code.UT;
 import jse.code.collection.DoubleList;
@@ -86,7 +87,7 @@ public class NEP implements IPairPotential {
          */
         public static String PRECISION = OS.env("JSE_NEP_PRECISION", "double");
     }
-    final static String VERSION_SHA = "0155fd78cdf107a2c5a8dd31da9a29f3489d203e";
+    final static String VERSION_SHA = LibVer.NEP_SHA;
     
     private static final String JIT_NAME = "nepjit";
     private final static String INTERFACE_NAME = "nep_interface.cpp", INTERFACE_HEAD_NAME = "nep_interface.h";

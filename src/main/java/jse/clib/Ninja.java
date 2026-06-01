@@ -1,6 +1,7 @@
 package jse.clib;
 
 import jse.code.IO;
+import jse.code.LibVer;
 import jse.code.OS;
 import jse.code.UT;
 
@@ -34,7 +35,7 @@ public class Ninja {
     }
     
     /** 自动下载使用的 ninja 版本 */
-    public final static String VERSION = "1.13.2";
+    public final static String VERSION = LibVer.NINJA;
     /** 内部 ninja 会使用的路径 */
     public final static String INTERNAL_HOME = JAR_DIR+"ninja/core/" + UT.Code.uniqueID(OS.OS_NAME, Ninja.VERSION) + "/";
     private final static boolean USE_SYSTEM_ = Conf.USE_SYSTEM;
