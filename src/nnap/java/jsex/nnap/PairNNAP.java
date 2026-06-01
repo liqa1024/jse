@@ -103,7 +103,7 @@ public class PairNNAP extends LmpPlugin.Pair {
         mBufSize = new int[tArgLen];
     }
     protected NNAP initNNAP(String aPath) throws Exception {
-        return new NNAP(aPath, 1);
+        return new NNAP(aPath, "cpu");
     }
     
     NNAP mNNAP = null;

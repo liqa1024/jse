@@ -12,7 +12,6 @@ import org.jetbrains.annotations.ApiStatus;
  * } </pre>
  * 来使用
  */
-@ApiStatus.Obsolete
 public class PairNNAP_gpu extends PairNNAP {
     /** 用于判断是否进行了静态初始化以及方便的手动初始化 */
     public final static class InitHelper {
@@ -35,7 +34,10 @@ public class PairNNAP_gpu extends PairNNAP {
     protected PairNNAP_gpu(long aPairPtr) {
         super(aPairPtr);
     }
+    @Override public void compute() throws Exception {
+        mNNAP.computeLammpsCuda(this);
+    }
     @Override protected NNAP initNNAP(String aPath) throws Exception {
-        return new NNAP_cuda(aPath);
+        return new NNAP(aPath, "cuda");
     }
 }

@@ -117,16 +117,16 @@ class NNAPGEN {
     }
     
     @SuppressWarnings("SameParameterValue")
-    IJITEngine initEngine(boolean aSinglePrecision) throws Exception {
+    IJITEngine initEngine(boolean aSingle) throws Exception {
         Map<String, Object> rGenMap = initGenMap_();
-        rGenMap.put("[PRECISION]", aSinglePrecision ? "single" : "double");
+        rGenMap.put("[PRECISION]", aSingle?"single":"double");
         rGenMap.put("[ARCH]", "cpu");
         String tUniqueID = UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, NNAP.VERSION,
                                             rGenMap, NNAP.Conf.OPTIM_LEVEL, NNAP.Conf.CMAKE_CXX_COMPILER, NNAP.Conf.CMAKE_CXX_FLAGS, NNAP.Conf.CMAKE_SETTING);
         return SimpleJIT.engine()
             .setCmakeCxxCompiler(NNAP.Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(NNAP.Conf.CMAKE_CXX_FLAGS)
             .setCmakeSettings(NNAP.Conf.CMAKE_SETTING).setOptimLevel(NNAP.Conf.OPTIM_LEVEL)
-            .addTypeMap("JSE_NNAP::flt_t", aSinglePrecision?"float":"double")
+            .addTypeMap("JSE_NNAP::flt_t", aSingle?"float":"double")
             .setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID)
             .setSrc(codeGenStr_(IO.getResource("nnap/src/"+INTERFACE_NAME), rGenMap)).setNoExtern()
             .setSrcDirIniter((wd, engine) -> {
@@ -141,18 +141,18 @@ class NNAPGEN {
             });
     }
     @SuppressWarnings("SameParameterValue")
-    IJITEngine initEngineCuda() throws Exception {
+    IJITEngine initEngineCuda(boolean aSingle) throws Exception {
         Map<String, Object> rGenMap = initGenMap_();
-        rGenMap.put("NNAPGEN_CUDA_BLOCKSIZE", NNAP_cuda.Conf.CUDA_BLOCKSIZE);
-        rGenMap.put("[PRECISION]", "single");
+        rGenMap.put("NNAPGEN_CUDA_BLOCKSIZE", NNAP.Conf.CUDA_BLOCKSIZE);
+        rGenMap.put("[PRECISION]", aSingle?"single":"double");
         rGenMap.put("[ARCH]", "cuda");
         String tUniqueID = UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, NNAP.VERSION,
-                                            rGenMap, NNAP_cuda.Conf.OPTIM_LEVEL, NNAP_cuda.Conf.CMAKE_CXX_COMPILER, NNAP_cuda.Conf.CMAKE_CXX_FLAGS, NNAP_cuda.Conf.CMAKE_CUDA_COMPILER, NNAP_cuda.Conf.CMAKE_CUDA_FLAGS, NNAP_cuda.Conf.CMAKE_SETTING);
+                                            rGenMap, NNAP.Conf.OPTIM_LEVEL, NNAP.Conf.CMAKE_CXX_COMPILER, NNAP.Conf.CMAKE_CXX_FLAGS, NNAP.Conf.CMAKE_CUDA_COMPILER, NNAP.Conf.CMAKE_CUDA_FLAGS, NNAP.Conf.CMAKE_SETTING);
         return CudaJIT.engine()
-            .setCmakeCudaCompiler(NNAP_cuda.Conf.CMAKE_CUDA_COMPILER).setCmakeCudaFlags(NNAP_cuda.Conf.CMAKE_CUDA_FLAGS)
-            .setCmakeCxxCompiler(NNAP_cuda.Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(NNAP_cuda.Conf.CMAKE_CXX_FLAGS)
-            .setCmakeSettings(NNAP_cuda.Conf.CMAKE_SETTING).setOptimLevel(NNAP_cuda.Conf.OPTIM_LEVEL)
-            .addTypeMap("JSE_NNAP::flt_t", "float")
+            .setCmakeCudaCompiler(NNAP.Conf.CMAKE_CUDA_COMPILER).setCmakeCudaFlags(NNAP.Conf.CMAKE_CUDA_FLAGS)
+            .setCmakeCxxCompiler(NNAP.Conf.CMAKE_CXX_COMPILER).setCmakeCxxFlags(NNAP.Conf.CMAKE_CXX_FLAGS)
+            .setCmakeSettings(NNAP.Conf.CMAKE_SETTING).setOptimLevel(NNAP.Conf.OPTIM_LEVEL)
+            .addTypeMap("JSE_NNAP::flt_t", aSingle?"float":"double")
             .setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID)
             .setSrc(codeGenStr_(IO.getResource("nnap/src/"+INTERFACE_NAME_CUDA), rGenMap)).setNoExtern()
             .setSrcDirIniter((wd, engine) -> {
