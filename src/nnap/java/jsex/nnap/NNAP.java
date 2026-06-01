@@ -696,7 +696,7 @@ public class NNAP implements IPairPotential {
         // 调用 jit 方法获取结果
         int tCode = mCalEnergy.invoke(
             aNlDx, aNlDy, aNlDz, aNlType, aNumNei, aCType,
-            mFpHyperParam, mFpParam, mNnParam, mNormParam.getAsDoubleCPointerAt(aCType-1),
+            mFpHyperParam, mFpParam, mNnParam, mNormParam.getAsDoubleOrFloatCPointerAt(mSingle, aCType-1),
             tOutEng
         );
         if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
@@ -713,7 +713,7 @@ public class NNAP implements IPairPotential {
         // 调用 jit 方法获取结果
         int tCode = mCalEnergyForce.invoke(
             aNlDx, aNlDy, aNlDz, aNlType, aNumNei, aCType,
-            mFpHyperParam, mFpParam, mNnParam, mNormParam.getAsDoubleCPointerAt(aCType-1),
+            mFpHyperParam, mFpParam, mNnParam, mNormParam.getAsDoubleOrFloatCPointerAt(mSingle, aCType-1),
             tOutEng, rGradNlDx, rGradNlDy, rGradNlDz,
             tFpForwardCache
         );
@@ -732,7 +732,7 @@ public class NNAP implements IPairPotential {
         // 调用 jit 方法获取结果
         int tCode = mForwardEnergy.invoke(
             aNlDx, aNlDy, aNlDz, aNlType, aNumNei, aCType,
-            mFpHyperParam, mFpParam, mNnParam, mNormParam.getAsDoubleCPointerAt(aCType-1),
+            mFpHyperParam, mFpParam, mNnParam, mNormParam.getAsDoubleOrFloatCPointerAt(mSingle, aCType-1),
             tOutEng, rCaches, rCaches.plus(mBasis[aCType-1].forwardCacheSize(aNumNei))
         );
         if (tCode!=0) throw new IllegalStateException("Exit code: "+tCode);
@@ -746,7 +746,7 @@ public class NNAP implements IPairPotential {
         // 调用 jit 方法获取结果
         int tCode = mBackwardEnergy.invoke(
             aNlDx, aNlDy, aNlDz, aNlType, aNumNei, aCType,
-            mFpHyperParam, mFpParam, mNnParam, mNormParam.getAsDoubleCPointerAt(aCType-1),
+            mFpHyperParam, mFpParam, mNnParam, mNormParam.getAsDoubleOrFloatCPointerAt(mSingle, aCType-1),
             aGradEng, mGradFpParam[aThreadID], mGradNnParam[aThreadID],
             aCaches, aCaches.plus(mBasis[aCType-1].forwardCacheSize(aNumNei))
         );
@@ -769,7 +769,7 @@ public class NNAP implements IPairPotential {
         // 调用 jit 方法获取结果
         int tCode = mForwardEnergyForce.invoke(
             aNlDx, aNlDy, aNlDz, aNlType, aNumNei, aCType,
-            mFpHyperParam, mFpParam, mNnParam, mNormParam.getAsDoubleCPointerAt(aCType-1),
+            mFpHyperParam, mFpParam, mNnParam, mNormParam.getAsDoubleOrFloatCPointerAt(mSingle, aCType-1),
             tOutEng, rAGradNlDx, rAGradNlDy, rAGradNlDz,
             rCaches, rCaches.plus(tSizeFpForwardCache),
             rCaches.plus(tSizeFpForwardCache+tSizeNnForwardCache),
@@ -792,7 +792,7 @@ public class NNAP implements IPairPotential {
         // 调用 jit 方法获取结果
         int tCode = mBackwardEnergyForce.invoke(
             aNlDx, aNlDy, aNlDz, aNlType, aNumNei, aCType,
-            mFpHyperParam, mFpParam, mNnParam, mNormParam.getAsDoubleCPointerAt(aCType-1),
+            mFpHyperParam, mFpParam, mNnParam, mNormParam.getAsDoubleOrFloatCPointerAt(mSingle, aCType-1),
             aBGradEng, aBGradAGradNlDx, aBGradAGradNlDy, aBGradAGradNlDz,
             mGradFpParam[aThreadID], mGradNnParam[aThreadID],
             aCaches, aCaches.plus(tSizeFpForwardCache),
