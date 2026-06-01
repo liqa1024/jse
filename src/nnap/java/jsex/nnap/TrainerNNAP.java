@@ -1325,11 +1325,18 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
                     IDoubleOrFloatCPointer tNlDxPtr = mPtrMng.newDoubleOrFloatCPointer(mSingle, tNlSize);
                     IDoubleOrFloatCPointer tNlDyPtr = mPtrMng.newDoubleOrFloatCPointer(mSingle, tNlSize);
                     IDoubleOrFloatCPointer tNlDzPtr = mPtrMng.newDoubleOrFloatCPointer(mSingle, tNlSize);
-                    tNlPtr.fill(tNlBuf); rNl[k] = tNlPtr;
-                    tNlTypePtr.fill(tNlTypeBuf); rNlType[k] = tNlTypePtr;
-                    tNlDxPtr.fillD(tNlDxBuf); rNlDx[k] = tNlDxPtr;
-                    tNlDyPtr.fillD(tNlDyBuf); rNlDy[k] = tNlDyPtr;
-                    tNlDzPtr.fillD(tNlDzBuf); rNlDz[k] = tNlDzPtr;
+                    rNl[k] = tNlPtr;
+                    rNlType[k] = tNlTypePtr;
+                    rNlDx[k] = tNlDxPtr;
+                    rNlDy[k] = tNlDyPtr;
+                    rNlDz[k] = tNlDzPtr;
+                    if (tNlSize > 0) {
+                        tNlPtr.fill(tNlBuf);
+                        tNlTypePtr.fill(tNlTypeBuf);
+                        tNlDxPtr.fillD(tNlDxBuf);
+                        tNlDyPtr.fillD(tNlDyBuf);
+                        tNlDzPtr.fillD(tNlDzBuf);
+                    }
                 }
             }
             if (aPrintLog) UT.Timer.progressBar();
