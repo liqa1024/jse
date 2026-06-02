@@ -38,10 +38,6 @@ public class LmpPlugin {
         /** 启动的 jvm 的最大内存，默认为 1g 用来防止 mpi 运行 java 导致内存溢出 */
         public static String JVM_XMX = "1g";
         
-        /** 插件依赖的 lammps 版本字符串，默认自动检测 */
-        public static String LMP_VERSION = null;
-        private final static String DEFAULT_LMP_VERSION = LibVer.LMP;
-        
         /** 插件是否开启 debug 模式，此时会让所有 rank 都输出异常 */
         public static boolean DEBUG = OS.envZ("JSE_DEBUG_LMPPLUGIN", jse.code.Conf.DEBUG);
     }
@@ -86,12 +82,12 @@ public class LmpPlugin {
         LIB_PATH = new JNIUtil.LibBuilder("lmpplugin", "LMPPLUGIN", LIB_DIR, rCmakeSetting)
             .setEnvChecker(() -> {
                 // 获取 lammps 版本字符串
-                if (Conf.LMP_VERSION != null) {
-                    fLmpVersion[0] = Conf.LMP_VERSION;
+                if (LmpCore.VERSION != null) {
+                    fLmpVersion[0] = LmpCore.VERSION;
                 } else {
                     try (NativeLmp tLmp = new NativeLmp("-log", "none", "-screen", "none")) {
                         String tLmpVersion = tLmp.versionStr();
-                        fLmpVersion[0] = tLmpVersion==null ? Conf.DEFAULT_LMP_VERSION : tLmpVersion;
+                        fLmpVersion[0] = tLmpVersion==null ? LibVer.LMP : tLmpVersion;
                     }
                 }
             })

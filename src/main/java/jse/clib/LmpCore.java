@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 import static jse.code.CS.VERSION_NUMBER;
+import static jse.code.Conf.DEBUG;
 import static jse.code.Conf.LLIB_NAME_IN;
 import static jse.code.Conf.VERSION_MASK;
 import static jse.code.OS.*;
@@ -43,16 +44,20 @@ public class LmpCore {
      */
     public final static class Conf {
         /**
-         * 设置 lammps 的 build 目录，现在直接指定对应的 lammps 源码目录；
-         * 如果内部包含 build 目录并且有合适的格式，则不会尝试重新编译源码
-         */
-        public static String HOME = OS.env("JSE_LMP_HOME");
-        
-        /**
-         * 指定需要下载的 lammps 的 tag，只在下载时有用
+         * 指定 lammps 的 tag
          */
         public static String TAG = OS.env("JSE_LMP_TAG");
-        private final static String DEFAULT_TAG = LibVer.LMP_TAG;
+        
+        /**
+         * 设置自定义 lammps 的源码目录，如果内部包含 build
+         * 目录并且有合适的格式，则不会尝试重新编译源码
+         */
+        public static String CUSTOM_HOME = OS.env("JSE_LMP_CUSTOM_HOME");
+        /**
+         * 指定自定义 lammps 的版本字符串，用于避免调用 lammps 检索 {@code lammps_version}；
+         * 这在老版本 lammps 中并不支持，并且在部分环境下 native lammps 并不总是可用
+         */
+        public static String CUSTOM_VERSION = OS.env("JSE_LMP_CUSTOM_VERSION");
         
         /**
          * 指定编译时的并行数目，应该可以大大加速编译时间（特别对于现在这种版本隔离的情况）
@@ -102,6 +107,10 @@ public class LmpCore {
     public final static String EXE_CMD;
     private final static String BUILD_DIR_NAME = IS_WINDOWS ? "build-win" : (IS_MAC ? "build-mac" : "build");
     
+    /** 当前 lammps 的实际 tag */
+    public final static String TAG;
+    /** 当前 lammps 的实际版本，null 表示未知版本 */
+    public final static @Nullable String VERSION;
     
     private static @Nullable String findLmpExe() {
         try {
@@ -147,26 +156,33 @@ public class LmpCore {
         // 初始化 LIB_DIR 和 INCLUDE_DIR
         String tLmpHome = null;
         String tLmpBuildDir = null;
-        if (Conf.HOME != null) {
-            tLmpHome = IO.toInternalValidDir(IO.toAbsolutePath(Conf.HOME));
+        if (Conf.CUSTOM_HOME != null) {
+            tLmpHome = IO.toInternalValidDir(IO.toAbsolutePath(Conf.CUSTOM_HOME));
             tLmpBuildDir = tLmpHome + BUILD_DIR_NAME+"/";
+            VERSION = Conf.CUSTOM_VERSION;
             INCLUDE_DIR = tLmpBuildDir + "includes/";
             LIB_DIR = tLmpBuildDir + "lib/";
+            if (DEBUG) {
+                System.out.printf(IO.Text.cyan("LMP_CORE INFO:")+" Use custom LAMMPS in %s\n", Conf.CUSTOM_HOME);
+                System.out.printf("    include dir: %s\n", INCLUDE_DIR);
+                System.out.printf("    lib dir: %s\n", LIB_DIR);
+            }
         } else {
             // 否则直接版本隔离，采用内部 lammps
             String tLmpDir = ROOT+"core/" + UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, MPICore.EXE_PATH, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, rCmakeSetting) + "/";
+            VERSION = LibVer.LMP;
             INCLUDE_DIR = tLmpDir + "includes/";
             LIB_DIR = tLmpDir + "lib/";
         }
         final @Nullable String fLmpHome = tLmpHome;
         final @Nullable String fLmpBuildDir = tLmpBuildDir;
-        final String tLmpTag = Conf.TAG==null ? Conf.DEFAULT_TAG : Conf.TAG;
-        final String tLmpCachePath = JNIUtil.PKG_DIR + "lammps-"+ tLmpTag + (IS_WINDOWS?".zip":".tar.gz");
+        TAG = Conf.TAG==null ? LibVer.LMP_TAG : Conf.TAG;
+        final String tLmpCachePath = JNIUtil.PKG_DIR + "lammps-"+ TAG + (IS_WINDOWS?".zip":".tar.gz");
         final Callable<Void> tCacheValider = () -> {
             if (IO.exists(tLmpCachePath)) return null;
             // 增加一个宽泛匹配，避免有人修改名称/下载名称不一致问题，又要注意避开下载一半的缓存文件
             for (String tName : IO.list(JNIUtil.PKG_DIR)) {
-                if (tName.endsWith(IS_WINDOWS?".zip":".tar.gz") && tName.contains(tLmpTag)) {
+                if (tName.endsWith(IS_WINDOWS?".zip":".tar.gz") && tName.contains(TAG)) {
                     IO.move(JNIUtil.PKG_DIR+tName, tLmpCachePath);
                     return null;
                 }
@@ -184,7 +200,7 @@ public class LmpCore {
                 }
                 System.out.println(IO.Text.yellow("Auto download lammps? (Y/n)"));
             }
-            String tLmpUrl = String.format("https://github.com/lammps/lammps/archive/refs/tags/%s.%s", tLmpTag, IS_WINDOWS?"zip":"tar.gz");
+            String tLmpUrl = String.format("https://github.com/lammps/lammps/archive/refs/tags/%s.%s", TAG, IS_WINDOWS?"zip":"tar.gz");
             System.out.println("Downloading "+IO.Text.underline(tLmpUrl));
             System.out.println("  or you can download it manually and put into "+JNIUtil.PKG_DIR);
             String tTempPath = tLmpCachePath + ".tmp_"+UT.Code.randID();
