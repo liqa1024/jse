@@ -47,6 +47,7 @@ public class FloatCudaPointer extends CudaPointer implements IDoubleOrFloatCudaP
      */
     @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
     public void fill(IDataShell<float[]> aData) throws CudaException {
+        if (aData.internalDataSize()==0) return;
         if (isNull()) throw new NullPointerException();
         fill0(mPtr, aData.internalDataWithLengthCheck(), aData.internalDataShift(), aData.internalDataSize());
     }
@@ -59,6 +60,7 @@ public class FloatCudaPointer extends CudaPointer implements IDoubleOrFloatCudaP
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void fill(float[] aData, int aStart, int aCount) throws CudaException {
+        if (aCount==0) return;
         if (isNull()) throw new NullPointerException();
         CPointer.rangeCheck(aData.length, aStart+aCount);
         fill0(mPtr, aData, aStart, aCount);
@@ -72,6 +74,7 @@ public class FloatCudaPointer extends CudaPointer implements IDoubleOrFloatCudaP
      */
     @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
     @Override public void fillD(IDataShell<double[]> aData) throws CudaException {
+        if (aData.internalDataSize()==0) return;
         if (isNull()) throw new NullPointerException();
         fillD0(mPtr, aData.internalDataWithLengthCheck(), aData.internalDataShift(), aData.internalDataSize());
     }
@@ -92,6 +95,7 @@ public class FloatCudaPointer extends CudaPointer implements IDoubleOrFloatCudaP
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     @Override public void fillD(double[] aData, int aStart, int aCount) throws CudaException {
+        if (aCount==0) return;
         if (isNull()) throw new NullPointerException();
         CPointer.rangeCheck(aData.length, aStart+aCount);
         fillD0(mPtr, aData, aStart, aCount);
@@ -116,6 +120,7 @@ public class FloatCudaPointer extends CudaPointer implements IDoubleOrFloatCudaP
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void fill(FloatCPointer aData, long aCount) throws CudaException {
+        if (aCount==0) return;
         memcpy2this(aData, aCount*TYPE_SIZE);
     }
     /**
@@ -125,6 +130,7 @@ public class FloatCudaPointer extends CudaPointer implements IDoubleOrFloatCudaP
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     @Override public void fillD(DoubleCPointer aData, long aCount) throws CudaException {
+        if (aCount==0) return;
         if (isNull() || aData.isNull()) throw new NullPointerException();
         fillD1(mPtr, aData.ptr_(), aCount);
     }
@@ -146,6 +152,7 @@ public class FloatCudaPointer extends CudaPointer implements IDoubleOrFloatCudaP
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void fill(FloatCudaPointer aData, long aCount) throws CudaException {
+        if (aCount==0) return;
         memcpy2this(aData, aCount*TYPE_SIZE);
     }
     
@@ -158,6 +165,7 @@ public class FloatCudaPointer extends CudaPointer implements IDoubleOrFloatCudaP
      */
     @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
     public void parse2dest(IDataShell<float[]> rDest) {
+        if (rDest.internalDataSize()==0) return;
         if (isNull()) throw new NullPointerException();
         parse2dest0(mPtr, rDest.internalDataWithLengthCheck(), rDest.internalDataShift(), rDest.internalDataSize());
     }
@@ -170,6 +178,7 @@ public class FloatCudaPointer extends CudaPointer implements IDoubleOrFloatCudaP
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void parse2dest(float[] rDest, int aStart, int aCount) {
+        if (aCount==0) return;
         if (isNull()) throw new NullPointerException();
         CPointer.rangeCheck(rDest.length, aStart+aCount);
         parse2dest0(mPtr, rDest, aStart, aCount);
@@ -183,6 +192,7 @@ public class FloatCudaPointer extends CudaPointer implements IDoubleOrFloatCudaP
      */
     @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
     @Override public void parse2destD(IDataShell<double[]> rDest) {
+        if (rDest.internalDataSize()==0) return;
         if (isNull()) throw new NullPointerException();
         parse2destD0(mPtr, rDest.internalDataWithLengthCheck(), rDest.internalDataShift(), rDest.internalDataSize());
     }
@@ -203,6 +213,7 @@ public class FloatCudaPointer extends CudaPointer implements IDoubleOrFloatCudaP
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     @Override public void parse2destD(double[] rDest, int aStart, int aCount) {
+        if (aCount==0) return;
         if (isNull()) throw new NullPointerException();
         CPointer.rangeCheck(rDest.length, aStart+aCount);
         parse2destD0(mPtr, rDest, aStart, aCount);
@@ -227,6 +238,7 @@ public class FloatCudaPointer extends CudaPointer implements IDoubleOrFloatCudaP
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void parse2dest(FloatCPointer rDest, long aCount) throws CudaException {
+        if (aCount==0) return;
         memcpy2dest(rDest, aCount*TYPE_SIZE);
     }
     /**
@@ -236,6 +248,7 @@ public class FloatCudaPointer extends CudaPointer implements IDoubleOrFloatCudaP
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     @Override public void parse2destD(DoubleCPointer rDest, long aCount) throws CudaException {
+        if (aCount==0) return;
         if (isNull() || rDest.isNull()) throw new NullPointerException();
         parse2destD1(mPtr, rDest.ptr_(), aCount);
     }
@@ -257,6 +270,7 @@ public class FloatCudaPointer extends CudaPointer implements IDoubleOrFloatCudaP
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void parse2dest(FloatCudaPointer rDest, long aCount) throws CudaException {
+        if (aCount==0) return;
         memcpy2dest(rDest, aCount*TYPE_SIZE);
     }
     

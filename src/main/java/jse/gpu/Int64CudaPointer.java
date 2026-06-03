@@ -45,6 +45,7 @@ public class Int64CudaPointer extends CudaPointer {
      */
     @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
     public void fill(IDataShell<long[]> aData) throws CudaException {
+        if (aData.internalDataSize()==0) return;
         if (isNull()) throw new NullPointerException();
         fill0(mPtr, aData.internalDataWithLengthCheck(), aData.internalDataShift(), aData.internalDataSize());
     }
@@ -57,6 +58,7 @@ public class Int64CudaPointer extends CudaPointer {
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void fill(long[] aData, int aStart, int aCount) throws CudaException {
+        if (aCount==0) return;
         if (isNull()) throw new NullPointerException();
         CPointer.rangeCheck(aData.length, aStart+aCount);
         fill0(mPtr, aData, aStart, aCount);
@@ -71,6 +73,7 @@ public class Int64CudaPointer extends CudaPointer {
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void fill(Int64CPointer aData, long aCount) throws CudaException {
+        if (aCount==0) return;
         memcpy2this(aData, aCount*TYPE_SIZE);
     }
     /**
@@ -81,6 +84,7 @@ public class Int64CudaPointer extends CudaPointer {
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void fill(Int64CudaPointer aData, long aCount) throws CudaException {
+        if (aCount==0) return;
         memcpy2this(aData, aCount*TYPE_SIZE);
     }
     
@@ -92,6 +96,7 @@ public class Int64CudaPointer extends CudaPointer {
      */
     @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
     public void parse2dest(IDataShell<long[]> rDest) {
+        if (rDest.internalDataSize()==0) return;
         if (isNull()) throw new NullPointerException();
         parse2dest0(mPtr, rDest.internalDataWithLengthCheck(), rDest.internalDataShift(), rDest.internalDataSize());
     }
@@ -104,6 +109,7 @@ public class Int64CudaPointer extends CudaPointer {
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void parse2dest(long[] rDest, int aStart, int aCount) {
+        if (aCount==0) return;
         if (isNull()) throw new NullPointerException();
         CPointer.rangeCheck(rDest.length, aStart+aCount);
         parse2dest0(mPtr, rDest, aStart, aCount);
@@ -118,6 +124,7 @@ public class Int64CudaPointer extends CudaPointer {
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void parse2dest(Int64CPointer rDest, long aCount) throws CudaException {
+        if (aCount==0) return;
         memcpy2dest(rDest, aCount*TYPE_SIZE);
     }
     /**
@@ -128,6 +135,7 @@ public class Int64CudaPointer extends CudaPointer {
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void parse2dest(Int64CudaPointer rDest, long aCount) throws CudaException {
+        if (aCount==0) return;
         memcpy2dest(rDest, aCount*TYPE_SIZE);
     }
     

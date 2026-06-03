@@ -69,6 +69,7 @@ public class DoubleCPointer extends CPointer implements IDoubleOrFloatCPointer {
      */
     @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
     public void fill(IDataShell<double[]> aData) {
+        if (aData.internalDataSize()==0) return;
         if (isNull()) throw new NullPointerException();
         fill0(mPtr, aData.internalDataWithLengthCheck(), aData.internalDataShift(), aData.internalDataSize());
     }
@@ -83,6 +84,7 @@ public class DoubleCPointer extends CPointer implements IDoubleOrFloatCPointer {
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void fill(double[] aData, int aStart, int aCount) {
+        if (aCount==0) return;
         if (isNull()) throw new NullPointerException();
         rangeCheck(aData.length, aStart+aCount);
         fill0(mPtr, aData, aStart, aCount);
@@ -114,6 +116,7 @@ public class DoubleCPointer extends CPointer implements IDoubleOrFloatCPointer {
      */
     @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
     @Override public void fillF(IDataShell<float[]> aData) {
+        if (aData.internalDataSize()==0) return;
         if (isNull()) throw new NullPointerException();
         fillF0(mPtr, aData.internalDataWithLengthCheck(), aData.internalDataShift(), aData.internalDataSize());
     }
@@ -125,6 +128,7 @@ public class DoubleCPointer extends CPointer implements IDoubleOrFloatCPointer {
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     @Override public void fillF(float[] aData, int aStart, int aCount) {
+        if (aCount==0) return;
         if (isNull()) throw new NullPointerException();
         rangeCheck(aData.length, aStart+aCount);
         fillF0(mPtr, aData, aStart, aCount);
@@ -142,6 +146,7 @@ public class DoubleCPointer extends CPointer implements IDoubleOrFloatCPointer {
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void fill(DoubleCPointer aData, long aCount) {
+        if (aCount==0) return;
         memcpy2this(aData, aCount*TYPE_SIZE);
     }
     /**
@@ -211,6 +216,7 @@ public class DoubleCPointer extends CPointer implements IDoubleOrFloatCPointer {
      */
     @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
     public void parse2dest(IDataShell<double[]> rDest) {
+        if (rDest.internalDataSize()==0) return;
         if (isNull()) throw new NullPointerException();
         parse2dest0(mPtr, rDest.internalDataWithLengthCheck(), rDest.internalDataShift(), rDest.internalDataSize());
     }
@@ -225,6 +231,7 @@ public class DoubleCPointer extends CPointer implements IDoubleOrFloatCPointer {
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void parse2dest(double[] rDest, int aStart, int aCount) {
+        if (aCount==0) return;
         if (isNull()) throw new NullPointerException();
         rangeCheck(rDest.length, aStart+aCount);
         parse2dest0(mPtr, rDest, aStart, aCount);
@@ -256,6 +263,7 @@ public class DoubleCPointer extends CPointer implements IDoubleOrFloatCPointer {
      */
     @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
     @Override public void parse2destF(IDataShell<float[]> rDest) {
+        if (rDest.internalDataSize()==0) return;
         if (isNull()) throw new NullPointerException();
         parse2destF0(mPtr, rDest.internalDataWithLengthCheck(), rDest.internalDataShift(), rDest.internalDataSize());
     }
@@ -267,6 +275,7 @@ public class DoubleCPointer extends CPointer implements IDoubleOrFloatCPointer {
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     @Override public void parse2destF(float[] rDest, int aStart, int aCount) {
+        if (aCount==0) return;
         if (isNull()) throw new NullPointerException();
         rangeCheck(rDest.length, aStart+aCount);
         parse2destF0(mPtr, rDest, aStart, aCount);
@@ -284,6 +293,7 @@ public class DoubleCPointer extends CPointer implements IDoubleOrFloatCPointer {
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void parse2dest(DoubleCPointer rDest, long aCount) {
+        if (aCount==0) return;
         memcpy2dest(rDest, aCount*TYPE_SIZE);
     }
     /**
@@ -302,6 +312,7 @@ public class DoubleCPointer extends CPointer implements IDoubleOrFloatCPointer {
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     @Override public void parse2destF(FloatCPointer rDest, long aCount) {
+        if (aCount==0) return;
         if (isNull() || rDest.isNull()) throw new NullPointerException();
         parse2destF1(mPtr, rDest.mPtr, aCount);
     }

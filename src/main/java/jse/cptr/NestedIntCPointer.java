@@ -72,14 +72,15 @@ public class NestedIntCPointer extends AnyCPointer {
      * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
      *
      * @param aData 输入的 {@code IDataShell<int[]>} 数据
-     * @param aRowNum 需要读取的 aData 的行数
-     * @param aColNum 需要读取的 aData 的列数
+     * @param aNumRows 需要读取的 aData 的行数
+     * @param aNumCols 需要读取的 aData 的列数
      * @see IDataShell
      */
     @UnsafeJNI("Invalid input nrows/ncols may directly result in JVM SIGSEGV")
-    public void fill(IDataShell<int[]> aData, int aRowNum, int aColNum) {
+    public void fill(IDataShell<int[]> aData, int aNumRows, int aNumCols) {
+        if (aNumRows==0) return;
         if (isNull()) throw new NullPointerException();
-        fill0(mPtr, aData.internalDataWithLengthCheck(aRowNum*aColNum), aData.internalDataShift(), aRowNum, aColNum);
+        fill0(mPtr, aData.internalDataWithLengthCheck(aNumRows*aNumCols), aData.internalDataShift(), aNumRows, aNumCols);
     }
     /**
      * 将 java 的 {@code int[]} 填充到此嵌套 c 指针对应的内存中，认为数据按行排列且每个内部的
@@ -89,16 +90,17 @@ public class NestedIntCPointer extends AnyCPointer {
      *
      * @param aData 输入的 {@code int[]} 数据
      * @param aStart 需要读取的 aData 开始的索引
-     * @param aRowNum 需要读取的 aData 的行数
-     * @param aColNum 需要读取的 aData 的列数
+     * @param aNumRows 需要读取的 aData 的行数
+     * @param aNumCols 需要读取的 aData 的列数
      */
     @UnsafeJNI("Invalid input nrows/ncols may directly result in JVM SIGSEGV")
-    public void fill(int[] aData, int aStart, int aRowNum, int aColNum) {
+    public void fill(int[] aData, int aStart, int aNumRows, int aNumCols) {
+        if (aNumRows==0) return;
         if (isNull()) throw new NullPointerException();
-        rangeCheck(aData.length, aStart + aRowNum*aColNum);
-        fill0(mPtr, aData, aStart, aRowNum, aColNum);
+        rangeCheck(aData.length, aStart + aNumRows*aNumCols);
+        fill0(mPtr, aData, aStart, aNumRows, aNumCols);
     }
-    private native static void fill0(long rPtr, int[] aData, int aStart, int aRowNum, int aColNum);
+    private native static void fill0(long rPtr, int[] aData, int aStart, int aNumRows, int aNumCols);
     /**
      * 将给定输入数值填充到此嵌套 c 指针对应的内存中，认为数据按行排列且每个内部的
      * int 指针对应的长度一致
@@ -106,14 +108,15 @@ public class NestedIntCPointer extends AnyCPointer {
      * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
      *
      * @param aValue 需要填充的数值
-     * @param aColNum 需要读取的 aData 的列数
+     * @param aNumCols 需要读取的 aData 的列数
      */
     @UnsafeJNI("Invalid input nrows/ncols may directly result in JVM SIGSEGV")
-    public void fill(int aValue, long aRowNum, long aColNum) {
+    public void fill(int aValue, long aNumRows, long aNumCols) {
+        if (aNumRows==0) return;
         if (isNull()) throw new NullPointerException();
-        fill2(mPtr, aValue, aRowNum, aColNum);
+        fill2(mPtr, aValue, aNumRows, aNumCols);
     }
-    private native static void fill2(long rPtr, int aValue, long aRowNum, long aColNum);
+    private native static void fill2(long rPtr, int aValue, long aNumRows, long aNumCols);
     
     /**
      * 将此嵌套 c 指针对应的内存数值写入 jse 的 {@link RowIntMatrix} 中，认为数据按行排列且每个内部的
@@ -125,7 +128,9 @@ public class NestedIntCPointer extends AnyCPointer {
      * @see RowIntMatrix
      */
     @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
-    public void parse2dest(RowIntMatrix rDest) {parse2dest(rDest, rDest.nrows(), rDest.ncols());}
+    public void parse2dest(RowIntMatrix rDest) {
+        parse2dest(rDest, rDest.nrows(), rDest.ncols());
+    }
     /**
      * 将此嵌套 c 指针对应的内存数值写入 jse 的 {@code IDataShell<int[]>} 中，认为数据按行排列且每个内部的
      * double 指针对应的长度一致
@@ -133,14 +138,15 @@ public class NestedIntCPointer extends AnyCPointer {
      * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
      *
      * @param rDest 需要写入的 {@code IDataShell<int[]>}
-     * @param aRowNum 需要写入的 rDest 的行数
-     * @param aColNum 需要写入的 rDest 的列数
+     * @param aNumRows 需要写入的 rDest 的行数
+     * @param aNumCols 需要写入的 rDest 的列数
      * @see IDataShell
      */
     @UnsafeJNI("Invalid input nrows/ncols may directly result in JVM SIGSEGV")
-    public void parse2dest(IDataShell<int[]> rDest, int aRowNum, int aColNum) {
+    public void parse2dest(IDataShell<int[]> rDest, int aNumRows, int aNumCols) {
+        if (aNumRows==0) return;
         if (isNull()) throw new NullPointerException();
-        parse2dest0(mPtr, rDest.internalDataWithLengthCheck(aRowNum*aColNum), rDest.internalDataShift(), aRowNum, aColNum);
+        parse2dest0(mPtr, rDest.internalDataWithLengthCheck(aNumRows*aNumCols), rDest.internalDataShift(), aNumRows, aNumCols);
     }
     /**
      * 将此嵌套 c 指针对应的内存数值写入 java 的 {@code int[]} 中，认为数据按行排列且每个内部的
@@ -150,16 +156,17 @@ public class NestedIntCPointer extends AnyCPointer {
      *
      * @param rDest 需要写入的 {@code int[]}
      * @param aStart 需要写入的 rDest 开始的索引
-     * @param aRowNum 需要写入的 rDest 的行数
-     * @param aColNum 需要写入的 rDest 的列数
+     * @param aNumRows 需要写入的 rDest 的行数
+     * @param aNumCols 需要写入的 rDest 的列数
      */
     @UnsafeJNI("Invalid input nrows/ncols may directly result in JVM SIGSEGV")
-    public void parse2dest(int[] rDest, int aStart, int aRowNum, int aColNum) {
+    public void parse2dest(int[] rDest, int aStart, int aNumRows, int aNumCols) {
+        if (aNumRows==0) return;
         if (isNull()) throw new NullPointerException();
-        rangeCheck(rDest.length, aStart + aRowNum*aColNum);
-        parse2dest0(mPtr, rDest, aStart, aRowNum, aColNum);
+        rangeCheck(rDest.length, aStart + aNumRows*aNumCols);
+        parse2dest0(mPtr, rDest, aStart, aNumRows, aNumCols);
     }
-    private native static void parse2dest0(long aPtr, int[] rDest, int aStart, int aRowNum, int aColNum);
+    private native static void parse2dest0(long aPtr, int[] rDest, int aStart, int aNumRows, int aNumCols);
     
     
     /**
@@ -240,26 +247,26 @@ public class NestedIntCPointer extends AnyCPointer {
     
     /**
      * 将此嵌套指针转换成 jse 的整数矩阵 {@link IIntMatrix}，为这个嵌套指针对应矩阵的引用
-     * @param aRowNum 此指针的对应矩阵的行数
-     * @param aColNum 此指针的对应矩阵的列数
+     * @param aNumRows 此指针的对应矩阵的行数
+     * @param aNumCols 此指针的对应矩阵的列数
      * @return 转换后的矩阵
      * @see IIntMatrix
      */
     @UnsafeJNI("Invalid input nrows/ncols may result in JVM SIGSEGV")
-    public IIntMatrix asMat(final int aRowNum, final int aColNum) {
+    public IIntMatrix asMat(final int aNumRows, final int aNumCols) {
         return new RefIntMatrix() {
             @Override public int get(int aRow, int aCol) {
-                AbstractMatrix.rangeCheckRow(aRow, aRowNum);
-                AbstractMatrix.rangeCheckCol(aCol, aColNum);
+                AbstractMatrix.rangeCheckRow(aRow, aNumRows);
+                AbstractMatrix.rangeCheckCol(aCol, aNumCols);
                 return NestedIntCPointer.this.getAt(aRow, aCol);
             }
             @Override public void set(int aRow, int aCol, int aValue) {
-                AbstractMatrix.rangeCheckRow(aRow, aRowNum);
-                AbstractMatrix.rangeCheckCol(aCol, aColNum);
+                AbstractMatrix.rangeCheckRow(aRow, aNumRows);
+                AbstractMatrix.rangeCheckCol(aCol, aNumCols);
                 NestedIntCPointer.this.putAt(aRow, aCol, aValue);
             }
-            @Override public int nrows() {return aRowNum;}
-            @Override public int ncols() {return aColNum;}
+            @Override public int nrows() {return aNumRows;}
+            @Override public int ncols() {return aNumCols;}
         };
     }
     /**

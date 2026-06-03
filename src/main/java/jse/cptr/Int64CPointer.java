@@ -66,6 +66,7 @@ public class Int64CPointer extends CPointer {
      */
     @UnsafeJNI("Invalid input size may directly result in JVM SIGSEGV")
     public void fill(IDataShell<long[]> aData) {
+        if (aData.internalDataSize()==0) return;
         if (isNull()) throw new NullPointerException();
         fill0(mPtr, aData.internalDataWithLengthCheck(), aData.internalDataShift(), aData.internalDataSize());
     }
@@ -80,6 +81,7 @@ public class Int64CPointer extends CPointer {
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void fill(long[] aData, int aStart, int aCount) {
+        if (aCount==0) return;
         if (isNull()) throw new NullPointerException();
         rangeCheck(aData.length, aStart+aCount);
         fill0(mPtr, aData, aStart, aCount);
@@ -96,6 +98,7 @@ public class Int64CPointer extends CPointer {
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void fill(Int64CPointer aData, long aCount) {
+        if (aCount==0) return;
         memcpy2this(aData, aCount*TYPE_SIZE);
     }
     /**
@@ -108,6 +111,7 @@ public class Int64CPointer extends CPointer {
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void fill(long aValue, long aCount) {
+        if (aCount==0) return;
         if (isNull()) throw new NullPointerException();
         fill2(mPtr, aValue, aCount);
     }
@@ -124,6 +128,7 @@ public class Int64CPointer extends CPointer {
      */
     @UnsafeJNI("Invalid input size directly result in JVM SIGSEGV")
     public void parse2dest(IDataShell<long[]> rDest) {
+        if (rDest.internalDataSize()==0) return;
         if (isNull()) throw new NullPointerException();
         parse2dest0(mPtr, rDest.internalDataWithLengthCheck(), rDest.internalDataShift(), rDest.internalDataSize());
     }
@@ -138,6 +143,7 @@ public class Int64CPointer extends CPointer {
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void parse2dest(long[] rDest, int aStart, int aCount) {
+        if (aCount==0) return;
         if (isNull()) throw new NullPointerException();
         rangeCheck(rDest.length, aStart+aCount);
         parse2dest0(mPtr, rDest, aStart, aCount);
@@ -154,6 +160,7 @@ public class Int64CPointer extends CPointer {
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void parse2dest(Int64CPointer rDest, long aCount) {
+        if (aCount==0) return;
         memcpy2dest(rDest, aCount*TYPE_SIZE);
     }
     

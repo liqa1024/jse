@@ -63,6 +63,7 @@ public class AnyCPointer extends CPointer {
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void fill(AnyCPointer aData, long aCount) {
+        if (aCount==0) return;
         memcpy2this(aData, aCount*TYPE_SIZE);
     }
     /**
@@ -75,6 +76,7 @@ public class AnyCPointer extends CPointer {
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     public void parse2dest(AnyCPointer rDest, long aCount) {
+        if (aCount==0) return;
         memcpy2dest(rDest, aCount*TYPE_SIZE);
     }
     
