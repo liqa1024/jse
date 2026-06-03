@@ -299,25 +299,25 @@ public class NNAP implements IPairPotential {
                 int tSize = mBasis[i].cptrHyperParameterSize();
                 FloatCPointer tSubParam = mFpHyperParam.getAsFloatCPointerAt(i);
                 FloatCudaPointer tSubCudaParam = mPtrMng.newFloatCudaPointer(tSize);
-                tSubCudaParam.fill(tSubParam, tSize);
+                if (tSize>0) tSubCudaParam.fill(tSubParam, tSize);
                 tCudaFpHyperParam.putAt(i, tSubCudaParam);
                 
                 tSize = mBasis[i].cptrParameterSize();
                 tSubParam = mFpParam.getAsFloatCPointerAt(i);
                 tSubCudaParam = mPtrMng.newFloatCudaPointer(tSize);
-                tSubCudaParam.fill(tSubParam, tSize);
+                if (tSize>0) tSubCudaParam.fill(tSubParam, tSize);
                 tCudaFpParam.putAt(i, tSubCudaParam);
                 
                 tSize = mNN[i].cptrParameterSize();
                 tSubParam = mNnParam.getAsFloatCPointerAt(i);
                 tSubCudaParam = mPtrMng.newFloatCudaPointer(tSize);
-                tSubCudaParam.fill(tSubParam, tSize);
+                if (tSize>0) tSubCudaParam.fill(tSubParam, tSize);
                 tCudaNnParam.putAt(i, tSubCudaParam);
                 
                 tSize = mBasis[i].size()*2 + 2;
                 tSubParam = mNormParam.getAsFloatCPointerAt(i);
                 tSubCudaParam = mPtrMng.newFloatCudaPointer(tSize);
-                tSubCudaParam.fill(tSubParam, tSize);
+                if (tSize>0) tSubCudaParam.fill(tSubParam, tSize);
                 tCudaNormParam.putAt(i, tSubCudaParam);
             }
             mCudaFpHyperParam.memcpy2this(tCudaFpHyperParam, tModelSize*AnyCPointer.TYPE_SIZE);
