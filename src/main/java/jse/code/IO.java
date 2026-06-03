@@ -1666,14 +1666,15 @@ public class IO {
      *
      * @param aPath 需要设置的文件路径
      * @param aExecutable 是否可执行
+     * @param aOwnerOnly 是否仅用户本身可执行，否则所有人都可以执行
      * @throws IOException 任何原因导致权限设置失败
      */
-    public static void setExecutable(String aPath, boolean aExecutable) throws IOException {
-        boolean tSuc = toFile(aPath).setExecutable(aExecutable);
+    public static void setExecutable(String aPath, boolean aExecutable, boolean aOwnerOnly) throws IOException {
+        boolean tSuc = toFile(aPath).setExecutable(aExecutable, aOwnerOnly);
         if (!tSuc) throw new IOException("Fail to set executable of \""+aPath+"\"");
     }
     /**
-     * 设置文件可执行
+     * 设置文件可执行，默认会设置所有用户都可以执行
      * <p>
      * 内部直接使用了 {@link File#setExecutable(boolean)} 而非 {@link Files#setPosixFilePermissions(Path, Set)}
      * 来简单设置；注意这里设置失败会直接抛出错误而不是返回 {@code false}。
@@ -1682,7 +1683,7 @@ public class IO {
      * @throws IOException 任何原因导致权限设置失败
      */
     public static void setExecutable(String aPath) throws IOException {
-        setExecutable(aPath, true);
+        setExecutable(aPath, true, false);
     }
     /**
      * 检测文件是否可执行
