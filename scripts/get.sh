@@ -106,26 +106,36 @@ echo "Install to $JSE_DIR"
 mkdir -p "$JSE_DIR" || raise "cannot create $JSE_DIR"
 
 # ----------------------------------------
-# detect java
+# detect jdk (javac is the compiler, present only in JDK, not JRE)
 #
 
 JAVA_FOUND=0
+JDK_FOUND=0
 JAVA_VERSION=0
+
 if java --version >/dev/null 2>&1; then
     JAVA_FOUND=1
-    JAVA_VERSION=$(java --version | head -n1 | awk '{print $2}' | cut -d. -f1)
+    JAVA_VERSION=$(java --version 2>&1 | head -n1 | awk '{print $2}' | cut -d. -f1)
+fi
+
+if javac --version >/dev/null 2>&1; then
+    JDK_FOUND=1
 fi
 
 INSTALL_JDK=0
 if [ "$JAVA_FOUND" -eq 0 ]; then
-    echo "No suitable Java environment detected."
-    ask_yes_no "Install $JDK_VENDOR JDK $JDK_VERSION now?" y || raise "Java is required. Abort."
+    echo "No Java environment detected."
+    ask_yes_no "Install $JDK_VENDOR JDK $JDK_VERSION now?" y || raise "JDK is required. Abort."
+    INSTALL_JDK=1
+elif [ "$JDK_FOUND" -eq 0 ]; then
+    echo "JRE detected (version $JAVA_VERSION), but JDK (javac) was not found."
+    ask_yes_no "Install $JDK_VENDOR JDK $JDK_VERSION now?" y || raise "JDK is required. Abort."
     INSTALL_JDK=1
 elif [ "$JAVA_VERSION" -lt "$JAVA_REQUIRED" ]; then
-    echo "Java detected: $JAVA_VERSION"
-    ask_yes_no "Recommend installing $JDK_VENDOR JDK $JDK_VERSION. Install now?" y && INSTALL_JDK=1
+    echo "JDK detected: version $JAVA_VERSION (requires $JAVA_REQUIRED+)"
+    ask_yes_no "Recommend upgrading to $JDK_VENDOR JDK $JDK_VERSION. Install now?" y && INSTALL_JDK=1
 else
-    echo "Java detected: $JAVA_VERSION"
+    echo "JDK detected: version $JAVA_VERSION"
 fi
 
 # ----------------------------------------
