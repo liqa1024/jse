@@ -44,6 +44,8 @@ public final class ParforThreadPool implements IThreadPool {
     @Override public void close() {shutdown();}
     
     public ParforThreadPool(@Range(from=1, to=Integer.MAX_VALUE) int aNumThreads, boolean aNoCompetitive) {
+        //noinspection ConstantValue
+        if (aNumThreads < 1) throw new IllegalArgumentException("Number of threads MUST be greater than 0");
         mPool = aNumThreads==1 ? ExecutorsEX.SERIAL_EXECUTOR : ExecutorsEX.newFixedThreadPool(aNumThreads);
         if (aNumThreads==1) {
             mLocks = null;
