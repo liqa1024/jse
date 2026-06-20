@@ -277,7 +277,7 @@ JNIEXPORT jint JNICALL Java_jse_lmp_NativeLmp_lammpsExtractSetting0(JNIEnv *aEnv
     FREE(tName);
     return (jint)tSetting;
 }
-JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsGatherConcat0(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr, jstring aName, jboolean aIsDouble, jint aCount, jdoubleArray rData) {
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsExtractFullAtom0(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr, jstring aName, jboolean aIsDouble, jint aCount, jdoubleArray rData) {
     // The implementation of `lammps_gather_concat` is just a piece of shit which actually causes memory leakage,
     // so I can only implement it myself, while also providing support for non MPI.
 #ifdef LAMMPS_BIGBIG
@@ -377,7 +377,7 @@ JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsGatherConcat0(JNIEnv *aEnv, 
 #endif
 #endif
 }
-JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsGatherConcatInt0(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr, jstring aName, jint aCount, jintArray rData) {
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsExtractFullAtomInt0(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr, jstring aName, jint aCount, jintArray rData) {
     // The implementation of `lammps_gather_concat` is just a piece of shit which actually causes memory leakage,
     // so I can only implement it myself, while also providing support for non MPI.
 #ifdef LAMMPS_BIGBIG

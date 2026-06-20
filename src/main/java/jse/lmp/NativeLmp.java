@@ -521,7 +521,6 @@ public class NativeLmp implements AutoCloseable {
      * Gather the named per-atom, per-atom fix, per-atom compute,
      * or fix property/atom-based entities from all processes, unordered.
      * <p>
-     * This is a wrapper around the {@code lammps_gather_concat()} function of the C-library interface.
      * <a href="https://docs.lammps.org/Classes_atom.html#_CPPv4N9LAMMPS_NS4Atom7extractEPKc">
      * Its documentation </a> includes a list of the supported keywords and their data types.
      * This function will try to auto-detect the data type by asking the library.
@@ -624,7 +623,7 @@ public class NativeLmp implements AutoCloseable {
         if (aName == null) throw new NullPointerException();
         checkThread();
         RowMatrix rData = MatrixCache.getMatRow((int) natoms(), aColNum);
-        lammpsGatherConcat0(mLmpPtr.mPtr, aName, aIsDouble, aColNum, rData.internalData());
+        lammpsExtractFullAtom0(mLmpPtr.mPtr, aName, aIsDouble, aColNum, rData.internalData());
         return rData;
     }
     public RowIntMatrix fullAtomIntDataOf(String aName, int aColNum) throws LmpException, MPIException {
@@ -632,7 +631,7 @@ public class NativeLmp implements AutoCloseable {
         if (aName == null) throw new NullPointerException();
         checkThread();
         RowIntMatrix rData = IntMatrixCache.getMatRow((int) natoms(), aColNum);
-        lammpsGatherConcatInt0(mLmpPtr.mPtr, aName, aColNum, rData.internalData());
+        lammpsExtractFullAtomInt0(mLmpPtr.mPtr, aName, aColNum, rData.internalData());
         return rData;
     }
     /**
@@ -676,8 +675,8 @@ public class NativeLmp implements AutoCloseable {
         checkThread();
         return new CPointer(lammpsExtractAtomCPointer0(mLmpPtr.mPtr, aName));
     }
-    private native static void lammpsGatherConcat0(long aLmpPtr, @NotNull String aName, boolean aIsDouble, int aCount, double @NotNull[] rData) throws LmpException, MPIException;
-    private native static void lammpsGatherConcatInt0(long aLmpPtr, @NotNull String aName, int aCount, int @NotNull[] rData) throws LmpException, MPIException;
+    private native static void lammpsExtractFullAtom0(long aLmpPtr, @NotNull String aName, boolean aIsDouble, int aCount, double @NotNull[] rData) throws LmpException, MPIException;
+    private native static void lammpsExtractFullAtomInt0(long aLmpPtr, @NotNull String aName, int aCount, int @NotNull[] rData) throws LmpException, MPIException;
     private native static void lammpsExtractAtom0(long aLmpPtr, @NotNull String aName, int aDataType, int aAtomNum, int aCount, double @NotNull[] rData) throws LmpException;
     private native static void lammpsExtractAtomInt0(long aLmpPtr, @NotNull String aName, int aDataType, int aAtomNum, int aCount, int @NotNull[] rData) throws LmpException;
     private native static void lammpsExtractAtomLong0(long aLmpPtr, @NotNull String aName, int aDataType, int aAtomNum, int aCount, long @NotNull[] rData) throws LmpException;
