@@ -29,6 +29,8 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
 
+import static java.nio.file.StandardOpenOption.APPEND;
+
 /**
  * 纯 jse + jit 实现的 nnap 训练器，从而实现更高的优化效果
  * <p>
@@ -118,6 +120,11 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
     protected boolean mHasTest = false;
     protected final DoubleList mTrainLoss = new DoubleList(64);
     protected final DoubleList mTestLoss = new DoubleList(64);
+    protected final DoubleList mTrainLossE = new DoubleList(64), mTrainLossF = new DoubleList(64), mTrainLossS = new DoubleList(64);
+    protected final DoubleList mTestLossE = new DoubleList(64), mTestLossF = new DoubleList(64), mTestLossS = new DoubleList(64);
+    protected final Vector mLossDetail = Vector.zeros(3);
+    protected @Nullable String mLossOutPath = null;
+    protected boolean mLossOutInit = false;
     protected boolean mNormInit = false;
     protected boolean mFirstTrain = true;
     
@@ -666,11 +673,11 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
     }
     private void initOptimizer_() {
         final int[] tLossDiv = {0};
-        final double[] tLossTot = {0.0};
+        final double[] tLossTot = {0.0, 0.0, 0.0, 0.0};
         mOptimizer.setParameter(mNNAP.parameters())
         .setParameterUpdater(mNNAP::updateParameters)
-        .setLossFunc(() -> calLoss(false))
-        .setLossFuncGrad(grad -> calLoss(false, grad))
+        .setLossFunc(() -> calLossDetail(false, mLossDetail))
+        .setLossFuncGrad(grad -> calLoss(false, false, mLossDetail, grad))
         .setLogPrinter((step, lineSearchStep, loss, printLog) -> {
             mStep = step;
             mEpoch = step / mStepsPerEpoch;
@@ -680,6 +687,9 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
                 int tBatchSize = (tStepIdx==mStepsPerEpoch-1) ? (tRestSize+mBatchSize) : mBatchSize;
                 tLossDiv[0] += tBatchSize;
                 tLossTot[0] += tBatchSize * loss;
+                tLossTot[1] += tBatchSize * mLossDetail.get(0);
+                tLossTot[2] += tBatchSize * mLossDetail.get(1);
+                tLossTot[3] += tBatchSize * mLossDetail.get(2);
                 if (tStepIdx == mStepsPerEpoch-1) {
                     if (mEpoch != mNEpochs-1) {
                         mAllSliceTrain.shuffle();
@@ -696,15 +706,29 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
                 mSliceTrain = mFullSliceTrain;
             }
             if (tStepIdx == mStepsPerEpoch-1) {
+                final double lossE, lossF, lossS;
                 if (mBatchSize > 0) {
                     loss = tLossTot[0]/tLossDiv[0];
+                    lossE = tLossTot[1]/tLossDiv[0];
+                    lossF = tLossTot[2]/tLossDiv[0];
+                    lossS = tLossTot[3]/tLossDiv[0];
                     tLossDiv[0] = 0;
-                    tLossTot[0] = 0.0;
+                    tLossTot[0] = 0.0; tLossTot[1] = 0.0; tLossTot[2] = 0.0; tLossTot[3] = 0.0;
+                } else {
+                    lossE = mLossDetail.get(0);
+                    lossF = mLossDetail.get(1);
+                    lossS = mLossDetail.get(2);
                 }
                 mTrainLoss.add(loss);
+                mTrainLossE.add(lossE);
+                mTrainLossF.add(lossF);
+                mTrainLossS.add(lossS);
                 if (mHasTest) {
-                    double tLossTest = calLoss(true);
+                    double tLossTest = calLossDetail(true, mLossDetail);
                     mTestLoss.add(tLossTest);
+                    mTestLossE.add(mLossDetail.get(0));
+                    mTestLossF.add(mLossDetail.get(1));
+                    mTestLossS.add(mLossDetail.get(2));
                     if (tLossTest < mMinLoss) {
                         mSelectEpoch = mEpoch;
                         mMinLoss = tLossTest;
@@ -714,6 +738,8 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
                 } else {
                     if (printLog) UT.Timer.progressBar(String.format("loss: %.4g", loss));
                 }
+                try {writeLoss();}
+                catch (IOException e) {throw new RuntimeException(e);}
                 if (printLog && mBatchSize>0 && mEpoch!=mNEpochs-1) {
                     UT.Timer.progressBar(Maps.of(
                         "name", epochStr_(mEpoch+1),
@@ -1610,7 +1636,36 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
     
     /** 获取历史 loss 值 */
     public IVector trainLoss() {return mTrainLoss.asVec();}
+    public IVector trainLossE() {return mTrainLossE.asVec();}
+    public IVector trainLossF() {return mTrainLossF.asVec();}
+    public IVector trainLossS() {return mTrainLossS.asVec();}
     public IVector testLoss() {return mTestLoss.asVec();}
+    public IVector testLossE() {return mTestLossE.asVec();}
+    public IVector testLossF() {return mTestLossF.asVec();}
+    public IVector testLossS() {return mTestLossS.asVec();}
+    
+    public TrainerNNAP setLossOut(String aPath) {
+        mLossOutPath = aPath;
+        mLossOutInit = false;
+        return this;
+    }
+    protected void writeLoss() throws IOException {
+        if (mLossOutPath == null) return;
+        if (!mLossOutInit) {
+            IO.write(mLossOutPath, "epoch,loss-train,loss-test,lossE-train,lossE-test,lossF-train,lossF-test,lossS-train,lossS-test");
+            mLossOutInit = true;
+        }
+        String tLine = (mEpoch+1) +
+            "," + mTrainLoss.last() +
+            "," + mTestLoss.last() +
+            "," + mTrainLossE.last() +
+            "," + mTestLossE.last() +
+            "," + mTrainLossF.last() +
+            "," + mTestLossF.last() +
+            "," + mTrainLossS.last() +
+            "," + mTestLossS.last();
+        IO.write(mLossOutPath, tLine, APPEND);
+    }
     
     /** 开始训练模型，这里直接训练给定的步数 */
     public void train(int aNEpochs, boolean aEarlyStop, boolean aPrintLog) {
@@ -1686,21 +1741,17 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
         }
         // 打印训练结果信息
         if (!aPrintLog) return;
-        Vector tLossDetail = VectorCache.getVec(3);
-        double tLossTot = calLossDetail(false, tLossDetail);
-        double tLossE = tLossDetail.get(0);
-        double tLossF = tLossDetail.get(1);
-        double tLossS = tLossDetail.get(2);
-        VectorCache.returnVec(tLossDetail);
+        double tLossTot = calLossDetail(false, mLossDetail);
+        double tLossE = mLossDetail.get(0);
+        double tLossF = mLossDetail.get(1);
+        double tLossS = mLossDetail.get(2);
         System.out.printf("Loss-E : %.4g (%s)\n", tLossE, IO.Text.percent(tLossE/tLossTot));
         if (mHasForce) System.out.printf("Loss-F : %.4g (%s)\n", tLossF, IO.Text.percent(tLossF/tLossTot));
         if (mHasStress) System.out.printf("Loss-S : %.4g (%s)\n", tLossS, IO.Text.percent(tLossS/tLossTot));
-        Vector tMAE = VectorCache.getVec(3);
-        calMAE(false, tMAE);
-        double tMAE_E = tMAE.get(0);
-        double tMAE_F = tMAE.get(1);
-        double tMAE_S = tMAE.get(2);
-        VectorCache.returnVec(tMAE);
+        calMAE(false, mLossDetail);
+        double tMAE_E = mLossDetail.get(0);
+        double tMAE_F = mLossDetail.get(1);
+        double tMAE_S = mLossDetail.get(2);
         String tUnits = units();
         if (tUnits==null) tUnits = "";
         if (!mHasTest) {
