@@ -74,37 +74,43 @@ public class Ninja {
         String tInternalNinjaPath = INTERNAL_HOME + "ninja";
         if (IS_WINDOWS) tInternalNinjaPath += ".exe";
         if (IO.exists(tInternalNinjaPath)) return tInternalNinjaPath;
-        // 没有则使用缓存的 ninja 压缩包，这里只考虑 x86 的情况
-        String tNinjaPkgName = "ninja-" + (IS_WINDOWS ? "win" : (IS_MAC ? "mac" : "linux")) + ".zip";
-        String tNinjaCachePath = JNIUtil.PKG_DIR + tNinjaPkgName;
-        if (!IO.exists(tNinjaCachePath)) {
-            System.out.println(IO.Text.green("JNI INIT INFO:")+" No correct Ninja pkg detected");
-            System.out.println(IO.Text.yellow("Auto download Ninja? (Y/n)"));
-            BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
-            String tLine = tReader.readLine();
-            while (true) {
-                if (tLine.equalsIgnoreCase("n")) {
-                    throw new Exception("user interrupted");
-                }
-                if (tLine.isEmpty() || tLine.equalsIgnoreCase("y")) {
-                    break;
-                }
+        // 使用简单的文件锁来避免并行初始化
+        try (AutoCloseable tLocker = JNIUtil.fileLocker(INTERNAL_HOME + "ninjainit.lock")) {
+            // 无论是否抢到了 lock，都有可能此时已经初始完成，因此简单检测
+            if (IO.exists(tInternalNinjaPath)) return tInternalNinjaPath;
+            if (tLocker == null) throw new IllegalStateException();
+            // 没有则使用缓存的 ninja 压缩包，这里只考虑 x86 的情况
+            String tNinjaPkgName = "ninja-" + (IS_WINDOWS ? "win" : (IS_MAC ? "mac" : "linux")) + ".zip";
+            String tNinjaCachePath = JNIUtil.PKG_DIR + tNinjaPkgName;
+            if (!IO.exists(tNinjaCachePath)) {
+                System.out.println(IO.Text.green("JNI INIT INFO:")+" No correct Ninja pkg detected");
                 System.out.println(IO.Text.yellow("Auto download Ninja? (Y/n)"));
+                BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
+                String tLine = tReader.readLine();
+                while (true) {
+                    if (tLine.equalsIgnoreCase("n")) {
+                        throw new Exception("user interrupted");
+                    }
+                    if (tLine.isEmpty() || tLine.equalsIgnoreCase("y")) {
+                        break;
+                    }
+                    System.out.println(IO.Text.yellow("Auto download Ninja? (Y/n)"));
+                }
+                String tNinjaUrl = String.format("https://github.com/ninja-build/ninja/releases/download/v%s/%s", VERSION, tNinjaPkgName);
+                System.out.println("Downloading "+IO.Text.underline(tNinjaUrl));
+                System.out.println("  or you can download it manually and put into "+JNIUtil.PKG_DIR);
+                String tTempPath = tNinjaCachePath + ".tmp_"+UT.Code.randID();
+                IO.copy(URI.create(tNinjaUrl).toURL(), tTempPath);
+                IO.move(tTempPath, tNinjaCachePath);
+                System.out.println(IO.Text.green("JNI INIT INFO:")+" Ninja pkg downloading finished.");
             }
-            String tNinjaUrl = String.format("https://github.com/ninja-build/ninja/releases/download/v%s/%s", VERSION, tNinjaPkgName);
-            System.out.println("Downloading "+IO.Text.underline(tNinjaUrl));
-            System.out.println("  or you can download it manually and put into "+JNIUtil.PKG_DIR);
-            String tTempPath = tNinjaCachePath + ".tmp_"+UT.Code.randID();
-            IO.copy(URI.create(tNinjaUrl).toURL(), tTempPath);
-            IO.move(tTempPath, tNinjaCachePath);
-            System.out.println(IO.Text.green("JNI INIT INFO:")+" Ninja pkg downloading finished.");
+            // 解压
+            System.out.println(IO.Text.green("JNI INIT INFO:")+" Extracting Ninja...");
+            IO.zip2dir(tNinjaCachePath, INTERNAL_HOME);
+            // 非 windows 需要手动设置权限，这个主要是 ninja 的分发有些随意了
+            IO.setExecutable(tInternalNinjaPath);
+            return tInternalNinjaPath;
         }
-        // 解压
-        System.out.println(IO.Text.green("JNI INIT INFO:")+" Extracting Ninja...");
-        IO.zip2dir(tNinjaCachePath, INTERNAL_HOME);
-        // 非 windows 需要手动设置权限，这个主要是 ninja 的分发有些随意了
-        IO.setExecutable(tInternalNinjaPath);
-        return tInternalNinjaPath;
     }
     
     static {

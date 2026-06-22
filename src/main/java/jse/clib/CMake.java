@@ -74,70 +74,76 @@ public class CMake {
         String tInternalCmakePath = INTERNAL_HOME + "bin/cmake";
         if (IS_WINDOWS) tInternalCmakePath += ".exe";
         if (IO.exists(tInternalCmakePath)) return tInternalCmakePath;
-        // 没有则使用缓存的 cmake 压缩包，这里只考虑 x86 64 位的情况
-        String tCmakePkgName = "cmake-"+VERSION+"-" + (IS_WINDOWS ? "windows-x86_64.zip" : (IS_MAC ? "macos-universal.tar.gz" : "linux-x86_64.tar.gz"));
-        String tCmakeCachePath = JNIUtil.PKG_DIR + tCmakePkgName;
-        if (!IO.exists(tCmakeCachePath)) {
-            System.out.println(IO.Text.green("JNI INIT INFO:")+" No correct CMake pkg detected");
-            System.out.println(IO.Text.yellow("Auto download CMake? (Y/n)"));
-            BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
-            String tLine = tReader.readLine();
-            while (true) {
-                if (tLine.equalsIgnoreCase("n")) {
-                    throw new Exception("user interrupted");
+        // 使用简单的文件锁来避免并行初始化
+        try (AutoCloseable tLocker = JNIUtil.fileLocker(INTERNAL_HOME + "cmakeinit.lock")) {
+            // 无论是否抢到了 lock，都有可能此时已经初始完成，因此简单检测
+            if (IO.exists(tInternalCmakePath)) return tInternalCmakePath;
+            if (tLocker == null) throw new IllegalStateException();
+            // 没有则使用缓存的 cmake 压缩包，这里只考虑 x86 64 位的情况
+            String tCmakePkgName = "cmake-"+VERSION+"-" + (IS_WINDOWS ? "windows-x86_64.zip" : (IS_MAC ? "macos-universal.tar.gz" : "linux-x86_64.tar.gz"));
+            String tCmakeCachePath = JNIUtil.PKG_DIR + tCmakePkgName;
+            if (!IO.exists(tCmakeCachePath)) {
+                System.out.println(IO.Text.green("JNI INIT INFO:")+" No correct CMake pkg detected");
+                System.out.println(IO.Text.yellow("Auto download CMake? (Y/n)"));
+                BufferedReader tReader = IO.toReader(System.in, Charset.defaultCharset());
+                String tLine = tReader.readLine();
+                while (true) {
+                    if (tLine.equalsIgnoreCase("n")) {
+                        throw new Exception("user interrupted");
+                    }
+                    if (tLine.isEmpty() || tLine.equalsIgnoreCase("y")) {
+                        break;
+                    }
+                    System.out.println(IO.Text.yellow("Auto download CMake? (Y/n)"));
                 }
-                if (tLine.isEmpty() || tLine.equalsIgnoreCase("y")) {
+                String tCmakeUrl = String.format("https://github.com/Kitware/CMake/releases/download/v%s/%s", VERSION, tCmakePkgName);
+                System.out.println("Downloading "+IO.Text.underline(tCmakeUrl));
+                System.out.println("  or you can download it manually and put into "+JNIUtil.PKG_DIR);
+                String tTempPath = tCmakeCachePath + ".tmp_"+UT.Code.randID();
+                IO.copy(URI.create(tCmakeUrl).toURL(), tTempPath);
+                IO.move(tTempPath, tCmakeCachePath);
+                System.out.println(IO.Text.green("JNI INIT INFO:")+" CMake pkg downloading finished.");
+            }
+            // 解压
+            System.out.println(IO.Text.green("JNI INIT INFO:")+" Extracting CMake...");
+            String tWorkingDir = JAR_DIR + "build-cmake@"+UT.Code.randID() + "/";
+            if (IS_WINDOWS) {
+                IO.zip2dir(tCmakeCachePath, tWorkingDir);
+            } else {
+                OS.printFilesystemInfo();
+                // tar.gz 这里直接使用系统命令解压
+                IO.makeDir(tWorkingDir);
+                EXEC.system("tar -zxf \""+tCmakeCachePath+"\" -C \""+tWorkingDir+"\"");
+            }
+            String tCmakeDir = null;
+            for (String tName : IO.list(tWorkingDir)) {
+                String tCmakeDir2 = tWorkingDir + tName + "/";
+                if (IO.isDir(tCmakeDir2)) {
+                    tCmakeDir = tCmakeDir2;
                     break;
                 }
-                System.out.println(IO.Text.yellow("Auto download CMake? (Y/n)"));
             }
-            String tCmakeUrl = String.format("https://github.com/Kitware/CMake/releases/download/v%s/%s", VERSION, tCmakePkgName);
-            System.out.println("Downloading "+IO.Text.underline(tCmakeUrl));
-            System.out.println("  or you can download it manually and put into "+JNIUtil.PKG_DIR);
-            String tTempPath = tCmakeCachePath + ".tmp_"+UT.Code.randID();
-            IO.copy(URI.create(tCmakeUrl).toURL(), tTempPath);
-            IO.move(tTempPath, tCmakeCachePath);
-            System.out.println(IO.Text.green("JNI INIT INFO:")+" CMake pkg downloading finished.");
-        }
-        // 解压
-        System.out.println(IO.Text.green("JNI INIT INFO:")+" Extracting CMake...");
-        String tWorkingDir = JAR_DIR + "build-cmake@"+UT.Code.randID() + "/";
-        if (IS_WINDOWS) {
-            IO.zip2dir(tCmakeCachePath, tWorkingDir);
-        } else {
-            OS.printFilesystemInfo();
-            // tar.gz 这里直接使用系统命令解压
-            IO.makeDir(tWorkingDir);
-            EXEC.system("tar -zxf \""+tCmakeCachePath+"\" -C \""+tWorkingDir+"\"");
-        }
-        String tCmakeDir = null;
-        for (String tName : IO.list(tWorkingDir)) {
-            String tCmakeDir2 = tWorkingDir + tName + "/";
-            if (IO.isDir(tCmakeDir2)) {
-                tCmakeDir = tCmakeDir2;
-                break;
+            if (tCmakeDir == null) throw new Exception("Unzip CMake fail, working dir: " + tWorkingDir);
+            // mac 压缩包会多几层，这里都解除嵌套保持一致
+            if (IS_MAC) tCmakeDir += "CMake.app/Contents/";
+            // 移动到需要的目录，这里需要对于神秘文件系统专门处理
+            if (JAR_DIR_BAD_FILESYSTEM && !IS_WINDOWS) {
+                OS.printFilesystemInfo();
+                IO.makeDir(INTERNAL_HOME);
+                IO.removeDir(INTERNAL_HOME);
+                int tCode = EXEC.system("mv \""+tCmakeDir+"\" \""+INTERNAL_HOME.substring(0, INTERNAL_HOME.length()-1)+"\"");
+                if (tCode != 0) throw new Exception("exit code: "+tCode);
+            } else {
+                try {
+                    IO.move(tCmakeDir, INTERNAL_HOME);
+                } catch (Exception e) {
+                    // 移动失败则尝试直接拷贝整个目录
+                    IO.copyDir(tCmakeDir, INTERNAL_HOME); // 不需要清除旧目录，因为编译完成会自动清理
+                }
             }
+            IO.removeDir(tWorkingDir);
+            return tInternalCmakePath;
         }
-        if (tCmakeDir == null) throw new Exception("Unzip CMake fail, working dir: " + tWorkingDir);
-        // mac 压缩包会多几层，这里都解除嵌套保持一致
-        if (IS_MAC) tCmakeDir += "CMake.app/Contents/";
-        // 移动到需要的目录，这里需要对于神秘文件系统专门处理
-        if (JAR_DIR_BAD_FILESYSTEM && !IS_WINDOWS) {
-            OS.printFilesystemInfo();
-            IO.makeDir(INTERNAL_HOME);
-            IO.removeDir(INTERNAL_HOME);
-            int tCode = EXEC.system("mv \""+tCmakeDir+"\" \""+INTERNAL_HOME.substring(0, INTERNAL_HOME.length()-1)+"\"");
-            if (tCode != 0) throw new Exception("exit code: "+tCode);
-        } else {
-            try {
-                IO.move(tCmakeDir, INTERNAL_HOME);
-            } catch (Exception e) {
-                // 移动失败则尝试直接拷贝整个目录
-                IO.copyDir(tCmakeDir, INTERNAL_HOME); // 不需要清除旧目录，因为编译完成会自动清理
-            }
-        }
-        IO.removeDir(tWorkingDir);
-        return tInternalCmakePath;
     }
     
     static {

@@ -222,14 +222,22 @@ public class SimpleJIT {
             validLibCache_();
             // 没有检测到缓存，开始编译
             if (mLibPath==null) {
-                if (mCacheLib) {
-                    System.out.println(IO.Text.cyan("JIT INIT INFO:")+" No cache lib "+mProjectName+" found in "+mLibDir+", re-compile...");
-                } else {
-                    if (DEBUG) System.out.println(IO.Text.cyan("JIT INIT INFO:")+" Compile (no-cache mode)...");
+                // 使用简单的文件锁来避免并行初始化
+                try (AutoCloseable tLocker = JNIUtil.fileLocker(mLibDir + "jitbuild.lock")) {
+                    // 无论是否抢到了 lock，都有可能此时已经初始完成，因此简单检测
+                    String tLibName = LIB_NAME_IN(mLibDir, mProjectName);
+                    if (tLibName == null) {
+                        if (tLocker == null) throw new IllegalStateException();
+                        if (mCacheLib) {
+                            System.out.println(IO.Text.cyan("JIT INIT INFO:") + " No cache lib " + mProjectName + " found in " + mLibDir + ", re-compile...");
+                        } else {
+                            if (DEBUG) System.out.println(IO.Text.cyan("JIT INIT INFO:") + " Compile (no-cache mode)...");
+                        }
+                        // 开始运行时编译
+                        tLibName = initLib_();
+                    }
+                    mLibPath = mLibDir + tLibName;
                 }
-                // 开始运行时编译
-                String tLibName = initLib_();
-                mLibPath = mLibDir + tLibName;
             }
             // 加载库
             long tPtr = loadLibrary0(mLibPath);

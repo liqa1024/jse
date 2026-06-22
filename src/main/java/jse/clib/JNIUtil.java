@@ -16,7 +16,9 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
+import static jse.code.CS.RANDOM;
 import static jse.code.CS.VERSION_NUMBER;
+import static jse.code.CS.FILE_SYSTEM_SLEEP_TIME;
 import static jse.code.Conf.*;
 import static jse.code.OS.*;
 
@@ -160,6 +162,33 @@ public class JNIUtil {
     public static String validCmdPath(String aPath) {
         return IS_WINDOWS ? ("\"'"+aPath+"'\"") : ("\""+aPath+"\"");
     }
+    @ApiStatus.Internal
+    @SuppressWarnings("BusyWait")
+    public static @Nullable AutoCloseable fileLocker(final String aPath) throws InterruptedException, IOException {
+        // 随机 sleep 打乱
+        Thread.sleep(RANDOM.nextInt(100)*5L);
+        // 没有检测到则抢到了 lock
+        if (!IO.exists(aPath)) {
+            IO.writeText(aPath, "");
+            return () -> IO.delete(aPath);
+        }
+        // 否则说明存在其他进程并行初始化，输出警告并等待
+        System.err.println(IO.Text.red(
+            "======================= WARNING =======================\n" +
+            "Parallel initialization detected, build may fail.\n" +
+            "\n" +
+            "This often due to MPI execution before `jse --jnibuild`,\n" +
+            "so you may need to run it in order (when the build fails): \n" +
+            "  - `jse --jniclean all`\n" +
+            "  - `jse --jnibuild`\n" +
+            "=======================================================\n"
+        ));
+        do {
+            Thread.sleep(FILE_SYSTEM_SLEEP_TIME);
+        } while (IO.exists(aPath));
+        return null;
+    }
+    
     
     @ApiStatus.Internal
     @FunctionalInterface public interface IEnvChecker {void check() throws Exception;}
@@ -228,8 +257,13 @@ public class JNIUtil {
             @Nullable String tLibName = LIB_NAME_IN(mLibDir, mProjectName);
             // 如果不存在 jni lib 则需要重新通过源码编译
             if (tLibName == null) {
-                System.out.println(IO.Text.green(mInfoProjectName +" INIT INFO: ")+ mProjectName +" libraries not found. Reinstalling...");
-                try {
+                // 使用简单的文件锁来避免并行构建
+                try (AutoCloseable tLocker = fileLocker(mLibDir + "jnibuild.lock")) {
+                    // 无论是否抢到了 lock，都有可能此时已经初始完成，因此简单检测
+                    tLibName = LIB_NAME_IN(mLibDir, mProjectName);
+                    if (tLibName != null) return mLibDir + tLibName;
+                    if (tLocker == null) throw new IllegalStateException();
+                    System.out.println(IO.Text.green(mInfoProjectName +" INIT INFO: ")+ mProjectName +" libraries not found. Reinstalling...");
                     tLibName = initLib_();
                 } catch (Exception e) {throw new RuntimeException(e);}
             }
