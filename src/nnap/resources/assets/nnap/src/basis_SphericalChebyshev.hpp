@@ -5,32 +5,47 @@
 
 namespace JSE_NNAP {
 
-template <int WTYPE, int NMAX, int LMAXMAX, int SIZE_NP>
+template <int WTYPE, int NMAX, int LMAXMAX, int SIZE_NP, int TWO_PASS>
 static NNAP_DEVICE void calAnlmGpu(int nb, int bi, int np,
-    flt_t *aBufNlDx, flt_t *aBufNlDy, flt_t *aBufNlDz, int *aBufNlType, int aNeiNum, flt_t *rAnlm,
+    flt_t *aBufNlDx, flt_t *aBufNlDy, flt_t *aBufNlDz, int *aBufNlType, int aNeiNum,
+    flt_t *bY, flt_t *rAnlm1, flt_t *rAnlm2,
     flt_t aRCut, flt_t *aParams) noexcept {
     // const init
     constexpr int tLMAll = (LMAXMAX+1)*(LMAXMAX+1);
     // init cache
     flt_t bRn[NMAX+1];
-    flt_t bY[tLMAll];
     // loop for neighbor
     for (int j = 0; j < aNeiNum; ++j) {
-        int type = aBufNlType[j*nb + bi];
-        flt_t dx = aBufNlDx[j*nb + bi], dy = aBufNlDy[j*nb + bi], dz = aBufNlDz[j*nb + bi];
-        flt_t dis = nnap_sqrt(dx*dx + dy*dy + dz*dz);
+        const int type = aBufNlType[j*nb + bi];
+        const flt_t dx = aBufNlDx[j*nb + bi], dy = aBufNlDy[j*nb + bi], dz = aBufNlDz[j*nb + bi];
+        const flt_t dis = nnap_sqrt(dx*dx + dy*dy + dz*dz);
         // check rcut for merge
         if (dis >= aRCut) continue;
         // cal Y
         calY<LMAXMAX>(bY, dx, dy, dz, dis);
         // cal Rn, fc
         calRn<NMAX>(bRn, dis, aRCut);
-        flt_t fc = calFc(dis, aRCut);
-        // cal Rnp
+        const flt_t fc = calFc(dis, aRCut);
+        // cal anlm
         const int tParamShift = (type-1)*(SIZE_NP*(NMAX+1)) + np*(NMAX+1);
-        flt_t tRnp = dot<NMAX+1>(bRn, aParams+tParamShift);
-        // to anlm
-        mplus<tLMAll>(rAnlm, fc*tRnp, bY);
+        if (TWO_PASS) {
+            const flt_t *tWeight1 = aParams+tParamShift, *tWeight2 = aParams+tParamShift+(NMAX+1);
+            flt_t tRnp1 = ZERO, tRnp2 = ZERO;
+            for (int k = 0; k < (NMAX+1); ++k) {
+                const flt_t subRn = bRn[k];
+                tRnp1 += subRn*tWeight1[k];
+                tRnp2 += subRn*tWeight2[k];
+            }
+            tRnp1 *= fc; tRnp2 *= fc;
+            for (int k = 0; k < tLMAll; ++k) {
+                const flt_t subY = bY[k];
+                rAnlm1[k] += tRnp1*subY;
+                rAnlm2[k] += tRnp2*subY;
+            }
+        } else {
+            const flt_t tRnp1 = dot<NMAX+1>(bRn, aParams+tParamShift);
+            mplus<tLMAll>(rAnlm1, fc*tRnp1, bY);
+        }
     }
 }
 template <int WTYPE, int NMAX, int LMAX, int L3MAX, int L4MAX, int SIZE_NP>
@@ -42,75 +57,138 @@ static NNAP_DEVICE void sphForwardGpu(int nb, int bi,
     constexpr int tLMaxMax = LMAX>L3MAX ? (LMAX>L4MAX?LMAX:L4MAX) : (L3MAX>L4MAX?L3MAX:L4MAX);
     constexpr int tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
     // init cache
-    flt_t bAnlm[tLMAll];
+    flt_t bY[tLMAll];
+    flt_t bAnlm1[tLMAll], bAnlm2[tLMAll];
     // change loop order for less cache
     constexpr int tSizeL2 = LMAX+1;
     constexpr int tSizeL3 = L3NCOLS[L3MAX];
-    for (int np=0, tShiftFp=0; np < SIZE_NP; ++np, tShiftFp+=tSizeL) {
-        fill<tLMAll>(bAnlm, ZERO);
-        calAnlmGpu<WTYPE, NMAX, tLMaxMax, SIZE_NP>(nb, bi, np,
-            aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aNeiNum, bAnlm,
+    int np = 0, tShiftFp = 0;
+    for (; np < (SIZE_NP-1); np += 2) {
+        fill<tLMAll>(bAnlm1, ZERO);
+        fill<tLMAll>(bAnlm2, ZERO);
+        calAnlmGpu<WTYPE, NMAX, tLMaxMax, SIZE_NP, TRUE>(nb, bi, np,
+            aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aNeiNum,
+            bY, bAnlm1, bAnlm2,
             aRCut, aParams
         );
         // anlm -> fp
-        calSphL2<LMAX >(bAnlm, rFp+tShiftFp);
-        calSphL3<L3MAX>(bAnlm, rFp+tShiftFp+tSizeL2);
-        calSphL4<L4MAX>(bAnlm, rFp+tShiftFp+tSizeL2+tSizeL3);
+        calSphL2<LMAX >(bAnlm1, rFp+tShiftFp);
+        calSphL3<L3MAX>(bAnlm1, rFp+tShiftFp+tSizeL2);
+        calSphL4<L4MAX>(bAnlm1, rFp+tShiftFp+tSizeL2+tSizeL3);
+        tShiftFp += tSizeL;
+        calSphL2<LMAX >(bAnlm2, rFp+tShiftFp);
+        calSphL3<L3MAX>(bAnlm2, rFp+tShiftFp+tSizeL2);
+        calSphL4<L4MAX>(bAnlm2, rFp+tShiftFp+tSizeL2+tSizeL3);
+        tShiftFp += tSizeL;
+    }
+    // rest
+    if (SIZE_NP%2 == 1) {
+        fill<tLMAll>(bAnlm1, ZERO);
+        calAnlmGpu<WTYPE, NMAX, tLMaxMax, SIZE_NP, FALSE>(nb, bi, np,
+            aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aNeiNum,
+            bY, bAnlm1, NULL,
+            aRCut, aParams
+        );
+        // anlm -> fp
+        calSphL2<LMAX >(bAnlm1, rFp+tShiftFp);
+        calSphL3<L3MAX>(bAnlm1, rFp+tShiftFp+tSizeL2);
+        calSphL4<L4MAX>(bAnlm1, rFp+tShiftFp+tSizeL2+tSizeL3);
     }
 }
 
-template <int WTYPE, int NMAX, int LMAXMAX, int SIZE_NP>
+template <int WTYPE, int NMAX, int LMAXMAX, int SIZE_NP, int TWO_PASS>
 static NNAP_DEVICE void backwardAnlmGpu(int nb, int bi, int np,
-    flt_t *aBufNlDx, flt_t *aBufNlDy, flt_t *aBufNlDz, int *aBufNlType, int aNeiNum, flt_t *bY, flt_t *aAGradAnlm,
+    flt_t *aBufNlDx, flt_t *aBufNlDy, flt_t *aBufNlDz, int *aBufNlType, int aNeiNum,
+    flt_t *bY, flt_t *bYPtheta, flt_t *aAGradAnlm1, flt_t *aAGradAnlm2,
     flt_t *rBufAGradNlDx, flt_t *rBufAGradNlDy, flt_t *rBufAGradNlDz,
     flt_t aRCut, flt_t *aParams) {
     // const init
     constexpr int tLMAll = (LMAXMAX+1)*(LMAXMAX+1);
     // init cache
     flt_t bRn[NMAX+1];
-    flt_t bYPtheta[tLMAll];
     // loop for neighbor
     for (int j = 0; j < aNeiNum; ++j) {
         // init nl
-        int type = aBufNlType[j*nb + bi];
-        flt_t dx = aBufNlDx[j*nb + bi], dy = aBufNlDy[j*nb + bi], dz = aBufNlDz[j*nb + bi];
-        flt_t dis = nnap_sqrt(dx*dx + dy*dy + dz*dz);
+        const int type = aBufNlType[j*nb + bi];
+        const flt_t dx = aBufNlDx[j*nb + bi], dy = aBufNlDy[j*nb + bi], dz = aBufNlDz[j*nb + bi];
+        const flt_t dis = nnap_sqrt(dx*dx + dy*dy + dz*dz);
         // check rcut for merge
         if (dis >= aRCut) continue;
         // cal Y
         calY<LMAXMAX>(bY, dx, dy, dz, dis);
         // cal Rn, fc
         calRn<NMAX>(bRn, dis, aRCut);
-        flt_t fc = calFc(dis, aRCut);
-        // cal Rnp
-        const int tParamShift = (type-1)*(SIZE_NP*(NMAX+1)) + np*(NMAX+1);
-        flt_t tRnp = dot<NMAX+1>(bRn, aParams+tParamShift);
+        const flt_t fc = calFc(dis, aRCut);
         
-        // cal grad fc & Rnp here, for no use Y later
-        const flt_t tAGradFcRnp = dot<tLMAll>(aAGradAnlm, bY);
-        const flt_t tAGradFc = tAGradFcRnp*tRnp;
-        const flt_t tAGradRnp = tAGradFcRnp*fc;
-        // cal RnGrad, fcGrag
-        flt_t *tRnGrad = bRn;
-        calRnGrad<NMAX>(tRnGrad, dis, aRCut);
-        flt_t fcGrad = calFcGrad(dis, aRCut);
-        // gradRnp to gradRn (cache optim)
-        flt_t rAGradj = tAGradRnp * dot<NMAX+1>(aParams+tParamShift, tRnGrad);
-        rAGradj += tAGradFc*fcGrad;
-        
-        // cal YlmPthetaPphi
+        // grad anlm -> grad xyz
         flt_t thetaPx, thetaPy, thetaPz, phiPx, phiPy;
-        calYPthetaPphiGpu<LMAXMAX>(
-            bYPtheta, bY, dx, dy, dz, dis,
-            thetaPx, thetaPy, thetaPz, phiPx, phiPy
-        );
-        // backward in single loop for save cache
-        flt_t rAGradThetaj = ZERO, rAGradPhij = ZERO;
-        const flt_t subFcRnp = fc*tRnp;
-        for (int k = 0; k < tLMAll; ++k) {
-            const flt_t subAGradY = aAGradAnlm[k]*subFcRnp;
-            rAGradThetaj += subAGradY*bYPtheta[k];
-            rAGradPhij += subAGradY*bY[k]; // bY <-> bYPphi
+        flt_t rAGradj = ZERO, rAGradThetaj = ZERO, rAGradPhij = ZERO;
+        const int tParamShift = (type-1)*(SIZE_NP*(NMAX+1)) + np*(NMAX+1);
+        if (TWO_PASS) {
+            const flt_t *tWeight1 = aParams+tParamShift, *tWeight2 = aParams+tParamShift+(NMAX+1);
+            flt_t tRnp1 = ZERO, tRnp2 = ZERO;
+            for (int k = 0; k < (NMAX+1); ++k) {
+                const flt_t subRn = bRn[k];
+                tRnp1 += subRn*tWeight1[k];
+                tRnp2 += subRn*tWeight2[k];
+            }
+            // cal grad fc & Rnp here, for no use Y later
+            flt_t tAGradFcRnp1 = ZERO, tAGradFcRnp2 = ZERO;
+            for (int k = 0; k < tLMAll; ++k) {
+                const flt_t subY = bY[k];
+                tAGradFcRnp1 += aAGradAnlm1[k]*subY;
+                tAGradFcRnp2 += aAGradAnlm2[k]*subY;
+            }
+            // cal RnGrad, fcGrag
+            flt_t *tRnGrad = bRn;
+            calRnGrad<NMAX>(tRnGrad, dis, aRCut);
+            const flt_t fcGrad = calFcGrad(dis, aRCut);
+            // gradRnp to gradRn (cache optim)
+            flt_t tRnp1Grad = ZERO, tRnp2Grad = ZERO;
+            for (int k = 0; k < (NMAX+1); ++k) {
+                const flt_t subRnGrad = tRnGrad[k];
+                tRnp1Grad += subRnGrad*tWeight1[k];
+                tRnp2Grad += subRnGrad*tWeight2[k];
+            }
+            rAGradj += (tAGradFcRnp1*tRnp1Grad + tAGradFcRnp2*tRnp2Grad) * fc;
+            rAGradj += (tAGradFcRnp1*tRnp1 + tAGradFcRnp2*tRnp2) * fcGrad;
+            
+            // cal YlmPthetaPphi
+            calYPthetaPphiGpu<LMAXMAX>(
+                bYPtheta, bY, dx, dy, dz, dis,
+                thetaPx, thetaPy, thetaPz, phiPx, phiPy
+            );
+            // backward in single loop for save cache
+            tRnp1 *= fc; tRnp2 *= fc;
+            for (int k = 0; k < tLMAll; ++k) {
+                const flt_t subAGradY = aAGradAnlm1[k]*tRnp1 + aAGradAnlm2[k]*tRnp2;
+                rAGradThetaj += subAGradY*bYPtheta[k];
+                rAGradPhij += subAGradY*bY[k]; // bY <-> bYPphi
+            }
+        } else {
+            const flt_t tRnp = dot<NMAX+1>(bRn, aParams+tParamShift);
+            // cal grad fc & Rnp here, for no use Y later
+            const flt_t tAGradFcRnp = dot<tLMAll>(aAGradAnlm1, bY);
+            // cal RnGrad, fcGrag
+            flt_t *tRnGrad = bRn;
+            calRnGrad<NMAX>(tRnGrad, dis, aRCut);
+            const flt_t fcGrad = calFcGrad(dis, aRCut);
+            // gradRnp to gradRn (cache optim)
+            rAGradj += tAGradFcRnp*fc * dot<NMAX+1>(aParams+tParamShift, tRnGrad);
+            rAGradj += tAGradFcRnp*tRnp * fcGrad;
+        
+            // cal YlmPthetaPphi
+            calYPthetaPphiGpu<LMAXMAX>(
+                bYPtheta, bY, dx, dy, dz, dis,
+                thetaPx, thetaPy, thetaPz, phiPx, phiPy
+            );
+            // backward in single loop for save cache
+            const flt_t subFcRnp = fc*tRnp;
+            for (int k = 0; k < tLMAll; ++k) {
+                const flt_t subAGradY = aAGradAnlm1[k]*subFcRnp;
+                rAGradThetaj += subAGradY*bYPtheta[k];
+                rAGradPhij += subAGradY*bY[k]; // bY <-> bYPphi
+            }
         }
         // to grad xyz
         rBufAGradNlDx[j*nb + bi] += rAGradj*dx + rAGradThetaj*thetaPx + rAGradPhij*phiPx;
@@ -128,23 +206,53 @@ static NNAP_DEVICE void sphBackwardGpu(int nb, int bi,
     constexpr int tLMaxMax = LMAX>L3MAX ? (LMAX>L4MAX?LMAX:L4MAX) : (L3MAX>L4MAX?L3MAX:L4MAX);
     constexpr int tLMAll = (tLMaxMax+1)*(tLMaxMax+1);
     // init cache
-    flt_t bAnlm[tLMAll], bAGradAnlm[tLMAll];
+    flt_t bAnlm1[tLMAll], bAnlm2[tLMAll];
+    flt_t bAGradAnlm1[tLMAll], bAGradAnlm2[tLMAll];
     // change loop order for less cache
     constexpr int tSizeL2 = LMAX+1;
     constexpr int tSizeL3 = L3NCOLS[L3MAX];
-    for (int np=0, tShiftFp=0; np < SIZE_NP; ++np, tShiftFp+=tSizeL) {
+    int np = 0, tShiftFp = 0;
+    for (; np < (SIZE_NP-1); np += 2) {
         // recalculated for save cache
-        fill<tLMAll>(bAnlm, ZERO);
-        calAnlmGpu<WTYPE, NMAX, tLMaxMax, SIZE_NP>(nb, bi, np,
-            aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aNeiNum, bAnlm,
+        fill<tLMAll>(bAnlm1, ZERO);
+        fill<tLMAll>(bAnlm2, ZERO);
+        calAnlmGpu<WTYPE, NMAX, tLMaxMax, SIZE_NP, TRUE>(nb, bi, np,
+            aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aNeiNum,
+            bAGradAnlm1, bAnlm1, bAnlm2,
             aRCut, aParams
         );
-        fill<tLMAll>(bAGradAnlm, ZERO);
-        calGradSphL2<LMAX >(bAnlm, bAGradAnlm, aAGradFp+tShiftFp);
-        calGradSphL3<L3MAX>(bAnlm, bAGradAnlm, aAGradFp+tShiftFp+tSizeL2);
-        calGradSphL4<L4MAX>(bAnlm, bAGradAnlm, aAGradFp+tShiftFp+tSizeL2+tSizeL3);
-        backwardAnlmGpu<WTYPE, NMAX, tLMaxMax, SIZE_NP>(nb, bi, np,
-            aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aNeiNum, bAnlm, bAGradAnlm,
+        fill<tLMAll>(bAGradAnlm1, ZERO);
+        fill<tLMAll>(bAGradAnlm2, ZERO);
+        calGradSphL2<LMAX >(bAnlm1, bAGradAnlm1, aAGradFp+tShiftFp);
+        calGradSphL3<L3MAX>(bAnlm1, bAGradAnlm1, aAGradFp+tShiftFp+tSizeL2);
+        calGradSphL4<L4MAX>(bAnlm1, bAGradAnlm1, aAGradFp+tShiftFp+tSizeL2+tSizeL3);
+        tShiftFp += tSizeL;
+        calGradSphL2<LMAX >(bAnlm2, bAGradAnlm2, aAGradFp+tShiftFp);
+        calGradSphL3<L3MAX>(bAnlm2, bAGradAnlm2, aAGradFp+tShiftFp+tSizeL2);
+        calGradSphL4<L4MAX>(bAnlm2, bAGradAnlm2, aAGradFp+tShiftFp+tSizeL2+tSizeL3);
+        tShiftFp += tSizeL;
+        backwardAnlmGpu<WTYPE, NMAX, tLMaxMax, SIZE_NP, TRUE>(nb, bi, np,
+            aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aNeiNum,
+            bAnlm1, bAnlm2, bAGradAnlm1, bAGradAnlm2,
+            rBufAGradNlDx, rBufAGradNlDy, rBufAGradNlDz,
+            aRCut, aParams
+        );
+    }
+    // rest
+    if (SIZE_NP%2 == 1) {
+        fill<tLMAll>(bAnlm1, ZERO);
+        calAnlmGpu<WTYPE, NMAX, tLMaxMax, SIZE_NP, FALSE>(nb, bi, np,
+            aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aNeiNum,
+            bAGradAnlm1, bAnlm1, NULL,
+            aRCut, aParams
+        );
+        fill<tLMAll>(bAGradAnlm1, ZERO);
+        calGradSphL2<LMAX >(bAnlm1, bAGradAnlm1, aAGradFp+tShiftFp);
+        calGradSphL3<L3MAX>(bAnlm1, bAGradAnlm1, aAGradFp+tShiftFp+tSizeL2);
+        calGradSphL4<L4MAX>(bAnlm1, bAGradAnlm1, aAGradFp+tShiftFp+tSizeL2+tSizeL3);
+        backwardAnlmGpu<WTYPE, NMAX, tLMaxMax, SIZE_NP, FALSE>(nb, bi, np,
+            aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aNeiNum,
+            bAnlm1, bAnlm2, bAGradAnlm1, NULL,
             rBufAGradNlDx, rBufAGradNlDy, rBufAGradNlDz,
             aRCut, aParams
         );
