@@ -53,9 +53,6 @@ public class MergedBasis extends Basis {
         mTotCHyperParaSize = tTotCHyperParaSize;
         mTotParaSize = tTotParaSize;
     }
-    public int mergeSize() {
-        return mMergedBasis.length;
-    }
     
     @Override public void mountCptrParameter(IDoubleOrFloatCPointer aPtr) {
         IDoubleOrFloatCPointer tPtr = aPtr.copy();
@@ -135,8 +132,19 @@ public class MergedBasis extends Basis {
         }
     }
     
-    @Override public double rcut() {return mRCut;}
-    @Override public int size() {return mSize;}
+    @Override public double rcutMax() {
+        return mRCut;
+    }
+    @Override public int size() {
+        return mSize;
+    }
+    
+    @Override public int mergeSize() {
+        return mMergedBasis.length;
+    }
+    @Override public double rcut(int aMergeIdx) {
+        return mMergedBasis[aMergeIdx].rcut();
+    }
     
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
         rGenMap.put("[FP MERGE "+aGenIdx+"]", true); // 标记此分支为 merge

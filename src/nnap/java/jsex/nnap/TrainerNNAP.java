@@ -1379,8 +1379,7 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
             IntVector tAtomType = mTrainData.mAtomType.get(i);
             int tNumAtoms = tAtomType.size();
             for (int k = 0; k < tNumAtoms; ++k) {
-                int tType = tAtomType.get(k);
-                double tRCut = mNNAP.mBasis[tType-1].rcut();
+                double tRCut = mNNAP.rcut(tAtomType.get(k));
                 rUnitLen += MathEX.Fast.cbrt((4.0/3.0*MathEX.PI) * MathEX.Fast.pow3(tRCut) / (tNumNei.get(k)+1));
             }
             rNumTot += tNumAtoms;

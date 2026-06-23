@@ -21,8 +21,11 @@ public class SharedBasis extends Basis {
     public Basis sharedBasis() {return mSharedBasis;}
     public int sharedType() {return mSharedType;}
     
-    @Override public double rcut() {return mSharedBasis.rcut();}
+    @Override public double rcutMax() {return mSharedBasis.rcutMax();}
     @Override public int size() {return mSharedBasis.size();}
+    
+    @Override public int mergeSize() {return mSharedBasis.mergeSize();}
+    @Override public double rcut(int aMergeIdx) {return mSharedBasis.rcut(aMergeIdx);}
     
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
         rGenMap.put("[FP SHARE "+aGenIdx+"]", true); // 标记此分支为 share

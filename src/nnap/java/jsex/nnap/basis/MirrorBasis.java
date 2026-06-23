@@ -21,8 +21,11 @@ public class MirrorBasis extends Basis {
     public Basis mirrorBasis() {return mMirrorBasis;}
     public int mirrorType() {return mMirrorType;}
     
-    @Override public double rcut() {return mMirrorBasis.rcut();}
+    @Override public double rcutMax() {return mMirrorBasis.rcutMax();}
     @Override public int size() {return mMirrorBasis.size();}
+    
+    @Override public int mergeSize() {return mMirrorBasis.mergeSize();}
+    @Override public double rcut(int aMergeIdx) {return mMirrorBasis.rcut(aMergeIdx);}
     
     @Override public void updateGenMap(Map<String, Object> rGenMap, int aGenIdx) {
         rGenMap.put("[FP MIRROR "+aGenIdx+"]", true); // 标记此分支为 mirror

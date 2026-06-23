@@ -27,7 +27,7 @@ namespace JSE_NNAP {
 
 template <int CTYPE_GEN>
 static NNAP_DEVICE int fpForwardGpu(int nb, int bi,
-    flt_t *aBufNlDx, flt_t *aBufNlDy, flt_t *aBufNlDz, int *aBufNlType, int aNeiNum, int cType, flt_t *rFp,
+    flt_t *aBufNlDx, flt_t *aBufNlDy, flt_t *aBufNlDz, int *aBufNlType, int *aBufNeiNum, int cType, flt_t *rFp,
     flt_t **aFpHyperParam, flt_t **aFpParam) noexcept {
     
     int flag = 1;
@@ -41,7 +41,8 @@ static NNAP_DEVICE int fpForwardGpu(int nb, int bi,
     flt_t *tSubFpHyperParam = aFpHyperParam[__NNAPGENX_FP_MIRROR_TYPE__-1];
     flt_t *tSubFpParam = aFpParam[__NNAPGENX_FP_MIRROR_TYPE__-1];
     // mirror types
-    for (int j = 0; j < aNeiNum; ++j) {
+    const int tNeiNum = aBufNeiNum[bi];
+    for (int j = 0; j < tNeiNum; ++j) {
         int typej = aBufNlType[j*nb + bi];
         if (typej==__NNAPGENX_FP_MIRROR_TYPE__) aBufNlType[j*nb + bi] = cType;
         else if (typej==cType) aBufNlType[j*nb + bi] = __NNAPGENX_FP_MIRROR_TYPE__;
@@ -55,12 +56,12 @@ static NNAP_DEVICE int fpForwardGpu(int nb, int bi,
 // --- NNAPGEN PICK: spherical_chebyshev
     sphForwardGpu<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_LMAX__, __NNAPGENXX_FP_L3MAX__, __NNAPGENXX_FP_L4MAX__,
                    __NNAPGENXX_FP_SIZE_NP__>(nb, bi,
-        aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aNeiNum, rSubFp,
+        aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aBufNeiNum[(__NNAPGENOS_X__+1)*nb + bi], rSubFp,
         tSubFpHyperParam[0], tSubFpParam
     );
 // --- NNAPGEN PICK: chebyshev
     chebyForwardGpu<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_SIZE_NP__>(nb, bi,
-        aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aNeiNum, rSubFp,
+        aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aBufNeiNum[(__NNAPGENOS_X__+1)*nb + bi], rSubFp,
         tSubFpHyperParam[0], tSubFpParam
     );
 // <<< NNAPGEN PICK [FP USE __NNAPGENS_X__:__NNAPGENOS_X__]
@@ -71,7 +72,7 @@ static NNAP_DEVICE int fpForwardGpu(int nb, int bi,
 // >>> NNAPGEN IF
 // --- NNAPGEN HAS: [FP MIRROR __NNAPGENS_X__]
     // mirror types
-    for (int j = 0; j < aNeiNum; ++j) {
+    for (int j = 0; j < tNeiNum; ++j) {
         int typej = aBufNlType[j*nb + bi];
         if (typej==__NNAPGENX_FP_MIRROR_TYPE__) aBufNlType[j*nb + bi] = cType;
         else if (typej==cType) aBufNlType[j*nb + bi] = __NNAPGENX_FP_MIRROR_TYPE__;
@@ -144,7 +145,7 @@ static NNAP_DEVICE int normedNnBackwardGpu(
 
 template <int CTYPE_GEN>
 static NNAP_DEVICE int fpBackwardGpu(int nb, int bi,
-    flt_t *aBufNlDx, flt_t *aBufNlDy, flt_t *aBufNlDz, int *aBufNlType, int aNeiNum, int cType, flt_t *aAGradFp,
+    flt_t *aBufNlDx, flt_t *aBufNlDy, flt_t *aBufNlDz, int *aBufNlType, int *aBufNeiNum, int cType, flt_t *aAGradFp,
     flt_t *rBufAGradNlDx, flt_t *rBufAGradNlDy, flt_t *rBufAGradNlDz,
     flt_t **aFpHyperParam, flt_t **aFpParam) noexcept {
     
@@ -159,7 +160,8 @@ static NNAP_DEVICE int fpBackwardGpu(int nb, int bi,
     flt_t *tSubFpHyperParam = aFpHyperParam[__NNAPGENX_FP_MIRROR_TYPE__-1];
     flt_t *tSubFpParam = aFpParam[__NNAPGENX_FP_MIRROR_TYPE__-1];
     // mirror types
-    for (int j = 0; j < aNeiNum; ++j) {
+    const int tNeiNum = aBufNeiNum[bi];
+    for (int j = 0; j < tNeiNum; ++j) {
         int typej = aBufNlType[j*nb + bi];
         if (typej==__NNAPGENX_FP_MIRROR_TYPE__) aBufNlType[j*nb + bi] = cType;
         else if (typej==cType) aBufNlType[j*nb + bi] = __NNAPGENX_FP_MIRROR_TYPE__;
@@ -173,13 +175,13 @@ static NNAP_DEVICE int fpBackwardGpu(int nb, int bi,
 // --- NNAPGEN PICK: spherical_chebyshev
     sphBackwardGpu<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_LMAX__, __NNAPGENXX_FP_L3MAX__, __NNAPGENXX_FP_L4MAX__,
                    __NNAPGENXX_FP_SIZE_NP__>(nb, bi,
-        aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aNeiNum, tSubAGradFp,
+        aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aBufNeiNum[(__NNAPGENOS_X__+1)*nb + bi], tSubAGradFp,
         rBufAGradNlDx, rBufAGradNlDy, rBufAGradNlDz,
         tSubFpHyperParam[0], tSubFpParam
     );
 // --- NNAPGEN PICK: chebyshev
     chebyBackwardGpu<__NNAPGENXX_FP_WTYPE__, __NNAPGENXX_FP_NMAX__, __NNAPGENXX_FP_SIZE_NP__>(nb, bi,
-        aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aNeiNum, tSubAGradFp,
+        aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aBufNeiNum[(__NNAPGENOS_X__+1)*nb + bi], tSubAGradFp,
         rBufAGradNlDx, rBufAGradNlDy, rBufAGradNlDz,
         tSubFpHyperParam[0], tSubFpParam
     );
@@ -191,7 +193,7 @@ static NNAP_DEVICE int fpBackwardGpu(int nb, int bi,
 // >>> NNAPGEN IF
 // --- NNAPGEN HAS: [FP MIRROR __NNAPGENS_X__]
     // mirror types
-    for (int j = 0; j < aNeiNum; ++j) {
+    for (int j = 0; j < tNeiNum; ++j) {
         int typej = aBufNlType[j*nb + bi];
         if (typej==__NNAPGENX_FP_MIRROR_TYPE__) aBufNlType[j*nb + bi] = cType;
         else if (typej==cType) aBufNlType[j*nb + bi] = __NNAPGENX_FP_MIRROR_TYPE__;

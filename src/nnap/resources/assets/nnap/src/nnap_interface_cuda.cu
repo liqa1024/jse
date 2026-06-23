@@ -10,8 +10,8 @@
 namespace JSE_NNAP {
 
 static __global__ void initLammpsNeiKernel(int inum, int nlocalghost,
-        int *ilist, flt_t *x, int *type,
-        flt_t *cutsq, int *numneigh, int *firstneigh, int *aLmpType2NNAPType,
+        int *ilist, flt_t *x, int *type, int *nmerges, int **mergeSorted,
+        flt_t **cutsq, int *numneigh, int *firstneigh, int *aLmpType2NNAPType,
         flt_t *rBufNlDx, flt_t *rBufNlDy, flt_t *rBufNlDz, int *rBufNlType, int *rBufNlIdx,
         int *rBufNeiNum, int *rBufCType) {
     const int ii = (int)(blockIdx.x * blockDim.x + threadIdx.x);
@@ -22,27 +22,38 @@ static __global__ void initLammpsNeiKernel(int inum, int nlocalghost,
     const flt_t ytmp = x[1*nlocalghost + i];
     const flt_t ztmp = x[2*nlocalghost + i];
     const int typei = type[i];
+    rBufCType[ii] = aLmpType2NNAPType[typei];
     
     const int jnum = numneigh[ii];
+    const flt_t *cutsq_ = cutsq[typei];
+    const int nmerges_ = nmerges[typei];
+    const int *mergeSorted_ = mergeSorted[typei];
     int tNeiNum = 0;
-    for (int jj = 0; jj < jnum; ++jj) {
-        const int j = firstneigh[jj*inum + ii];
-        // Note that dxyz in jse and lammps are defined oppositely
-        const flt_t delx = x[0*nlocalghost + j] - xtmp;
-        const flt_t dely = x[1*nlocalghost + j] - ytmp;
-        const flt_t delz = x[2*nlocalghost + j] - ztmp;
-        const flt_t rsq = delx*delx + dely*dely + delz*delz;
-        if (rsq < cutsq[typei]) {
-            rBufNlDx[tNeiNum*inum + ii] = delx;
-            rBufNlDy[tNeiNum*inum + ii] = dely;
-            rBufNlDz[tNeiNum*inum + ii] = delz;
-            rBufNlType[tNeiNum*inum + ii] = aLmpType2NNAPType[type[j]];
-            rBufNlIdx[tNeiNum*inum + ii] = j;
-            ++tNeiNum;
+    flt_t cutsqL = ZERO;
+    for (int kk = 0; kk < nmerges_; ++kk) {
+        const int k = mergeSorted_[kk];
+        const flt_t cutsqR = cutsq_[k];
+        for (int jj = 0; jj < jnum; ++jj) {
+            const int j = firstneigh[jj*inum + ii];
+            // Note that dxyz in jse and lammps are defined oppositely
+            const flt_t delx = x[0*nlocalghost + j] - xtmp;
+            const flt_t dely = x[1*nlocalghost + j] - ytmp;
+            const flt_t delz = x[2*nlocalghost + j] - ztmp;
+            const flt_t rsq = delx*delx + dely*dely + delz*delz;
+            if (rsq>=cutsqL && rsq<cutsqR) {
+                rBufNlDx[tNeiNum*inum + ii] = delx;
+                rBufNlDy[tNeiNum*inum + ii] = dely;
+                rBufNlDz[tNeiNum*inum + ii] = delz;
+                rBufNlType[tNeiNum*inum + ii] = aLmpType2NNAPType[type[j]];
+                rBufNlIdx[tNeiNum*inum + ii] = j;
+                ++tNeiNum;
+            }
         }
+        rBufNeiNum[(k+1)*inum + ii] = tNeiNum;
+        cutsqL = cutsqR;
     }
+    // total on k=0
     rBufNeiNum[ii] = tNeiNum;
-    rBufCType[ii] = aLmpType2NNAPType[typei];
 }
 
 static __global__ void collectLammpsResultsKernel(int inum, int nlocalghost,
@@ -110,17 +121,6 @@ static __global__ void collectLammpsResultsKernel(int inum, int nlocalghost,
     atomicAdd(f + (2*nlocalghost + ii), f0z);
 }
 
-static __global__ void postLammpsResultsKernel(int inum, int nlocalghost,
-        int *ilist, flt_t *f0, flt_t *f1) {
-    const int ii = (int)(blockIdx.x * blockDim.x + threadIdx.x);
-    if (ii >= inum) return;
-    
-    const int i = ilist[ii];
-    f1[0*nlocalghost + i] += f0[0*inum + ii];
-    f1[1*nlocalghost + i] += f0[1*inum + ii];
-    f1[2*nlocalghost + i] += f0[2*inum + ii];
-}
-
 static __global__ void computeLammpsKernel(int inum,
         flt_t *aBufNlDx, flt_t *aBufNlDy, flt_t *aBufNlDz, int *aBufNlType,
         int eflag, flt_t *eatom0, int *aBufNeiNum, int *aBufCType,
@@ -141,7 +141,7 @@ static __global__ void computeLammpsKernel(int inum,
 // >>> NNAPGEN SWITCH
     flt_t rFpOrGradFp[__NNAPGENX_FP_SIZE__];
     fpForwardGpu<__NNAPGENS_ctype__>(inum, ii,
-        aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, tNeiNum, ctype, rFpOrGradFp,
+        aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aBufNeiNum, ctype, rFpOrGradFp,
         aFpHyperParam, aFpParam
     );
     {
@@ -158,7 +158,7 @@ static __global__ void computeLammpsKernel(int inum,
         );
     }
     fpBackwardGpu<__NNAPGENS_ctype__>(inum, ii,
-        aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, tNeiNum, ctype, rFpOrGradFp,
+        aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aBufNeiNum, ctype, rFpOrGradFp,
         rBufGradNlDx, rBufGradNlDy, rBufGradNlDz,
         aFpHyperParam, aFpParam
     );
@@ -168,44 +168,10 @@ static __global__ void computeLammpsKernel(int inum,
     }
 }
 
-static void computeLammpsCuda0(int inum, int nlocalghost,
-        int eflag, int vflag, int vflagAtom, int cvflagAtom,
-        int *ilist, flt_t *x, int *type,
-        flt_t *cutsq, int *numneigh, int *firstneigh, int *aLmpType2NNAPType,
-        flt_t *rBufNlDx, flt_t *rBufNlDy, flt_t *rBufNlDz, int *rBufNlType, int *rBufNlIdx,
-        int *rBufNeiNum, int *rBufCType,
-        flt_t *f, flt_t *eatom0, flt_t *vatom0, flt_t *vatom1,
-        flt_t **aFpHyperParam, flt_t **aFpParam, flt_t **aNormParam, flt_t **aNnParam,
-        flt_t *rBufGradNlDx, flt_t *rBufGradNlDy, flt_t *rBufGradNlDz) {
-    constexpr int tBlockSize = __NNAPGEN_CUDA_BLOCKSIZE__;
-    const int tGridSize = (inum + tBlockSize-1) / tBlockSize;
-    
-    initLammpsNeiKernel<<<tGridSize, tBlockSize>>>(inum, nlocalghost,
-        ilist, x, type,
-        cutsq, numneigh, firstneigh, aLmpType2NNAPType,
-        rBufNlDx, rBufNlDy, rBufNlDz, rBufNlType, rBufNlIdx,
-        rBufNeiNum, rBufCType
-    );
-    
-    computeLammpsKernel<<<tGridSize, tBlockSize>>>(inum,
-        rBufNlDx, rBufNlDy, rBufNlDz, rBufNlType,
-        eflag, eatom0, rBufNeiNum, rBufCType,
-        aFpHyperParam, aFpParam, aNormParam, aNnParam,
-        rBufGradNlDx, rBufGradNlDy, rBufGradNlDz
-    );
-    
-    collectLammpsResultsKernel<<<tGridSize, tBlockSize>>>(inum, nlocalghost,
-        vflag, vflagAtom, cvflagAtom,
-        f, vatom0, vatom1,
-        rBufNlDx, rBufNlDy, rBufNlDz, rBufNlIdx, rBufNeiNum,
-        rBufGradNlDx, rBufGradNlDy, rBufGradNlDz
-    );
-}
-
 
 static __global__ void computeGpumdKernel(int number_of_particles, int N1, int N2,
     flt_t *aBufNlDx, flt_t *aBufNlDy, flt_t *aBufNlDz, int *aBufNlType, int *aBufNlIdx,
-    double *g_potential, const int *aBufNeiNum, const int *aBufCType,
+    double *g_potential, int *aBufNeiNum, const int *aBufCType,
     flt_t **aFpHyperParam, flt_t **aFpParam, flt_t **aNormParam, flt_t **aNnParam,
     flt_t *rBufGradNlDx, flt_t *rBufGradNlDy, flt_t *rBufGradNlDz) {
     const int ii = (int)(blockIdx.x * blockDim.x + threadIdx.x + N1);
@@ -228,7 +194,7 @@ static __global__ void computeGpumdKernel(int number_of_particles, int N1, int N
 // >>> NNAPGEN SWITCH
     flt_t rFpOrGradFp[__NNAPGENX_FP_SIZE__];
     fpForwardGpu<__NNAPGENS_ctype__>(number_of_particles, ii,
-        aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, tNeiNum, ctype, rFpOrGradFp,
+        aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aBufNeiNum, ctype, rFpOrGradFp,
         aFpHyperParam, aFpParam
     );
     {
@@ -245,7 +211,7 @@ static __global__ void computeGpumdKernel(int number_of_particles, int N1, int N
         );
     }
     fpBackwardGpu<__NNAPGENS_ctype__>(number_of_particles, ii,
-        aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, tNeiNum, ctype, rFpOrGradFp,
+        aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aBufNeiNum, ctype, rFpOrGradFp,
         rBufGradNlDx, rBufGradNlDy, rBufGradNlDz,
         aFpHyperParam, aFpParam
     );
@@ -428,7 +394,8 @@ __jsefunc__ int jse_nnap_cuda2lammps(
 
 __jsefunc__ int jse_nnap_computeLammpsCuda(
     int inum, int nlocalghost, int eflag, int vflag, int eflagAtom, int vflagAtom, int cvflagAtom,
-    JSE_NNAP::flt_t *x, int *type, int *ilist, int *numneigh, int *firstneigh, JSE_NNAP::flt_t *cutsq, int *aLmpType2NNAPType,
+    JSE_NNAP::flt_t *x, int *type, int *ilist, int *nmerges, int **mergeSorted,
+    JSE_NNAP::flt_t **cutsq, int *numneigh, int *firstneigh, int *aLmpType2NNAPType,
     JSE_NNAP::flt_t **aFpHyperParam, JSE_NNAP::flt_t **aFpParam, JSE_NNAP::flt_t **aNnParam, JSE_NNAP::flt_t **aNormParam,
     JSE_NNAP::flt_t *f, JSE_NNAP::flt_t *eatom0, JSE_NNAP::flt_t *vatom0, JSE_NNAP::flt_t *vatom1,
     JSE_NNAP::flt_t *rBufNlDx, JSE_NNAP::flt_t *rBufNlDy, JSE_NNAP::flt_t *rBufNlDz, int *rBufNlType, int *rBufNlIdx, int *rBufNeiNum, int *rBufCType,
@@ -454,14 +421,25 @@ __jsefunc__ int jse_nnap_computeLammpsCuda(
     }
     
     /// begin compute here
-    JSE_NNAP::computeLammpsCuda0(inum, nlocalghost,
-        eflag||eflagAtom, vflag, vflagAtom, cvflagAtom,
-        ilist, x, type,
+    constexpr int tBlockSize = __NNAPGEN_CUDA_BLOCKSIZE__;
+    const int tGridSize = (inum + tBlockSize-1) / tBlockSize;
+    
+    JSE_NNAP::initLammpsNeiKernel<<<tGridSize, tBlockSize>>>(inum, nlocalghost,
+        ilist, x, type, nmerges, mergeSorted,
         cutsq, numneigh, firstneigh, aLmpType2NNAPType,
         rBufNlDx, rBufNlDy, rBufNlDz, rBufNlType, rBufNlIdx,
-        rBufNeiNum, rBufCType,
-        f, eatom0, vatom0, vatom1,
+        rBufNeiNum, rBufCType
+    );
+    JSE_NNAP::computeLammpsKernel<<<tGridSize, tBlockSize>>>(inum,
+        rBufNlDx, rBufNlDy, rBufNlDz, rBufNlType,
+        eflag||eflagAtom, eatom0, rBufNeiNum, rBufCType,
         aFpHyperParam, aFpParam, aNormParam, aNnParam,
+        rBufGradNlDx, rBufGradNlDy, rBufGradNlDz
+    );
+    JSE_NNAP::collectLammpsResultsKernel<<<tGridSize, tBlockSize>>>(inum, nlocalghost,
+        vflag, vflagAtom, cvflagAtom,
+        f, vatom0, vatom1,
+        rBufNlDx, rBufNlDy, rBufNlDz, rBufNlIdx, rBufNeiNum,
         rBufGradNlDx, rBufGradNlDy, rBufGradNlDz
     );
     
@@ -470,7 +448,7 @@ __jsefunc__ int jse_nnap_computeLammpsCuda(
 
 __jsefunc__ int jse_nnap_computeGPUMD(
     int number_of_particles, int N1, int N2,
-    const int *g_neighbor_number, int *g_neighbor_list, JSE_NNAP::flt_t *nl_dx, JSE_NNAP::flt_t *nl_dy, JSE_NNAP::flt_t *nl_dz, const int *g_type,
+    int *g_neighbor_number, int *g_neighbor_list, JSE_NNAP::flt_t *nl_dx, JSE_NNAP::flt_t *nl_dy, JSE_NNAP::flt_t *nl_dz, const int *g_type,
     JSE_NNAP::flt_t **tFpHyperParam, JSE_NNAP::flt_t **tFpParam, JSE_NNAP::flt_t **tNnParam, JSE_NNAP::flt_t **tNormParam,
     double *g_fx, double *g_fy, double *g_fz, double *g_virial, double *g_potential,
     int *rBufNlType, JSE_NNAP::flt_t *rBufGradNlDx, JSE_NNAP::flt_t *rBufGradNlDy, JSE_NNAP::flt_t *rBufGradNlDz) {
@@ -478,6 +456,7 @@ __jsefunc__ int jse_nnap_computeGPUMD(
     constexpr int tBlockSize = __NNAPGEN_CUDA_BLOCKSIZE__;
     const int tGridSize = (N2 - N1 - 1) / tBlockSize + 1; // copy from gpumd
     
+    // TODO: build neighbor
     JSE_NNAP::computeGpumdKernel<<<tGridSize, tBlockSize>>>(number_of_particles, N1, N2,
         nl_dx, nl_dy, nl_dz, rBufNlType, g_neighbor_list,
         g_potential, g_neighbor_number, g_type,

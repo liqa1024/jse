@@ -83,11 +83,15 @@ public class NNAP implements IPairPotential {
     final int mNumThreads;
     final Basis[] mBasis;
     final NeuralNetwork[] mNN;
+    final double mRCutMax;
+    final int mNMergesMax;
+    
     @Override public int ntypes() {return mSymbols.length;}
     @Override public boolean hasSymbol() {return true;}
     @Override public String symbol(int aType) {return mSymbols[aType-1];}
     public String units() {return mUnits;}
     public String precision() {return mSingle ? "single" : "double";}
+    
     // 现在所有数据都改为 c 指针，并统一使用 PointerManager 管理内存实现自动回收
     final PointerManager mPtrMng;
     final IntCPointer mOutNums;
@@ -115,7 +119,8 @@ public class NNAP implements IPairPotential {
     private IntCudaPointer mCudaType = null, mCudaIlist = null, mCudaNumneigh = null, mCudaBufNeiNum = null, mCudaBufCType = null;
     private IntCudaPointer mCudaFirstneigh = null, mCudaBufNlType = null, mCudaBufNlIdx = null;
     private FloatCudaPointer mCudaBufNlDx = null, mCudaBufNlDy = null, mCudaBufNlDz = null, mCudaBufGradNlDx = null, mCudaBufGradNlDy = null, mCudaBufGradNlDz = null;
-    private FloatCudaPointer mCudaCutsq = null;
+    private IntCudaPointer mCudaNMerges = null;
+    private CudaPointer mCudaMergeSorted = null, mCudaCutsq = null;
     private IntCudaPointer mCudaLmpType2NNAPType = null;
     private CudaPointer mCudaFpHyperParam = null, mCudaFpParam = null, mCudaNnParam = null, mCudaNormParam = null;
     
@@ -166,6 +171,16 @@ public class NNAP implements IPairPotential {
             if (tNNInfo != null) throw new IllegalArgumentException("torch model is invalid now.");
             return info.get("nn");
         }));
+        // 常规参数缓存
+        double tRCutMax = 0.0;
+        int tNMergesMax = 0;
+        for (Basis tBasis : mBasis) {
+            tRCutMax = Math.max(tRCutMax, tBasis.rcutMax());
+            tNMergesMax = Math.max(tNMergesMax, tBasis.mergeSize());
+        }
+        mRCutMax = tRCutMax;
+        mNMergesMax = tNMergesMax;
+        
         mNNAPGEN = new NNAPGEN(aLibDir, aProjectName, mBasis, mNN);
         // 初始化数组
         mPtrMng = new PointerManager();
@@ -413,15 +428,9 @@ public class NNAP implements IPairPotential {
     
     @Override public boolean isClosed() {return mDead;}
     @Override public int nthreads() {return mNumThreads;}
-    @Override public double rcutMax() {
-        double tRCut = 0.0;
-        for (Basis tBasis : mBasis) {
-            tRCut = Math.max(tRCut, tBasis.rcut());
-        }
-        return tRCut;
-    }
+    @Override public double rcutMax() {return mRCutMax;}
     public double rcut(int aType) {
-        return mBasis[aType-1].rcut();
+        return mBasis[aType-1].rcutMax();
     }
     
     
@@ -466,7 +475,7 @@ public class NNAP implements IPairPotential {
         if (mCuda) throw new IllegalStateException();
         aNeighborListGetter.forEachNLWithException(null, null, (threadID, cIdx, cType, nl) -> {
             // 近邻列表构建以及相关值设置
-            int tNeiNum = buildNL_(threadID, nl, mBasis[cType-1].rcut(), false);
+            int tNeiNum = buildNL_(threadID, nl, mBasis[cType-1].rcutMax(), false);
             double tEng = calEnergy(threadID,
                 mNlDx[threadID], mNlDy[threadID], mNlDz[threadID],
                 mNlType[threadID], tNeiNum, cType
@@ -495,7 +504,7 @@ public class NNAP implements IPairPotential {
             DoubleList tNlDzBuf = mNlDzBuf[threadID];
             IntList tNlIdxBuf = mNlIdxBuf[threadID];
             // 近邻列表构建以及相关值设置
-            int tNeiNum = buildNL_(threadID, nl, mBasis[cType-1].rcut(), true);
+            int tNeiNum = buildNL_(threadID, nl, mBasis[cType-1].rcutMax(), true);
             double tEng = calEnergyForce(threadID,
                 mNlDx[threadID], mNlDy[threadID], mNlDz[threadID],
                 mNlType[threadID], tNeiNum, cType,
@@ -550,7 +559,7 @@ public class NNAP implements IPairPotential {
                         int tType = tTypeMap.applyAsInt(tAPC.types().get(idx));
                         dxyzTypeDo.run(dx, dy, dz, tType, idx);
                     });
-                }, mBasis[cType-1].rcut(), false);
+                }, mBasis[cType-1].rcutMax(), false);
                 int tFpSize = mBasis[cType-1].size();
                 IDoubleOrFloatCPointer rFpPtr = mCache[threadID];
                 mPtrMng.ensureCapacity(rFpPtr, tFpSize);
@@ -878,8 +887,56 @@ public class NNAP implements IPairPotential {
         
         mCudaLmpType2NNAPType = mPtrMng.newIntCudaPointer(aPair.mNumTypes+1);
         mCudaLmpType2NNAPType.fill(aPair.mLmpType2NNAPType, aPair.mNumTypes+1);
-        mCudaCutsq = mPtrMng.newFloatCudaPointer(aPair.mNumTypes+1);
-        mCudaCutsq.fillD(aPair.mCutsq, aPair.mNumTypes+1);
+        
+        mCudaNMerges = mPtrMng.newIntCudaPointer(aPair.mNumTypes+1);
+        mCudaCutsq = mPtrMng.newCudaPointer((aPair.mNumTypes+1)*AnyCPointer.TYPE_SIZE);
+        mCudaMergeSorted = mPtrMng.newCudaPointer((aPair.mNumTypes+1)*AnyCPointer.TYPE_SIZE);
+        IntCPointer tNMerges = IntCPointer.calloc(aPair.mNumTypes+1);
+        AnyCPointer tCudaCutsq = AnyCPointer.calloc(aPair.mNumTypes+1);
+        AnyCPointer tCudaMergeSorted = AnyCPointer.calloc(aPair.mNumTypes+1);
+        for (int type = 1; type <= aPair.mNumTypes; ++type) {
+            Basis tSubBasis = mBasis[aPair.mLmpType2NNAPType.getAt(type) - 1];
+            int tSubNMerges = tSubBasis.mergeSize();
+            tNMerges.putAt(type, tSubNMerges);
+            FloatCudaPointer tSubCudaCutsq = mPtrMng.newFloatCudaPointer(tSubNMerges);
+            FloatCPointer tSubCutsq = FloatCPointer.calloc(tSubNMerges);
+            for (int k = 0; k < tSubNMerges; ++k) {
+                double tRCut = tSubBasis.rcut(k);
+                tSubCutsq.putAt(k, (float)(tRCut*tRCut));
+            }
+            tSubCudaCutsq.fill(tSubCutsq, tSubNMerges);
+            tCudaCutsq.putAt(type, tSubCudaCutsq);
+            tSubCutsq.free();
+            // 简单二次遍历获取排序的索引
+            IntCudaPointer tSubCudaMergeSorted = mPtrMng.newIntCudaPointer(tSubNMerges);
+            IntCPointer tSubMergeSorted = IntCPointer.calloc(tSubNMerges);
+            for (int k = 0; k < tSubNMerges; ++k) {
+                tSubMergeSorted.putAt(k, k);
+            }
+            for (int ki = 0; ki < tSubNMerges; ++ki) {
+                int tMinIdx = -1;
+                double tMinRCut = Double.POSITIVE_INFINITY;
+                for (int kkj = ki; kkj < tSubNMerges; ++kkj) {
+                    int kj = tSubMergeSorted.getAt(kkj);
+                    double tRCut = tSubBasis.rcut(kj);
+                    if (tRCut < tMinRCut) {
+                        tMinRCut = tRCut;
+                        tMinIdx = kj;
+                    }
+                }
+                tSubMergeSorted.putAt(tMinIdx, ki);
+                tSubMergeSorted.putAt(ki, tMinIdx);
+            }
+            tSubCudaMergeSorted.fill(tSubMergeSorted, tSubNMerges);
+            tCudaMergeSorted.putAt(type, tSubCudaMergeSorted);
+            tSubMergeSorted.free();
+        }
+        mCudaNMerges.fill(tNMerges, aPair.mNumTypes+1);
+        mCudaCutsq.memcpy2this(tCudaCutsq, (aPair.mNumTypes+1)*AnyCPointer.TYPE_SIZE);
+        mCudaMergeSorted.memcpy2this(tCudaMergeSorted, (aPair.mNumTypes+1)*AnyCPointer.TYPE_SIZE);
+        tNMerges.free();
+        tCudaCutsq.free();
+        tCudaMergeSorted.free();
     }
     void computeLammpsCuda(PairNNAP aPair) throws CudaException {
         if (mDead) throw new IllegalStateException("This NNAP is dead");
@@ -892,18 +949,18 @@ public class NNAP implements IPairPotential {
         final int nlocal = aPair.atomNlocal();
         final int nghost = aPair.atomNghost();
         final int nlocalghost = nlocal + nghost;
-        mPtrMng.ensureCapacity(mFltBuf, (long)nlocalghost*9);
-        mPtrMng.ensureCapacity(mCudaX, (long)nlocalghost*3);
-        mPtrMng.ensureCapacity(mCudaF, (long)nlocalghost*3);
+        mPtrMng.ensureCapacity(mFltBuf, (long)nlocalghost*9L);
+        mPtrMng.ensureCapacity(mCudaX, (long)nlocalghost*3L);
+        mPtrMng.ensureCapacity(mCudaF, (long)nlocalghost*3L);
         mPtrMng.ensureCapacity(mCudaEatom0, (long)inum);
-        mPtrMng.ensureCapacity(mCudaVatom0, (long)inum*6);
-        mPtrMng.ensureCapacity(mCudaVatom1, (long)nlocalghost*(cvflagAtom?9:6));
+        mPtrMng.ensureCapacity(mCudaVatom0, (long)inum*6L);
+        mPtrMng.ensureCapacity(mCudaVatom1, (long)nlocalghost*(cvflagAtom?9L:6L));
         mPtrMng.ensureCapacity(mCudaType, nlocalghost);
         if (nlflag) {
             mPtrMng.ensureCapacity(mCudaIlist, inum);
             mPtrMng.ensureCapacity(mCudaNumneigh, inum);
         }
-        mPtrMng.ensureCapacity(mCudaBufNeiNum, inum);
+        mPtrMng.ensureCapacity(mCudaBufNeiNum, (long)inum*(mNMergesMax+1));
         mPtrMng.ensureCapacity(mCudaBufCType, inum);
         // 近邻列表大小获取和缓存合理化
         IPointer ilist = NULL;
@@ -945,7 +1002,8 @@ public class NNAP implements IPairPotential {
         // cuda compute
         tCode = mComputeLammpsCuda.invoke(
             inum, nlocalghost, aPair.eflagEither()?1:0, aPair.vflagEither()?1:0, aPair.eflagAtom()?1:0, aPair.vflagAtom()?1:0, cvflagAtom?1:0,
-            mCudaX, mCudaType, mCudaIlist, mCudaNumneigh, mCudaFirstneigh, mCudaCutsq, mCudaLmpType2NNAPType,
+            mCudaX, mCudaType, mCudaIlist, mCudaNMerges, mCudaMergeSorted,
+            mCudaCutsq, mCudaNumneigh, mCudaFirstneigh, mCudaLmpType2NNAPType,
             mCudaFpHyperParam, mCudaFpParam, mCudaNnParam, mCudaNormParam,
             mCudaF, mCudaEatom0, mCudaVatom0, mCudaVatom1,
             mCudaBufNlDx, mCudaBufNlDy, mCudaBufNlDz, mCudaBufNlType, mCudaBufNlIdx, mCudaBufNeiNum, mCudaBufCType,

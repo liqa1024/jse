@@ -119,9 +119,14 @@ public abstract class Basis implements ISavable {
     public void backwardParameter() {}
     
     /** @return 基组需要的近邻截断半径 */
-    public abstract double rcut();
+    public abstract double rcutMax();
     /** @return 基组的长度 */
     public abstract int size();
+    
+    /** @return 基组合并的内部基组数目 */
+    public abstract int mergeSize();
+    /** @return 指定内部子基组的截断半径 */
+    public abstract double rcut(int aMergeIdx);
     
     /** 更新内部 code gen 的 map，将参数编码进 jit */
     public abstract void updateGenMap(Map<String, Object> rGenMap, int aGenIdx);
