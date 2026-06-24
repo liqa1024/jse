@@ -21,13 +21,13 @@ static __global__ void initLammpsNeiKernel(int inum, int nlocalghost,
     const flt_t xtmp = x[0*nlocalghost + i];
     const flt_t ytmp = x[1*nlocalghost + i];
     const flt_t ztmp = x[2*nlocalghost + i];
-    const int typei = type[i];
-    rBufCType[ii] = aLmpType2NNAPType[typei];
+    const int ctype = aLmpType2NNAPType[type[i]];
+    rBufCType[ii] = ctype;
     
     const int jnum = numneigh[ii];
-    const flt_t *cutsq_ = cutsq[typei];
-    const int nmerges_ = nmerges[typei];
-    const int *mergeSorted_ = mergeSorted[typei];
+    const flt_t *cutsq_ = cutsq[ctype-1];
+    const int nmerges_ = nmerges[ctype-1];
+    const int *mergeSorted_ = mergeSorted[ctype-1];
     int tNeiNum = 0;
     flt_t cutsqL = ZERO;
     for (int kk = 0; kk < nmerges_; ++kk) {
@@ -54,6 +54,53 @@ static __global__ void initLammpsNeiKernel(int inum, int nlocalghost,
     }
     // total on k=0
     rBufNeiNum[ii] = tNeiNum;
+}
+
+static __global__ void computeLammpsKernel(int inum,
+        flt_t *aBufNlDx, flt_t *aBufNlDy, flt_t *aBufNlDz, int *aBufNlType,
+        int eflag, flt_t *eatom0, int *aBufNeiNum, int *aBufCType,
+        flt_t **aFpHyperParam, flt_t **aFpParam, flt_t **aNormParam, flt_t **aNnParam,
+        flt_t *rBufGradNlDx, flt_t *rBufGradNlDy, flt_t *rBufGradNlDz) {
+    const int ii = (int)(blockIdx.x * blockDim.x + threadIdx.x);
+    if (ii >= inum) return;
+    
+    const int ctype = aBufCType[ii];
+    const int tNeiNum = aBufNeiNum[ii];
+    // manual clear required for backward in force
+    flt_t rEng = ZERO;
+    for (int jj = 0; jj < tNeiNum; ++jj) {
+        rBufGradNlDx[jj*inum + ii] = ZERO;
+        rBufGradNlDy[jj*inum + ii] = ZERO;
+        rBufGradNlDz[jj*inum + ii] = ZERO;
+    }
+// >>> NNAPGEN SWITCH
+    flt_t rFpOrGradFp[__NNAPGENX_FP_SIZE__];
+    fpForwardGpu<__NNAPGENS_ctype__>(inum, ii,
+        aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aBufNeiNum, ctype, rFpOrGradFp,
+        aFpHyperParam, aFpParam
+    );
+    {
+        flt_t rNnGradCache[__NNAPGENX_NN_SIZE_HB__];
+        normedNnForwardGpu<__NNAPGENS_ctype__>(
+            ctype, &rEng, rFpOrGradFp,
+            aNormParam[ctype-1], aNnParam, rNnGradCache
+        );
+        // manual clear required for backward in force
+        fill<__NNAPGENX_FP_SIZE__>(rFpOrGradFp, ZERO);
+        normedNnBackwardGpu<__NNAPGENS_ctype__>(
+            ctype, ONE, rFpOrGradFp,
+            aNormParam[ctype-1], aNnParam, rNnGradCache
+        );
+    }
+    fpBackwardGpu<__NNAPGENS_ctype__>(inum, ii,
+        aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aBufNeiNum, ctype, rFpOrGradFp,
+        rBufGradNlDx, rBufGradNlDy, rBufGradNlDz,
+        aFpHyperParam, aFpParam
+    );
+// <<< NNAPGEN SWITCH (ctype) [FP NN TYPE]
+    if (eflag) {
+        eatom0[ii] += rEng;
+    }
 }
 
 static __global__ void collectLammpsResultsKernel(int inum, int nlocalghost,
@@ -121,69 +168,58 @@ static __global__ void collectLammpsResultsKernel(int inum, int nlocalghost,
     atomicAdd(f + (2*nlocalghost + ii), f0z);
 }
 
-static __global__ void computeLammpsKernel(int inum,
-        flt_t *aBufNlDx, flt_t *aBufNlDy, flt_t *aBufNlDz, int *aBufNlType,
-        int eflag, flt_t *eatom0, int *aBufNeiNum, int *aBufCType,
-        flt_t **aFpHyperParam, flt_t **aFpParam, flt_t **aNormParam, flt_t **aNnParam,
-        flt_t *rBufGradNlDx, flt_t *rBufGradNlDy, flt_t *rBufGradNlDz) {
-    const int ii = (int)(blockIdx.x * blockDim.x + threadIdx.x);
-    if (ii >= inum) return;
-    
-    const int ctype = aBufCType[ii];
-    const int tNeiNum = aBufNeiNum[ii];
-    // manual clear required for backward in force
-    flt_t rEng = ZERO;
-    for (int jj = 0; jj < tNeiNum; ++jj) {
-        rBufGradNlDx[jj*inum + ii] = ZERO;
-        rBufGradNlDy[jj*inum + ii] = ZERO;
-        rBufGradNlDz[jj*inum + ii] = ZERO;
-    }
-// >>> NNAPGEN SWITCH
-    flt_t rFpOrGradFp[__NNAPGENX_FP_SIZE__];
-    fpForwardGpu<__NNAPGENS_ctype__>(inum, ii,
-        aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aBufNeiNum, ctype, rFpOrGradFp,
-        aFpHyperParam, aFpParam
-    );
-    {
-        flt_t rNnGradCache[__NNAPGENX_NN_SIZE_HB__];
-        normedNnForwardGpu<__NNAPGENS_ctype__>(
-            ctype, &rEng, rFpOrGradFp,
-            aNormParam[ctype-1], aNnParam, rNnGradCache
-        );
-        // manual clear required for backward in force
-        fill<__NNAPGENX_FP_SIZE__>(rFpOrGradFp, ZERO);
-        normedNnBackwardGpu<__NNAPGENS_ctype__>(
-            ctype, ONE, rFpOrGradFp,
-            aNormParam[ctype-1], aNnParam, rNnGradCache
-        );
-    }
-    fpBackwardGpu<__NNAPGENS_ctype__>(inum, ii,
-        aBufNlDx, aBufNlDy, aBufNlDz, aBufNlType, aBufNeiNum, ctype, rFpOrGradFp,
-        rBufGradNlDx, rBufGradNlDy, rBufGradNlDz,
-        aFpHyperParam, aFpParam
-    );
-// <<< NNAPGEN SWITCH (ctype) [FP NN TYPE]
-    if (eflag) {
-        eatom0[ii] += rEng;
-    }
-}
 
-
-static __global__ void computeGpumdKernel(int number_of_particles, int N1, int N2,
-    flt_t *aBufNlDx, flt_t *aBufNlDy, flt_t *aBufNlDz, int *aBufNlType, int *aBufNlIdx,
-    double *g_potential, int *aBufNeiNum, const int *aBufCType,
-    flt_t **aFpHyperParam, flt_t **aFpParam, flt_t **aNormParam, flt_t **aNnParam,
-    flt_t *rBufGradNlDx, flt_t *rBufGradNlDy, flt_t *rBufGradNlDz) {
+static __global__ void initGpumdNeiKernel(int number_of_particles, int N1, int N2,
+        const int *g_neighbor_number, const int *g_neighbor_list,
+        const float *nl_dx, const float *nl_dy, const float *nl_dz, const int *g_type,
+        const int *nmerges, const int **mergeSorted, const flt_t **cutsq,
+        flt_t *rBufNlDx, flt_t *rBufNlDy, flt_t *rBufNlDz, int *rBufNlType, int *rBufNlIdx,
+        int *rBufNeiNum) {
     const int ii = (int)(blockIdx.x * blockDim.x + threadIdx.x + N1);
     if (ii >= N2) return;
     
-    const int ctype = aBufCType[ii] + 1;// GPUMD start from 0
-    const int tNeiNum = aBufNeiNum[ii];
-    // init nl_type here
-    for (int jj = 0; jj < tNeiNum; ++jj) {
-        int j = aBufNlIdx[jj*number_of_particles + ii];
-        aBufNlType[jj*number_of_particles + ii] = aBufCType[j] + 1; // GPUMD start from 0
+    const int ctypeMM = g_type[ii]; // GPUMD start from 0
+    const int jnum = g_neighbor_number[ii];
+    const flt_t *cutsq_ = cutsq[ctypeMM];
+    const int nmerges_ = nmerges[ctypeMM];
+    const int *mergeSorted_ = mergeSorted[ctypeMM];
+    int tNeiNum = 0;
+    flt_t cutsqL = ZERO;
+    for (int kk = 0; kk < nmerges_; ++kk) {
+        const int k = mergeSorted_[kk];
+        const flt_t cutsqR = cutsq_[k];
+        for (int jj = 0; jj < jnum; ++jj) {
+            const int j = g_neighbor_list[jj*number_of_particles + ii];
+            const flt_t delx = (flt_t)nl_dx[jj*number_of_particles + ii];
+            const flt_t dely = (flt_t)nl_dy[jj*number_of_particles + ii];
+            const flt_t delz = (flt_t)nl_dz[jj*number_of_particles + ii];
+            const flt_t rsq = delx*delx + dely*dely + delz*delz;
+            if (rsq>=cutsqL && rsq<cutsqR) {
+                rBufNlDx[tNeiNum*number_of_particles + ii] = delx;
+                rBufNlDy[tNeiNum*number_of_particles + ii] = dely;
+                rBufNlDz[tNeiNum*number_of_particles + ii] = delz;
+                rBufNlType[tNeiNum*number_of_particles + ii] = g_type[j] + 1; // GPUMD start from 0
+                rBufNlIdx[tNeiNum*number_of_particles + ii] = j;
+                ++tNeiNum;
+            }
+        }
+        rBufNeiNum[(k+1)*number_of_particles + ii] = tNeiNum;
+        cutsqL = cutsqR;
     }
+    // total on k=0
+    rBufNeiNum[ii] = tNeiNum;
+}
+
+static __global__ void computeGpumdKernel(int number_of_particles, int N1, int N2,
+        flt_t *aBufNlDx, flt_t *aBufNlDy, flt_t *aBufNlDz, int *aBufNlType,
+        double *g_potential, int *aBufNeiNum, const int *g_type,
+        flt_t **aFpHyperParam, flt_t **aFpParam, flt_t **aNormParam, flt_t **aNnParam,
+        flt_t *rBufGradNlDx, flt_t *rBufGradNlDy, flt_t *rBufGradNlDz) {
+    const int ii = (int)(blockIdx.x * blockDim.x + threadIdx.x + N1);
+    if (ii >= N2) return;
+    
+    const int ctype = g_type[ii] + 1; // GPUMD start from 0
+    const int tNeiNum = aBufNeiNum[ii];
     // manual clear required for backward in force
     flt_t rEng = ZERO;
     for (int jj = 0; jj < tNeiNum; ++jj) {
@@ -220,10 +256,10 @@ static __global__ void computeGpumdKernel(int number_of_particles, int N1, int N
 }
 
 static __global__ void collectGpumdResultsKernel(int number_of_particles, int N1, int N2,
-    double *g_fx, double *g_fy, double *g_fz, double *g_virial,
-    const flt_t *aBufNlDx, const flt_t *aBufNlDy, const flt_t *aBufNlDz,
-    const int *aBufNlIdx, const int *aBufNeiNum,
-    const flt_t *rBufGradNlDx, const flt_t *rBufGradNlDy, const flt_t *rBufGradNlDz) {
+        double *g_fx, double *g_fy, double *g_fz, double *g_virial,
+        const flt_t *aBufNlDx, const flt_t *aBufNlDy, const flt_t *aBufNlDz,
+        const int *aBufNlIdx, const int *aBufNeiNum,
+        const flt_t *rBufGradNlDx, const flt_t *rBufGradNlDy, const flt_t *rBufGradNlDz) {
     const int ii = (int)(blockIdx.x * blockDim.x + threadIdx.x + N1);
     if (ii >= N2) return;
     
@@ -448,24 +484,33 @@ __jsefunc__ int jse_nnap_computeLammpsCuda(
 
 __jsefunc__ int jse_nnap_computeGPUMD(
     int number_of_particles, int N1, int N2,
-    int *g_neighbor_number, int *g_neighbor_list, JSE_NNAP::flt_t *nl_dx, JSE_NNAP::flt_t *nl_dy, JSE_NNAP::flt_t *nl_dz, const int *g_type,
-    JSE_NNAP::flt_t **tFpHyperParam, JSE_NNAP::flt_t **tFpParam, JSE_NNAP::flt_t **tNnParam, JSE_NNAP::flt_t **tNormParam,
+    const int *g_neighbor_number, const int *g_neighbor_list,
+    const float *nl_dx, const float *nl_dy, const float *nl_dz, const int *g_type,
+    const int *nmerges, const int **mergeSorted, const JSE_NNAP::flt_t **cutsq,
+    JSE_NNAP::flt_t **aFpHyperParam, JSE_NNAP::flt_t **aFpParam, JSE_NNAP::flt_t **aNnParam, JSE_NNAP::flt_t **aNormParam,
     double *g_fx, double *g_fy, double *g_fz, double *g_virial, double *g_potential,
-    int *rBufNlType, JSE_NNAP::flt_t *rBufGradNlDx, JSE_NNAP::flt_t *rBufGradNlDy, JSE_NNAP::flt_t *rBufGradNlDz) {
+    JSE_NNAP::flt_t *rBufNlDx, JSE_NNAP::flt_t *rBufNlDy, JSE_NNAP::flt_t *rBufNlDz, int *rBufNlType, int *rBufNlIdx, int *rBufNeiNum,
+    JSE_NNAP::flt_t *rBufGradNlDx, JSE_NNAP::flt_t *rBufGradNlDy, JSE_NNAP::flt_t *rBufGradNlDz) {
     
     constexpr int tBlockSize = __NNAPGEN_CUDA_BLOCKSIZE__;
     const int tGridSize = (N2 - N1 - 1) / tBlockSize + 1; // copy from gpumd
     
-    // TODO: build neighbor
+    JSE_NNAP::initGpumdNeiKernel<<<tGridSize, tBlockSize>>>(number_of_particles, N1, N2,
+        g_neighbor_number, g_neighbor_list,
+        nl_dx, nl_dy, nl_dz, g_type,
+        nmerges, mergeSorted, cutsq,
+        rBufNlDx, rBufNlDy, rBufNlDz, rBufNlType, rBufNlIdx,
+        rBufNeiNum
+    );
     JSE_NNAP::computeGpumdKernel<<<tGridSize, tBlockSize>>>(number_of_particles, N1, N2,
-        nl_dx, nl_dy, nl_dz, rBufNlType, g_neighbor_list,
-        g_potential, g_neighbor_number, g_type,
-        tFpHyperParam, tFpParam, tNormParam, tNnParam,
+        rBufNlDx, rBufNlDy, rBufNlDz, rBufNlType,
+        g_potential, rBufNeiNum, g_type,
+        aFpHyperParam, aFpParam, aNormParam, aNnParam,
         rBufGradNlDx, rBufGradNlDy, rBufGradNlDz
     );
     JSE_NNAP::collectGpumdResultsKernel<<<tGridSize, tBlockSize>>>(number_of_particles, N1, N2,
         g_fx, g_fy, g_fz, g_virial,
-        nl_dx, nl_dy, nl_dz, g_neighbor_list, g_neighbor_number,
+        rBufNlDx, rBufNlDy, rBufNlDz, rBufNlIdx, rBufNeiNum,
         rBufGradNlDx, rBufGradNlDy, rBufGradNlDz
     );
     
