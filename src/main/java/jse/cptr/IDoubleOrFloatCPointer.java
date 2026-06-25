@@ -85,6 +85,27 @@ public interface IDoubleOrFloatCPointer extends ICPointer {
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     void fillF(FloatCPointer aData, long aCount);
+    /**
+     * 方便使用的兼容接口
+     * <p>
+     * 将另一个 double 或者 float c 指针的数据填充到此 c 指针对应的内存中
+     * <p>
+     * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
+     *
+     * @param aData 输入的 c 指针数据
+     * @param aCount 需要读取的 aData 的长度
+     */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
+    default void fillDF(IDoubleOrFloatCPointer aData, long aCount) {
+        if (aData instanceof DoubleCPointer) {
+            fillD((DoubleCPointer)aData, aCount);
+        } else
+        if (aData instanceof FloatCPointer) {
+            fillF((FloatCPointer)aData, aCount);
+        } else {
+            throw new IllegalArgumentException("Invalid class: "+aData.getClass().getName());
+        }
+    }
     
     /**
      * 方便使用的兼容接口
@@ -186,6 +207,27 @@ public interface IDoubleOrFloatCPointer extends ICPointer {
      */
     @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
     void parse2destF(FloatCPointer rDest, long aCount);
+    /**
+     * 方便使用的兼容接口
+     * <p>
+     * 将此 c 指针的数据填充到另一个 double 或者 float c 指针中
+     * <p>
+     * 注意此方法和 c 一致，并不会对此 c 指针对应的内存的长度进行检测（内部不会存储内存长度）
+     *
+     * @param rDest 输入的 c 指针数据
+     * @param aCount 需要写入 rDest 的长度
+     */
+    @UnsafeJNI("Invalid input count may directly result in JVM SIGSEGV")
+    default void parse2destDF(IDoubleOrFloatCPointer rDest, long aCount) {
+        if (rDest instanceof DoubleCPointer) {
+            parse2destD((DoubleCPointer)rDest, aCount);
+        } else
+        if (rDest instanceof FloatCPointer) {
+            parse2destF((FloatCPointer)rDest, aCount);
+        } else {
+            throw new IllegalArgumentException("Invalid class: "+rDest.getClass().getName());
+        }
+    }
     
     
     /**
