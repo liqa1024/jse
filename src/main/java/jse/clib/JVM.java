@@ -15,6 +15,19 @@ import static jse.code.OS.JAVA_HOME_DIR;
  * @author liqa
  */
 public class JVM {
+    /** 用于判断是否进行了静态初始化以及方便的手动初始化 */
+    public final static class InitHelper {
+        private static volatile boolean INITIALIZED = false;
+        /** @return {@link JVM} 是否已经初始化完成 */
+        public static boolean initialized() {return INITIALIZED;}
+        /** 初始化 {@link JVM} */
+        @SuppressWarnings({"ResultOfMethodCallIgnored", "UnnecessaryCallToStringValueOf"})
+        public static void init() {
+            // 手动调用此值来强制初始化
+            if (!INITIALIZED) String.valueOf(INCLUDE_DIR);
+        }
+    }
+    
     /** 当前 {@link JVM} 的 include 目录，结尾一定存在 {@code '/'} */
     public final static String INCLUDE_DIR;
     /** 当前 {@link JVM} 的 jni_md.h 所在目录，结尾一定存在 {@code '/'} */
@@ -29,6 +42,8 @@ public class JVM {
     public final static String LLIB_PATH;
     
     static {
+        InitHelper.INITIALIZED = true;
+        
         INCLUDE_DIR = JAVA_HOME_DIR + "include/";
         // 优先使用系统判断，没有则自动检测任何目录
         String tMdName = IS_WINDOWS ? "win32" : (IS_MAC ? "darwin" : "linux");
@@ -38,7 +53,8 @@ public class JVM {
             try {
                 tNames = IO.list(INCLUDE_DIR);
             } catch (IOException e) {
-                throw new RuntimeException("Fail to det list of \"" + INCLUDE_DIR + "\"");
+                throw new RuntimeException("Fail to det list of \"" + INCLUDE_DIR + "\",\n" +
+                                           "  this may be due to running jse under JRE instead of JDK");
             }
             tIncludeMdDir = null;
             for (String tName : tNames) {

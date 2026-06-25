@@ -118,6 +118,8 @@ public class JNIUtil {
         HEADER_PATH = INCLUDE_DIR+HEADER_NAME;
         PKG_DIR = JAR_DIR+".jnipkg/";
         
+        // 总是初始化 JVM，确保“应该”是 jdk，而不是 jre
+        JVM.InitHelper.init();
         // windows 上建议使用微软构建的 jdk
         if (Conf.JDK_CHECK && IS_WINDOWS) {
             boolean tIsMsJdk = System.getProperty("java.vendor").toLowerCase().contains("microsoft");
