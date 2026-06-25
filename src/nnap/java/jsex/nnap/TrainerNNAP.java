@@ -1707,13 +1707,15 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
         List<IDoubleOrFloatCPointer> tNlDz = mNlDzBuf.get(0);
         
         AccumulatedTimer tTimer = new AccumulatedTimer();
+        AccumulatedTimer tTimerTotal = new AccumulatedTimer();
         long tSteps = 0;
-        while (tTimer.get() < aMaxTimeSecond) for (int si = 0; si < tDataSize; ++si) {
+        while (tTimerTotal.get() < aMaxTimeSecond) for (int si = 0; si < tDataSize; ++si) {
             final int i = tSlice.get(si);
             IntVector tNumNei = tData.mNumNei.get(i);
             IntVector tAtomType = tData.mAtomType.get(i);
             final int tNumAtoms = tAtomType.size();
             
+            tTimerTotal.from();
             // 通用方式获取近邻列表
             buildNl(aTest, i, 0, tNl, tNlType, tNlDx, tNlDy, tNlDz);
             
@@ -1731,8 +1733,9 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
                 );
             }
             tTimer.to();
+            tTimerTotal.to();
             tSteps += tNumAtoms;
-            if (tTimer.get() >= aMaxTimeSecond) break;
+            if (tTimerTotal.get() >= aMaxTimeSecond) break;
         }
         return tSteps / (tTimer.get()*1000);
     }
