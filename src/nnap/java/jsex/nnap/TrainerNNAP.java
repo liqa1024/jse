@@ -132,8 +132,6 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
     protected boolean mLossOutInit = false;
     protected boolean mNormInit = false;
     protected boolean mFirstTrain = true;
-    protected boolean mCacheNl = true;
-    private boolean mNlCached = false;
     
     protected int mStepsPerEpoch = 1;
     protected int mStep = -1;
@@ -152,6 +150,14 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
     private final List<List<IntCPointer>> mNlBuf, mNlTypeBuf;
     private final List<List<IDoubleOrFloatCPointer>> mNlDxBuf, mNlDyBuf, mNlDzBuf;
     
+    
+    protected boolean mCacheNl = true;
+    private boolean mNlCached = false;
+    public TrainerNNAP setCacheNl(boolean aFlag) {
+        mCacheNl = aFlag;
+        if (!mCacheNl && mNlCached) throw new IllegalStateException("Cannot turn off caching after caching neighbors");
+        return this;
+    }
     
     protected double mEnergyWeight = DEFAULT_ENERGY_WEIGHT;
     public TrainerNNAP setEnergyWeight(double aWeight) {
@@ -396,6 +402,8 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
      *     <dd>指定 loss 函数中力的权重</dd>
      *   <dt>stress_weight (可选，默认为 0.1):</dt>
      *     <dd>指定 loss 函数中压力的权重</dd>
+     *   <dt>cache_nl (可选，默认为 true):</dt>
+     *     <dd>是否缓存所有的近邻列表，这个会大幅提高速度但是会占用更多内存</dd>
      *   <dt>optimizer (可选):</dt>
      *     <dd>
      *       指定优化器的具体参数，包含：
@@ -433,6 +441,10 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
         if (tShareNorm != null) {
             setShareNorm(tShareNorm);
         }
+        @Nullable Boolean tCacheNl = (Boolean)UT.Code.get(aArgs, "cache_nl");
+        if (tCacheNl != null) {
+            setCacheNl(tCacheNl);
+        }
     }
     /**
      * 创建一个 nnap 的训练器
@@ -452,6 +464,8 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
      *     <dd>指定 loss 函数中压力的权重</dd>
      *   <dt>units (可选，默认为 'metal'):</dt>
      *     <dd>指定势函数的单位</dd>
+     *   <dt>cache_nl (可选，默认为 true):</dt>
+     *     <dd>是否缓存所有的近邻列表，这个会大幅提高速度但是会占用更多内存</dd>
      *   <dt>basis (可选):</dt>
      *     <dd>
      *       指定基组的具体参数，包含：
