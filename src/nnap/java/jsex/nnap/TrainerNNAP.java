@@ -1514,6 +1514,8 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
         }
         if (aPrintLog && !mCacheNl) UT.Timer.progressBar("init norm", mTrainData.mSize);
         mPool.parfor(mTrainData.mSize, (i, threadID) -> {
+            PointerManager tPtrMngNNAP = mNNAP.mPtrMng[threadID];
+            
             IntVector tNumNei = mTrainData.mNumNei.get(i);
             IntVector tAtomType = mTrainData.mAtomType.get(i);
             int tNumAtoms = tAtomType.size();
@@ -1538,7 +1540,7 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
             for (int k = 0; k < tNumAtoms; ++k) {
                 int tType = tAtomType.get(k);
                 // NNAP 内部缓存使用 NNAP 内部的管理器
-                mNNAP.mPtrMng.ensureCapacity(rFpPtr, mNNAP.mBasis[tType-1].size());
+                tPtrMngNNAP.ensureCapacity(rFpPtr, mNNAP.mBasis[tType-1].size());
                 mNNAP.calFp(threadID,
                     tNlDx.get(k), tNlDy.get(k), tNlDz.get(k), tNlType.get(k),
                     tNumNei.get(k), tType, rFpPtr

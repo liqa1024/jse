@@ -92,8 +92,8 @@ public class NNAP implements IPairPotential {
     public String units() {return mUnits;}
     public String precision() {return mSingle ? "single" : "double";}
     
-    // 现在所有数据都改为 c 指针，并统一使用 PointerManager 管理内存实现自动回收
-    final PointerManager mPtrMng;
+    // 现在所有数据都改为 c 指针，并统一使用 PointerManager 管理内存实现自动回收；需要注意这里需要避免线程竞争
+    final PointerManager[] mPtrMng;
     final IntCPointer mOutNums;
     final AnyCPointer mFpHyperParam, mFpParam, mNnParam, mNormParam;
     final IDoubleOrFloatCPointer[] mCache;
@@ -124,7 +124,7 @@ public class NNAP implements IPairPotential {
     private IntCudaPointer mCudaLmpType2NNAPType = null;
     private CudaPointer mCudaFpHyperParam = null, mCudaFpParam = null, mCudaNnParam = null, mCudaNormParam = null;
     
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings({"unchecked", "resource"})
     NNAP(@Nullable String aLibDir, @Nullable String aProjectName, Map<?, ?> aModelInfo, @Range(from=1, to=Integer.MAX_VALUE) int aNumThreads, String aArch) throws Exception {
         mNumThreads = aNumThreads;
         Number tVersion = (Number)aModelInfo.get("version");
@@ -183,8 +183,11 @@ public class NNAP implements IPairPotential {
         
         mNNAPGEN = new NNAPGEN(aLibDir, aProjectName, mBasis, mNN);
         // 初始化数组
-        mPtrMng = new PointerManager();
-        mOutNums = mPtrMng.newIntCPointer(16);
+        mPtrMng = new PointerManager[mNumThreads];
+        for (int ti = 0; ti < mNumThreads; ++ti) {
+            mPtrMng[ti] = new PointerManager();
+        }
+        mOutNums = mPtrMng[0].newIntCPointer(16);
         mNlDx = new IDoubleOrFloatCPointer[mNumThreads];
         mNlDy = new IDoubleOrFloatCPointer[mNumThreads];
         mNlDz = new IDoubleOrFloatCPointer[mNumThreads];
@@ -201,16 +204,16 @@ public class NNAP implements IPairPotential {
         mNlTypeBuf = new IntList[mNumThreads];
         mNlIdxBuf = new IntList[mNumThreads];
         for (int ti = 0; ti < mNumThreads; ++ti) {
-            mNlDx[ti] = mPtrMng.newDoubleOrFloatCPointer(mSingle);
-            mNlDy[ti] = mPtrMng.newDoubleOrFloatCPointer(mSingle);
-            mNlDz[ti] = mPtrMng.newDoubleOrFloatCPointer(mSingle);
-            mNlType[ti] = mPtrMng.newIntCPointer();
-            mNlIdx[ti] = mPtrMng.newIntCPointer();
-            mGradNlDx[ti] = mPtrMng.newDoubleOrFloatCPointer(mSingle);
-            mGradNlDy[ti] = mPtrMng.newDoubleOrFloatCPointer(mSingle);
-            mGradNlDz[ti] = mPtrMng.newDoubleOrFloatCPointer(mSingle);
-            mOutEng[ti] = mPtrMng.newDoubleOrFloatCPointer(mSingle, 1);
-            mCache[ti] = mPtrMng.newDoubleOrFloatCPointer(mSingle);
+            mNlDx[ti] = mPtrMng[ti].newDoubleOrFloatCPointer(mSingle);
+            mNlDy[ti] = mPtrMng[ti].newDoubleOrFloatCPointer(mSingle);
+            mNlDz[ti] = mPtrMng[ti].newDoubleOrFloatCPointer(mSingle);
+            mNlType[ti] = mPtrMng[ti].newIntCPointer();
+            mNlIdx[ti] = mPtrMng[ti].newIntCPointer();
+            mGradNlDx[ti] = mPtrMng[ti].newDoubleOrFloatCPointer(mSingle);
+            mGradNlDy[ti] = mPtrMng[ti].newDoubleOrFloatCPointer(mSingle);
+            mGradNlDz[ti] = mPtrMng[ti].newDoubleOrFloatCPointer(mSingle);
+            mOutEng[ti] = mPtrMng[ti].newDoubleOrFloatCPointer(mSingle, 1);
+            mCache[ti] = mPtrMng[ti].newDoubleOrFloatCPointer(mSingle);
             mNlDxBuf[ti] = new DoubleList(16);
             mNlDyBuf[ti] = new DoubleList(16);
             mNlDzBuf[ti] = new DoubleList(16);
@@ -234,11 +237,11 @@ public class NNAP implements IPairPotential {
         mTotCParamSize = tTotCParamSize;
         mTotGradCParamSize = tTotGradCParamSize;
         mTotParamSize = tTotParamSize;
-        mTotCParam = mPtrMng.newDoubleOrFloatCPointer(mSingle, mTotCParamSize);
+        mTotCParam = mPtrMng[0].newDoubleOrFloatCPointer(mSingle, mTotCParamSize);
         mTotParam = Vectors.zeros(mTotParamSize);
-        mFpHyperParam = mPtrMng.newAnyCPointer(tModelSize);
-        mFpParam = mPtrMng.newAnyCPointer(tModelSize);
-        mNnParam = mPtrMng.newAnyCPointer(tModelSize);
+        mFpHyperParam = mPtrMng[0].newAnyCPointer(tModelSize);
+        mFpParam = mPtrMng[0].newAnyCPointer(tModelSize);
+        mNnParam = mPtrMng[0].newAnyCPointer(tModelSize);
         IDoubleOrFloatCPointer tParam = mTotCParam.copy();
         int tShift = 0;
         for (int i = 0; i < tModelSize; ++i) {
@@ -263,7 +266,7 @@ public class NNAP implements IPairPotential {
             tShift += tSize;
         }
         // 归一化系数读取
-        mNormParam = mPtrMng.newAnyCPointer(tModelSize);
+        mNormParam = mPtrMng[0].newAnyCPointer(tModelSize);
         Number tNormSigmaEng = null, tNormMuEng = null;
         for (int i = 0; i < tModelSize; ++i) {
             if (tNormSigmaEng == null) tNormSigmaEng = (Number)tModels.get(i).get("norm_sigma_eng");
@@ -306,32 +309,32 @@ public class NNAP implements IPairPotential {
             AnyCPointer tCudaFpParam = AnyCPointer.calloc(tModelSize);
             AnyCPointer tCudaNnParam = AnyCPointer.calloc(tModelSize);
             AnyCPointer tCudaNormParam = AnyCPointer.calloc(tModelSize);
-            mCudaFpHyperParam = mPtrMng.newCudaPointer(tModelSize*AnyCPointer.TYPE_SIZE);
-            mCudaFpParam = mPtrMng.newCudaPointer(tModelSize*AnyCPointer.TYPE_SIZE);
-            mCudaNnParam = mPtrMng.newCudaPointer(tModelSize*AnyCPointer.TYPE_SIZE);
-            mCudaNormParam = mPtrMng.newCudaPointer(tModelSize*AnyCPointer.TYPE_SIZE);
+            mCudaFpHyperParam = mPtrMng[0].newCudaPointer(tModelSize*AnyCPointer.TYPE_SIZE);
+            mCudaFpParam = mPtrMng[0].newCudaPointer(tModelSize*AnyCPointer.TYPE_SIZE);
+            mCudaNnParam = mPtrMng[0].newCudaPointer(tModelSize*AnyCPointer.TYPE_SIZE);
+            mCudaNormParam = mPtrMng[0].newCudaPointer(tModelSize*AnyCPointer.TYPE_SIZE);
             for (int i = 0; i < tModelSize; ++i) {
                 int tSize = mBasis[i].cptrHyperParameterSize();
                 FloatCPointer tSubParam = mFpHyperParam.getAsFloatCPointerAt(i);
-                FloatCudaPointer tSubCudaParam = mPtrMng.newFloatCudaPointer(tSize);
+                FloatCudaPointer tSubCudaParam = mPtrMng[0].newFloatCudaPointer(tSize);
                 if (tSize>0) tSubCudaParam.fill(tSubParam, tSize);
                 tCudaFpHyperParam.putAt(i, tSubCudaParam);
                 
                 tSize = mBasis[i].cptrParameterSize();
                 tSubParam = mFpParam.getAsFloatCPointerAt(i);
-                tSubCudaParam = mPtrMng.newFloatCudaPointer(tSize);
+                tSubCudaParam = mPtrMng[0].newFloatCudaPointer(tSize);
                 if (tSize>0) tSubCudaParam.fill(tSubParam, tSize);
                 tCudaFpParam.putAt(i, tSubCudaParam);
                 
                 tSize = mNN[i].cptrParameterSize();
                 tSubParam = mNnParam.getAsFloatCPointerAt(i);
-                tSubCudaParam = mPtrMng.newFloatCudaPointer(tSize);
+                tSubCudaParam = mPtrMng[0].newFloatCudaPointer(tSize);
                 if (tSize>0) tSubCudaParam.fill(tSubParam, tSize);
                 tCudaNnParam.putAt(i, tSubCudaParam);
                 
                 tSize = mBasis[i].size()*2 + 2;
                 tSubParam = mNormParam.getAsFloatCPointerAt(i);
-                tSubCudaParam = mPtrMng.newFloatCudaPointer(tSize);
+                tSubCudaParam = mPtrMng[0].newFloatCudaPointer(tSize);
                 if (tSize>0) tSubCudaParam.fill(tSubParam, tSize);
                 tCudaNormParam.putAt(i, tSubCudaParam);
             }
@@ -343,9 +346,9 @@ public class NNAP implements IPairPotential {
             tCudaFpParam.free();
             tCudaNnParam.free();
             tCudaNormParam.free();
-            mCudaNMerges = mPtrMng.newIntCudaPointer(tModelSize);
-            mCudaCutsq = mPtrMng.newCudaPointer(tModelSize*AnyCPointer.TYPE_SIZE);
-            mCudaMergeSorted = mPtrMng.newCudaPointer(tModelSize*AnyCPointer.TYPE_SIZE);
+            mCudaNMerges = mPtrMng[0].newIntCudaPointer(tModelSize);
+            mCudaCutsq = mPtrMng[0].newCudaPointer(tModelSize*AnyCPointer.TYPE_SIZE);
+            mCudaMergeSorted = mPtrMng[0].newCudaPointer(tModelSize*AnyCPointer.TYPE_SIZE);
             IntCPointer tNMerges = IntCPointer.calloc(tModelSize);
             AnyCPointer tCudaCutsq = AnyCPointer.calloc(tModelSize);
             AnyCPointer tCudaMergeSorted = AnyCPointer.calloc(tModelSize);
@@ -353,7 +356,7 @@ public class NNAP implements IPairPotential {
                 Basis tSubBasis = mBasis[i];
                 int tSubNMerges = tSubBasis.mergeSize();
                 tNMerges.putAt(i, tSubNMerges);
-                FloatCudaPointer tSubCudaCutsq = mPtrMng.newFloatCudaPointer(tSubNMerges);
+                FloatCudaPointer tSubCudaCutsq = mPtrMng[0].newFloatCudaPointer(tSubNMerges);
                 FloatCPointer tSubCutsq = FloatCPointer.calloc(tSubNMerges);
                 for (int k = 0; k < tSubNMerges; ++k) {
                     double tRCut = tSubBasis.rcut(k);
@@ -363,7 +366,7 @@ public class NNAP implements IPairPotential {
                 tCudaCutsq.putAt(i, tSubCudaCutsq);
                 tSubCutsq.free();
                 // 简单二次遍历获取排序的索引
-                IntCudaPointer tSubCudaMergeSorted = mPtrMng.newIntCudaPointer(tSubNMerges);
+                IntCudaPointer tSubCudaMergeSorted = mPtrMng[0].newIntCudaPointer(tSubNMerges);
                 IntCPointer tSubMergeSorted = IntCPointer.calloc(tSubNMerges);
                 for (int k = 0; k < tSubNMerges; ++k) {
                     tSubMergeSorted.putAt(k, k);
@@ -471,7 +474,9 @@ public class NNAP implements IPairPotential {
     }
     void close_() throws Exception {
         // 只需手动释放 mPtrMng 即可
-        mPtrMng.close();
+        for (int ti = 0; ti < mNumThreads; ++ti) {
+            mPtrMng[ti].close();
+        }
         if (mJITEngine!=null) mJITEngine.close();
     }
     
@@ -484,6 +489,7 @@ public class NNAP implements IPairPotential {
     
     
     private int buildNL_(int aThreadID, IDxyzTypeIdxIterable aNL, double aRCut, boolean aRequireGrad) {
+        PointerManager tPtrMng = mPtrMng[aThreadID];
         final DoubleList tNlDxBuf = mNlDxBuf[aThreadID], tNlDyBuf = mNlDyBuf[aThreadID], tNlDzBuf = mNlDzBuf[aThreadID];
         final IntList tNlTypeBuf = mNlTypeBuf[aThreadID], tNlIdxBuf = mNlIdxBuf[aThreadID];
         IDoubleOrFloatCPointer tNlDx = mNlDx[aThreadID], tNlDy = mNlDy[aThreadID], tNlDz = mNlDz[aThreadID];
@@ -501,14 +507,14 @@ public class NNAP implements IPairPotential {
             tNlTypeBuf.add(type); tNlIdxBuf.add(idx);
         });
         int tNeiNum = tNlIdxBuf.size();
-        mPtrMng.ensureCapacity(tNlDx, tNeiNum); tNlDx.fillD(tNlDxBuf);
-        mPtrMng.ensureCapacity(tNlDy, tNeiNum); tNlDy.fillD(tNlDyBuf);
-        mPtrMng.ensureCapacity(tNlDz, tNeiNum); tNlDz.fillD(tNlDzBuf);
-        mPtrMng.ensureCapacity(tNlType, tNeiNum); tNlType.fill(tNlTypeBuf);
+        tPtrMng.ensureCapacity(tNlDx, tNeiNum); tNlDx.fillD(tNlDxBuf);
+        tPtrMng.ensureCapacity(tNlDy, tNeiNum); tNlDy.fillD(tNlDyBuf);
+        tPtrMng.ensureCapacity(tNlDz, tNeiNum); tNlDz.fillD(tNlDzBuf);
+        tPtrMng.ensureCapacity(tNlType, tNeiNum); tNlType.fill(tNlTypeBuf);
         if (aRequireGrad) {
-            mPtrMng.ensureCapacity(tGradNlDx, tNeiNum);
-            mPtrMng.ensureCapacity(tGradNlDy, tNeiNum);
-            mPtrMng.ensureCapacity(tGradNlDz, tNeiNum);
+            tPtrMng.ensureCapacity(tGradNlDx, tNeiNum);
+            tPtrMng.ensureCapacity(tGradNlDy, tNeiNum);
+            tPtrMng.ensureCapacity(tGradNlDz, tNeiNum);
         }
         return tNeiNum;
     }
@@ -611,7 +617,7 @@ public class NNAP implements IPairPotential {
                 }, mBasis[cType-1].rcutMax(), false);
                 int tFpSize = mBasis[cType-1].size();
                 IDoubleOrFloatCPointer rFpPtr = mCache[threadID];
-                mPtrMng.ensureCapacity(rFpPtr, tFpSize);
+                mPtrMng[threadID].ensureCapacity(rFpPtr, tFpSize);
                 calFp(threadID,
                     mNlDx[threadID], mNlDy[threadID], mNlDz[threadID],
                     mNlType[threadID], tNeiNum, cType, rFpPtr
@@ -680,9 +686,9 @@ public class NNAP implements IPairPotential {
             tShift += tSize;
         }
         for (int ti = 0; ti < mNumThreads; ++ti) {
-            IDoubleOrFloatCPointer tGradTotCParam = mPtrMng.newDoubleOrFloatCPointer(mSingle, mTotGradCParamSize);
-            AnyCPointer tGradFpParam = mPtrMng.newAnyCPointer(tModelSize);
-            AnyCPointer tGradNnParam = mPtrMng.newAnyCPointer(tModelSize);
+            IDoubleOrFloatCPointer tGradTotCParam = mPtrMng[ti].newDoubleOrFloatCPointer(mSingle, mTotGradCParamSize);
+            AnyCPointer tGradFpParam = mPtrMng[ti].newAnyCPointer(tModelSize);
+            AnyCPointer tGradNnParam = mPtrMng[ti].newAnyCPointer(tModelSize);
             IDoubleOrFloatCPointer tGradParam = tGradTotCParam.copy();
             for (int i = 0; i < tModelSize; ++i) {
                 tGradFpParam.putAt(i, tGradParam);
@@ -767,7 +773,7 @@ public class NNAP implements IPairPotential {
         if (mCuda) throw new IllegalStateException();
         IDoubleOrFloatCPointer tOutEng = mOutEng[aThreadID];
         IDoubleOrFloatCPointer tFpForwardCache = mCache[aThreadID];
-        mPtrMng.ensureCapacity(tFpForwardCache, mBasis[aCType-1].forwardCacheSize(aNumNei));
+        mPtrMng[aThreadID].ensureCapacity(tFpForwardCache, mBasis[aCType-1].forwardCacheSize(aNumNei));
         // 调用 jit 方法获取结果
         int tCode = mCalEnergyForce.invoke(
             aNlDx, aNlDy, aNlDz, aNlType, aNumNei, aCType,
@@ -843,7 +849,7 @@ public class NNAP implements IPairPotential {
         if (mCuda) throw new IllegalStateException();
         if (mGradTotParam == null) throw new IllegalStateException("No grad in NNAP, invoke `requireGrad()` first.");
         IDoubleOrFloatCPointer tFpBackwardBackwardCache = mCache[aThreadID];
-        mPtrMng.ensureCapacity(tFpBackwardBackwardCache, mBasis[aCType-1].backwardBackwardCacheSize(aNumNei));
+        mPtrMng[aThreadID].ensureCapacity(tFpBackwardBackwardCache, mBasis[aCType-1].backwardBackwardCacheSize(aNumNei));
         int tSizeFpForwardCache = mBasis[aCType-1].forwardCacheSize(aNumNei);
         int tSizeNnForwardCache = mNN[aCType-1].forwardCacheSize();
         int tSizeFpBackwardCache = mBasis[aCType-1].backwardCacheSize(aNumNei);
@@ -864,16 +870,16 @@ public class NNAP implements IPairPotential {
     
     /// lammps stuff
     private void validNlLammps_(int aNeiNum) {
-        mPtrMng.ensureCapacity(mNlDx[0], aNeiNum);
-        mPtrMng.ensureCapacity(mNlDy[0], aNeiNum);
-        mPtrMng.ensureCapacity(mNlDz[0], aNeiNum);
-        mPtrMng.ensureCapacity(mNlType[0], aNeiNum);
-        mPtrMng.ensureCapacity(mNlIdx[0], aNeiNum);
-        mPtrMng.ensureCapacity(mGradNlDx[0], aNeiNum);
-        mPtrMng.ensureCapacity(mGradNlDy[0], aNeiNum);
-        mPtrMng.ensureCapacity(mGradNlDz[0], aNeiNum);
+        mPtrMng[0].ensureCapacity(mNlDx[0], aNeiNum);
+        mPtrMng[0].ensureCapacity(mNlDy[0], aNeiNum);
+        mPtrMng[0].ensureCapacity(mNlDz[0], aNeiNum);
+        mPtrMng[0].ensureCapacity(mNlType[0], aNeiNum);
+        mPtrMng[0].ensureCapacity(mNlIdx[0], aNeiNum);
+        mPtrMng[0].ensureCapacity(mGradNlDx[0], aNeiNum);
+        mPtrMng[0].ensureCapacity(mGradNlDy[0], aNeiNum);
+        mPtrMng[0].ensureCapacity(mGradNlDz[0], aNeiNum);
         for (int i = 0; i < mSymbols.length; ++i) {
-            mPtrMng.ensureCapacity(mCache[0], mBasis[i].forwardCacheSize(aNeiNum));
+            mPtrMng[0].ensureCapacity(mCache[0], mBasis[i].forwardCacheSize(aNeiNum));
         }
     }
     void computeLammps(PairNNAP aPair) throws Exception {
@@ -912,29 +918,29 @@ public class NNAP implements IPairPotential {
         if (mCudaLmpInited) return;
         mCudaLmpInited = true;
         
-        mFltBuf = mPtrMng.newFloatCPointer();
-        mIntBuf = mPtrMng.newIntCPointer();
-        mCudaX = mPtrMng.newFloatCudaPointer();
-        mCudaF = mPtrMng.newFloatCudaPointer();
-        mCudaEatom0 = mPtrMng.newFloatCudaPointer();
-        mCudaVatom0 = mPtrMng.newFloatCudaPointer();
-        mCudaVatom1 = mPtrMng.newFloatCudaPointer();
-        mCudaType = mPtrMng.newIntCudaPointer();
-        mCudaIlist = mPtrMng.newIntCudaPointer();
-        mCudaNumneigh = mPtrMng.newIntCudaPointer();
-        mCudaBufNeiNum = mPtrMng.newIntCudaPointer();
-        mCudaBufCType = mPtrMng.newIntCudaPointer();
-        mCudaFirstneigh = mPtrMng.newIntCudaPointer();
-        mCudaBufNlType = mPtrMng.newIntCudaPointer();
-        mCudaBufNlIdx = mPtrMng.newIntCudaPointer();
-        mCudaBufNlDx = mPtrMng.newFloatCudaPointer();
-        mCudaBufNlDy = mPtrMng.newFloatCudaPointer();
-        mCudaBufNlDz = mPtrMng.newFloatCudaPointer();
-        mCudaBufGradNlDx = mPtrMng.newFloatCudaPointer();
-        mCudaBufGradNlDy = mPtrMng.newFloatCudaPointer();
-        mCudaBufGradNlDz = mPtrMng.newFloatCudaPointer();
+        mFltBuf = mPtrMng[0].newFloatCPointer();
+        mIntBuf = mPtrMng[0].newIntCPointer();
+        mCudaX = mPtrMng[0].newFloatCudaPointer();
+        mCudaF = mPtrMng[0].newFloatCudaPointer();
+        mCudaEatom0 = mPtrMng[0].newFloatCudaPointer();
+        mCudaVatom0 = mPtrMng[0].newFloatCudaPointer();
+        mCudaVatom1 = mPtrMng[0].newFloatCudaPointer();
+        mCudaType = mPtrMng[0].newIntCudaPointer();
+        mCudaIlist = mPtrMng[0].newIntCudaPointer();
+        mCudaNumneigh = mPtrMng[0].newIntCudaPointer();
+        mCudaBufNeiNum = mPtrMng[0].newIntCudaPointer();
+        mCudaBufCType = mPtrMng[0].newIntCudaPointer();
+        mCudaFirstneigh = mPtrMng[0].newIntCudaPointer();
+        mCudaBufNlType = mPtrMng[0].newIntCudaPointer();
+        mCudaBufNlIdx = mPtrMng[0].newIntCudaPointer();
+        mCudaBufNlDx = mPtrMng[0].newFloatCudaPointer();
+        mCudaBufNlDy = mPtrMng[0].newFloatCudaPointer();
+        mCudaBufNlDz = mPtrMng[0].newFloatCudaPointer();
+        mCudaBufGradNlDx = mPtrMng[0].newFloatCudaPointer();
+        mCudaBufGradNlDy = mPtrMng[0].newFloatCudaPointer();
+        mCudaBufGradNlDz = mPtrMng[0].newFloatCudaPointer();
         
-        mCudaLmpType2NNAPType = mPtrMng.newIntCudaPointer(aPair.mNumTypes+1);
+        mCudaLmpType2NNAPType = mPtrMng[0].newIntCudaPointer(aPair.mNumTypes+1);
         mCudaLmpType2NNAPType.fill(aPair.mLmpType2NNAPType, aPair.mNumTypes+1);
     }
     void computeLammpsCuda(PairNNAP aPair) throws CudaException {
@@ -948,19 +954,19 @@ public class NNAP implements IPairPotential {
         final int nlocal = aPair.atomNlocal();
         final int nghost = aPair.atomNghost();
         final int nlocalghost = nlocal + nghost;
-        mPtrMng.ensureCapacity(mFltBuf, (long)nlocalghost*9L);
-        mPtrMng.ensureCapacity(mCudaX, (long)nlocalghost*3L);
-        mPtrMng.ensureCapacity(mCudaF, (long)nlocalghost*3L);
-        mPtrMng.ensureCapacity(mCudaEatom0, (long)inum);
-        mPtrMng.ensureCapacity(mCudaVatom0, (long)inum*6L);
-        mPtrMng.ensureCapacity(mCudaVatom1, (long)nlocalghost*(cvflagAtom?9L:6L));
-        mPtrMng.ensureCapacity(mCudaType, nlocalghost);
+        mPtrMng[0].ensureCapacity(mFltBuf, (long)nlocalghost*9L);
+        mPtrMng[0].ensureCapacity(mCudaX, (long)nlocalghost*3L);
+        mPtrMng[0].ensureCapacity(mCudaF, (long)nlocalghost*3L);
+        mPtrMng[0].ensureCapacity(mCudaEatom0, (long)inum);
+        mPtrMng[0].ensureCapacity(mCudaVatom0, (long)inum*6L);
+        mPtrMng[0].ensureCapacity(mCudaVatom1, (long)nlocalghost*(cvflagAtom?9L:6L));
+        mPtrMng[0].ensureCapacity(mCudaType, nlocalghost);
         if (nlflag) {
-            mPtrMng.ensureCapacity(mCudaIlist, inum);
-            mPtrMng.ensureCapacity(mCudaNumneigh, inum);
+            mPtrMng[0].ensureCapacity(mCudaIlist, inum);
+            mPtrMng[0].ensureCapacity(mCudaNumneigh, inum);
         }
-        mPtrMng.ensureCapacity(mCudaBufNeiNum, (long)inum*(mNMergesMax+1));
-        mPtrMng.ensureCapacity(mCudaBufCType, inum);
+        mPtrMng[0].ensureCapacity(mCudaBufNeiNum, (long)inum*(mNMergesMax+1));
+        mPtrMng[0].ensureCapacity(mCudaBufCType, inum);
         // 近邻列表大小获取和缓存合理化
         IPointer ilist = NULL;
         IPointer numneigh = NULL;
@@ -975,16 +981,16 @@ public class NNAP implements IPairPotential {
         // 近邻列表缓存向量长度规范
         if (nlflag) {
             int tTotNeiNum = inum*mNeighnumMax;
-            mPtrMng.ensureCapacity(mIntBuf, tTotNeiNum);
-            mPtrMng.ensureCapacity(mCudaFirstneigh, tTotNeiNum);
-            mPtrMng.ensureCapacity(mCudaBufNlType, tTotNeiNum);
-            mPtrMng.ensureCapacity(mCudaBufNlIdx, tTotNeiNum);
-            mPtrMng.ensureCapacity(mCudaBufNlDx, tTotNeiNum);
-            mPtrMng.ensureCapacity(mCudaBufNlDy, tTotNeiNum);
-            mPtrMng.ensureCapacity(mCudaBufNlDz, tTotNeiNum);
-            mPtrMng.ensureCapacity(mCudaBufGradNlDx, tTotNeiNum);
-            mPtrMng.ensureCapacity(mCudaBufGradNlDy, tTotNeiNum);
-            mPtrMng.ensureCapacity(mCudaBufGradNlDz, tTotNeiNum);
+            mPtrMng[0].ensureCapacity(mIntBuf, tTotNeiNum);
+            mPtrMng[0].ensureCapacity(mCudaFirstneigh, tTotNeiNum);
+            mPtrMng[0].ensureCapacity(mCudaBufNlType, tTotNeiNum);
+            mPtrMng[0].ensureCapacity(mCudaBufNlIdx, tTotNeiNum);
+            mPtrMng[0].ensureCapacity(mCudaBufNlDx, tTotNeiNum);
+            mPtrMng[0].ensureCapacity(mCudaBufNlDy, tTotNeiNum);
+            mPtrMng[0].ensureCapacity(mCudaBufNlDz, tTotNeiNum);
+            mPtrMng[0].ensureCapacity(mCudaBufGradNlDx, tTotNeiNum);
+            mPtrMng[0].ensureCapacity(mCudaBufGradNlDy, tTotNeiNum);
+            mPtrMng[0].ensureCapacity(mCudaBufGradNlDz, tTotNeiNum);
         }
         
         // lammps -> cuda
@@ -1025,15 +1031,15 @@ public class NNAP implements IPairPotential {
         if (mCudaGpumdInited) return;
         mCudaGpumdInited = true;
         
-        mCudaBufNeiNum = mPtrMng.newIntCudaPointer();
-        mCudaBufNlType = mPtrMng.newIntCudaPointer();
-        mCudaBufNlIdx = mPtrMng.newIntCudaPointer();
-        mCudaBufNlDx = mPtrMng.newFloatCudaPointer();
-        mCudaBufNlDy = mPtrMng.newFloatCudaPointer();
-        mCudaBufNlDz = mPtrMng.newFloatCudaPointer();
-        mCudaBufGradNlDx = mPtrMng.newFloatCudaPointer();
-        mCudaBufGradNlDy = mPtrMng.newFloatCudaPointer();
-        mCudaBufGradNlDz = mPtrMng.newFloatCudaPointer();
+        mCudaBufNeiNum = mPtrMng[0].newIntCudaPointer();
+        mCudaBufNlType = mPtrMng[0].newIntCudaPointer();
+        mCudaBufNlIdx = mPtrMng[0].newIntCudaPointer();
+        mCudaBufNlDx = mPtrMng[0].newFloatCudaPointer();
+        mCudaBufNlDy = mPtrMng[0].newFloatCudaPointer();
+        mCudaBufNlDz = mPtrMng[0].newFloatCudaPointer();
+        mCudaBufGradNlDx = mPtrMng[0].newFloatCudaPointer();
+        mCudaBufGradNlDy = mPtrMng[0].newFloatCudaPointer();
+        mCudaBufGradNlDz = mPtrMng[0].newFloatCudaPointer();
     }
     void computeGPUMD(int number_of_particles, int N1, int N2, int neighnumMax,
                       long g_neighbor_number, long g_neighbor_list,
@@ -1048,16 +1054,16 @@ public class NNAP implements IPairPotential {
         
         initGpumdDataCuda_();
         // 近邻列表缓存向量长度规范
-        mPtrMng.ensureCapacity(mCudaBufNeiNum, (long)number_of_particles*(mNMergesMax+1));
+        mPtrMng[0].ensureCapacity(mCudaBufNeiNum, (long)number_of_particles*(mNMergesMax+1));
         int tTotNeiNum = number_of_particles*neighnumMax;
-        mPtrMng.ensureCapacity(mCudaBufNlType, tTotNeiNum);
-        mPtrMng.ensureCapacity(mCudaBufNlIdx, tTotNeiNum);
-        mPtrMng.ensureCapacity(mCudaBufNlDx, tTotNeiNum);
-        mPtrMng.ensureCapacity(mCudaBufNlDy, tTotNeiNum);
-        mPtrMng.ensureCapacity(mCudaBufNlDz, tTotNeiNum);
-        mPtrMng.ensureCapacity(mCudaBufGradNlDx, tTotNeiNum);
-        mPtrMng.ensureCapacity(mCudaBufGradNlDy, tTotNeiNum);
-        mPtrMng.ensureCapacity(mCudaBufGradNlDz, tTotNeiNum);
+        mPtrMng[0].ensureCapacity(mCudaBufNlType, tTotNeiNum);
+        mPtrMng[0].ensureCapacity(mCudaBufNlIdx, tTotNeiNum);
+        mPtrMng[0].ensureCapacity(mCudaBufNlDx, tTotNeiNum);
+        mPtrMng[0].ensureCapacity(mCudaBufNlDy, tTotNeiNum);
+        mPtrMng[0].ensureCapacity(mCudaBufNlDz, tTotNeiNum);
+        mPtrMng[0].ensureCapacity(mCudaBufGradNlDx, tTotNeiNum);
+        mPtrMng[0].ensureCapacity(mCudaBufGradNlDy, tTotNeiNum);
+        mPtrMng[0].ensureCapacity(mCudaBufGradNlDz, tTotNeiNum);
         
         int tCode = mComputeGPUMD.invoke(
             number_of_particles, N1, N2,
