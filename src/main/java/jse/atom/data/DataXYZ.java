@@ -235,6 +235,25 @@ public class DataXYZ extends AbstractSettableAtomData {
             mParameters.remove(aKey);
             return this;
         }
+        // 还是增加一些简单的检测来避免代码中的拼写错误导致的常见问题
+        if (aValue instanceof IVector) {
+            throw new IllegalArgumentException("Parameter can not be IVector, convert it to String manually or use `setProperty` to set per-atom properties");
+        } else
+        if (aValue instanceof IIntVector) {
+            throw new IllegalArgumentException("Parameter can not be IIntVector, convert it to String manually or use `setProperty` to set per-atom properties");
+        } else
+        if (aValue instanceof ILogicalVector) {
+            throw new IllegalArgumentException("Parameter can not be ILogicalVector, convert it to String manually or use `setProperty` to set per-atom properties");
+        } else
+        if (aValue instanceof IMatrix) {
+            throw new IllegalArgumentException("Parameter can not be IMatrix, convert it to String manually or use `setProperty` to set per-atom properties");
+        } else
+        if (aValue instanceof IIntMatrix) {
+            throw new IllegalArgumentException("Parameter can not be IIntMatrix, convert it to String manually or use `setProperty` to set per-atom properties");
+        } else
+        if (aValue instanceof ILogicalMatrix) {
+            throw new IllegalArgumentException("Parameter can not be ILogicalMatrix, convert it to String manually or use `setProperty` to set per-atom properties");
+        }
         mParameters.put(aKey, aValue);
         return this;
     }
@@ -1366,9 +1385,9 @@ public class DataXYZ extends AbstractSettableAtomData {
                     rLine.append((Boolean)tValue ? "T" : "F");
                 } else {
                     String tValueStr = tValue.toString();
+                    tValueStr = tValueStr.replace("\"", "").replace("\n", "").replace("\r", "");
                     boolean tHasBlank = IO.Text.findBlankIndex(tValueStr, 0)>=0;
                     if (tHasBlank) {
-                        tValueStr = tValueStr.replace("\"", "");
                         rLine.append("\"");
                     }
                     rLine.append(tValueStr);
