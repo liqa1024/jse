@@ -4,6 +4,7 @@ import jse.atom.*;
 import jse.cache.IntVectorCache;
 import jse.cache.LogicalVectorCache;
 import jse.cache.VectorCache;
+import jse.code.Conf;
 import jse.code.IO;
 import jse.code.UT;
 import jse.code.collection.*;
@@ -92,6 +93,14 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
         public final List<IDoubleOrFloatCPointer[]> mNlDx = new ArrayList<>(64);
         public final List<IDoubleOrFloatCPointer[]> mNlDy = new ArrayList<>(64);
         public final List<IDoubleOrFloatCPointer[]> mNlDz = new ArrayList<>(64);
+        
+        long statNlSize() {
+            long rNlSize = 0;
+            for (int i = 0; i < mSize; ++i) {
+                rNlSize += mNumNei.get(i).sum();
+            }
+            return rNlSize;
+        }
     }
     
     /// ParforThreadPool stuffs
@@ -1824,6 +1833,14 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
         } else {
             mStepsPerEpoch = 1;
             mSliceTrain = mFullSliceTrain;
+        }
+        if (Conf.DEBUG) {
+            long tTrainNlSize = mTrainData.statNlSize();
+            System.out.printf("train nl size: %d (%.3g GB)\n", tTrainNlSize, (tTrainNlSize/1024.0/1024.0/1024.0*3.0*(mSingle?Float.BYTES:Double.BYTES)));
+            if (mHasTest) {
+                long tTestNlSize = mTestData.statNlSize();
+                System.out.printf("test nl size: %d (%.3g GB)\n", tTestNlSize, (tTestNlSize/1024.0/1024.0/1024.0*3.0*(mSingle?Float.BYTES:Double.BYTES)));
+            }
         }
         // 开始训练
         if (aPrintLog) {
