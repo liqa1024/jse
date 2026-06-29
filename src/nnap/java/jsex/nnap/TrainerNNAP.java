@@ -47,6 +47,7 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
     protected final static double DEFAULT_BASIS_MAX = 5.0;
     protected final static int DEFAULT_RFUSE_SIZE = 6;
     protected final static String DEFAULT_WTYPE = "rfuse";
+    protected final static long DEFAULT_CACHE_LIMIT = 16*1024*1024; // 16MB
     
     public final static ILossFunc LOSS_SQUARE = (pred, real, grad) -> {
         double tErr = pred - real;
@@ -101,13 +102,13 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
             }
             return rNlSize;
         }
-        int statMaxCacheSize(NNAP aNNAP, boolean aEnergyOnly) {
-            int rMaxCacheSize = 0;
+        long statMaxCacheSize(NNAP aNNAP, boolean aEnergyOnly) {
+            long rMaxCacheSize = 0;
             for (int i = 0; i < mSize; ++i) {
                 IntVector tAtomType = mAtomType.get(i);
                 IntVector tNumNei = mNumNei.get(i);
                 int tNumAtoms = tAtomType.size();
-                int rCacheSize = 0;
+                long rCacheSize = 0;
                 for (int k = 0; k < tNumAtoms; ++k) {
                     if (aEnergyOnly) {
                         rCacheSize += aNNAP.forwardEnergyCacheSize(tNumNei.get(k), tAtomType.get(k));
@@ -185,6 +186,12 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
     public TrainerNNAP setCacheNl(boolean aFlag) {
         mCacheNl = aFlag;
         if (!mCacheNl && mNlCached) throw new IllegalStateException("Cannot turn off caching after caching neighbors");
+        return this;
+    }
+    
+    protected Boolean mCacheForward = null;
+    public TrainerNNAP setCacheForward(boolean aFlag) {
+        mCacheForward = aFlag;
         return this;
     }
     
@@ -934,7 +941,13 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
             
             DoubleWrapper rBGradEng = new DoubleWrapper(0.0);
             List<IDoubleOrFloatCPointer> rCache = mCacheBuf.get(threadID);
-            while (rCache.size() < tNumAtoms) rCache.add(tPtrMng.newDoubleOrFloatCPointer(mSingle));
+            IDoubleOrFloatCPointer rCache0 = null;
+            if (mCacheForward) {
+                while (rCache.size() < tNumAtoms) rCache.add(tPtrMng.newDoubleOrFloatCPointer(mSingle));
+            } else {
+                if (rCache.isEmpty()) rCache.add(tPtrMng.newDoubleOrFloatCPointer(mSingle));
+                rCache0 = rCache.get(0);
+            }
             
             if (!tHasForce && !tHasStress) {
                 if (!tHasEng) return;
@@ -943,7 +956,7 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
                 for (int k = 0; k < tNumAtoms; ++k) {
                     final int tNlSize = tNumNei.get(k);
                     final int cType = tAtomType.get(k);
-                    IDoubleOrFloatCPointer tSubCache = rCache.get(k);
+                    IDoubleOrFloatCPointer tSubCache = mCacheForward ? rCache.get(k) : rCache0;
                     tPtrMng.ensureCapacity(tSubCache, mNNAP.forwardEnergyCacheSize(tNlSize, cType));
                     double tSubEng = mNNAP.forwardEnergy(threadID,
                         tNlDx.get(k), tNlDy.get(k), tNlDz.get(k), tNlType.get(k),
@@ -963,9 +976,20 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
                 double tBGradEng = mEnergyWeight * rBGradEng.value() / fEngSize;
                 tBGradEng /= (mNormSigmaEng * tNumAtoms);
                 for (int k = 0; k < tNumAtoms; ++k) {
+                    final int tNlSize = tNumNei.get(k);
+                    final int cType = tAtomType.get(k);
+                    IntCPointer tSubNlType = tNlType.get(k);
+                    IDoubleOrFloatCPointer tSubNlDx = tNlDx.get(k), tSubNlDy = tNlDy.get(k), tSubNlDz = tNlDz.get(k);
+                    IDoubleOrFloatCPointer tSubCache = mCacheForward ? rCache.get(k) : rCache0;
+                    if (!mCacheForward) {
+                        mNNAP.forwardEnergy(threadID,
+                            tSubNlDx, tSubNlDy, tSubNlDz, tSubNlType,
+                            tNlSize, cType, tSubCache
+                        );
+                    }
                     mNNAP.backwardEnergy(threadID,
-                        tBGradEng, tNlDx.get(k), tNlDy.get(k), tNlDz.get(k), tNlType.get(k),
-                        tNumNei.get(k), tAtomType.get(k), rCache.get(k)
+                        tBGradEng, tSubNlDx, tSubNlDy, tSubNlDz, tSubNlType,
+                        tNlSize, cType, tSubCache
                     );
                 }
                 return;
@@ -1006,7 +1030,7 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
                 tPtrMng.ensureCapacity(rAGradNlDy, tNlSize);
                 tPtrMng.ensureCapacity(rAGradNlDz, tNlSize);
                 
-                IDoubleOrFloatCPointer tSubCache = rCache.get(k);
+                IDoubleOrFloatCPointer tSubCache = mCacheForward ? rCache.get(k) : rCache0;
                 tPtrMng.ensureCapacity(tSubCache, mNNAP.forwardEnergyForceCacheSize(tNlSize, cType));
                 double tSubEng = mNNAP.forwardEnergyForce(threadID,
                     tSubNlDx, tSubNlDy, tSubNlDz, tSubNlType,
@@ -1145,9 +1169,17 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
                     rBGradAGradNlDy.putAtD(j, rSubBGradAGradNlDy);
                     rBGradAGradNlDz.putAtD(j, rSubBGradAGradNlDz);
                 }
+                IDoubleOrFloatCPointer tSubCache = mCacheForward ? rCache.get(k) : rCache0;
+                if (!mCacheForward) {
+                    mNNAP.forwardEnergyForce(threadID,
+                        tSubNlDx, tSubNlDy, tSubNlDz, tSubNlType,
+                        tNlSize, cType, tSubCache,
+                        rAGradNlDx, rAGradNlDy, rAGradNlDz
+                    );
+                }
                 mNNAP.backwardEnergyForce(threadID,
                     tBGradEng, tSubNlDx, tSubNlDy, tSubNlDz, tSubNlType,
-                    tNlSize, cType, rCache.get(k),
+                    tNlSize, cType, tSubCache,
                     rBGradAGradNlDx, rBGradAGradNlDy, rBGradAGradNlDz
                 );
             }
@@ -1854,6 +1886,12 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
             mStepsPerEpoch = 1;
             mSliceTrain = mFullSliceTrain;
         }
+        // 简单自动检测切换 cache forward
+        if (mCacheForward == null) {
+            long tMaxCacheSize = mTrainData.statMaxCacheSize(mNNAP, !mHasForce && !mHasStress);
+            tMaxCacheSize *= (mSingle?Float.BYTES:Double.BYTES);
+            mCacheForward = (tMaxCacheSize < DEFAULT_CACHE_LIMIT);
+        }
         if (Conf.DEBUG) {
             long tTrainNlSize = mTrainData.statNlSize();
             System.out.printf("train nl size: %d (%.3g GB)\n", tTrainNlSize, (tTrainNlSize/1024.0/1024.0/1024.0*3.0*(mSingle?Float.BYTES:Double.BYTES)));
@@ -1861,13 +1899,7 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
                 long tTestNlSize = mTestData.statNlSize();
                 System.out.printf("test nl size: %d (%.3g GB)\n", tTestNlSize, (tTestNlSize/1024.0/1024.0/1024.0*3.0*(mSingle?Float.BYTES:Double.BYTES)));
             }
-            int tMaxCacheSize = mTrainData.statMaxCacheSize(mNNAP, !mHasForce && !mHasStress);
-            if (mHasTest) {
-                int tMaxCacheSize2 = mTestData.statMaxCacheSize(mNNAP, !mHasForce && !mHasStress);
-                if (tMaxCacheSize2 > tMaxCacheSize) {
-                    tMaxCacheSize = tMaxCacheSize2;
-                }
-            }
+            long tMaxCacheSize = mTrainData.statMaxCacheSize(mNNAP, !mHasForce && !mHasStress);
             System.out.printf("max cache size: %d (%.3g MB)\n", tMaxCacheSize, (tMaxCacheSize/1024.0/1024.0*(mSingle?Float.BYTES:Double.BYTES)));
         }
         // 开始训练
