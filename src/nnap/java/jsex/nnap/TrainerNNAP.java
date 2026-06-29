@@ -101,6 +101,26 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
             }
             return rNlSize;
         }
+        int statMaxCacheSize(NNAP aNNAP, boolean aEnergyOnly) {
+            int rMaxCacheSize = 0;
+            for (int i = 0; i < mSize; ++i) {
+                IntVector tAtomType = mAtomType.get(i);
+                IntVector tNumNei = mNumNei.get(i);
+                int tNumAtoms = tAtomType.size();
+                int rCacheSize = 0;
+                for (int k = 0; k < tNumAtoms; ++k) {
+                    if (aEnergyOnly) {
+                        rCacheSize += aNNAP.forwardEnergyCacheSize(tNumNei.get(k), tAtomType.get(k));
+                    } else {
+                        rCacheSize += aNNAP.forwardEnergyForceCacheSize(tNumNei.get(k), tAtomType.get(k));
+                    }
+                }
+                if (rCacheSize > rMaxCacheSize) {
+                    rMaxCacheSize = rCacheSize;
+                }
+            }
+            return rMaxCacheSize;
+        }
     }
     
     /// ParforThreadPool stuffs
@@ -1841,6 +1861,14 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
                 long tTestNlSize = mTestData.statNlSize();
                 System.out.printf("test nl size: %d (%.3g GB)\n", tTestNlSize, (tTestNlSize/1024.0/1024.0/1024.0*3.0*(mSingle?Float.BYTES:Double.BYTES)));
             }
+            int tMaxCacheSize = mTrainData.statMaxCacheSize(mNNAP, !mHasForce && !mHasStress);
+            if (mHasTest) {
+                int tMaxCacheSize2 = mTestData.statMaxCacheSize(mNNAP, !mHasForce && !mHasStress);
+                if (tMaxCacheSize2 > tMaxCacheSize) {
+                    tMaxCacheSize = tMaxCacheSize2;
+                }
+            }
+            System.out.printf("max cache size: %d (%.3g MB)\n", tMaxCacheSize, (tMaxCacheSize/1024.0/1024.0*(mSingle?Float.BYTES:Double.BYTES)));
         }
         // 开始训练
         if (aPrintLog) {
