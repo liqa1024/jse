@@ -16,9 +16,16 @@ import java.util.*;
  */
 @ApiStatus.Internal
 class SourceScanner {
+    final static int CTYPE_CONST = 0b001000000;
+    final static int CTYPE_PTR = 0b010000000;
+    final static int CTYPE_PTRPTR = 0b100000000;
+    final static int CTYPE_MASK = 0b000111111;
+    final static int CTYPE_VOID = 1, CTYPE_INT32 = 2, CTYPE_INT64 = 3, CTYPE_DOUBLE = 4, CTYPE_FLOAT = 5;
+    
     class FuncInfo {
         public final String mName;
         public final Map<String, String> mParams;
+        private final Map<String, Integer> mDecodedParams = new LinkedHashMap<>();
         public final int mMemCount;
         FuncInfo(String aName, Map<String, String> aParams) {
             mName = aName;
@@ -59,7 +66,103 @@ class SourceScanner {
                 }}
             }
             mMemCount = tMemCount;
+            // 解码参数列表避免每次调用时重复解析
+            for (Map.Entry<String, String> tEntry : mParams.entrySet()) {
+                final String tKey = tEntry.getKey();
+                String tTypeStr = tEntry.getValue();
+                int tTypeInt = 0;
+                // 简单处理 const
+                if (tTypeStr.startsWith("const")) {
+                    tTypeInt |= CTYPE_CONST;
+                    tTypeStr = tTypeStr.substring(5).trim();
+                }
+                if (tTypeStr.endsWith("*")) {
+                    tTypeInt |= CTYPE_PTR;
+                    String tElseTypeStr = tTypeStr.substring(0, tTypeStr.length()-1).trim();
+                    if (tElseTypeStr.endsWith("*")) {
+                        tTypeInt |= CTYPE_PTRPTR;
+                        String tElseTypeStr2 = tElseTypeStr.substring(0, tElseTypeStr.length()-1).trim();
+                        String tNewType = mTypeMap.get(tElseTypeStr2);
+                        if (tNewType!=null) tElseTypeStr2 = tNewType;
+                        switch(tElseTypeStr2) {
+                        case "int": case "jint": {
+                            tTypeInt |= CTYPE_INT32;
+                            break;
+                        }
+                        case "int64_t": case "jlong": {
+                            tTypeInt |= CTYPE_INT64;
+                            break;
+                        }
+                        case "double": case "jdouble": {
+                            tTypeInt |= CTYPE_DOUBLE;
+                            break;
+                        }
+                        case "float": case "jfloat": {
+                            tTypeInt |= CTYPE_FLOAT;
+                            break;
+                        }
+                        case "void": case "char": {
+                            tTypeInt |= CTYPE_VOID;
+                            break;
+                        }}
+                    } else {
+                        // 简单处理 type map
+                        String tNewType = mTypeMap.get(tElseTypeStr);
+                        if (tNewType!=null) tElseTypeStr = tNewType;
+                        switch(tElseTypeStr) {
+                        case "int": case "jint": {
+                            tTypeInt |= CTYPE_INT32;
+                            break;
+                        }
+                        case "int64_t": case "jlong": {
+                            tTypeInt |= CTYPE_INT64;
+                            break;
+                        }
+                        case "double": case "jdouble": {
+                            tTypeInt |= CTYPE_DOUBLE;
+                            break;
+                        }
+                        case "float": case "jfloat": {
+                            tTypeInt |= CTYPE_FLOAT;
+                            break;
+                        }
+                        case "void": case "char": {
+                            tTypeInt |= CTYPE_VOID;
+                            break;
+                        }}
+                    }
+                    mDecodedParams.put(tKey, tTypeInt);
+                    continue;
+                }
+                // 简单处理 type map
+                String tNewType = mTypeMap.get(tTypeStr);
+                if (tNewType!=null) tTypeStr = tNewType;
+                switch(tTypeStr) {
+                case "int": case "jint": {
+                    tTypeInt |= CTYPE_INT32;
+                    break;
+                }
+                case "int64_t": case "jlong": {
+                    tTypeInt |= CTYPE_INT64;
+                    break;
+                }
+                case "double": case "jdouble": {
+                    tTypeInt |= CTYPE_DOUBLE;
+                    break;
+                }
+                case "float": case "jfloat": {
+                    tTypeInt |= CTYPE_FLOAT;
+                    break;
+                }
+                default: {
+                    throw new IllegalStateException();
+                }}
+                mDecodedParams.put(tKey, tTypeInt);
+            }
         }
+        
+        
+        
         @ApiStatus.Internal
         public void parseArgs_(long aPtr, Object... aArgs) {
             if (mParams.size() != aArgs.length) {
@@ -67,15 +170,12 @@ class SourceScanner {
             }
             long tPtr = aPtr;
             int i = 0;
-            for (Map.Entry<String, String> tEntry : mParams.entrySet()) {
-                String tKey = tEntry.getKey();
-                String tTypeStr = tEntry.getValue();
-                // 简单处理 const
-                if (tTypeStr.startsWith("const")) {
-                    tTypeStr = tTypeStr.substring(5).trim();
-                }
+            for (Map.Entry<String, Integer> tEntry : mDecodedParams.entrySet()) {
+                final String tKey = tEntry.getKey();
+                final int tTypeInt = tEntry.getValue();
+                final int tRawTypeInt = tTypeInt & CTYPE_MASK;
                 Object tArg = aArgs[i]; ++i;
-                if (tTypeStr.endsWith("*")) {
+                if ((tTypeInt&CTYPE_PTR) != 0) {
                     if (!(tArg instanceof IPointer)) {
                         invalidType_(tKey, "? extends IPointer", tArg.getClass().getName());
                     }
@@ -85,51 +185,44 @@ class SourceScanner {
                         tPtr = AnyCPointer.next0(tPtr);
                         continue;
                     }
-                    String tElseTypeStr = tTypeStr.substring(0, tTypeStr.length()-1).trim();
-                    if (tElseTypeStr.endsWith("*")) {
+                    if ((tTypeInt&CTYPE_PTRPTR) != 0) {
                         // 针对嵌套指针特殊处理，这里反向优先级
-                        String tElseTypeStr2 = tElseTypeStr.substring(0, tElseTypeStr.length()-1).trim();
-                        String tNewType = mTypeMap.get(tElseTypeStr2);
-                        if (tNewType!=null) tElseTypeStr2 = tNewType;
                         if (tArg instanceof NestedDoubleCPointer) {
-                            if (!tElseTypeStr2.equals("double") && !tElseTypeStr2.equals("jdouble")) {
-                                throw new IllegalArgumentException("Invalid args type for '"+tKey+"' in func '"+mName+"', input expected: double ** (for NestedDoubleCPointer), real: "+tTypeStr);
+                            if (tRawTypeInt != CTYPE_DOUBLE) {
+                                throw new IllegalArgumentException("Invalid args type for '"+tKey+"' in func '"+mName+"', input expected: double ** (for NestedDoubleCPointer), real: "+mParams.get(tKey));
                             }
                         } else
                         if (tArg instanceof NestedIntCPointer) {
-                            if (!tElseTypeStr2.equals("int") && !tElseTypeStr2.equals("jint")) {
-                                throw new IllegalArgumentException("Invalid args type for '"+tKey+"' in func '"+mName+"', input expected: int ** (for NestedIntCPointer), real: "+tTypeStr);
+                            if (tRawTypeInt != CTYPE_INT32) {
+                                throw new IllegalArgumentException("Invalid args type for '"+tKey+"' in func '"+mName+"', input expected: int ** (for NestedIntCPointer), real: "+mParams.get(tKey));
                             }
                         } else {
                             checkType_(tKey, AnyCPointer.class, CudaPointer.class, tArg);
                         }
                     } else {
-                        // 简单处理 type map
-                        String tNewType = mTypeMap.get(tElseTypeStr);
-                        if (tNewType!=null) tElseTypeStr = tNewType;
-                        switch(tElseTypeStr) {
-                        case "int": case "jint": {
+                        switch(tRawTypeInt) {
+                        case CTYPE_INT32: {
                             checkType_(tKey, IntCPointer.class, IntCudaPointer.class, tArg);
                             break;
                         }
-                        case "int64_t": case "jlong": {
+                        case CTYPE_INT64: {
                             checkType_(tKey, Int64CPointer.class, Int64CudaPointer.class, tArg);
                             break;
                         }
-                        case "double": case "jdouble": {
+                        case CTYPE_DOUBLE: {
                             checkType_(tKey, DoubleCPointer.class, DoubleCudaPointer.class, tArg);
                             break;
                         }
-                        case "float": case "jfloat": {
+                        case CTYPE_FLOAT: {
                             checkType_(tKey, FloatCPointer.class, FloatCudaPointer.class, tArg);
                             break;
                         }
-                        case "void": case "char": {
+                        case CTYPE_VOID: {
                             checkType_(tKey, CPointer.class, CudaPointer.class, tArg);
                             break;
                         }
                         default: {
-                            UT.Code.warning("Unchecked casts: "+tArg.getClass().getName()+" to "+tTypeStr);
+                            UT.Code.warning("Unchecked casts: "+tArg.getClass().getName()+" to "+mParams.get(tKey));
                             break;
                         }}
                     }
@@ -138,28 +231,26 @@ class SourceScanner {
                     continue;
                 }
                 // 简单处理 type map
-                String tNewType = mTypeMap.get(tTypeStr);
-                if (tNewType!=null) tTypeStr = tNewType;
-                switch(tTypeStr) {
-                case "int": case "jint": {
+                switch(tRawTypeInt) {
+                case CTYPE_INT32: {
                     checkType_(tKey, Integer.class, tArg);
                     IntCPointer.set0(tPtr, (Integer)tArg);
                     tPtr = IntCPointer.next0(tPtr);
                     break;
                 }
-                case "int64_t": case "jlong": {
+                case CTYPE_INT64: {
                     checkType_(tKey, Long.class, tArg);
                     Int64CPointer.set0(tPtr, (Long)tArg);
                     tPtr = Int64CPointer.next0(tPtr);
                     break;
                 }
-                case "double": case "jdouble": {
+                case CTYPE_DOUBLE: {
                     checkType_(tKey, Number.class, tArg); // 浮点数使用更加粗略的判断
                     DoubleCPointer.set0(tPtr, ((Number)tArg).doubleValue());
                     tPtr = DoubleCPointer.next0(tPtr);
                     break;
                 }
-                case "float": case "jfloat": {
+                case CTYPE_FLOAT: {
                     checkType_(tKey, Number.class, tArg); // 浮点数使用更加粗略的判断
                     FloatCPointer.set0(tPtr, ((Number)tArg).floatValue());
                     tPtr = FloatCPointer.next0(tPtr);
