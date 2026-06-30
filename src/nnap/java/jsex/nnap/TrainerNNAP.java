@@ -68,8 +68,6 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
     
     protected static class DataSet {
         public int mSize = 0;
-        /** 原始的原子结构数据，简单引用因为初始化后就会自动清空 */
-        public final List<IAtomData> mAtomData = new ArrayList<>(64);
         /** APC 数据，总是缓存近邻 cell 但不缓存具体近邻列表；后续近邻改版需要同步替换成原始的 bins/cells */
         public final List<AtomicParameterCalculator> mAPC = new ArrayList<>(64);
         /** 每个原子数据结构对应的每原子能量值 */
@@ -175,7 +173,6 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
     private final DoubleList[] mBGradForceXBuf, mBGradForceYBuf, mBGradForceZBuf;
     private final List<List<IntCPointer>> mNlBuf, mNlTypeBuf;
     private final List<List<IDoubleOrFloatCPointer>> mNlDxBuf, mNlDyBuf, mNlDzBuf;
-    
     
     protected boolean mCacheNl = true;
     private boolean mNlCached = false;
@@ -1194,7 +1191,6 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
     
     
     private void addData_(IAtomData aAtomData, double aEnergy, @Nullable IMatrix aForces, @Nullable IVector aStress, DataSet rData) {
-        rData.mAtomData.add(aAtomData);
         final boolean tHasEng = !Double.isNaN(aEnergy);
         // 简单处理（不需要近邻列表）的数据添加在这里实现
         IntUnaryOperator tTypeMap = typeMap(aAtomData);
@@ -1208,6 +1204,7 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
                 aEnergy -= mRefEngs.get(tType-1);
             }
         }
+        rData.mAPC.add(AtomicParameterCalculator.of(aAtomData));
         rData.mAtomType.add(rAtomType.asVec());
         rData.mVolume.append(aAtomData.volume());
         rData.mEng.append(tHasEng ? (aEnergy/tNumAtoms) : Double.NaN);
@@ -1218,17 +1215,17 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
                 rData.mForceY.add(null);
                 rData.mForceZ.add(null);
             } else {
-                DoubleList rForceX = new DoubleList(tNumAtoms);
-                DoubleList rForceY = new DoubleList(tNumAtoms);
-                DoubleList rForceZ = new DoubleList(tNumAtoms);
+                Vector.Builder rForceX = Vector.builder(tNumAtoms);
+                Vector.Builder rForceY = Vector.builder(tNumAtoms);
+                Vector.Builder rForceZ = Vector.builder(tNumAtoms);
                 for (int i = 0; i < tNumAtoms; ++i) {
                     rForceX.add(aForces.get(i, 0));
                     rForceY.add(aForces.get(i, 1));
                     rForceZ.add(aForces.get(i, 2));
                 }
-                rData.mForceX.add(rForceX.asVec());
-                rData.mForceY.add(rForceY.asVec());
-                rData.mForceZ.add(rForceZ.asVec());
+                rData.mForceX.add(rForceX.build());
+                rData.mForceY.add(rForceY.build());
+                rData.mForceZ.add(rForceZ.build());
             }
         }
         // 应力
@@ -1416,17 +1413,15 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
     }
     
     protected void initDataNl(boolean aPrintLog) {
-        final int tTrainSize = mTrainData.mAtomData.size();
-        final int tTestSize = mTestData.mAtomData.size();
+        final int tTrainSize = mTrainData.mAPC.size();
+        final int tTestSize = mTestData.mAPC.size();
         final int tTrainStart = mTrainData.mSize - tTrainSize;
         final int tTestStart = mTestData.mSize - tTestSize;
         // 预先添加占位，因为需要保证并行线程安全且顺序一致
         for (int ai = 0; ai < tTrainSize; ++ai) {
-            mTrainData.mAPC.add(null);
             mTrainData.mNumNei.add(null);
         }
         for (int ai = 0; ai < tTestSize; ++ai) {
-            mTestData.mAPC.add(null);
             mTestData.mNumNei.add(null);
         }
         if (aPrintLog) UT.Timer.progressBar("init nl", tTrainSize+tTestSize);
@@ -1435,14 +1430,13 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
             int ai = ii<tTrainSize ? ii : ii-tTrainSize;
             int i = ai + (ii<tTrainSize ? tTrainStart : tTestStart);
             
-            IAtomData tAtomData = rData.mAtomData.get(ai);
+            AtomicParameterCalculator tAPC = rData.mAPC.get(ai);
             IntVector tAtomType = rData.mAtomType.get(i);
-            int tNumAtoms = tAtomData.natoms();
+            int tNumAtoms = tAPC.natoms();
             
             IntVector rNumNei = IntVector.zeros(tNumAtoms);
             rData.mNumNei.set(i, rNumNei);
-            AtomicParameterCalculator tAPC = AtomicParameterCalculator.of(tAtomData);
-            rData.mAPC.set(mCacheNl ? ai : i, tAPC);
+            
             for (int k = 0; k < tNumAtoms; ++k) {
                 final int[] tNlSize = {0};
                 tAPC.nl_().forEachNeighbor(k, mNNAP.rcut(tAtomType.get(k)), (dx, dy, dz, idx) -> {
@@ -1452,8 +1446,6 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
             }
             if (aPrintLog) UT.Timer.progressBar();
         });
-        mTrainData.mAtomData.clear();
-        mTestData.mAtomData.clear();
         // 后续近邻缓存是可选的
         if (!mCacheNl) {
             if (mNlCached) throw new IllegalStateException("Cannot turn off caching after caching neighbors");
@@ -1846,8 +1838,8 @@ public class TrainerNNAP implements IHasSymbol, ISavable, AutoCloseable {
         // 清空旧的早停存储
         mMinLoss = Double.POSITIVE_INFINITY;
         // 数据近邻列表初始化
-        final boolean tNewTrainData = !mTrainData.mAtomData.isEmpty();
-        final boolean tNewTestData = !mTestData.mAtomData.isEmpty();
+        final boolean tNewTrainData = !mTrainData.mAPC.isEmpty();
+        final boolean tNewTestData = !mTestData.mAPC.isEmpty();
         if (tNewTrainData || tNewTestData) {
             initDataNl(aPrintLog);
             if (tNewTrainData) {
