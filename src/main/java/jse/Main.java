@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.logging.Level;
 
 import static jse.code.CS.VERSION;
+import static jse.code.Conf.DEBUG;
 import static jse.code.Conf.WORKING_DIR_OF;
 import static jse.code.OS.JAR_DIR;
 import static jse.code.OS.JAR_PATH;
@@ -105,9 +106,17 @@ public class Main {
                 // 直接通过 jse 启动内嵌的 lammps，参数转发并且自动启动 LmpPlugin
                 String[] tArgs = new String[aArgs.length-2];
                 if (tArgs.length > 0) System.arraycopy(aArgs, 2, tArgs, 0, tArgs.length);
+                int tRank = 0;
                 try (NativeLmp tLmp = new NativeLmp(tArgs)) {
+                    tRank = tLmp.commRank();
                     if (!tLmp.hasPlugin()) tLmp.loadPlugin();
                     tLmp.start();
+                } catch (Exception e) {
+                    if (DEBUG || tRank==0) {
+                        throw e;
+                    } else {
+                        return 1;
+                    }
                 } finally {
                     NativeLmp.closeAll();
                 }

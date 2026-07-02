@@ -75,6 +75,30 @@ JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsComm0
 
 /*
  * Class:     jse_lmp_NativeLmp
+ * Method:    lammpsCommRank0
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_jse_lmp_NativeLmp_lammpsCommRank0
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_NativeLmp
+ * Method:    lammpsCommSize0
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_jse_lmp_NativeLmp_lammpsCommSize0
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_NativeLmp
+ * Method:    lammpsCommBarrier0
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsCommBarrier0
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     jse_lmp_NativeLmp
  * Method:    lammpsLibMpi0
  * Signature: ()Z
  */

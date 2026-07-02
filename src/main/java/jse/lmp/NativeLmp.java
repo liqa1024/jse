@@ -264,6 +264,49 @@ public class NativeLmp implements AutoCloseable {
     }
     private native static long lammpsComm0(long aLmpPtr) throws LmpException;
     
+    /**
+     * 获取当前 LAMMPS comm 的 rank 值，即 {@code comm().rank()}。
+     * <p>
+     * 用于在不触发 MPI 初始化的情况下获取 rank 从而进行简单的 MPI
+     * 操作，更重要的则是对于无 MPI 版本的 LAMMPS 提供简单的通用支持。
+     *
+     * @return 当前 LAMMPS comm 的 rank 值
+     */
+    public int commRank() throws LmpException, MPIException {
+        if (mDead) throw new IllegalStateException("This NativeLmp is dead");
+        checkThread();
+        return lammpsCommRank0(mLmpPtr.mPtr);
+    }
+    private native static int lammpsCommRank0(long aLmpPtr) throws LmpException, MPIException;
+    
+    /**
+     * 获取当前 LAMMPS comm 的 size 值，即 {@code comm().size()}。
+     * <p>
+     * 用于在不触发 MPI 初始化的情况下获取 rank 从而进行简单的 MPI
+     * 操作，更重要的则是对于无 MPI 版本的 LAMMPS 提供简单的通用支持。
+     *
+     * @return 当前 LAMMPS comm 的 size 值
+     */
+    public int commSize() throws LmpException, MPIException {
+        if (mDead) throw new IllegalStateException("This NativeLmp is dead");
+        checkThread();
+        return lammpsCommSize0(mLmpPtr.mPtr);
+    }
+    private native static int lammpsCommSize0(long aLmpPtr) throws LmpException, MPIException;
+    
+    /**
+     * 设置屏障让当前 LAMMPS comm 等待同步，即 {@code comm().barrier()}。
+     * <p>
+     * 用于在不触发 MPI 初始化的情况下获取 rank 从而进行简单的 MPI
+     * 操作，更重要的则是对于无 MPI 版本的 LAMMPS 提供简单的通用支持。
+     */
+    public void commBarrier() throws LmpException, MPIException {
+        if (mDead) throw new IllegalStateException("This NativeLmp is dead");
+        checkThread();
+        lammpsCommBarrier0(mLmpPtr.mPtr);
+    }
+    private native static void lammpsCommBarrier0(long aLmpPtr) throws LmpException, MPIException;
+    
     /** 在编译 lammps jni 库时是否有找到 mpi 支持，如果没有则很多操作不需要真的执行 mpi 通讯 */
     public final static boolean LAMMPS_LIB_MPI;
     private native static boolean lammpsLibMpi0();
@@ -274,7 +317,7 @@ public class NativeLmp implements AutoCloseable {
     
     
     /**
-     * Shut down the MPI communication like {@link MPI#init}
+     * Initialize the MPI communication like {@link MPI#init}
      * <p>
      * This is a wrapper around the {@code lammps_mpi_init()} function of the C-library interface.
      */

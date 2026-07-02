@@ -131,6 +131,46 @@ JNIEXPORT jlong JNICALL Java_jse_lmp_NativeLmp_lammpsComm0(JNIEnv *aEnv, jclass 
     exceptionCheckLMP(aEnv, (void *)(intptr_t)aLmpPtr);
     return tComm;
 }
+JNIEXPORT jint JNICALL Java_jse_lmp_NativeLmp_lammpsCommRank0(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr) {
+#ifdef LAMMPS_LIB_MPI
+    jlong tComm_ = lammpsGetMpiComm((void *)(intptr_t)aLmpPtr);
+    if (exceptionCheckLMP(aEnv, (void *)(intptr_t)aLmpPtr)) return -1;
+    if (tComm_ == 0) return -1;
+    MPI_Comm tComm = (MPI_Comm)(intptr_t)tComm_;
+    int tRank;
+    int tExitCode = MPI_Comm_rank(tComm, &tRank);
+    exceptionCheckMPI(aEnv, tExitCode);
+    return (jint)tRank;
+#else
+    return 0;
+#endif
+}
+JNIEXPORT jint JNICALL Java_jse_lmp_NativeLmp_lammpsCommSize0(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr) {
+#ifdef LAMMPS_LIB_MPI
+    jlong tComm_ = lammpsGetMpiComm((void *)(intptr_t)aLmpPtr);
+    if (exceptionCheckLMP(aEnv, (void *)(intptr_t)aLmpPtr)) return 0;
+    if (tComm_ == 0) return 0;
+    MPI_Comm tComm = (MPI_Comm)(intptr_t)tComm_;
+    int tSize;
+    int tExitCode = MPI_Comm_size(tComm, &tSize);
+    exceptionCheckMPI(aEnv, tExitCode);
+    return (jint)tSize;
+#else
+    return 1;
+#endif
+}
+JNIEXPORT void JNICALL Java_jse_lmp_NativeLmp_lammpsCommBarrier0(JNIEnv *aEnv, jclass aClazz, jlong aLmpPtr) {
+#ifdef LAMMPS_LIB_MPI
+    jlong tComm_ = lammpsGetMpiComm((void *)(intptr_t)aLmpPtr);
+    if (exceptionCheckLMP(aEnv, (void *)(intptr_t)aLmpPtr)) return;
+    if (tComm_ == 0) return;
+    MPI_Comm tComm = (MPI_Comm)(intptr_t)tComm_;
+    int tExitCode = MPI_Barrier(tComm);
+    exceptionCheckMPI(aEnv, tExitCode);
+#else
+    return;
+#endif
+}
 JNIEXPORT jboolean JNICALL Java_jse_lmp_NativeLmp_lammpsLibMpi0(JNIEnv *aEnv, jclass aClazz) {
 #ifdef LAMMPS_LIB_MPI
     return JNI_TRUE;
