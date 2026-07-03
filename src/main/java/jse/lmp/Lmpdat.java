@@ -419,7 +419,8 @@ public class Lmpdat extends AbstractSettableAtomData {
      * @see #of(IAtomData, double...)
      */
     public static Lmpdat of(IAtomData aAtomData) {
-        return of_(aAtomData, Vectors.from(aAtomData.masses()));
+        @Nullable IVector tMasses = aAtomData.masses();
+        return of_(aAtomData, tMasses==null ? null : Vectors.from(tMasses));
     }
     /**
      * 通过一个一般的原子数据 {@link IAtomData} 来创建一个 lammps data 数据
