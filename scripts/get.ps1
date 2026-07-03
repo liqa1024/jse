@@ -10,7 +10,7 @@ param (
 )
 
 & {
-    $LastRelease = "4.1.1"
+    $LastRelease = "4.1.2"
     $ErrorActionPreference = 'Stop'
     
     $WorkingDir = Join-Path ([System.IO.Path]::GetTempPath()) ("jse-getter-" + [guid]::NewGuid().ToString())
@@ -58,7 +58,7 @@ param (
             IsMSJdk = $false
         }
         foreach ($line in $output) {
-            # openjdk 21.0.9
+            # openjdk 21.0.11
             if (-not $info.Version -and $line -match '\b(\d+)(?:\.(\d+))?(?:\.(\d+))?\b') {
                 $info.Version = $Matches[0]
             }
@@ -72,8 +72,8 @@ param (
         return $info
     }
     function InstallOpenJdk {
-        $jdkInstaller = Join-Path $WorkingDir "microsoft-jdk-21.0.9-windows-x64.exe"
-        $url = "https://aka.ms/download-jdk/microsoft-jdk-21.0.9-windows-x64.exe"
+        $jdkInstaller = Join-Path $WorkingDir "microsoft-jdk-21.0.11-windows-x64.exe"
+        $url = "https://aka.ms/download-jdk/microsoft-jdk-21.0.11-windows-x64.exe"
         
         Write-Host "Downloading Microsoft OpenJDK 21..."
         Invoke-WebRequest $url -OutFile $jdkInstaller -UseBasicParsing
