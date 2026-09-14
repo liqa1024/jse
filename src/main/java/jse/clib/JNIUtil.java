@@ -176,14 +176,14 @@ public class JNIUtil {
         }
         // 否则说明存在其他进程并行初始化，输出警告并等待
         System.err.println(IO.Text.red(
-            "======================= WARNING =======================\n" +
+            "========================== WARNING ==========================\n" +
             "Parallel initialization detected, build may fail.\n" +
             "\n" +
-            "This often due to MPI execution before `jse --jnibuild`,\n" +
-            "so you may need to run it in order (when the build fails): \n" +
-            "  - `jse --jniclean all`\n" +
-            "  - `jse --jnibuild`\n" +
-            "=======================================================\n"
+            "This may due to an invalid MPI execution or interrupted old build.\n" +
+            "\n" +
+            "If you are sure another build broken, remove the lock file:\n" +
+            "  "+aPath+"\n" +
+            "=============================================================\n"
         ));
         do {
             Thread.sleep(FILE_SYSTEM_SLEEP_TIME);
