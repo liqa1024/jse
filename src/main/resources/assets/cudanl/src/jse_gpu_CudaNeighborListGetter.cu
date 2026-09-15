@@ -133,7 +133,7 @@ JNIEXPORT jint JNICALL Java_jse_gpu_CudaNeighborListGetter_initPosTypeLmp0(
     JNIEnv *aEnv, jclass aClazz, jint nlocal, jint nghost,
     jfloat xlo, jfloat ylo, jfloat zlo, jlong posLmp, jlong pos, jlong posCpu,
     jlong typeLmp, jlong type, jlong typeCpu,
-    jboolean sortByType, jint ntypes, jlong ilistCpu) {
+    jboolean sortByType, jint ntypes, jlong ilistCpu, jlong istartCpu) {
     
     double **tPosLmp = (double **)(intptr_t)posLmp;
     float *rPos = (float *)(intptr_t)pos;
@@ -142,7 +142,11 @@ JNIEXPORT jint JNICALL Java_jse_gpu_CudaNeighborListGetter_initPosTypeLmp0(
     int *rType = (int *)(intptr_t)type;
     int *rTypeCpu = (int *)(intptr_t)typeCpu;
     int *rIListCpu = (int *)(intptr_t)ilistCpu;
+    int *rIStartCpu = (int *)(intptr_t)istartCpu;
     
+    for (int t = 0; t <= ntypes; ++t) {
+        rIStartCpu[t] = 0;
+    }
     const int nlocalghost = nlocal + nghost;
     if (!sortByType) {
         for (int i = 0; i < nlocalghost; ++i) {
@@ -171,6 +175,7 @@ JNIEXPORT jint JNICALL Java_jse_gpu_CudaNeighborListGetter_initPosTypeLmp0(
                 ++ii;
             }
         }
+        rIStartCpu[t] = ii;
     }
     if (ii != nlocal) return cudaErrorInvalidValue;
     for (int i = nlocal; i < nlocalghost; ++i) {

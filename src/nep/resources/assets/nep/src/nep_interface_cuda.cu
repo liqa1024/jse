@@ -85,7 +85,7 @@ static __global__ void initLammpsNeiKernel(int nlocal,
 }
 
 template <int EEITHER, int VTOTAL, int VATOM>
-static __global__ void computeLammpsKernel(int nlocal, int nghost,
+static __global__ void computeLammpsKernel(int nlocal, int nghost, int istart, int iend,
         int *aNlSizeR, int *aNlSizeA, int *aMgNlIdx,
         flt_t *posx, flt_t *posy, flt_t *posz, int *type,
         flt_t *eatom0, flt_t *f, flt_t *vatom0, flt_t *vatom1,
@@ -96,8 +96,8 @@ static __global__ void computeLammpsKernel(int nlocal, int nghost,
         const flt_t *gnp_radial, const flt_t *gnp_angular,
         flt_t *g_fp, flt_t *g_sum_fxyz) {
     
-    const int i = (int)(blockIdx.x * blockDim.x + threadIdx.x);
-    if (i >= nlocal) return;
+    const int i = (int)(blockIdx.x * blockDim.x + threadIdx.x) + istart;
+    if (i >= iend) return;
     
     const int nlocalghost = nlocal + nghost;
     const int tNlSizeR = aNlSizeR[i];
@@ -223,7 +223,7 @@ static __global__ void computeLammpsKernel(int nlocal, int nghost,
 }
 template <int VTOTAL, int VATOM>
 static void computeLammpsKernel_(int aGridSize, int aBlockSize,
-        int nlocal, int nghost,
+        int nlocal, int nghost, int istart, int iend,
         int *aNlSizeR, int *aNlSizeA, int *aMgNlIdx,
         flt_t *posx, flt_t *posy, flt_t *posz, int *type,
         int eflagEither,
@@ -237,7 +237,7 @@ static void computeLammpsKernel_(int aGridSize, int aBlockSize,
     
     if (eflagEither) {
         computeLammpsKernel<1, VTOTAL, VATOM>
-                     <<<aGridSize, aBlockSize>>>(nlocal, nghost,
+                     <<<aGridSize, aBlockSize>>>(nlocal, nghost, istart, iend,
             aNlSizeR, aNlSizeA, aMgNlIdx,
             posx, posy, posz, type,
             eatom0, f, vatom0, vatom1,
@@ -250,7 +250,7 @@ static void computeLammpsKernel_(int aGridSize, int aBlockSize,
         );
     } else {
         computeLammpsKernel<0, VTOTAL, VATOM>
-                     <<<aGridSize, aBlockSize>>>(nlocal, nghost,
+                     <<<aGridSize, aBlockSize>>>(nlocal, nghost, istart, iend,
             aNlSizeR, aNlSizeA, aMgNlIdx,
             posx, posy, posz, type,
             eatom0, f, vatom0, vatom1,
@@ -264,7 +264,7 @@ static void computeLammpsKernel_(int aGridSize, int aBlockSize,
     }
 }
 static void computeLammpsKernel_(int aGridSize, int aBlockSize,
-        int nlocal, int nghost,
+        int nlocal, int nghost, int istart, int iend,
         int *aNlSizeR, int *aNlSizeA, int *aMgNlIdx,
         flt_t *posx, flt_t *posy, flt_t *posz, int *type,
         int eflagEither, int vflag, int vflagAtom,
@@ -278,7 +278,7 @@ static void computeLammpsKernel_(int aGridSize, int aBlockSize,
     
     if (vflagAtom) {
         computeLammpsKernel_<1, 1>(aGridSize, aBlockSize,
-            nlocal, nghost,
+            nlocal, nghost, istart, iend,
             aNlSizeR, aNlSizeA, aMgNlIdx,
             posx, posy, posz, type,
             eflagEither,
@@ -292,7 +292,7 @@ static void computeLammpsKernel_(int aGridSize, int aBlockSize,
         );
     } else if (vflag) {
         computeLammpsKernel_<1, 0>(aGridSize, aBlockSize,
-            nlocal, nghost,
+            nlocal, nghost, istart, iend,
             aNlSizeR, aNlSizeA, aMgNlIdx,
             posx, posy, posz, type,
             eflagEither,
@@ -306,7 +306,7 @@ static void computeLammpsKernel_(int aGridSize, int aBlockSize,
         );
     } else {
         computeLammpsKernel_<0, 0>(aGridSize, aBlockSize,
-            nlocal, nghost,
+            nlocal, nghost, istart, iend,
             aNlSizeR, aNlSizeA, aMgNlIdx,
             posx, posy, posz, type,
             eflagEither,
@@ -414,8 +414,8 @@ __jsefunc__ int jse_nep_cuda2lammps(
 
 
 __jsefunc__ int jse_nep_computeLammpsCuda(
-    int nlocal, int nghost, int eflagEither, int vflag, int vflagAtom,
-    JSE_NEP::flt_t *posx, JSE_NEP::flt_t *posy, JSE_NEP::flt_t *posz, int *type,
+    int nlocal, int nghost, int ntypes, int eflagEither, int vflag, int vflagAtom,
+    JSE_NEP::flt_t *posx, JSE_NEP::flt_t *posy, JSE_NEP::flt_t *posz, int *type, int *istart,
     int *rNlSizeR, int *rNlSizeA, int *rMgNlIdx, int *nlsize, int *nlidx, int *type_map,
     const int *atomic_numbers, const JSE_NEP::flt_t *q_scaler,
     const JSE_NEP::flt_t **ann_w0, const JSE_NEP::flt_t **ann_b0, const JSE_NEP::flt_t **ann_w1, const JSE_NEP::flt_t *ann_b1, const JSE_NEP::flt_t *ann_c,
@@ -454,19 +454,27 @@ __jsefunc__ int jse_nep_computeLammpsCuda(
         nlsize, nlidx,
         posx, posy, posz
     );
-    JSE_NEP::computeLammpsKernel_(tGridSize, tBlockSize,
-        nlocal, nghost,
-        rNlSizeR, rNlSizeA, rMgNlIdx,
-        posx, posy, posz, type,
-        eflagEither, vflag, vflagAtom,
-        eatom0, f, vatom0, vatom1,
-        g_nl_fx, g_nl_fy, g_nl_fz,
-        atomic_numbers, q_scaler, zbl_para,
-        ann_w0, ann_b0, ann_w1, ann_b1, ann_c,
-        gn_radial, gn_angular,
-        gnp_radial, gnp_angular,
-        g_fp, g_sum_fxyz
-    );
+    for (int t = 1; t <= ntypes; ++t) {
+        const int istart_ = istart[t-1];
+        const int iend_ = istart[t];
+        const int isize_ = iend_ - istart_;
+        if (isize_ == 0) continue;
+        
+        const int tGridSizeType = (isize_ + tBlockSize-1) / tBlockSize;
+        JSE_NEP::computeLammpsKernel_(tGridSizeType, tBlockSize,
+            nlocal, nghost, istart_, iend_,
+            rNlSizeR, rNlSizeA, rMgNlIdx,
+            posx, posy, posz, type,
+            eflagEither, vflag, vflagAtom,
+            eatom0, f, vatom0, vatom1,
+            g_nl_fx, g_nl_fy, g_nl_fz,
+            atomic_numbers, q_scaler, zbl_para,
+            ann_w0, ann_b0, ann_w1, ann_b1, ann_c,
+            gn_radial, gn_angular,
+            gnp_radial, gnp_angular,
+            g_fp, g_sum_fxyz
+        );
+    }
     
     return (int)cudaDeviceSynchronize();
 }

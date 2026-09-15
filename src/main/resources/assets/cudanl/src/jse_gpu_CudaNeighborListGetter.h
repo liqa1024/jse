@@ -12,10 +12,10 @@ extern "C" {
 /*
  * Class:     jse_gpu_CudaNeighborListGetter
  * Method:    initPosTypeLmp0
- * Signature: (IIFFFJJJJJJZIJ)I
+ * Signature: (IIFFFJJJJJJZIJJ)I
  */
 JNIEXPORT jint JNICALL Java_jse_gpu_CudaNeighborListGetter_initPosTypeLmp0
-  (JNIEnv *, jclass, jint, jint, jfloat, jfloat, jfloat, jlong, jlong, jlong, jlong, jlong, jlong, jboolean, jint, jlong);
+  (JNIEnv *, jclass, jint, jint, jfloat, jfloat, jfloat, jlong, jlong, jlong, jlong, jlong, jlong, jboolean, jint, jlong, jlong);
 
 /*
  * Class:     jse_gpu_CudaNeighborListGetter
