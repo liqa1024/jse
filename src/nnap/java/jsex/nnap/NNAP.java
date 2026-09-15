@@ -958,8 +958,8 @@ public class NNAP extends AbstractPairPotential {
         final boolean vflagAtom = aPair.vflagAtom();
         final boolean cvflagAtom = aPair.cvflagAtom();
         int tCode = mComputeLammpsCuda.invoke(
-            nlocal, nghost, aPair.mNumTypes, eflagEither?1:0, vflagEither?1:0, (vflagAtom||cvflagAtom)?1:0,
-            mCudaNlGetter.posX(), mCudaNlGetter.posY(), mCudaNlGetter.posZ(), mCudaNlGetter.type(), mCudaNlGetter.istart(),
+            nlocal, nghost, eflagEither?1:0, vflagEither?1:0, (vflagAtom||cvflagAtom)?1:0,
+            mCudaNlGetter.posX(), mCudaNlGetter.posY(), mCudaNlGetter.posZ(), mCudaNlGetter.type(),
             mCudaNMerges, mCudaMergeSorted, mCudaCutsq, mCudaNlGetter.nlSize(), mCudaNlGetter.nlIdx(), mCudaLmpType2NNAPType,
             mCudaFpHyperParam, mCudaFpParam, mCudaNnParam, mCudaNormParam,
             mCudaF, mCudaEatom0, mCudaVatom0, mCudaVatom1,

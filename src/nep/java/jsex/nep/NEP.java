@@ -283,8 +283,8 @@ public class NEP extends AbstractPairPotential {
         final boolean vflagAtom = aPair.vflagAtom();
         final boolean cvflagAtom = aPair.cvflagAtom();
         int tCode = mComputeLammpsCuda.invoke(
-            nlocal, nghost, aPair.mTypeNum, eflagEither?1:0, vflagEither?1:0, (vflagAtom||cvflagAtom)?1:0,
-            mCudaNlGetter.posX(), mCudaNlGetter.posY(), mCudaNlGetter.posZ(), mCudaNlGetter.type(), mCudaNlGetter.istart(),
+            nlocal, nghost, eflagEither?1:0, vflagEither?1:0, (vflagAtom||cvflagAtom)?1:0,
+            mCudaNlGetter.posX(), mCudaNlGetter.posY(), mCudaNlGetter.posZ(), mCudaNlGetter.type(),
             mCudaNlSizeR, mCudaNlSizeA, mCudaMgNlIdx, mCudaNlGetter.nlSize(), mCudaNlGetter.nlIdx(), mCudaTypeMap,
             paramb.cuda_atomic_numbers, paramb.cuda_q_scaler,
             annmb.cuda_w0, annmb.cuda_b0, annmb.cuda_w1, annmb.cuda_b1, annmb.cuda_c,
