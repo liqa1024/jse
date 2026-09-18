@@ -14,7 +14,6 @@ import java.util.Map;
 
 import static jse.code.CS.VERSION_NUMBER;
 import static jse.code.Conf.VERSION_MASK;
-import static jse.code.OS.JAR_DIR;
 import static jse.code.OS.JAVA_HOME;
 
 /**
@@ -82,7 +81,7 @@ public class CPointer implements ICPointer {
     }
     
     /** 当前 {@link CPointer} JNI 库所在的文件夹路径，结尾一定存在 {@code '/'} */
-    public final static String LIB_DIR = JAR_DIR+"cpointer/" + UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, Conf.USE_MIMALLOC, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/";
+    public final static String LIB_DIR;
     /** 当前 {@link CPointer} JNI 库的路径 */
     public final static String LIB_PATH;
     private final static String[] SRC_NAME = {
@@ -111,6 +110,10 @@ public class CPointer implements ICPointer {
     
     static {
         InitHelper.INITIALIZED = true;
+        
+        boolean[] tUserLib = {true};
+        LIB_DIR = OS.findValidLibPath("cpointer/" + UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, Conf.USE_MIMALLOC, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, Conf.CMAKE_SETTING) + "/", tUserLib);
+        
         // 现在直接使用 JNIUtil.buildLib 来统一初始化
         LIB_PATH = new JNIUtil.LibBuilder("cpointer", "CPOINTER", LIB_DIR, Conf.CMAKE_SETTING)
             .setSrc("cpointer", SRC_NAME)

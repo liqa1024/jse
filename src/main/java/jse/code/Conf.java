@@ -136,6 +136,15 @@ public class Conf {
     public static boolean KERNEL_SHOW_FIGURE = OS.envZ("JSE_KERNEL_SHOW_FIGURE", false);
     
     /**
+     * 是否构建全局位置（{@link OS#JAR_DIR}）的库，这个位置的库会优先使用，用于为所有用户预构建库
+     * <p>
+     * 默认为 {@code false}，即总是优先构建到用户数据目录（{@link OS#USER_DATA_DIR}）下
+     * <p>
+     * 也可使用环境变量 {@code JSE_BUILD_GLOBAL_LIB} 来设置
+     */
+    public static boolean BUILD_GLOBAL_LIB = OS.envZ("JSE_BUILD_GLOBAL_LIB", false);
+    
+    /**
      * jse 的默认临时工作目录，现在统一为 {@code .temp/} 目录
      * <p>
      * 默认为 {@code ".temp/%n/"}，其中 {@code %n} 代表可以替换的具体子目录名称

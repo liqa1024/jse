@@ -3,7 +3,9 @@ package jse;
 import io.github.spencerpark.jupyter.channels.JupyterConnection;
 import io.github.spencerpark.jupyter.channels.JupyterSocket;
 import io.github.spencerpark.jupyter.kernel.KernelConnectionProperties;
+import jse.code.Conf;
 import jse.code.IO;
+import jse.code.OS;
 import jse.code.SP;
 import jse.code.UT;
 import jse.lmp.NativeLmp;
@@ -243,7 +245,37 @@ public class Main {
             }
             case "-jniclean": case "--jniclean": {
                 // 获取可选参数
-                String tCleanKey = (aArgs.length<3) ? "cache" : aArgs[2];
+                String tUserKey;
+                String tCleanKey;
+                if (aArgs.length < 3) {
+                    tUserKey = null;
+                    tCleanKey = "cache";
+                } else {
+                    if (aArgs[2].startsWith("-")) {
+                        tUserKey = aArgs[2];
+                        if (aArgs.length < 4) {
+                            tCleanKey = "cache";
+                        } else {
+                            tCleanKey = aArgs[3];
+                        }
+                    } else {
+                        tUserKey = null;
+                        tCleanKey = aArgs[2];
+                    }
+                }
+                boolean tUser;
+                if (tUserKey == null) {
+                    tUser = !Conf.BUILD_GLOBAL_LIB;
+                } else
+                if (tUserKey.equalsIgnoreCase("-u")) {
+                    tUser = true;
+                } else
+                if (tUserKey.equalsIgnoreCase("-g")) {
+                    tUser = false;
+                } else {
+                    System.err.println("Invalid jniclean key: "+tUserKey+", available values: -U/-G");
+                    return 1;
+                }
                 boolean tCleanAll;
                 if (tCleanKey.equalsIgnoreCase("cache")) {
                     tCleanAll = false;
@@ -254,7 +286,11 @@ public class Main {
                     System.err.println("Invalid jniclean key: "+tCleanKey+", available values: cache/all");
                     return 1;
                 }
-                String[] tList = IO.list(JAR_DIR);
+                String tLibDir = OS.libDir(tUser);
+                if (!IO.exists(tLibDir)) {
+                    return 0;
+                }
+                String[] tList = IO.list(tLibDir);
                 List<String> tNamesToClean = new ArrayList<>();
                 for (String tName : tList) {
                     if (tName.contains("@")) {
@@ -297,7 +333,7 @@ public class Main {
                         tNamesToClean.add(tName);
                     }
                 }
-                if (!tCleanAll && IO.exists(JAR_DIR + "jit/cache")) {
+                if (!tCleanAll && IO.exists(tLibDir + "jit/cache")) {
                     tNamesToClean.add("jit/cache");
                 }
                 if (tNamesToClean.isEmpty()) {
@@ -308,18 +344,30 @@ public class Main {
                     }
                     return 0;
                 }
-                System.out.printf("The following directories in %s will be removed:\n", JAR_DIR);
+                System.out.printf("The following directories in %s will be removed:\n", tLibDir);
                 System.out.println(String.join("\n", tNamesToClean));
                 if (!PROMPTER.confirm(!tCleanAll, "Confirm?")) {
                     return 0;
                 }
                 for (String tName : tNamesToClean) {
                     System.out.printf("Removing: %s\n", tName);
-                    IO.removeDir(JAR_DIR + tName);
+                    IO.removeDir(tLibDir + tName);
                 }
                 return 0;
             }
             case "-jnibuild": case "--jnibuild": {
+                if (aArgs.length>=3 && aArgs[2].startsWith("-")) {
+                    String tGlobalKey = aArgs[2];
+                    if (tGlobalKey.equalsIgnoreCase("-u")) {
+                        Conf.BUILD_GLOBAL_LIB = false;
+                    } else
+                    if (tGlobalKey.equalsIgnoreCase("-g")) {
+                        Conf.BUILD_GLOBAL_LIB = true;
+                    } else {
+                        System.err.println("Invalid jnibuild key: " + tGlobalKey + ", available values: -U/-G");
+                        return 1;
+                    }
+                }
                 jse.code.SP.Python.InitHelper.init();
                 jse.parallel.MPI.InitHelper.init();
                 jse.lmp.LmpPlugin.InitHelper.init();

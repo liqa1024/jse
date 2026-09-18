@@ -35,7 +35,7 @@ public class Ninja {
     /** 自动下载使用的 ninja 版本 */
     public final static String VERSION = LibVer.NINJA;
     /** 内部 ninja 会使用的路径 */
-    public final static String INTERNAL_HOME = JAR_DIR+"ninja/core/" + UT.Code.uniqueID(OS.OS_NAME, Ninja.VERSION) + "/";
+    public final static String INTERNAL_HOME;
     private final static boolean USE_SYSTEM_ = Conf.USE_SYSTEM;
     /** 自动检测到的 ninja 可执行路径 */
     public final static String EXE_PATH;
@@ -79,7 +79,8 @@ public class Ninja {
             if (tLocker == null) throw new IllegalStateException();
             // 没有则使用缓存的 ninja 压缩包，这里只考虑 x86 的情况
             String tNinjaPkgName = "ninja-" + (IS_WINDOWS ? "win" : (IS_MAC ? "mac" : "linux")) + ".zip";
-            String tNinjaCachePath = JNIUtil.PKG_DIR + tNinjaPkgName;
+            boolean[] tUserLib = {true};
+            String tNinjaCachePath = JNIUtil.findPkgPath(tNinjaPkgName, tUserLib);
             if (!IO.exists(tNinjaCachePath)) {
                 System.out.println(IO.Text.green("JNI INIT INFO:")+" No correct Ninja pkg detected");
                 if (!PROMPTER.confirm(true, "Auto download Ninja?")) {
@@ -87,7 +88,7 @@ public class Ninja {
                 }
                 String tNinjaUrl = String.format("https://github.com/ninja-build/ninja/releases/download/v%s/%s", VERSION, tNinjaPkgName);
                 System.out.println("Downloading "+IO.Text.underline(tNinjaUrl));
-                System.out.println("  or you can download it manually and put into "+JNIUtil.PKG_DIR);
+                System.out.println("  or you can download it manually and put into "+tNinjaCachePath);
                 String tTempPath = tNinjaCachePath + ".tmp_"+UT.Code.randID();
                 IO.copy(URI.create(tNinjaUrl).toURL(), tTempPath);
                 IO.move(tTempPath, tNinjaCachePath);
@@ -105,6 +106,8 @@ public class Ninja {
     static {
         InitHelper.INITIALIZED = true;
         
+        boolean[] tUserLib = {true};
+        INTERNAL_HOME = OS.findValidLibPath("ninja/core/" + UT.Code.uniqueID(OS.OS_NAME, Ninja.VERSION) + "/", tUserLib);
         try {EXE_PATH = getExePath_();}
         catch (Exception e) {throw new RuntimeException(e);}
         EXE_CMD = (IS_WINDOWS?"& \"":"\"") + EXE_PATH + "\"";

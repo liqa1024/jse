@@ -1,8 +1,11 @@
 package jse.lmp;
 
 import jse.clib.*;
-import jse.code.*;
 import jse.code.IO;
+import jse.code.LibVer;
+import jse.code.OS;
+import jse.code.SP;
+import jse.code.UT;
 import jse.parallel.MPI;
 import jse.parallel.MPIException;
 import jse.cptr.*;

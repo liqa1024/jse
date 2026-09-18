@@ -69,8 +69,8 @@ public class SimpleJIT {
     }
     
     /** 当前 {@link SimpleJIT} JNI 库所在的文件夹路径，结尾一定存在 {@code '/'} */
-    public final static String LIB_DIR = JAR_DIR+"jit/engine/" + UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, Conf.CMAKE_C_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_SETTING) + "/";
-    public final static String CACHE_LIB_DIR = JAR_DIR+"jit/cache/";
+    public final static String LIB_DIR;
+    public final static String CACHE_LIB_DIR;
     /** 当前 {@link SimpleJIT} JNI 库的路径 */
     public final static String LIB_PATH;
     private final static String[] SRC_NAME = {
@@ -82,6 +82,11 @@ public class SimpleJIT {
     
     static {
         InitHelper.INITIALIZED = true;
+        
+        boolean[] tUserLib = {true};
+        LIB_DIR = OS.findValidLibPath("jit/engine/" + UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, Conf.CMAKE_C_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_SETTING) + "/", tUserLib);
+        CACHE_LIB_DIR = OS.buildLibDir(tUserLib) + "jit/cache/";
+        
         LIB_PATH = new JNIUtil.LibBuilder("jitengine", "JIT", LIB_DIR, Conf.CMAKE_SETTING)
             .setSrc("jitengine", SRC_NAME)
             .setCmakeCCompiler(Conf.CMAKE_C_COMPILER).setCmakeCFlags(Conf.CMAKE_C_FLAGS)
@@ -117,7 +122,7 @@ public class SimpleJIT {
     }
     
     @FunctionalInterface public interface IDirIniter {
-        String init(String aInputDir, Engine aEngine) throws Exception;
+        String init(String aInputDir, Engine aEngine, boolean aInUser, boolean[] rOutUser) throws Exception;
     }
     public static class Engine implements IJITEngine {
         /// compiler stuffs
@@ -354,7 +359,8 @@ public class SimpleJIT {
             // 从内部资源解压到临时目录，现在编译任务统一放到 jse 安装目录
             boolean tWorkingDirValid = true;
             String tWorkingDirName = "build-jit@"+UT.Code.randID() + "/";
-            String tWorkingDir = JAR_DIR + tWorkingDirName;
+            boolean[] tWdUserLib = {true};
+            String tWorkingDir = OS.buildLibDir(tWdUserLib) + tWorkingDirName;
             // 判断路径是否存在非法字符，如果存在则改为到用户目录编译
             if (JNIUtil.containsAnyInvalidChar(tWorkingDir)) {
                 String tWorkingDir2 = USER_HOME_DIR + tWorkingDirName;
@@ -369,11 +375,13 @@ public class SimpleJIT {
             IO.removeDir(tWorkingDir);
             // 初始化工作目录，优先尝试自定义的 mSrcDirIniter
             String tSrcDir;
+            boolean[] tSrcUserLib = {true};
             if (mSrcDirIniter!=null) {
-                tSrcDir = mSrcDirIniter.init(tWorkingDir, this);
+                tSrcDir = mSrcDirIniter.init(tWorkingDir, this, tWdUserLib[0], tSrcUserLib);
             } else
             if (mSrc!=null) {
                 // 直接从字符串源码构建，这里需要各种配套
+                tSrcUserLib[0] = tWdUserLib[0];
                 tSrcDir = tWorkingDir;
                 writeCmakeFile(tSrcDir, srcName());
                 writeHeadFile(tSrcDir, headName());
@@ -424,8 +432,8 @@ public class SimpleJIT {
             }
             // 完事后移除临时解压得到的源码，这里需要对于神秘文件系统专门处理
             if (Conf.CLEAN) {
-                if (JAR_DIR_BAD_FILESYSTEM && !IS_WINDOWS) {
-                    OS.printFilesystemInfo();
+                if (OS.libBadFilesystem(tWdUserLib[0]) && !IS_WINDOWS) {
+                    OS.printFilesystemInfo(tWdUserLib[0]);
                     EXEC.system("rm -rf \""+tWorkingDir+"\"");
                 } else {
                     IO.removeDir(tWorkingDir);

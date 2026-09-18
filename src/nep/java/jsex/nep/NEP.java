@@ -564,12 +564,13 @@ public class NEP extends AbstractPairPotential {
                 .addTypeMap("JSE_NEP::flt_t", mSingle?"float":"double")
                 .setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID)
                 .setSrc(codeGenStr_(IO.getResource("nep/src/"+INTERFACE_NAME_CUDA), rGenMap)).setNoExtern()
-                .setSrcDirIniter((wd, engine) -> {
+                .setSrcDirIniter((wd, engine, iuser, ouser) -> {
                     codeGen_(IO.getResource("nep/src/"+SRC_NAME), wd+SRC_NAME, rGenMap);
                     // 其余操作使用 jit 通用操作，确保 project name 同步
                     engine.writeCmakeFile(wd, INTERFACE_NAME_CUDA);
                     engine.writeHeadFile(wd, INTERFACE_HEAD_NAME_CUDA);
                     engine.writeSrcFile(wd, INTERFACE_NAME_CUDA, INTERFACE_HEAD_NAME_CUDA);
+                    ouser[0] = iuser;
                     return wd;
                 });
             mJITEngine.compile();
@@ -582,12 +583,13 @@ public class NEP extends AbstractPairPotential {
                 .addTypeMap("JSE_NEP::flt_t", mSingle?"float":"double")
                 .setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID)
                 .setSrc(codeGenStr_(IO.getResource("nep/src/"+INTERFACE_NAME), rGenMap)).setNoExtern()
-                .setSrcDirIniter((wd, engine) -> {
+                .setSrcDirIniter((wd, engine, iuser, ouser) -> {
                     codeGen_(IO.getResource("nep/src/"+SRC_NAME), wd+SRC_NAME, rGenMap);
                     // 其余操作使用 jit 通用操作，确保 project name 同步
                     engine.writeCmakeFile(wd, INTERFACE_NAME);
                     engine.writeHeadFile(wd, INTERFACE_HEAD_NAME);
                     engine.writeSrcFile(wd, INTERFACE_NAME, INTERFACE_HEAD_NAME);
+                    ouser[0] = iuser;
                     return wd;
                 });
             mJITEngine.compile();

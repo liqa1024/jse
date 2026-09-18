@@ -74,6 +74,13 @@ public class OS {
     /** 检测核心 jar 文件目录文件类型，主要用于对过时系统及时警告 */
     public final static String JAR_DIR_FILESYSTEM;
     public final static boolean JAR_DIR_BAD_FILESYSTEM;
+    /** 用户独立的数据目录，用于存放用户独立的数据，动态库，以及临时构建目录，现在统一为 {@code ~/.jse/} 目录 */
+    public final static String USER_DATA_DIR;
+    /** 用户目录的 jse lib 目录，默认会安装到此位置，而检测时会优先检测全局的系统路径 JAR_DIR */
+    public final static String USER_LIB_DIR;
+    /** 用户目录的 jse lib 目录文件类型，主要用于对过时系统及时警告 */
+    public final static String USER_LIB_DIR_FILESYSTEM;
+    public final static boolean USER_LIB_DIR_BAD_FILESYSTEM;
     /** {@code System.getProperty("user.home")} 获取到的原始值，即此用户的用户目录 */
     public final static String USER_HOME;
     /** {@link #USER_HOME} 内部合法化文件夹后的路径，可以直接拼接文件名 */
@@ -95,15 +102,15 @@ public class OS {
     
     private static boolean FILESYSTEM_FIRST_PRINT = true;
     /** 由于文件系统类型逻辑上来说还是只检测了安装目录，因此提供一个延迟打印接口，仅第一次安装时打印提示；这里顺便提供一个用户输入以防止这是误操作 */
-    public static void printFilesystemInfo() throws Exception {
+    public static void printFilesystemInfo(boolean aUser) throws Exception {
         if (!FILESYSTEM_FIRST_PRINT) return;
         FILESYSTEM_FIRST_PRINT = false;
         // 对于神秘文件系统进行警告
-        if (JAR_DIR_BAD_FILESYSTEM) {
+        if (libBadFilesystem(aUser)) {
             System.err.println(IO.Text.red(
                 "=============================== WARNING ===============================\n" +
-                "The jse install dir ("+JAR_DIR+") is detected as a\n" +
-                "legacy parallel filesystem ("+JAR_DIR_FILESYSTEM+"), which is known to be problematic\n" +
+                "The jse install dir ("+libDir(aUser)+") is detected as a\n" +
+                "legacy parallel filesystem ("+(aUser?USER_LIB_DIR_FILESYSTEM:JAR_DIR_FILESYSTEM)+"), which is known to be problematic\n" +
                 "for workloads involving large numbers of files.\n" +
                 "\n" +
                 "The auto-installation will be unstable, and long-running or file-intensive\n" +
@@ -120,6 +127,45 @@ public class OS {
             }
         }
     }
+    public static boolean libBadFilesystem(boolean aUser) {
+        return aUser ? USER_LIB_DIR_BAD_FILESYSTEM : JAR_DIR_BAD_FILESYSTEM;
+    }
+    public static String libDir(boolean aUser) {
+        return aUser ? USER_LIB_DIR : JAR_DIR;
+    }
+    public static String findValidLibPath(String aWhere, boolean[] rUser) {
+        // 优先查找全局库
+        String tGLibDir = null;
+        if (JAR_DIR != null) {
+            tGLibDir = JAR_DIR + aWhere;
+            if (IO.exists(tGLibDir)) {
+                rUser[0] = false;
+                return tGLibDir;
+            }
+        }
+        // 然后查找用户库
+        String tULibDir = USER_LIB_DIR + aWhere;
+        if (IO.exists(tULibDir)) {
+            rUser[0] = true;
+            return tULibDir;
+        }
+        // 都没有的情况下根据 BUILD_GLOBAL_LIB 决定构建位置
+        if (tGLibDir!=null && Conf.BUILD_GLOBAL_LIB) {
+            rUser[0] = false;
+            return tGLibDir;
+        }
+        rUser[0] = true;
+        return tULibDir;
+    }
+    public static String buildLibDir(boolean[] rUser) {
+        if (JAR_DIR!=null && Conf.BUILD_GLOBAL_LIB) {
+            rUser[0] = false;
+            return JAR_DIR;
+        }
+        rUser[0] = true;
+        return USER_LIB_DIR;
+    }
+    
     
     @SuppressWarnings("HttpUrlsUsage")
     private static @Nullable Proxy parseEnvProxy_(String aEnvKey) {
@@ -238,8 +284,8 @@ public class OS {
         }
         JAR_PATH = tJarPath.toString();
         Path tJarDirPath = tJarPath.getParent();
-        String tJarDir = tJarDirPath==null ? "" : tJarDirPath.toString();
-        tJarDir = IO.toInternalValidDir(tJarDir);
+        String tJarDir = tJarDirPath==null ? null : tJarDirPath.toString();
+        if (tJarDir!=null) tJarDir = IO.toInternalValidDir(tJarDir);
         JAR_DIR = tJarDir;
         // 这里检测文件类型
         String tJarDirFilesystem = null;
@@ -249,6 +295,15 @@ public class OS {
         }
         JAR_DIR_FILESYSTEM = tJarDirFilesystem;
         JAR_DIR_BAD_FILESYSTEM = JAR_DIR_FILESYSTEM!=null && (JAR_DIR_FILESYSTEM.contains("lustre") || JAR_DIR_FILESYSTEM.contains("panfs") || JAR_DIR_FILESYSTEM.contains("gpfs"));
+        // 对于用户库目录同样进行此操作
+        USER_DATA_DIR = USER_HOME_DIR + ".jse/";
+        USER_LIB_DIR = USER_DATA_DIR + "lib/";
+        Path tUserLibDirPath = Paths.get(USER_LIB_DIR);
+        String tUserLibDirFilesystem = null;
+        try {tUserLibDirFilesystem = Files.getFileStore(tUserLibDirPath).type().toLowerCase(Locale.ROOT);}
+        catch (Exception ignored) {}
+        USER_LIB_DIR_FILESYSTEM = tUserLibDirFilesystem;
+        USER_LIB_DIR_BAD_FILESYSTEM = USER_LIB_DIR_FILESYSTEM!=null && (USER_LIB_DIR_FILESYSTEM.contains("lustre") || USER_LIB_DIR_FILESYSTEM.contains("panfs") || USER_LIB_DIR_FILESYSTEM.contains("gpfs"));
         // 创建默认 EXE，无内部线程池，windows 下使用 powershell 而 linux 下使用 bash 统一指令；
         // 这种选择可以保证指令使用统一，即使这些终端不一定所有平台都有
         EXEC = IS_WINDOWS ? (Conf.USE_PWSH ? new PWSHSystemExecutor() : new PowerShellSystemExecutor()) : new BashSystemExecutor();

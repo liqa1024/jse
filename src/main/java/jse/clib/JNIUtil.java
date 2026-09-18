@@ -54,8 +54,14 @@ public class JNIUtil {
     /** 当前 {@link JNIUtil} JNI 库的头文件路径 */
     public final static String HEADER_PATH;
     
-    /** jse 自动下载的一些离线包的路径，这里采用 jar 包所在的绝对路径 */
-    public final static String PKG_DIR;
+    /** 改为自动查找自动下载包的路径，实现用户目录和软件目录自动切换 */
+    public static String findPkgPath(String aWhere, boolean[] rUser) {
+        String tPkgPath = OS.findValidLibPath(".jnipkg/"+aWhere, rUser);
+        // 总是事先合法化这个目录，让用户可以快速找到
+        try {IO.validPath(tPkgPath);}
+        catch (Exception e) {throw new RuntimeException(e);}
+        return tPkgPath;
+    }
     
     /** {@link JNIUtil} 内部定义的常量，这里重新定义一次从而避免 JNI 通讯 */
     public final static int
@@ -113,10 +119,10 @@ public class JNIUtil {
     static {
         InitHelper.INITIALIZED = true;
         
-        HOME = JAR_DIR+"jniutil/" + UT.Code.uniqueID(VERSION_NUMBER) + "/";
+        boolean[] tUserLib = {true};
+        HOME = OS.findValidLibPath("jniutil/" + UT.Code.uniqueID(VERSION_NUMBER) + "/", tUserLib);
         INCLUDE_DIR = HOME+"include/";
         HEADER_PATH = INCLUDE_DIR+HEADER_NAME;
-        PKG_DIR = JAR_DIR+".jnipkg/";
         
         // 总是初始化 JVM，确保“应该”是 jdk，而不是 jre
         JVM.InitHelper.init();
@@ -133,9 +139,6 @@ public class JNIUtil {
         Compiler.InitHelper.init();
         CMake.InitHelper.init();
         Ninja.InitHelper.init();
-        // 总是事先合法化这个目录，让用户可以快速找到
-        try {IO.makeDir(PKG_DIR);}
-        catch (Exception e) {throw new RuntimeException(e);}
         // 如果不存在 jniutil.h 则需要重新通过源码编译
         if (!IO.isFile(HEADER_PATH)) {
             System.out.println(IO.Text.green("JNIUTIL INIT INFO:")+" jniutil.h not found. Reinstalling...");
@@ -195,9 +198,9 @@ public class JNIUtil {
     @ApiStatus.Internal
     @FunctionalInterface public interface IEnvChecker {void check() throws Exception;}
     @ApiStatus.Internal
-    @FunctionalInterface public interface IDirIniter {String init(String aInput) throws Exception;}
+    @FunctionalInterface public interface IDirIniter {String init(String aInput, boolean aInUser, boolean[] rOutUser) throws Exception;}
     @ApiStatus.Internal
-    @FunctionalInterface public interface IDirConsumer {void apply(String aInput) throws Exception;}
+    @FunctionalInterface public interface IDirConsumer {void apply(String aInput, boolean aUser) throws Exception;}
     
     /** 现在将一些通用的 cmake 编译 jni 库流程统一放在这里，减少重复的代码 */
     @ApiStatus.Internal
@@ -205,12 +208,13 @@ public class JNIUtil {
         private final String mProjectName, mInfoProjectName;
         private final List<IEnvChecker> mEnvChecker = new ArrayList<>();
         private IDirIniter mSrcDirIniter = null;
-        private IDirIniter mBuildDirIniter = sd -> {
+        private IDirIniter mBuildDirIniter = (sd, iuser, ouser) -> {
             String tBuildDir = sd + BUILD_DIR_NAME + "/";
             IO.makeDir(tBuildDir);
+            ouser[0] = iuser;
             return tBuildDir;
         };
-        private IDirConsumer mPostBuildDir = bd -> {};
+        private IDirConsumer mPostBuildDir = (bd, user) -> {};
         private int mParallel = 0;
         private final String mLibDir;
         private String mCmakeInitDir = "..";
@@ -233,10 +237,11 @@ public class JNIUtil {
         public LibBuilder setMT(boolean aMT) {mMT = aMT; return this;}
         public LibBuilder setEnvChecker(IEnvChecker aEnvChecker) {mEnvChecker.add(aEnvChecker); return this;}
         public LibBuilder setSrc(final String aAssetsDirName, final String[] aSrcNames) {
-            mSrcDirIniter = wd -> {
+            mSrcDirIniter = (wd, iuser, ouser) -> {
                 for (String tName : aSrcNames) {IO.copy(IO.getResource(aAssetsDirName+"/src/"+tName), wd+tName);}
                 // 注意增加这个被省略的 CMakeLists.txt
                 IO.copy(IO.getResource(aAssetsDirName+"/src/CMakeLists.txt"), wd+"CMakeLists.txt");
+                ouser[0] = iuser;
                 return wd;
             };
             return this;
@@ -335,12 +340,13 @@ public class JNIUtil {
             if (!mEnvChecker.isEmpty()) for (IEnvChecker tChecker : mEnvChecker) tChecker.check();
             // 从内部资源解压到临时目录，现在编译任务统一放到 jse 安装目录
             boolean tWorkingDirValid = true;
+            boolean[] tWdUserLib = {true};
             String tWorkingDirName = "build-"+ mProjectName +"@"+UT.Code.randID() + "/";
-            String tWorkingDir = JAR_DIR + tWorkingDirName;
+            String tWorkingDir = OS.buildLibDir(tWdUserLib) + tWorkingDirName;
             // 判断路径是否存在非法字符，如果存在则改为到用户目录编译
             if (containsAnyInvalidChar(tWorkingDir)) {
                 String tWorkingDir2 = USER_HOME_DIR + tWorkingDirName;
-                if (!containsAnyInvalidChar(tWorkingDir2)) {
+                if (!tWdUserLib[0] && !containsAnyInvalidChar(tWorkingDir2)) {
                     tWorkingDir = tWorkingDir2;
                 } else {
                     System.err.println(IO.Text.yellow(mInfoProjectName +" INIT WARNING:")+" Build directory ("+tWorkingDir+") contains inappropriate characters, build may fail.");
@@ -351,7 +357,8 @@ public class JNIUtil {
             IO.removeDir(tWorkingDir);
             // 初始化工作目录，默认操作为把源码拷贝到目录下；
             // 对于较大的项目则会是一个 zip 的源码，多一个解压的步骤
-            String tSrcDir = mSrcDirIniter.init(tWorkingDir);
+            boolean[] tSrcUserLib = {true};
+            String tSrcDir = mSrcDirIniter.init(tWorkingDir, tWdUserLib[0], tSrcUserLib);
             // 这里对 CMakeLists.txt 特殊处理
             if (mCmakeLineOpt != null) {
                 String tCmakeListsDir = IO.toInternalValidDir(mCmakeInitDir).substring(3); // 为了让讨论简单，这里约定要求 aCmakeInitDir 一定要 `..` 开头
@@ -370,7 +377,8 @@ public class JNIUtil {
             }
             // 开始通过 cmake 编译
             System.out.println(IO.Text.green(mInfoProjectName +" INIT INFO:")+" Building "+ mProjectName +" from source code...");
-            String tBuildDir = mBuildDirIniter.init(tSrcDir);
+            boolean[] tBdUserLib = {true};
+            String tBuildDir = mBuildDirIniter.init(tSrcDir, tSrcUserLib[0], tBdUserLib);
             // 直接通过系统指令来编译库，关闭输出
             EXEC.setWorkingDir(tBuildDir);
             if (!DEBUG) EXEC.setNoSTDOutput();
@@ -421,10 +429,10 @@ public class JNIUtil {
                 }
                 UT.Code.warning("Exit code = "+tExtCode);
             }
-            mPostBuildDir.apply(tBuildDir);
+            mPostBuildDir.apply(tBuildDir, tBdUserLib[0]);
             // 完事后移除临时解压得到的源码，这里需要对于神秘文件系统专门处理
-            if (JAR_DIR_BAD_FILESYSTEM && !IS_WINDOWS) {
-                OS.printFilesystemInfo();
+            if (OS.libBadFilesystem(tWdUserLib[0]) && !IS_WINDOWS) {
+                OS.printFilesystemInfo(tWdUserLib[0]);
                 EXEC.system("rm -rf \""+tWorkingDir+"\"");
             } else {
                 IO.removeDir(tWorkingDir);

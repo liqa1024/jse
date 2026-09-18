@@ -129,7 +129,7 @@ class NNAPGEN {
             .addTypeMap("JSE_NNAP::flt_t", aSingle?"float":"double")
             .setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID)
             .setSrc(codeGenStr_(IO.getResource("nnap/src/"+INTERFACE_NAME), rGenMap)).setNoExtern()
-            .setSrcDirIniter((wd, engine) -> {
+            .setSrcDirIniter((wd, engine, iuser, ouser) -> {
                 for (String tName : SRC_NAME) {
                     codeGen_(IO.getResource("nnap/src/"+tName), wd+tName, rGenMap);
                 }
@@ -137,6 +137,7 @@ class NNAPGEN {
                 engine.writeCmakeFile(wd, INTERFACE_NAME);
                 engine.writeHeadFile(wd, INTERFACE_HEAD_NAME);
                 engine.writeSrcFile(wd, INTERFACE_NAME, INTERFACE_HEAD_NAME);
+                ouser[0] = iuser;
                 return wd;
             });
     }
@@ -156,7 +157,7 @@ class NNAPGEN {
             .addTypeMap("JSE_NNAP::flt_t", aSingle?"float":"double")
             .setLibDir(mLibDir).setProjectName(mProjectName+"_"+tUniqueID)
             .setSrc(codeGenStr_(IO.getResource("nnap/src/"+INTERFACE_NAME_CUDA), rGenMap)).setNoExtern()
-            .setSrcDirIniter((wd, engine) -> {
+            .setSrcDirIniter((wd, engine, iuser, ouser) -> {
                 for (String tName : SRC_NAME) {
                     codeGen_(IO.getResource("nnap/src/"+tName), wd+tName, rGenMap);
                 }
@@ -164,6 +165,7 @@ class NNAPGEN {
                 engine.writeCmakeFile(wd, INTERFACE_NAME_CUDA);
                 engine.writeHeadFile(wd, INTERFACE_HEAD_NAME_CUDA);
                 engine.writeSrcFile(wd, INTERFACE_NAME_CUDA, INTERFACE_HEAD_NAME_CUDA);
+                ouser[0] = iuser;
                 return wd;
             });
     }

@@ -10,7 +10,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 
 import static jse.code.CS.VERSION_NUMBER;
-import static jse.code.OS.JAR_DIR;
 import static jse.code.Conf.*;
 import static jse.code.OS.JAVA_HOME;
 
@@ -106,12 +105,14 @@ public class MiMalloc {
         rCmakeSetting.put("MI_OSX_ZONE",      "OFF");
         rCmakeSetting.putAll(Conf.CMAKE_SETTING);
         rCmakeSetting.put("CMAKE_BUILD_TYPE", "Release");
-        HOME = JAR_DIR+"mimalloc/" + UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, MiMalloc.VERSION, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, rCmakeSetting) + "/";
+        
+        boolean[] tUserLib = {true};
+        HOME = OS.findValidLibPath("mimalloc/" + UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, MiMalloc.VERSION, Conf.CMAKE_C_COMPILER, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_CXX_FLAGS, rCmakeSetting) + "/", tUserLib);
         LIB_DIR = HOME+"lib/";
         INCLUDE_DIR = HOME+"include/";
         // 现在直接使用 JNIUtil.buildLib 来统一初始化
         LIB_PATH = new JNIUtil.LibBuilder("mimalloc", "MIMALLOC", LIB_DIR, rCmakeSetting)
-            .setSrcDirIniter(wd -> {
+            .setSrcDirIniter((wd, iuser, ouser) -> {
                 // 首先获取源码路径，这里直接从 resource 里输出
                 String tMiZipPath = wd+"mimalloc-"+VERSION+".zip";
                 IO.copy(IO.getResource("mimalloc/mimalloc-"+VERSION+".zip"), tMiZipPath);
@@ -121,6 +122,7 @@ public class MiMalloc {
                 IO.zip2dir(tMiZipPath, tMiDir);
                 // 手动拷贝头文件到指定目录，现在也放在这里
                 IO.copy(tMiDir+"include/mimalloc.h", INCLUDE_DIR+"mimalloc.h");
+                ouser[0] = iuser;
                 return tMiDir;})
             .setCmakeCCompiler(Conf.CMAKE_C_COMPILER).setCmakeCxxCompiler(Conf.CMAKE_CXX_COMPILER).setCmakeCFlags(Conf.CMAKE_C_FLAGS).setCmakeCxxFlags(Conf.CMAKE_CXX_FLAGS)
             .setCmakeLineOp(null)

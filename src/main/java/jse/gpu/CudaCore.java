@@ -15,7 +15,6 @@ import java.util.Map;
 
 import static jse.code.CS.VERSION_NUMBER;
 import static jse.code.Conf.VERSION_MASK;
-import static jse.code.OS.JAR_DIR;
 import static jse.code.OS.JAVA_HOME;
 
 /**
@@ -90,10 +89,7 @@ public class CudaCore {
     }
     
     /** 当前 {@link CudaCore} JNI 库所在的文件夹路径，结尾一定存在 {@code '/'} */
-    public final static String LIB_DIR = JAR_DIR+"gpu/cuda/" +
-        UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, NVCC.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK,
-                         Conf.USE_MIMALLOC, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS,
-                         Conf.CMAKE_CUDA_COMPILER, Conf.CMAKE_CUDA_FLAGS, Conf.CMAKE_CUDA_ARCHITECTURES, Conf.CMAKE_SETTING) + "/";
+    public final static String LIB_DIR;
     /** 当前 {@link CudaCore} JNI 库的路径 */
     public final static String LIB_PATH;
     private final static String[] SRC_NAME = {
@@ -118,6 +114,15 @@ public class CudaCore {
             NVCC.printInfo();
             throw new RuntimeException("No CUDA support.");
         }
+        
+        boolean[] tUserLib = {true};
+        LIB_DIR = OS.findValidLibPath(
+            "gpu/cuda/" +
+                UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, NVCC.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK,
+                             Conf.USE_MIMALLOC, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS,
+                             Conf.CMAKE_CUDA_COMPILER, Conf.CMAKE_CUDA_FLAGS, Conf.CMAKE_CUDA_ARCHITECTURES, Conf.CMAKE_SETTING) + "/",
+            tUserLib);
+        
         LIB_PATH = new JNIUtil.LibBuilder("cudacore", "CUDA", LIB_DIR, Conf.CMAKE_SETTING)
             .setSrc("cudacore", SRC_NAME)
             .setEnvChecker(NVCC::printInfo) // 在这里输出 nvcc 信息，保证只在第一次构建时输出一次；可能存在和 cmake 检测不一致的问题

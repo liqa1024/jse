@@ -39,7 +39,6 @@ import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.customizers.ASTTransformationCustomizer;
 import org.codehaus.groovy.runtime.InvokerHelper;
 import org.intellij.lang.annotations.Language;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
@@ -63,22 +62,31 @@ import static jse.code.OS.*;
 public class SP {
     private SP() {}
     
-    public final static String GROOVY_SP_DIR = "script/groovy/";
-    public final static String PYTHON_SP_DIR = "script/python/";
     /** groovy 库的路径，这里采用 jar 包所在的绝对路径 */
-    public final static String GROOVY_LIB_DIR = JAR_DIR+"groovy/";
-    public final static String JAR_LIB_DIR = JAR_DIR+"jar/";
+    public final static String GROOVY_LIB_DIR, USER_GROOVY_LIB_DIR;
+    public final static String JAR_LIB_DIR, USER_JAR_LIB_DIR;
     private final static List<String> JAR_LIB_PATHS;
     /** python 离线包的路径以及 python 库的路径，这里采用 jar 包所在的绝对路径 */
-    public final static String PYTHON_PKG_DIR = JAR_DIR+".pypkg/";
-    public final static String PYTHON_LIB_DIR = JAR_DIR + (IS_WINDOWS?"python-win":(IS_MAC?"python-mac":"python")) + "/";
+    public final static String PYTHON_LIB_DIR, USER_PYTHON_LIB_DIR;
     
     static {
+        GROOVY_LIB_DIR = JAR_DIR+"groovy/";
+        USER_GROOVY_LIB_DIR = USER_DATA_DIR+"groovy/";
+        JAR_LIB_DIR = JAR_DIR+"jar/";
+        USER_JAR_LIB_DIR = USER_DATA_DIR+"jar/";
         JAR_LIB_PATHS = new ArrayList<>();
+        String tPythonLibName = IS_WINDOWS ? "python-win" : (IS_MAC?"python-mac":"python");
+        PYTHON_LIB_DIR = JAR_DIR + tPythonLibName+"/";
+        USER_PYTHON_LIB_DIR = USER_DATA_DIR + tPythonLibName+"/";
         try {
             if (IO.isDir(JAR_LIB_DIR)) {
                 for (String tName : IO.list(JAR_LIB_DIR)) if (tName.endsWith(".jar")) {
                     JAR_LIB_PATHS.add(IO.toAbsolutePath(JAR_LIB_DIR+tName));
+                }
+            }
+            if (IO.isDir(USER_JAR_LIB_DIR)) {
+                for (String tName : IO.list(USER_JAR_LIB_DIR)) if (tName.endsWith(".jar")) {
+                    JAR_LIB_PATHS.add(IO.toAbsolutePath(USER_JAR_LIB_DIR+tName));
                 }
             }
             // 增加外置 jar 的库的路径
@@ -324,25 +332,19 @@ public class SP {
     }
     
     /** 一般的 aScriptPath 合法化，返回 null 表示没有找到文件 */
-    static @Nullable String findValidScriptPath(String aScriptPath, String aExtension, String aScriptDir) {
-        aScriptDir = IO.toInternalValidDir(aScriptDir);
+    static @Nullable String findValidScriptPath(String aScriptPath, String aExtension) {
         // 如果不是指定后缀则有限检测带有后缀的，和 .bat 脚本类似的逻辑，可以保证同名脚本共存
         if (!aScriptPath.endsWith(aExtension)) {
-            @Nullable String tPath = findValidScriptPath_(aScriptPath+aExtension, aScriptDir);
+            @Nullable String tPath = findValidScriptPath_(aScriptPath+aExtension);
             if (tPath != null) return tPath;
         }
-        @Nullable String tPath = findValidScriptPath_(aScriptPath, aScriptDir);
+        @Nullable String tPath = findValidScriptPath_(aScriptPath);
         return tPath;
     }
-    private static @Nullable String findValidScriptPath_(String aScriptPath, String aScriptDir) {
+    private static @Nullable String findValidScriptPath_(String aScriptPath) {
         // 都转为绝对路径避免意料外的问题
         String tPath = IO.toAbsolutePath(aScriptPath);
         // 首先如果此文件存在则直接返回
-        if (IO.isFile(tPath)) return tPath;
-        // 如果是绝对路径则不再考虑增加 aScriptDir 的情况
-        if (IO.isAbsolutePath(aScriptPath)) return null;
-        // 否则增加 aScriptDir 后再次检测
-        tPath = IO.toAbsolutePath(aScriptDir+aScriptPath);
         if (IO.isFile(tPath)) return tPath;
         // 否则返回 null
         return null;
@@ -368,18 +370,6 @@ public class SP {
             Python.runScript(aScriptPath, aArgs);
             return;
         }
-        // 没有后缀的情况，优先认为是 groovy 脚本
-        @Nullable String
-        tPath = findValidScriptPath(aScriptPath, ".groovy", GROOVY_SP_DIR);
-        if (tPath != null) {
-            Groovy.runScript(aScriptPath, aArgs);
-            return;
-        }
-        tPath = findValidScriptPath(aScriptPath, ".py", PYTHON_SP_DIR);
-        if (tPath != null) {
-            Python.runScript(aScriptPath, aArgs);
-            return;
-        }
         throw new FileNotFoundException(aScriptPath + " (" + IO.toAbsolutePath(aScriptPath) + ")");
     }
     
@@ -389,7 +379,7 @@ public class SP {
     public static class Groovy {
         /** 将 aScriptPath 转换成 File，现在可以省略掉 script/groovy/ 以及后缀 */
         private static File toSourceFile(String aScriptPath) throws IOException {
-            @Nullable String tPath = findValidScriptPath(aScriptPath, ".groovy", GROOVY_SP_DIR);
+            @Nullable String tPath = findValidScriptPath(aScriptPath, ".groovy");
             if (tPath == null) throw new FileNotFoundException(aScriptPath + " (" + IO.toAbsolutePath(aScriptPath) + ")");
             return IO.toFile(tPath);
         }
@@ -546,10 +536,9 @@ public class SP {
             if (INCLUDE_WORKING_DIR) {
             GROOVY_SHELL.getClassLoader().addClasspath(WORKING_DIR);
             }
-            // 指定默认的 Groovy 脚本的类路径
-            GROOVY_SHELL.getClassLoader().addClasspath(IO.toAbsolutePath(GROOVY_SP_DIR));
             // 增加一个 Groovy 的库的路径
             GROOVY_SHELL.getClassLoader().addClasspath(IO.toAbsolutePath(GROOVY_LIB_DIR));
+            GROOVY_SHELL.getClassLoader().addClasspath(IO.toAbsolutePath(USER_GROOVY_LIB_DIR));
             // 增加外置 Groovy 的库的路径
             for (String tGroovyExlibDir : GROOVY_EXLIB_DIRS) {
             GROOVY_SHELL.getClassLoader().addClasspath(IO.toAbsolutePath(tGroovyExlibDir));
@@ -612,7 +601,7 @@ public class SP {
         public final static String JEP_LIB_PATH;
         /** 将 aScriptPath 合法化，现在可以省略掉 script/python/ 以及后缀 */
         private static String validScriptPath(String aScriptPath) throws IOException {
-            @Nullable String tPath = findValidScriptPath(aScriptPath, ".py", PYTHON_SP_DIR);
+            @Nullable String tPath = findValidScriptPath(aScriptPath, ".py");
             if (tPath == null) throw new FileNotFoundException(aScriptPath + " (" + IO.toAbsolutePath(aScriptPath) + ")");
             return tPath;
         }
@@ -893,7 +882,8 @@ public class SP {
             String tPrefix = EXEC.system_str((tUsePython3?"python3":"python") + " -c 'import sys; print(sys.prefix)'").get(0);
             PYTHON_PREFIX_DIR = IO.exists(tPrefix) ? IO.toInternalValidDir(tPrefix) : null;
             // 通过上述属性决定使用的 jep 路径
-            JEP_LIB_DIR = JAR_DIR+"jep/" + UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, PYTHON_PREFIX_DIR, JEP_VERSION, NUMPY_SUPPORT, Conf.USE_MIMALLOC, Conf.CMAKE_C_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_SETTING) + "/";
+            boolean[] tUserLib = {true};
+            JEP_LIB_DIR = OS.findValidLibPath("jep/" + UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, PYTHON_PREFIX_DIR, JEP_VERSION, NUMPY_SUPPORT, Conf.USE_MIMALLOC, Conf.CMAKE_C_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_SETTING) + "/", tUserLib);
             
             // 先添加 Conf.CMAKE_SETTING，这样保证确定的优先级
             Map<String, String> rCmakeSetting = new LinkedHashMap<>(Conf.CMAKE_SETTING);
@@ -912,7 +902,7 @@ public class SP {
                         }
                     }
                 })
-                .setSrcDirIniter(wd -> {
+                .setSrcDirIniter((wd, iuser, ouser) -> {
                     // 首先获取源码路径，这里直接从 resource 里输出
                     String tJepZipPath = wd+"jep-"+JEP_VERSION+".zip";
                     IO.copy(IO.getResource("jep/jep-"+JEP_VERSION+".zip"), tJepZipPath);
@@ -933,6 +923,7 @@ public class SP {
                     // 拷贝 jse 需要的 python 脚本，也统一移动到此目录
                     IO.removeDir(JEP_LIB_DIR+"jsepy/"); // 如果存在删除一下保证移动成功
                     IO.copy(IO.getResource("jsepy/atom.py"), JEP_LIB_DIR+"jsepy/atom.py");
+                    ouser[0] = iuser;
                     return tJepDir;})
                 .setCmakeCCompiler(Conf.CMAKE_C_COMPILER).setCmakeCFlags(Conf.CMAKE_C_FLAGS)
                 .setUseMiMalloc(Conf.USE_MIMALLOC)
@@ -945,8 +936,8 @@ public class SP {
             if (INCLUDE_WORKING_DIR) {
             rConfig.addIncludePaths(WORKING_DIR);
             }
-            rConfig.addIncludePaths(IO.toAbsolutePath(PYTHON_SP_DIR),
-                                    IO.toAbsolutePath(PYTHON_LIB_DIR))
+            rConfig.addIncludePaths(IO.toAbsolutePath(PYTHON_LIB_DIR),
+                                    IO.toAbsolutePath(USER_PYTHON_LIB_DIR))
                 .addIncludePaths(NewCollections.mapArray(PYTHON_EXLIB_DIRS, IO::toAbsolutePath))
                 .addIncludePaths(IO.toAbsolutePath(JEP_LIB_DIR))
                 .setClassLoader(Groovy.classLoader()) // 指定 Groovy 的 ClassLoader 从而可以直接导入 groovy 的类
@@ -959,8 +950,8 @@ public class SP {
                 if (INCLUDE_WORKING_DIR) {
                 jep.ClassList.ADDITIONAL_CLASS_PATHS.add(WORKING_DIR);
                 }
-                jep.ClassList.ADDITIONAL_CLASS_PATHS.add(IO.toAbsolutePath(GROOVY_SP_DIR));
                 jep.ClassList.ADDITIONAL_CLASS_PATHS.add(IO.toAbsolutePath(GROOVY_LIB_DIR));
+                jep.ClassList.ADDITIONAL_CLASS_PATHS.add(IO.toAbsolutePath(USER_GROOVY_LIB_DIR));
                 for (String tGroovyExlibDir : GROOVY_EXLIB_DIRS) {
                 jep.ClassList.ADDITIONAL_CLASS_PATHS.add(IO.toAbsolutePath(tGroovyExlibDir));
                 }
@@ -1000,106 +991,6 @@ public class SP {
                 "    matplotlib.use('Agg')"
                 );
             }
-        }
-        
-        
-        /** 基于 pip 的 python 包管理，下载指定包到 .pypkg */
-        @ApiStatus.Obsolete
-        public static int downloadPackage(String aRequirement, boolean aIncludeDep, String aPlatform, String aPythonVersion, String aIndexUrl) throws IOException {
-            // 组装指令
-            List<String> rCommand = new ArrayList<>();
-            rCommand.add("pip"); rCommand.add("download");
-            // 是否顺便下载依赖的库，这里默认不会下载依赖库，因为问题会很多
-            if (!aIncludeDep) rCommand.add("--no-deps");
-            // 是否指定特定平台和 python 版本，如果同时开启了 aIncludeDep 则会强制开启 --only-binary :all:
-            boolean tOnlyBinary = false;
-            if (aPlatform != null && !aPlatform.isEmpty()) {
-                if (aIncludeDep) {
-                    rCommand.add("--only-binary"); rCommand.add(":all:");
-                    tOnlyBinary = true;
-                }
-                rCommand.add("--platform"); rCommand.add(aPlatform);
-            }
-            if (aPythonVersion != null && !aPythonVersion.isEmpty()) {
-                if (aIncludeDep && !tOnlyBinary) {
-                    rCommand.add("--only-binary"); rCommand.add(":all:");
-                }
-                rCommand.add("--python-version"); rCommand.add(aPythonVersion);
-            }
-            // 不提供强制仅下载源码的选项，因为很多下载的源码都不能编译成功
-            // 设置目标路径
-            IO.makeDir(PYTHON_PKG_DIR);
-            rCommand.add("--dest"); rCommand.add("'"+PYTHON_PKG_DIR+"'");
-            // 设置需要的包名
-            rCommand.add("'"+aRequirement+"'");
-            // 自定义下载仓库
-            if (aIndexUrl != null && !aIndexUrl.isEmpty()) {
-                rCommand.add("--index-url"); rCommand.add(aIndexUrl);
-            }
-            
-            // 直接通过系统指令执行 pip 来下载
-            return EXEC.system(String.join(" ", rCommand));
-        }
-        @ApiStatus.Obsolete
-        public static int downloadPackage(String aRequirement, String aPlatform, String aPythonVersion, String aIndexUrl) throws IOException {
-            return downloadPackage(aRequirement, false, aPlatform, aPythonVersion, aIndexUrl);
-        }
-        @ApiStatus.Obsolete
-        public static int downloadPackage(String aRequirement, String aPlatform, String aPythonVersion) throws IOException {
-            return downloadPackage(aRequirement, false, aPlatform, aPythonVersion);
-        }
-        @ApiStatus.Obsolete
-        public static int downloadPackage(String aRequirement, String aPlatform) throws IOException {
-            return downloadPackage(aRequirement, aPlatform, null);
-        }
-        @ApiStatus.Obsolete
-        public static int downloadPackage(String aRequirement, boolean aIncludeDep, String aPlatform, String aPythonVersion) throws IOException {
-            return downloadPackage(aRequirement, aIncludeDep, aPlatform, aPythonVersion, null);
-        }
-        @ApiStatus.Obsolete
-        public static int downloadPackage(String aRequirement, boolean aIncludeDep, String aPlatform) throws IOException {
-            return downloadPackage(aRequirement, aIncludeDep, aPlatform, null);
-        }
-        @ApiStatus.Obsolete
-        public static int downloadPackage(String aRequirement, boolean aIncludeDep) throws IOException {
-            return downloadPackage(aRequirement, aIncludeDep, null);
-        }
-        @ApiStatus.Obsolete
-        public static int downloadPackage(String aRequirement) throws IOException {
-            return downloadPackage(aRequirement, false);
-        }
-        
-        /** 基于 pip 的 python 包管理，直接安装指定包到 lib */
-        @ApiStatus.Obsolete
-        public static int installPackage(String aRequirement, boolean aIncludeDep, boolean aIncludeIndex) throws IOException {
-            // 组装指令
-            List<String> rCommand = new ArrayList<>();
-            rCommand.add("pip"); rCommand.add("install");
-            // 是否顺便下载依赖的库，这里默认不会下载依赖库，因为问题会很多
-            if (!aIncludeDep) rCommand.add("--no-deps");
-            // 是否开启联网，这里默认不开启联网，因为标准下会使用 downloadPackage 来下载包
-            if (!aIncludeIndex) rCommand.add("--no-index");
-            // 添加 .pypkg 到搜索路径
-            IO.makeDir(PYTHON_PKG_DIR);
-            rCommand.add("--find-links"); rCommand.add("'file:"+PYTHON_PKG_DIR+"'");
-            // 设置目标路径
-            IO.makeDir(PYTHON_LIB_DIR);
-            rCommand.add("--target"); rCommand.add("'"+PYTHON_LIB_DIR+"'");
-            // 强制开启更新，替换已有的包
-            rCommand.add("--upgrade");
-            // 设置需要的包名
-            rCommand.add("'"+aRequirement+"'");
-            
-            // 直接通过系统指令执行 pip 来下载
-            return EXEC.system(String.join(" ", rCommand));
-        }
-        @ApiStatus.Obsolete
-        public static int installPackage(String aRequirement, boolean aIncludeDep) throws IOException {
-            return installPackage(aRequirement, aIncludeDep, false);
-        }
-        @ApiStatus.Obsolete
-        public static int installPackage(String aRequirement) throws IOException {
-            return installPackage(aRequirement, false);
         }
     }
 }

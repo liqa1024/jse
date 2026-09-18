@@ -96,7 +96,7 @@ public class LmpCore {
         public static boolean DLOPEN = OS.envZ("JSE_LMP_DLOPEN", !IS_WINDOWS);
     }
     
-    public final static String ROOT = JAR_DIR+"lmp/";
+    public final static String ROOT;
     public final static String INCLUDE_DIR;
     public final static String LIB_DIR;
     public final static String LIB_PATH;
@@ -154,9 +154,11 @@ public class LmpCore {
         // 初始化 LIB_DIR 和 INCLUDE_DIR
         String tLmpHome = null;
         String tLmpBuildDir = null;
+        boolean[] tUserLib = {true};
         if (Conf.CUSTOM_HOME != null) {
             tLmpHome = IO.toInternalValidDir(IO.toAbsolutePath(Conf.CUSTOM_HOME));
             tLmpBuildDir = tLmpHome + BUILD_DIR_NAME+"/";
+            ROOT = OS.findValidLibPath("lmp/", tUserLib);
             VERSION = Conf.CUSTOM_VERSION;
             INCLUDE_DIR = tLmpBuildDir + "includes/";
             LIB_DIR = tLmpBuildDir + "lib/";
@@ -167,7 +169,8 @@ public class LmpCore {
             }
         } else {
             // 否则直接版本隔离，采用内部 lammps
-            String tLmpDir = ROOT+"core/" + UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, MPICore.EXE_PATH, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, rCmakeSetting) + "/";
+            String tLmpDir = OS.findValidLibPath("lmp/core/" + UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, MPICore.EXE_PATH, Conf.CMAKE_CXX_COMPILER, Conf.CMAKE_CXX_FLAGS, rCmakeSetting) + "/", tUserLib);
+            ROOT = OS.libDir(tUserLib[0]) + "lmp/";
             VERSION = LibVer.LMP;
             INCLUDE_DIR = tLmpDir + "includes/";
             LIB_DIR = tLmpDir + "lib/";
@@ -175,36 +178,30 @@ public class LmpCore {
         final @Nullable String fLmpHome = tLmpHome;
         final @Nullable String fLmpBuildDir = tLmpBuildDir;
         TAG = Conf.TAG==null ? LibVer.LMP_TAG : Conf.TAG;
-        final String tLmpCachePath = JNIUtil.PKG_DIR + "lammps-"+ TAG + (IS_WINDOWS?".zip":".tar.gz");
+        boolean[] tUserPkg = {true};
+        final String tLmpCachePath = JNIUtil.findPkgPath("lammps-"+ TAG + (IS_WINDOWS?".zip":".tar.gz"), tUserPkg);
         final Callable<Void> tCacheValider = () -> {
             if (IO.exists(tLmpCachePath)) return null;
-            // 增加一个宽泛匹配，避免有人修改名称/下载名称不一致问题，又要注意避开下载一半的缓存文件
-            for (String tName : IO.list(JNIUtil.PKG_DIR)) {
-                if (tName.endsWith(IS_WINDOWS?".zip":".tar.gz") && tName.contains(TAG)) {
-                    IO.move(JNIUtil.PKG_DIR+tName, tLmpCachePath);
-                    return null;
-                }
-            }
             System.out.println(IO.Text.green("LMP_CORE INIT INFO:")+" No correct lammps source code detected");
             if (!PROMPTER.confirm(true, "Auto download lammps?")) {
                 throw new Exception("user interrupted");
             }
             String tLmpUrl = String.format("https://github.com/lammps/lammps/archive/refs/tags/%s.%s", TAG, IS_WINDOWS?"zip":"tar.gz");
             System.out.println("Downloading "+IO.Text.underline(tLmpUrl));
-            System.out.println("  or you can download it manually and put into "+JNIUtil.PKG_DIR);
+            System.out.println("  or you can download it manually and put into "+tLmpCachePath);
             String tTempPath = tLmpCachePath + ".tmp_"+UT.Code.randID();
             IO.copy(URI.create(tLmpUrl).toURL(), tTempPath);
             IO.move(tTempPath, tLmpCachePath);
             System.out.println(IO.Text.green("LMP_CORE INIT INFO:")+" lammps source code downloading finished.");
             return null;
         };
-        final JNIUtil.IDirIniter tUnzipLmp = wd -> {
+        final JNIUtil.IDirIniter tUnzipLmp = (wd, iuser, ouser) -> {
             System.out.println(IO.Text.green("LMP_CORE INIT INFO:")+" Extracting lammps...");
             // 现在直接解压到输入目录
             if (IS_WINDOWS) {
                 IO.zip2dir(tLmpCachePath, wd);
             } else {
-                OS.printFilesystemInfo();
+                OS.printFilesystemInfo(iuser);
                 // tar.gz 这里直接使用系统命令解压，并且可以同时自动避免神秘文件系统的 bug
                 IO.makeDir(wd);
                 EXEC.system("tar -zxf \""+tLmpCachePath+"\" -C \""+wd+"\"");
@@ -212,9 +209,11 @@ public class LmpCore {
             for (String tName : IO.list(wd)) {
                 String tLmpSrcDir = wd + tName + "/";
                 if (IO.isDir(tLmpSrcDir)) {
+                    ouser[0] = iuser;
                     return tLmpSrcDir;
                 }
             }
+            ouser[0] = iuser;
             return null;
         };
         // 现在直接使用 JNIUtil.buildLib 来统一初始化
@@ -231,16 +230,16 @@ public class LmpCore {
                     }
                 }
             })
-            .setSrcDirIniter(wd -> {
+            .setSrcDirIniter((wd, iuser, ouser) -> {
                 // 对于是否有 fLmpHome 采用不同逻辑
                 if (fLmpHome!=null) {
                     // 如果压根没有 fLmpHome 目录，则直接从源码解压
                     if (!IO.isDir(fLmpHome)) {
                         tCacheValider.call();
-                        String tLmpSrcDir = tUnzipLmp.init(wd); // 依旧解压到工作目录，但是这里进行一次移动
+                        String tLmpSrcDir = tUnzipLmp.init(wd, iuser, ouser); // 依旧解压到工作目录，但是这里进行一次移动
                         // 移动到需要的目录，这里需要对于神秘文件系统专门处理
-                        if (JAR_DIR_BAD_FILESYSTEM && !IS_WINDOWS) {
-                            OS.printFilesystemInfo();
+                        if (OS.libBadFilesystem(ouser[0]) && !IS_WINDOWS) {
+                            OS.printFilesystemInfo(ouser[0]);
                             IO.makeDir(fLmpHome);
                             IO.removeDir(fLmpHome);
                             int tCode = EXEC.system("mv \""+tLmpSrcDir+"\" \""+fLmpHome.substring(0, fLmpHome.length()-1)+"\"");
@@ -254,18 +253,20 @@ public class LmpCore {
                             }
                         }
                     }
+                    ouser[0] = tUserLib[0];
                     return fLmpHome;
                 } else {
                     // 此时采用完全版本独立的 lammps，因此直接解压到工作目录
                     tCacheValider.call();
-                    return tUnzipLmp.init(wd);
+                    return tUnzipLmp.init(wd, iuser, ouser);
                 }})
-            .setBuildDirIniter(sd -> {
+            .setBuildDirIniter((sd, iuser, ouser) -> {
                 // 这样重写 build 目录的初始化，保证 build 目录一定和上面定义一致
                 String tBuildDir = fLmpBuildDir==null ? (sd+BUILD_DIR_NAME+"/") : fLmpBuildDir;
                 IO.makeDir(tBuildDir);
+                ouser[0] = fLmpBuildDir==null ? iuser : tUserLib[0];
                 return tBuildDir;})
-            .setPostBuildDir(bd -> {
+            .setPostBuildDir((bd, iuser) -> {
                 // 这里拷贝一份 includes 文件夹
                 if (fLmpBuildDir==null) {
                     IO.copyDir(bd + "includes/", INCLUDE_DIR);

@@ -35,8 +35,8 @@ public class CMake {
     /** 自动下载使用的 cmake 版本 */
     public final static String VERSION = LibVer.CMAKE;
     /** 内部 cmake 会使用的路径 */
-    public final static String INTERNAL_HOME = JAR_DIR+"cmake/core/" + UT.Code.uniqueID(OS.OS_NAME, CMake.VERSION) + "/";
-    private final static boolean USE_SYSTEM_ = Conf.USE_SYSTEM;
+    public final static String INTERNAL_HOME;
+    private final static boolean USE_SYSTEM_ = Conf.USE_SYSTEM, USE_USER_LIB_;
     /** 自动检测到的 cmake 可执行路径 */
     public final static String EXE_PATH;
     /** 拼接后可以执行的命令，对于 windows 和 linux 专门适配 */
@@ -79,7 +79,8 @@ public class CMake {
             if (tLocker == null) throw new IllegalStateException();
             // 没有则使用缓存的 cmake 压缩包，这里只考虑 x86 64 位的情况
             String tCmakePkgName = "cmake-"+VERSION+"-" + (IS_WINDOWS ? "windows-x86_64.zip" : (IS_MAC ? "macos-universal.tar.gz" : "linux-x86_64.tar.gz"));
-            String tCmakeCachePath = JNIUtil.PKG_DIR + tCmakePkgName;
+            boolean[] tUserLib = {true};
+            String tCmakeCachePath = JNIUtil.findPkgPath(tCmakePkgName, tUserLib);
             if (!IO.exists(tCmakeCachePath)) {
                 System.out.println(IO.Text.green("JNI INIT INFO:")+" No correct CMake pkg detected");
                 if (!PROMPTER.confirm(true, "Auto download CMake?")) {
@@ -87,7 +88,7 @@ public class CMake {
                 }
                 String tCmakeUrl = String.format("https://github.com/Kitware/CMake/releases/download/v%s/%s", VERSION, tCmakePkgName);
                 System.out.println("Downloading "+IO.Text.underline(tCmakeUrl));
-                System.out.println("  or you can download it manually and put into "+JNIUtil.PKG_DIR);
+                System.out.println("  or you can download it manually and put into "+tCmakeCachePath);
                 String tTempPath = tCmakeCachePath + ".tmp_"+UT.Code.randID();
                 IO.copy(URI.create(tCmakeUrl).toURL(), tTempPath);
                 IO.move(tTempPath, tCmakeCachePath);
@@ -95,11 +96,11 @@ public class CMake {
             }
             // 解压
             System.out.println(IO.Text.green("JNI INIT INFO:")+" Extracting CMake...");
-            String tWorkingDir = JAR_DIR + "build-cmake@"+UT.Code.randID() + "/";
+            String tWorkingDir = OS.buildLibDir(tUserLib) + "build-cmake@"+UT.Code.randID() + "/";
             if (IS_WINDOWS) {
                 IO.zip2dir(tCmakeCachePath, tWorkingDir);
             } else {
-                OS.printFilesystemInfo();
+                OS.printFilesystemInfo(tUserLib[0]);
                 // tar.gz 这里直接使用系统命令解压
                 IO.makeDir(tWorkingDir);
                 EXEC.system("tar -zxf \""+tCmakeCachePath+"\" -C \""+tWorkingDir+"\"");
@@ -116,8 +117,8 @@ public class CMake {
             // mac 压缩包会多几层，这里都解除嵌套保持一致
             if (IS_MAC) tCmakeDir += "CMake.app/Contents/";
             // 移动到需要的目录，这里需要对于神秘文件系统专门处理
-            if (JAR_DIR_BAD_FILESYSTEM && !IS_WINDOWS) {
-                OS.printFilesystemInfo();
+            if (OS.libBadFilesystem(USE_USER_LIB_) && !IS_WINDOWS) {
+                OS.printFilesystemInfo(USE_USER_LIB_);
                 IO.makeDir(INTERNAL_HOME);
                 IO.removeDir(INTERNAL_HOME);
                 int tCode = EXEC.system("mv \""+tCmakeDir+"\" \""+INTERNAL_HOME.substring(0, INTERNAL_HOME.length()-1)+"\"");
@@ -137,6 +138,10 @@ public class CMake {
     
     static {
         InitHelper.INITIALIZED = true;
+        
+        boolean[] tUserLib = {true};
+        INTERNAL_HOME = OS.findValidLibPath("cmake/core/" + UT.Code.uniqueID(OS.OS_NAME, CMake.VERSION) + "/", tUserLib);
+        USE_USER_LIB_ = tUserLib[0];
         
         try {EXE_PATH = getExePath_();}
         catch (Exception e) {throw new RuntimeException(e);}
