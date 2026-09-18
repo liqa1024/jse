@@ -53,6 +53,8 @@ public class JNIUtil {
     public final static String HEADER_NAME = "jniutil.h";
     /** 当前 {@link JNIUtil} JNI 库的头文件路径 */
     public final static String HEADER_PATH;
+    /** 是否允许库缺失时自动构建 */
+    public final static boolean AUTO_BUILD;
     
     /** 改为自动查找自动下载包的路径，实现用户目录和软件目录自动切换 */
     public static String findPkgPath(String aWhere, boolean[] rUser) {
@@ -119,6 +121,14 @@ public class JNIUtil {
     static {
         InitHelper.INITIALIZED = true;
         
+        if (BUILD_MODE.equalsIgnoreCase("auto")) {
+            AUTO_BUILD = true;
+        } else
+        if (BUILD_MODE.equalsIgnoreCase("none") || BUILD_MODE.equalsIgnoreCase("jit")) {
+            AUTO_BUILD = false;
+        } else {
+            throw new IllegalArgumentException("Invalid BUILD_MODE: "+BUILD_MODE+", available values: auto/jit/none");
+        }
         boolean[] tUserLib = {true};
         HOME = OS.findValidLibPath("jniutil/" + UT.Code.uniqueID(VERSION_NUMBER) + "/", tUserLib);
         INCLUDE_DIR = HOME+"include/";
@@ -141,6 +151,10 @@ public class JNIUtil {
         Ninja.InitHelper.init();
         // 如果不存在 jniutil.h 则需要重新通过源码编译
         if (!IO.isFile(HEADER_PATH)) {
+            if (!AUTO_BUILD) {
+                System.err.println(IO.Text.red("JNIUTIL INIT ERROR:")+" jniutil.h not found in "+HEADER_PATH);
+                throw new RuntimeException("No jniutil.h");
+            }
             System.out.println(IO.Text.green("JNIUTIL INIT INFO:")+" jniutil.h not found. Reinstalling...");
             try {initJNIUtil_();}
             catch (Exception e) {throw new RuntimeException(e);}
@@ -268,13 +282,17 @@ public class JNIUtil {
             @Nullable String tLibName = LIB_NAME_IN(mLibDir, mProjectName);
             // 如果不存在 jni lib 则需要重新通过源码编译
             if (tLibName == null) {
+                if (!AUTO_BUILD) {
+                    System.err.println(IO.Text.red(mInfoProjectName+" INIT ERROR: ")+mProjectName+" library not found in "+mLibDir);
+                    throw new RuntimeException("No library");
+                }
                 // 使用简单的文件锁来避免并行构建
                 try (AutoCloseable tLocker = fileLocker(mLibDir + "jnibuild.lock")) {
                     // 无论是否抢到了 lock，都有可能此时已经初始完成，因此简单检测
                     tLibName = LIB_NAME_IN(mLibDir, mProjectName);
                     if (tLibName != null) return mLibDir + tLibName;
                     if (tLocker == null) throw new IllegalStateException();
-                    System.out.println(IO.Text.green(mInfoProjectName +" INIT INFO: ")+ mProjectName +" libraries not found. Reinstalling...");
+                    System.out.println(IO.Text.green(mInfoProjectName +" INIT INFO: ")+mProjectName+" library not found. Reinstalling...");
                     tLibName = initLib_();
                 } catch (Exception e) {throw new RuntimeException(e);}
             }

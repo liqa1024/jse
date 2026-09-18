@@ -14,9 +14,8 @@ import java.io.IOException;
 import java.util.*;
 
 import static jse.code.CS.VERSION_NUMBER;
-import static jse.code.Conf.DEBUG;
-import static jse.code.Conf.LIB_NAME_IN;
-import static jse.code.Conf.VERSION_MASK;
+import static jse.code.Conf.*;
+import static jse.code.Conf.BUILD_MODE;
 import static jse.code.OS.*;
 
 /**
@@ -79,10 +78,20 @@ public class SimpleJIT {
         , "jse_jit_JITLibHandle.h"
     };
     public final static String JIT_FUNC_MARKER = "__jsefunc__";
+    /** 是否允许 JIT 库自动构建 */
+    public final static boolean AUTO_BUILD;
     
     static {
         InitHelper.INITIALIZED = true;
         
+        if (BUILD_MODE.equalsIgnoreCase("auto") || BUILD_MODE.equalsIgnoreCase("jit")) {
+            AUTO_BUILD = true;
+        } else
+        if (BUILD_MODE.equalsIgnoreCase("none")) {
+            AUTO_BUILD = false;
+        } else {
+            throw new IllegalArgumentException("Invalid BUILD_MODE: "+BUILD_MODE+", available values: auto/jit/none");
+        }
         boolean[] tUserLib = {true};
         LIB_DIR = OS.findValidLibPath("jit/engine/" + UT.Code.uniqueID(OS.OS_NAME, Compiler.EXE_PATH, JAVA_HOME, VERSION_NUMBER, VERSION_MASK, Conf.CMAKE_C_COMPILER, Conf.CMAKE_C_FLAGS, Conf.CMAKE_SETTING) + "/", tUserLib);
         CACHE_LIB_DIR = OS.buildLibDir(tUserLib) + "jit/cache/";
@@ -226,6 +235,10 @@ public class SimpleJIT {
             validLibCache_();
             // 没有检测到缓存，开始编译
             if (mLibPath==null) {
+                if (!AUTO_BUILD) {
+                    System.err.println(IO.Text.red("JIT INIT ERROR:")+" No cache lib "+mProjectName+" found in "+mLibDir);
+                    throw new RuntimeException("No library");
+                }
                 // 使用简单的文件锁来避免并行初始化
                 try (AutoCloseable tLocker = JNIUtil.fileLocker(mLibDir + "jitbuild.lock")) {
                     // 无论是否抢到了 lock，都有可能此时已经初始完成，因此简单检测
@@ -233,7 +246,7 @@ public class SimpleJIT {
                     if (tLibName == null) {
                         if (tLocker == null) throw new IllegalStateException();
                         if (mCacheLib) {
-                            System.out.println(IO.Text.cyan("JIT INIT INFO:") + " No cache lib " + mProjectName + " found in " + mLibDir + ", re-compile...");
+                            System.out.println(IO.Text.cyan("JIT INIT INFO:")+" No cache lib "+mProjectName+" found in "+mLibDir+", re-compile...");
                         } else {
                             if (DEBUG) System.out.println(IO.Text.cyan("JIT INIT INFO:") + " Compile (no-cache mode)...");
                         }

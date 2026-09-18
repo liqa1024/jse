@@ -143,6 +143,15 @@ public class Conf {
      * 也可使用环境变量 {@code JSE_BUILD_GLOBAL_LIB} 来设置
      */
     public static boolean BUILD_GLOBAL_LIB = OS.envZ("JSE_BUILD_GLOBAL_LIB", false);
+    /**
+     * JNI 库构建的行为，用于控制检测到缺失 JNI 库时，是否自动构建相关库
+     * <p>
+     * 默认为 {@code "auto"}，即总是会自动构建，可选 {@code "jit"} 只会自动构建 JIT 相关库，和
+     * {@code "none"} 永远不会构建任何库
+     * <p>
+     * 也可使用环境变量 {@code JSE_BUILD_MODE} 来设置
+     */
+    public static String BUILD_MODE = OS.env("JSE_BUILD_MODE", "auto");
     
     /**
      * jse 的默认临时工作目录，现在统一为 {@code .temp/} 目录

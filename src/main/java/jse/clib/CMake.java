@@ -72,6 +72,10 @@ public class CMake {
         String tInternalCmakePath = INTERNAL_HOME + "bin/cmake";
         if (IS_WINDOWS) tInternalCmakePath += ".exe";
         if (IO.exists(tInternalCmakePath)) return tInternalCmakePath;
+        if (!JNIUtil.AUTO_BUILD) {
+            System.err.println(IO.Text.red("JNI INIT ERROR:")+" CMake not found in "+tInternalCmakePath);
+            throw new RuntimeException("No CMake");
+        }
         // 使用简单的文件锁来避免并行初始化
         try (AutoCloseable tLocker = JNIUtil.fileLocker(INTERNAL_HOME + "cmakeinit.lock")) {
             // 无论是否抢到了 lock，都有可能此时已经初始完成，因此简单检测

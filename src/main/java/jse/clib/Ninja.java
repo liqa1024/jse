@@ -72,6 +72,10 @@ public class Ninja {
         String tInternalNinjaPath = INTERNAL_HOME + "ninja";
         if (IS_WINDOWS) tInternalNinjaPath += ".exe";
         if (IO.exists(tInternalNinjaPath)) return tInternalNinjaPath;
+        if (!JNIUtil.AUTO_BUILD) {
+            System.err.println(IO.Text.red("JNI INIT ERROR:")+" Ninja not found in "+tInternalNinjaPath);
+            throw new RuntimeException("No Ninja");
+        }
         // 使用简单的文件锁来避免并行初始化
         try (AutoCloseable tLocker = JNIUtil.fileLocker(INTERNAL_HOME + "ninjainit.lock")) {
             // 无论是否抢到了 lock，都有可能此时已经初始完成，因此简单检测

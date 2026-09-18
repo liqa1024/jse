@@ -356,6 +356,7 @@ public class Main {
                 return 0;
             }
             case "-jnibuild": case "--jnibuild": {
+                Conf.BUILD_MODE = "auto";
                 if (aArgs.length>=3 && aArgs[2].startsWith("-")) {
                     String tGlobalKey = aArgs[2];
                     if (tGlobalKey.equalsIgnoreCase("-u")) {
