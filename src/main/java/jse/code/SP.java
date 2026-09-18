@@ -370,6 +370,18 @@ public class SP {
             Python.runScript(aScriptPath, aArgs);
             return;
         }
+        // 没有后缀的情况，优先认为是 groovy 脚本
+        @Nullable String
+        tPath = findValidScriptPath(aScriptPath, ".groovy");
+        if (tPath != null) {
+            Groovy.runScript(aScriptPath, aArgs);
+            return;
+        }
+        tPath = findValidScriptPath(aScriptPath, ".py");
+        if (tPath != null) {
+            Python.runScript(aScriptPath, aArgs);
+            return;
+        }
         throw new FileNotFoundException(aScriptPath + " (" + IO.toAbsolutePath(aScriptPath) + ")");
     }
     
